@@ -1,6 +1,6 @@
 # Manifesto
 
-**[Product name — working name: Bratura]** · Hack Brasil 2026 · Track: **Cultura & economia criativa**
+**Bratura** · Hack Brasil 2026 · Track: **Cultura & economia criativa**
 
 > Monte seu portfólio uma vez. A gente encontra as oportunidades, diz o que falta e prepara sua inscrição.
 
@@ -17,10 +17,10 @@ The money for culture already exists. This project is about making it reach the 
 
 | Name | GitHub | Role |
 |---|---|---|
-| [Member 1] | [@handle] | [e.g. ingestion and data] |
-| [Member 2] | [@handle] | [e.g. portfolio and matching] |
-| [Member 3] | [@handle] | [e.g. web and design] |
-| [Member 4] | [@handle] | [e.g. product, pitch and video] |
+| Atilio Almeida | [@handle] | Idea and product lead |
+| Leandro | [@handle] | [role] |
+| Kaik | [@handle] | [role] |
+| João Victor | [@handle] | [role] |
 
 The intellectual property of this project belongs entirely to the team above (regulation item 11.1).
 The team warrants that the project does not infringe third-party rights (11.3).
@@ -37,7 +37,8 @@ The team warrants that the project does not infringe third-party rights (11.3).
 AI tools are allowed and recommended by the regulation (item 6.4). We used:
 
 - **[AI coding assistants used by the team, e.g. Claude, Devin]** for research, planning and pair programming.
-- **[LLM provider]** inside the product, to read public calls, organize portfolios and suggest texts.
+- **Google Gemini API (free tier)** inside the product, to read public calls, organize portfolios and
+  suggest texts. Only public call text and the fictional demo creator are sent to it.
 
 Inside the product, the AI never invents facts about a call: every value, deadline or requirement shown
 comes from the official source, with a link. When a field is not in the source, the app says so.
@@ -60,22 +61,22 @@ comes from the official source, with a link. When a field is not in the source, 
 - This repository stays public until at least **15/12/2026** (item 6.7).
 - Demo: [https://…] — online throughout judging (item 7.3).
 - Video (≤ 3 min, no login): [https://…]
+- Repository: https://github.com/LeandroHawk/Bratura
 
 ## Repository map
 
 ```
-apps/web            Next.js app (Vercel)
-apps/crawler        reserved for a future crawler (empty)
-packages/backend    Convex backend: ingestion, portfolio, matching, alerts, WhatsApp webhook
-packages/shared     shared types, zod schemas, prompts
+app/                Next.js app (Vercel)
+convex/             Convex backend: ingestion, portfolio, matching, alerts, WhatsApp webhook
+lib/                shared types, zod schemas, prompts
 ```
 
 ## Run locally
 
 ```
 pnpm install
-pnpm dlx convex dev        # in packages/backend, creates a dev deployment
-pnpm dev                   # starts web + backend through Turborepo
+pnpm exec convex dev       # creates a Convex dev deployment
+pnpm dev                   # Next.js on http://localhost:3000
 ```
 
 Required environment variables are listed in `.env.example` (never commit real keys).
