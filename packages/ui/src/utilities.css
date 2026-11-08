@@ -1,0 +1,7 @@
+/* Keyboard focus ring shared by every interactive component: use the `focus-ring` class. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 3px solid var(--bt-ring);
+    outline-offset: 2px;
+  }
+}

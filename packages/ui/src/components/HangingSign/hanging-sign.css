@@ -1,0 +1,119 @@
+@layer components {
+  /* A board hanging from a nail by two strings: swings on hover, turns over on click. */
+  .bt-sign {
+    display: inline-grid;
+    justify-items: center;
+    color: var(--bt-foreground);
+    text-decoration: none;
+    /* Shape of the focus ring (from the focus-ring utility). */
+    border-radius: 10px;
+  }
+  .bt-sign-swing {
+    display: grid;
+    justify-items: center;
+    transform-origin: top center;
+  }
+  .bt-sign-nail {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 35%, var(--bt-cord-highlight), var(--bt-cord-shade));
+  }
+  .bt-sign-strings {
+    width: 110px;
+    height: 34px;
+    margin-top: -5px;
+  }
+  /* Twine, not the brass of the light cord: short dashes read as a twisted fibre. */
+  .bt-sign-strings path {
+    fill: none;
+    stroke: var(--bt-twine);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-dasharray: 3 1.4;
+  }
+  .bt-sign-turn {
+    margin-top: -3px;
+    perspective: 600px;
+  }
+  .bt-sign-faces {
+    display: grid;
+    transform-style: preserve-3d;
+  }
+  .bt-sign-faces.is-turned {
+    transform: rotateY(180deg);
+  }
+  .bt-sign-board {
+    grid-area: 1 / 1;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    min-width: 132px;
+    padding: 10px 16px 9px;
+    border: 2px solid var(--bt-wood-edge);
+    border-radius: 6px;
+    color: var(--bt-wood-ink);
+    background-color: var(--bt-wood);
+    /* Oak grain: two irregular sets of darker streaks, then light from the top left. */
+    background-image:
+      linear-gradient(160deg, rgb(255 255 255 / 0.12), transparent 45%, rgb(0 0 0 / 0.14)),
+      repeating-linear-gradient(
+        177deg,
+        transparent 0 6px,
+        var(--bt-wood-grain) 6px 7px,
+        transparent 7px 13px,
+        var(--bt-wood-grain) 13px 13.6px,
+        transparent 13.6px 22px
+      ),
+      repeating-linear-gradient(
+        183deg,
+        transparent 0 9px,
+        var(--bt-wood-grain) 9px 9.8px,
+        transparent 9.8px 17px
+      );
+    box-shadow: 3px 4px 0 var(--bt-wood-shadow);
+    backface-visibility: hidden;
+  }
+  .bt-sign-board.is-back {
+    transform: rotateY(180deg);
+  }
+  /* Painted on the board: a faint dark edge under the letters, like paint on wood. */
+  .bt-sign-label,
+  .bt-sign-hint {
+    text-shadow: 0 1px 0 rgb(0 0 0 / 0.3);
+  }
+  .bt-sign-label {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .bt-sign-hint {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .bt-sign:hover .bt-sign-swing,
+    .bt-sign:focus-visible .bt-sign-swing {
+      animation: bt-sign-swing 1.2s ease-in-out;
+    }
+    /* Keep in sync with TURN_MS in HangingSign.tsx. */
+    .bt-sign-faces {
+      transition: transform 450ms cubic-bezier(0.3, 1.4, 0.5, 1);
+    }
+  }
+
+  @keyframes bt-sign-swing {
+    25% {
+      transform: rotate(5deg);
+    }
+    55% {
+      transform: rotate(-3.5deg);
+    }
+    80% {
+      transform: rotate(1.5deg);
+    }
+  }
+}

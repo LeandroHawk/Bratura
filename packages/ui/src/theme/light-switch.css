@@ -1,0 +1,28 @@
+/*
+ * Light switch transition. The theme with the room lights on is revealed from (or shrinks back
+ * into) the cord, with a soft edge like light rather than a hard circle. switchTheme() sets the
+ * origin and animates --bt-reveal on the right snapshot.
+ */
+@property --bt-reveal {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+html.bt-light-on::view-transition-old(root),
+html.bt-light-on::view-transition-new(root),
+html.bt-light-off::view-transition-old(root),
+html.bt-light-off::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html.bt-light-on::view-transition-new(root),
+html.bt-light-off::view-transition-old(root) {
+  mask-image: radial-gradient(
+    circle at var(--bt-reveal-x) var(--bt-reveal-y),
+    #000 var(--bt-reveal),
+    transparent calc(var(--bt-reveal) + 200px)
+  );
+}
+html.bt-light-off::view-transition-old(root) {
+  z-index: 2;
+}
