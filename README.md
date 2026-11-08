@@ -82,27 +82,23 @@ that block crawlers, and anything exposing personal data. The demo uses a **fict
 | Messaging | WhatsApp Cloud API |
 | Crawling | Firecrawl |
 | AI | Gemini API (free tier) |
-| Validation | zod |
+| Validation | zod: one schema per concept, shared by web and backend |
 
 ## Repository structure
 
-One Next.js app with its Convex backend in the same repo. If a WhatsApp worker or a dedicated
-crawler is ever needed, it moves to a monorepo (`apps/` + `packages/`).
+pnpm workspaces + Turborepo. The web app and the backend share one design system and one set of
+schemas.
 
 ```
-app/                   Next.js routes: landing, creator app, organization panel, admin review
-components/            UI components
-convex/
-  schema.ts
-  http.ts              WhatsApp webhook
-  crons.ts             scheduled ingestion and alerts
-  ingestao/            Mapas API, Firecrawl, PDF extraction, classification
-  portfolio/           uploads, timeline, PDF
-  encaixe/             matching and gaps
-  alertas/             e-mail and WhatsApp alerts
-lib/                   zod schemas, types, prompts, LLM adapter
-MANIFEST.md            authorship, originality, use of AI, data and privacy
+apps/web/            Next.js app: src/app (routing) and src/features (one folder per screen)
+packages/ui/         @bratura/ui design system; its living reference is the /design route
+packages/shared/     the contract: Zod entities and primitives used by web and backend
+packages/backend/    (next) Convex: schema, ingestion, portfolio, matching, alerts, WhatsApp
+docs/architecture.md how it fits together and why
 ```
+
+Each of these folders has an `AGENTS.md` with its rules and examples, for contributors and coding
+agents alike; the root `AGENTS.md` lists them.
 
 ## Getting started
 
@@ -122,6 +118,7 @@ Useful scripts:
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm check          # lint + typecheck + test + build, what CI runs
 ```
 
 ## Environment variables
@@ -134,6 +131,20 @@ pnpm test
 | `GEMINI_API_KEY` | ingestion, portfolio, kit |
 | `RESEND_API_KEY` | alerts |
 | `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | WhatsApp |
+
+## Future plans (if time allows)
+
+- **Libras (Brazilian Sign Language) with [VLibras](https://www.gov.br/governodigital/pt-br/vlibras):**
+  the federal government's free, open-source widget, where a 3D avatar signs the text the reader
+  selects or clicks. Integration is one script and one element. Load it only on pt-BR pages (it
+  translates from Portuguese) and only when the reader asks for it, since it downloads a lot from
+  `vlibras.gov.br`. Hand Talk is the paid alternative.
+- **"Ouvir" (listen) button**, for readers who see the page but struggle to read it (low literacy,
+  dyslexia, fatigue), who do not use a screen reader. Uses the browser's Web Speech API
+  (`speechSynthesis`): native, free, no dependency; the voice is the reader's system voice in the
+  page's language. One button per block that matters (a call's plain summary, what is missing),
+  toggling listen/stop and announcing its state. **Start on the landing page** (hero and "how it
+  works"), where judges see it first, then the app screens.
 
 ## Business model
 
