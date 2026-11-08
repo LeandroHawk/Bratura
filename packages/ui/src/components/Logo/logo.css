@@ -1,0 +1,62 @@
+@layer components {
+  /* Logo: scales with font-size; every offset below is in em. */
+  .bt-logo {
+    display: inline-grid;
+    justify-items: center;
+    line-height: 1;
+  }
+  .bt-logo-mark {
+    position: relative;
+    display: inline-block;
+    padding: 0.17em 0.3em 0.24em;
+  }
+  .bt-logo-splat {
+    position: absolute;
+    left: -0.5em;
+    top: -0.4em;
+    width: calc(100% + 1em);
+    height: auto;
+    overflow: visible;
+  }
+  .bt-logo-word {
+    position: relative;
+    display: inline-flex;
+    font-family: var(--font-logo);
+    letter-spacing: 0.01em;
+  }
+  .bt-logo-word > span {
+    display: inline-block;
+    paint-order: stroke fill;
+    -webkit-text-stroke: 0.1em var(--bt-logo-outline);
+    text-shadow: 0.05em 0.07em 0 var(--bt-logo-outline);
+  }
+  .bt-logo-word > span:nth-child(odd) {
+    transform: rotate(-6deg) translateY(0.035em);
+  }
+  .bt-logo-word > span:nth-child(even) {
+    transform: rotate(5deg) translateY(-0.05em);
+  }
+  /* Hover: the cut-out letters straighten up. */
+  @media (prefers-reduced-motion: no-preference) {
+    .bt-logo-word > span {
+      transition: transform 0.25s ease;
+    }
+    .bt-logo:hover .bt-logo-word > span {
+      transform: none;
+    }
+  }
+  .bt-logo-slogan {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    margin-top: -0.07em;
+  }
+  .bt-logo-slogan text {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 21px;
+    letter-spacing: 0.02em;
+    fill: var(--bt-foreground);
+  }
+}

@@ -1,0 +1,164 @@
+/*
+ * Bratura design tokens, in two layers.
+ *
+ * 1. Primitives: the raw palette, named by material and shade. Components never use them.
+ * 2. Semantic tokens: named by role (background, primary, status-missing...), pointing at
+ *    primitives per theme. Light = "Acervo" (parchment + sepia), the default whatever the OS says;
+ *    dark = "Galeria" (walnut + brass), only under data-theme="dark".
+ *
+ * Statuses keep the same hue in both themes, so a color always means the same thing:
+ * red = missing, yellow = deadline soon, blue = open.
+ *
+ * Tailwind sees only the semantic tokens: its default palette is switched off below, so a class
+ * like bg-red-500 does not exist and cannot sneak in.
+ *
+ * The app must define the three font faces: --bt-face-logo, --bt-face-display, --bt-face-body.
+ */
+
+/* Primitives */
+:root {
+  --bt-parchment-50: #fbf6ec;
+  --bt-parchment-100: #f3ead8;
+  --bt-parchment-200: #e0d2bb;
+  --bt-parchment-300: #c9b498;
+  --bt-walnut-500: #6e5846;
+  --bt-walnut-600: #4d3426;
+  --bt-walnut-700: #3b2a1e;
+  --bt-walnut-800: #37241a;
+  --bt-walnut-900: #2b1b12;
+  --bt-walnut-950: #170e09;
+  --bt-umber-600: #6b4226;
+  --bt-brass-200: #f0d48a;
+  --bt-brass-300: #e2c27a;
+  --bt-brass-400: #d4a548;
+  --bt-brass-500: #b08a3e;
+  --bt-brass-600: #8a6420;
+  --bt-brass-700: #7a5a1e;
+  --bt-oak-400: #a3713f;
+  --bt-oak-500: #8a5a33;
+  --bt-oak-600: #7a4c2a;
+  --bt-oak-700: #6a4123;
+  --bt-twine-300: #d9bd8c;
+  --bt-twine-500: #a8834c;
+  --bt-glow-100: #ffe2a0;
+  --bt-glow-200: #ffd98a;
+  --bt-red-400: #ff4d6d;
+  --bt-red-500: #d7263d;
+  --bt-yellow-300: #ffd23f;
+  --bt-yellow-500: #f2b705;
+  --bt-blue-400: #45b8f0;
+  --bt-blue-600: #1f5fbf;
+  --bt-green-400: #2fc46a;
+  --bt-green-600: #009c3b;
+  --bt-white: #ffffff;
+}
+
+/* Semantic tokens: light theme (default) */
+:root,
+[data-theme='light'] {
+  --bt-background: var(--bt-parchment-100);
+  --bt-foreground: var(--bt-walnut-700);
+  --bt-card: var(--bt-parchment-50);
+  --bt-muted-foreground: var(--bt-walnut-500);
+  --bt-border: var(--bt-parchment-200);
+  --bt-primary: var(--bt-umber-600);
+  --bt-primary-foreground: var(--bt-parchment-50);
+  --bt-ring: var(--bt-blue-600);
+  --bt-status-open: var(--bt-blue-600);
+  --bt-status-open-foreground: var(--bt-white);
+  --bt-status-soon: var(--bt-yellow-500);
+  --bt-status-soon-foreground: var(--bt-walnut-700);
+  --bt-status-missing: var(--bt-red-500);
+  --bt-status-missing-foreground: var(--bt-white);
+  --bt-logo-green: var(--bt-green-600);
+  --bt-logo-yellow: var(--bt-yellow-500);
+  --bt-logo-blue: var(--bt-blue-600);
+  --bt-logo-outline: var(--bt-walnut-700);
+  --bt-cord: var(--bt-brass-500);
+  --bt-cord-shade: var(--bt-brass-700);
+  --bt-cord-highlight: var(--bt-brass-300);
+  /* Wooden sign: the same oak in both themes, an object in the room; only its edge and the
+     twine it hangs from adapt, so it stays cut out from the wall. */
+  --bt-wood: var(--bt-oak-500);
+  --bt-wood-grain: var(--bt-oak-600);
+  --bt-wood-edge: var(--bt-oak-700);
+  --bt-wood-ink: var(--bt-parchment-50);
+  --bt-wood-shadow: var(--bt-walnut-700);
+  --bt-twine: var(--bt-twine-500);
+  --bt-glow: var(--bt-glow-100);
+  color-scheme: light;
+}
+
+/* Semantic tokens: dark theme */
+[data-theme='dark'] {
+  --bt-background: var(--bt-walnut-900);
+  --bt-foreground: var(--bt-parchment-100);
+  --bt-card: var(--bt-walnut-800);
+  --bt-muted-foreground: var(--bt-parchment-300);
+  --bt-border: var(--bt-walnut-600);
+  --bt-primary: var(--bt-brass-400);
+  --bt-primary-foreground: var(--bt-walnut-900);
+  --bt-ring: var(--bt-blue-400);
+  --bt-status-open: var(--bt-blue-400);
+  --bt-status-open-foreground: var(--bt-walnut-950);
+  --bt-status-soon: var(--bt-yellow-300);
+  --bt-status-soon-foreground: var(--bt-walnut-950);
+  --bt-status-missing: var(--bt-red-400);
+  --bt-status-missing-foreground: var(--bt-walnut-950);
+  --bt-logo-green: var(--bt-green-400);
+  --bt-logo-yellow: var(--bt-yellow-300);
+  --bt-logo-blue: var(--bt-blue-400);
+  --bt-logo-outline: var(--bt-walnut-950);
+  --bt-cord: var(--bt-brass-400);
+  --bt-cord-shade: var(--bt-brass-600);
+  --bt-cord-highlight: var(--bt-brass-200);
+  --bt-wood: var(--bt-oak-500);
+  --bt-wood-grain: var(--bt-oak-600);
+  --bt-wood-edge: var(--bt-oak-400);
+  --bt-wood-ink: var(--bt-parchment-50);
+  --bt-wood-shadow: var(--bt-walnut-950);
+  --bt-twine: var(--bt-twine-300);
+  --bt-glow: var(--bt-glow-200);
+  color-scheme: dark;
+}
+
+/* Tailwind: drop the default palette, expose the semantic tokens only. */
+@theme {
+  --color-*: initial;
+}
+
+@theme inline {
+  --color-background: var(--bt-background);
+  --color-foreground: var(--bt-foreground);
+  --color-card: var(--bt-card);
+  --color-muted-foreground: var(--bt-muted-foreground);
+  --color-border: var(--bt-border);
+  --color-primary: var(--bt-primary);
+  --color-primary-foreground: var(--bt-primary-foreground);
+  --color-ring: var(--bt-ring);
+  --color-status-open: var(--bt-status-open);
+  --color-status-open-foreground: var(--bt-status-open-foreground);
+  --color-status-soon: var(--bt-status-soon);
+  --color-status-soon-foreground: var(--bt-status-soon-foreground);
+  --color-status-missing: var(--bt-status-missing);
+  --color-status-missing-foreground: var(--bt-status-missing-foreground);
+  --color-logo-green: var(--bt-logo-green);
+  --color-logo-yellow: var(--bt-logo-yellow);
+  --color-logo-blue: var(--bt-logo-blue);
+
+  --font-logo: var(--bt-face-logo), 'Arial Black', sans-serif;
+  --font-display: var(--bt-face-display), Georgia, serif;
+  --font-body: var(--bt-face-body), system-ui, sans-serif;
+
+  /* Uneven corners, like a shape painted by hand instead of drawn with a compass. */
+  --radius-paint: 255px 18px 225px 18px / 18px 225px 18px 255px;
+
+  /* Hard offset shadow, like a paper cut-out lifted off the page (no blur). */
+  --shadow-cutout: 3px 3px 0 var(--bt-foreground);
+
+  /* Type sizes the defaults lack: badge text and the compact body used in cards and lists. */
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.4;
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.5;
+}

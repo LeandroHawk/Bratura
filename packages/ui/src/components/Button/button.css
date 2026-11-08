@@ -1,0 +1,37 @@
+@layer components {
+  /* A few drops of the logo's paint (green, yellow, blue) flicked off the button's corners on
+     hover. Brand colors on purpose, not status colors: red/yellow/blue there mean missing/soon/open. */
+  .bt-splash {
+    position: absolute;
+    inset: -18px;
+    pointer-events: none;
+    /* Two clusters, top-right and bottom-left: a big drop on the corner, smaller ones flying
+       out. Positions are measured from the corners of this box, which overhangs the button by
+       18px, so every drop stays inside it. */
+    background:
+      radial-gradient(circle at right 21px top 20px, var(--bt-logo-yellow) 4.5px, transparent 5px),
+      radial-gradient(circle at right 9px top 8px, var(--bt-logo-green) 2.6px, transparent 3.1px),
+      radial-gradient(circle at right 33px top 6px, var(--bt-logo-blue) 2.1px, transparent 2.6px),
+      radial-gradient(circle at right 5px top 30px, var(--bt-logo-yellow) 1.8px, transparent 2.3px),
+      radial-gradient(circle at left 21px bottom 20px, var(--bt-logo-green) 4px, transparent 4.5px),
+      radial-gradient(circle at left 8px bottom 8px, var(--bt-logo-blue) 2.4px, transparent 2.9px),
+      radial-gradient(circle at left 33px bottom 5px, var(--bt-logo-yellow) 2px, transparent 2.5px),
+      radial-gradient(circle at left 5px bottom 31px, var(--bt-logo-green) 1.7px, transparent 2.2px);
+    opacity: 0;
+    transform: scale(0.8);
+    transition:
+      opacity 0.15s ease-out,
+      transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .bt-button:hover .bt-splash,
+  .bt-button:focus-visible .bt-splash {
+    opacity: 1;
+    transform: scale(1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bt-splash {
+      transform: none;
+      transition: opacity 0.15s;
+    }
+  }
+}

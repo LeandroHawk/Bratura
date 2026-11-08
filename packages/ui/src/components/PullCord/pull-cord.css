@@ -1,0 +1,160 @@
+@layer components {
+  /* Theme toggle: a pull cord hanging from the top of the page. Pulling it switches the room
+     lights off (dark "Galeria"), and a warm glow falls from the ceiling. */
+  .bt-pull {
+    position: relative;
+    display: grid;
+    justify-items: center;
+  }
+  .bt-pull-cord {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    min-width: 44px;
+    padding: 0 14px 6px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    /* Shape of the focus ring (from the focus-ring utility). */
+    border-radius: 10px;
+  }
+  /* Brass ceiling mount the cord hangs from. */
+  .bt-pull-mount {
+    width: 18px;
+    height: 6px;
+    border-radius: 0 0 9px 9px;
+    background: linear-gradient(var(--bt-cord-highlight), var(--bt-cord-shade));
+  }
+  /* String + pull swing together around the mount. */
+  .bt-pull-body {
+    display: grid;
+    justify-items: center;
+    transform-origin: top center;
+  }
+  .bt-pull-string {
+    width: 3px;
+    height: var(--bt-cord-length, 60px);
+    /* Diagonal stripes read as a twisted cord. */
+    background: repeating-linear-gradient(
+      -55deg,
+      var(--bt-cord-shade) 0 2px,
+      var(--bt-cord) 2px 4px
+    );
+  }
+  .bt-pull-knob {
+    display: block;
+    width: 16px;
+    height: 26px;
+    margin-top: -1px;
+  }
+  .bt-brass {
+    fill: var(--bt-cord);
+  }
+  .bt-brass-dark {
+    fill: var(--bt-cord-shade);
+  }
+  .bt-brass-light {
+    fill: var(--bt-cord-highlight);
+  }
+  .bt-pull-shine {
+    stroke: var(--bt-cord-highlight);
+  }
+  .bt-pull-label {
+    position: absolute;
+    bottom: 10px;
+    /* Label sits left of the pull: the cord usually hangs in the top-right corner. */
+    right: calc(50% + 16px);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-style: italic;
+    white-space: nowrap;
+    color: var(--bt-muted-foreground);
+  }
+  .bt-pull-beam {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 2;
+    width: min(440px, 100vw);
+    height: var(--bt-beam-length, 300px);
+    transform: translateX(-50%);
+    /* Fades out before the box edges, so no straight edge shows wherever it is clipped. */
+    background: radial-gradient(
+      ellipse 50% 100% at 50% 0%,
+      color-mix(in srgb, var(--bt-glow) 34%, transparent),
+      transparent 72%
+    );
+    mix-blend-mode: screen;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+  }
+  .bt-pull.is-dark .bt-pull-beam {
+    opacity: 1;
+    animation: bt-flicker 0.7s ease-out;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bt-pull-cord:hover .bt-pull-body {
+      animation: bt-swing 1.4s ease-in-out;
+    }
+    /* After a pull: the cord stretches, snaps back, then swings. */
+    .bt-pull-body.is-tugged {
+      animation: bt-swing 1.2s ease-in-out 0.25s;
+    }
+    .bt-pull-body.is-tugged .bt-pull-string {
+      animation: bt-tug 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bt-pull.is-dark .bt-pull-beam {
+      animation: none;
+      transition: none;
+    }
+  }
+}
+
+@keyframes bt-tug {
+  0% {
+    height: var(--bt-cord-length, 60px);
+  }
+  35% {
+    height: calc(var(--bt-cord-length, 60px) + 14px);
+  }
+  100% {
+    height: var(--bt-cord-length, 60px);
+  }
+}
+
+@keyframes bt-swing {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  30% {
+    transform: rotate(4deg);
+  }
+  65% {
+    transform: rotate(-3deg);
+  }
+}
+
+@keyframes bt-flicker {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  30% {
+    opacity: 0.15;
+  }
+  45% {
+    opacity: 0.9;
+  }
+  55% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
