@@ -66,10 +66,14 @@ comes from the official source, with a link. When a field is not in the source, 
 ## Repository map
 
 ```
-app/                Next.js app (Vercel)
-convex/             Convex backend: ingestion, portfolio, matching, alerts, WhatsApp webhook
-lib/                shared types, zod schemas, prompts
+apps/web/           Next.js app (Vercel)
+packages/ui/        @bratura/ui design system
+packages/shared/    Zod entities and primitives shared by web and backend
+packages/backend/   Convex backend: ingestion, portfolio, matching, alerts, WhatsApp webhook
 ```
+
+How the code is organised and why: `docs/architecture.md`. Rules for contributors and coding
+agents: `AGENTS.md`.
 
 ## Run locally
 
