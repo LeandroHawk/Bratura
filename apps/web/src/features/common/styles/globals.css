@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+@import '@bratura/ui/styles.css';
+
+/* Tailwind only scans this app by default; the design system's classes live in the package.
+   The path is relative to this file: move the file, fix the path. */
+@source '../../../../../../packages/ui/src';
