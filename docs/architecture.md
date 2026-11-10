@@ -127,8 +127,9 @@ packages/backend/convex/
 - **pt-BR at `/`, English under `/en`**, by a proxy rewrite; routing details in
   `apps/web/src/app/AGENTS.md`.
 - **Copy per locale, next to the section that shows it**: `apps/web/src/features/AGENTS.md`.
-  Design-system components take copy as props, and the brand (word mark, slogan) stays Portuguese:
-  `packages/ui/AGENTS.md`, which also describes the language sign.
+  Design-system components take copy as props. The name "Bratura" is the same everywhere; the
+  slogan is translated per locale (decided 2026-11-09, for the international jury): `SITE_SLOGAN`
+  in `features/common/config/site.ts`, and `packages/ui/AGENTS.md` for the `Logo` side.
 
 ## 5. Naming
 
@@ -155,6 +156,5 @@ packages/backend/convex/
 - **Convex × Zod bridge** (§3).
 - **Validation messages in two languages**: "text lives in the Zod declaration" meets "copy exists
   in pt-BR and en" at the first form.
-- **The slogan in English**: kept in Portuguese as part of the brand until decided.
 - **Enforcement**: these rules are prose. The ones visible in the syntax (a section importing
   another, `primitives` importing `entities`) become lint rules when they first break.

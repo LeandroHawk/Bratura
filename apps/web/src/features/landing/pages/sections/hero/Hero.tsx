@@ -14,7 +14,7 @@ export function Hero({ locale }: { locale: Locale }) {
       aria-labelledby="hero-title"
       className="grid items-center gap-12 pb-20 lg:grid-cols-[1.15fr_1fr]"
     >
-      <PageIntro title={TAGLINE[locale]} titleId="hero-title" lead={content.lead}>
+      <PageIntro locale={locale} title={TAGLINE[locale]} titleId="hero-title" lead={content.lead}>
         <div className="flex flex-wrap gap-3">
           <ButtonLink href="#como-funciona">{content.howItWorks}</ButtonLink>
           <ButtonLink href={REPO_URL} variant="ghost" target="_blank" rel="noreferrer">
