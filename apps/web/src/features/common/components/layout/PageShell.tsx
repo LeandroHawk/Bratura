@@ -22,9 +22,7 @@ export function PageShell({
       {/* Full-width clip: the cord's glow fades off the right edge of the screen, not the column. */}
       <div className="flex-1 overflow-x-clip">
         <SiteHeader locale={locale} path={path} />
-        <main id={MAIN_CONTENT_ID} tabIndex={-1} className="outline-none">
-          {children}
-        </main>
+        <main id={MAIN_CONTENT_ID}>{children}</main>
       </div>
       <SiteFooter locale={locale} />
     </div>
