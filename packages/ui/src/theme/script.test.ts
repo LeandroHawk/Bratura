@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { THEME_STORAGE_KEY, themeInitScript } from './script';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { restoreSavedTheme, THEME_STORAGE_KEY, themeInitScript } from './script';
 
 /** Runs the inline script against a fake browser; returns what it changed. */
 function runInit(getItem: (key: string) => string | null) {
@@ -7,6 +7,7 @@ function runInit(getItem: (key: string) => string | null) {
   let onLoad: (() => void) | undefined;
   const document = {
     documentElement: { dataset: {} as Record<string, string> },
+    readyState: 'loading',
     addEventListener: (_: string, fn: () => void) => (onLoad = fn),
     querySelector: () => meta,
   };
@@ -40,5 +41,32 @@ describe('themeInitScript', () => {
         throw new Error('SecurityError');
       }).theme,
     ).toBeUndefined();
+  });
+});
+
+describe('restoreSavedTheme, called when React renders the document in the browser', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function stubBrowser(saved: string | null) {
+    const dataset: Record<string, string> = {};
+    vi.stubGlobal('localStorage', { getItem: () => saved });
+    vi.stubGlobal('document', { documentElement: { dataset }, readyState: 'complete' });
+    return dataset;
+  }
+
+  it('applies dark and syncs the browser bar at once, the document being loaded', () => {
+    const dataset = stubBrowser('dark');
+    const syncColor = vi.fn();
+    restoreSavedTheme(THEME_STORAGE_KEY, syncColor);
+    expect(dataset.theme).toBe('dark');
+    expect(syncColor).toHaveBeenCalledOnce();
+  });
+
+  it('leaves light alone when nothing was chosen', () => {
+    const dataset = stubBrowser(null);
+    const syncColor = vi.fn();
+    restoreSavedTheme(THEME_STORAGE_KEY, syncColor);
+    expect(dataset.theme).toBeUndefined();
+    expect(syncColor).not.toHaveBeenCalled();
   });
 });

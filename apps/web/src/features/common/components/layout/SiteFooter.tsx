@@ -12,25 +12,32 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   return (
     <footer className="border-t border-border">
       <Container className="flex flex-wrap items-center justify-between gap-6 py-10 text-sm text-muted-foreground">
-        <Logo withSlogan={false} className="text-3xl" />
+        <Logo slogan={false} className="text-3xl" />
         <p>
           {content.madeFor}
           <br />
           {TEAM.join(' · ')}
         </p>
-        <nav aria-label={content.aboutNav} className="flex flex-wrap gap-x-5 gap-y-2">
-          <Link
-            href="/design"
-            // The design system reference is written in Portuguese only.
-            hrefLang="pt-BR"
-            className={FOOTER_LINK}
-          >
-            Design system
-          </Link>
-          <a href={REPO_URL} className={FOOTER_LINK} target="_blank" rel="noreferrer">
-            {content.repoLink}
-            <NewTabHint locale={locale} />
-          </a>
+        <nav aria-label={content.aboutNav}>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+            <li>
+              <Link
+                href="/design"
+                // The design system reference is written in Portuguese only.
+                hrefLang="pt-BR"
+                lang="en"
+                className={FOOTER_LINK}
+              >
+                Design system
+              </Link>
+            </li>
+            <li>
+              <a href={REPO_URL} className={FOOTER_LINK} target="_blank" rel="noreferrer">
+                {content.repoLink}
+                <NewTabHint locale={locale} />
+              </a>
+            </li>
+          </ul>
         </nav>
       </Container>
     </footer>

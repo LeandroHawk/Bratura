@@ -9,10 +9,7 @@ import { HERO_CONTENT } from './content';
 export function ExampleCall({ locale }: { locale: Locale }) {
   const content = HERO_CONTENT[locale].exampleCall;
   return (
-    <Card
-      as="figure"
-      className="grid max-w-[520px] gap-4 shadow-[6px_8px_0_var(--bt-border)] lg:rotate-1"
-    >
+    <Card as="figure" className="grid max-w-[520px] gap-4 shadow-lifted lg:rotate-1">
       <Eyebrow as="figcaption">{content.caption}</Eyebrow>
       <div className="grid gap-1">
         <Heading as="p" size="card">

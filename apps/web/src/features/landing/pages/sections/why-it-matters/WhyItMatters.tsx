@@ -1,19 +1,22 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Container, Heading } from '@bratura/ui';
+import { Heading } from '@bratura/ui';
+import { SectionColumns } from '../common/SectionColumns';
+import { SECTION_IDS } from '../common/sectionIds';
+import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
 import { WHY_IT_MATTERS_CONTENT } from './content';
+import { TicketStack } from './TicketStack';
 
 export function WhyItMatters({ locale }: { locale: Locale }) {
   const content = WHY_IT_MATTERS_CONTENT[locale];
   return (
-    <Container
-      as="section"
-      aria-labelledby="por-que-title"
-      className="grid gap-10 py-20 lg:grid-cols-[1fr_1fr]"
-    >
-      <Heading id="por-que-title" className="max-w-[20ch]">
-        {content.title}
-      </Heading>
-      <div className="grid max-w-[60ch] gap-5 text-lg">
+    <SectionColumns id={SECTION_IDS.whyItMatters}>
+      <div className="grid content-start gap-10">
+        <Heading id={titleIdFromSectionId(SECTION_IDS.whyItMatters)} className="max-w-[20ch]">
+          {content.title}
+        </Heading>
+        <TicketStack tickets={content.tickets} />
+      </div>
+      <div className="grid max-w-[60ch] content-start gap-5 text-lg">
         {content.paragraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
@@ -21,6 +24,6 @@ export function WhyItMatters({ locale }: { locale: Locale }) {
           {content.sources}
         </p>
       </div>
-    </Container>
+    </SectionColumns>
   );
 }

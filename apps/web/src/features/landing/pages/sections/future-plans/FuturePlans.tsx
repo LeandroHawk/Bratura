@@ -1,19 +1,18 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Container, Heading } from '@bratura/ui';
+import { Heading } from '@bratura/ui';
+import { SectionColumns } from '../common/SectionColumns';
+import { SECTION_IDS } from '../common/sectionIds';
+import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
 import { WallLabel } from '../common/WallLabel';
 import { FUTURE_PLANS_CONTENT } from './content';
 
-/** Planned features, on the same two-column grid as the section above. */
+/** Planned features, still being installed. */
 export function FuturePlans({ locale }: { locale: Locale }) {
   const content = FUTURE_PLANS_CONTENT[locale];
   return (
-    <Container
-      as="section"
-      aria-labelledby="future-plans-title"
-      className="grid gap-10 pb-20 lg:grid-cols-[1fr_1fr]"
-    >
+    <SectionColumns id={SECTION_IDS.futurePlans}>
       <div className="grid content-start gap-4">
-        <Heading id="future-plans-title" className="max-w-[20ch]">
+        <Heading id={titleIdFromSectionId(SECTION_IDS.futurePlans)} className="max-w-[20ch]">
           {content.title}
         </Heading>
         <p className="max-w-[40ch] text-muted-foreground">{content.lead}</p>
@@ -27,6 +26,6 @@ export function FuturePlans({ locale }: { locale: Locale }) {
           </li>
         ))}
       </ul>
-    </Container>
+    </SectionColumns>
   );
 }

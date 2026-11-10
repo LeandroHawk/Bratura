@@ -2,6 +2,7 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { ReactNode } from 'react';
 import type { SitePath } from '../../utils/locale-path';
 import { SiteFooter } from './SiteFooter';
+import { MAIN_CONTENT_ID } from './mainContentId';
 import { SiteHeader } from './SiteHeader';
 
 /** Header, main content and footer shared by the public pages. */
@@ -21,7 +22,9 @@ export function PageShell({
       {/* Full-width clip: the cord's glow fades off the right edge of the screen, not the column. */}
       <div className="flex-1 overflow-x-clip">
         <SiteHeader locale={locale} path={path} />
-        <main>{children}</main>
+        <main id={MAIN_CONTENT_ID} tabIndex={-1} className="outline-none">
+          {children}
+        </main>
       </div>
       <SiteFooter locale={locale} />
     </div>

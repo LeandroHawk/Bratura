@@ -9,12 +9,13 @@ const OPEN_GRAPH_LOCALE: Record<Locale, string> = { 'pt-BR': 'pt_BR', en: 'en_US
 /** Site-wide metadata of one locale; the preview image comes from `[lang]/opengraph-image.tsx`. */
 export function siteMetadataFromLocale(locale: Locale): Metadata {
   const description = SITE_DESCRIPTION[locale];
+  const title = SITE_TITLE[locale];
   const url = localizedPathFromLocale(locale, '/');
   return {
     metadataBase: new URL(SITE_URL),
     alternates: { canonical: url, languages: languageAlternatesFromPath('/') },
     // A page sets only its own name (`title: 'Design system'`); the tab then reads "Design system · Bratura".
-    title: { default: SITE_TITLE, template: '%s · Bratura' },
+    title: { default: title, template: '%s · Bratura' },
     description,
     applicationName: 'Bratura',
     openGraph: {
@@ -22,9 +23,9 @@ export function siteMetadataFromLocale(locale: Locale): Metadata {
       locale: OPEN_GRAPH_LOCALE[locale],
       siteName: 'Bratura',
       url,
-      title: SITE_TITLE,
+      title,
       description,
     },
-    twitter: { card: 'summary_large_image', title: SITE_TITLE, description },
+    twitter: { card: 'summary_large_image', title, description },
   };
 }

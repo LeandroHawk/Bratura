@@ -6,7 +6,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '@/features/common/config/site';
 /** One manifest for the whole site, in the default locale. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: SITE_TITLE,
+    name: SITE_TITLE[DEFAULT_LOCALE],
     short_name: 'Bratura',
     description: SITE_DESCRIPTION[DEFAULT_LOCALE],
     lang: DEFAULT_LOCALE,

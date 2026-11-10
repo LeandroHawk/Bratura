@@ -8,8 +8,15 @@ export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 export const REPO_URL = 'https://github.com/LeandroHawk/Bratura';
 
-/** The brand name and slogan stay in Portuguese in every locale. */
-export const SITE_TITLE = `Bratura · ${SLOGAN}`;
+/** The slogan in each locale; the name, Bratura, is the same in all of them. */
+export const SITE_SLOGAN: Record<Locale, string> = {
+  'pt-BR': SLOGAN,
+  en: 'your country with more culture',
+};
+
+export const SITE_TITLE = Object.fromEntries(
+  Object.entries(SITE_SLOGAN).map(([locale, slogan]) => [locale, `Bratura · ${slogan}`]),
+) as Record<Locale, string>;
 
 export const SITE_DESCRIPTION: Record<Locale, string> = {
   'pt-BR':

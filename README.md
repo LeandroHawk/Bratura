@@ -148,11 +148,9 @@ pnpm check          # lint + typecheck + test + build, what CI runs
 
 ## Business model
 
-Creators use it for free (search, alerts, basic portfolio). Revenue comes from those with a budget:
-a per-call application kit for creators who want it, a multi-profile panel for artisan associations,
-cooperatives, producers and project consultants (main revenue), and contracts with city culture
-departments that want more complete applications. Phase 2: connect approved projects with sponsors
-through the Rouanet tax-incentive law.
+Creators never pay; organizations that look after many creators, culture departments and, later,
+sponsors do. The full model, kept in one place, is on the
+[landing page](https://bratura.vercel.app/en#modelo-de-negocio).
 
 ## Team
 

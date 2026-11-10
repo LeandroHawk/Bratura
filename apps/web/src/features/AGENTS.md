@@ -34,13 +34,13 @@ features/
 The landing today:
 
 ```
-landing/pages/
-  Landing.page.tsx  LandingJsonLd.tsx
-  sections/hero/            Hero.tsx, ExampleCall.tsx (only the hero shows it), content.ts
-  sections/how-it-works/    HowItWorks.tsx, content.ts (the four rooms)
-  sections/why-it-matters/  WhyItMatters.tsx, content.ts
-  sections/future-plans/    FuturePlans.tsx, content.ts
-  sections/common/          WallLabel.tsx (title, medium, text: used by two sections)
+landing/pages/              Landing.page.tsx fits the sections, in page order
+  sections/hero/            the promise and an example call
+  sections/how-it-works/    the product flow as four museum rooms
+  sections/why-it-matters/  the problem, as a call's ticket without and with Bratura
+  sections/business-model/  who uses and who pays, as a theatre: stage, curtains, audience
+  sections/future-plans/    accessibility rooms still being installed
+  sections/common/          what two sections share: section frames and ids, the wall label
 ```
 
 A section holds everything of its region, flat; the file name says the kind. Kind subfolders
@@ -51,7 +51,8 @@ and its result list over 4; this layout is the fix they measured.
 ## Rules
 
 1. **A section never imports another section.** What two share goes up to `sections/common/`
-   (`WallLabel`) or through the page. An in-page anchor (`#como-funciona`) is not an import.
+   (`WallLabel`) or through the page. An in-page anchor is not an import, and its id comes from
+   `sections/common/sectionIds.ts`, so renaming a section cannot break a link to it.
 2. **`common/` is common at the level of its folder**: `sections/common/` for one page's
    sections, `features/common/` for features. A piece starts with its only consumer and moves up
    when a second appears: `NewTabHint` moved to `features/common/` when the footer joined the hero.
@@ -87,6 +88,7 @@ and its result list over 4; this layout is the fix they measured.
 - **Pages render inside `PageShell`** (header, main, footer; at least one screen tall, so a short
   page keeps the footer at the bottom). The header reserves the height the sign and the cord hang
   into: a page never adds top padding for them.
+  A page outside it (`/design`) gives its `<main>` `MAIN_CONTENT_ID`, where the skip link lands.
 - **The look follows the house**: no small uppercase kicker above a section title; a new section
   reuses the page's grid and rhythm (heading left, content right, items split by a hairline)
   before inventing cards.
