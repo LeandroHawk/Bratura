@@ -57,6 +57,18 @@ describe('semantic tokens', () => {
     expect(semantic.light.has(name)).toBe(true);
   });
 
+  it('documents every semantic token, so /design shows the whole palette', () => {
+    const documented = new Set<string>(COLOR_TOKENS.map((t) => t.name));
+    expect([...semantic.light.keys()].filter((name) => !documented.has(name))).toEqual([]);
+  });
+
+  it('registers every semantic token as a Tailwind colour (bg-wood, fill-art-blue, …)', () => {
+    const registered = new Set(
+      [...css.matchAll(/--color-([\w-]+):\s*var\(--bt-\1\);/g)].map((m) => m[1]),
+    );
+    expect([...semantic.light.keys()].filter((name) => !registered.has(name))).toEqual([]);
+  });
+
   it('keeps the TypeScript copy of the light palette equal to tokens.css', () => {
     for (const [name, value] of Object.entries(LIGHT_THEME_COLORS)) {
       expect(hexOf(semantic.light, name), `--bt-${name}`).toBe(value);

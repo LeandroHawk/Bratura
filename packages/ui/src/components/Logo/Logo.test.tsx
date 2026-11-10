@@ -9,8 +9,17 @@ describe('Logo', () => {
     expect(html).toContain(`aria-label="Bratura, ${SLOGAN}"`);
   });
 
+  it('says a translated slogan in its own language', () => {
+    const html = renderToStaticMarkup(
+      <Logo slogan={{ text: 'your country with more culture', lang: 'en' }} />,
+    );
+    expect(html).toContain('lang="en"');
+    expect(html).toContain('aria-label="Bratura, your country with more culture"');
+    expect(html).toContain('>your country with more culture</textPath>');
+  });
+
   it('drops the slogan when asked, for small sizes', () => {
-    const html = renderToStaticMarkup(<Logo withSlogan={false} />);
+    const html = renderToStaticMarkup(<Logo slogan={false} />);
     expect(html).toContain('aria-label="Bratura"');
     expect(html).not.toContain('textPath');
   });

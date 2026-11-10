@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { LOGO_SPLAT_SEED, SPLAT_VIEWBOX, splatShapesFromSeed, type SplatTone } from './splat';
 
+/** The original slogan, in Portuguese: the default, and what a page in another language translates. */
 export const SLOGAN = 'o seu país com mais cultura';
 
 const LETTERS = [...'Bratura'];
@@ -24,21 +25,24 @@ const TONE_FILL: Record<SplatTone, string> = {
 const SPLAT = splatShapesFromSeed(LOGO_SPLAT_SEED);
 
 export type LogoProps = {
-  /** Shows the slogan curved like a smile under the word. Leave it off at small sizes. */
-  withSlogan?: boolean;
+  /**
+   * The slogan curved like a smile under the word: its words and their language, so a page can
+   * pass a translation. `false` leaves it off, for small sizes.
+   */
+  slogan?: { text: string; lang: string } | false;
   /** Size comes from font-size, e.g. "text-6xl". */
   className?: string;
 };
 
-export function Logo({ withSlogan = true, className = '' }: LogoProps) {
+export function Logo({ slogan = { text: SLOGAN, lang: 'pt-BR' }, className = '' }: LogoProps) {
   const arcId = useId();
   return (
     <div
       className={`bt-logo ${className}`}
       role="img"
-      // The word mark and the slogan are Portuguese on every page, whatever the page language.
-      lang="pt-BR"
-      aria-label={withSlogan ? `Bratura, ${SLOGAN}` : 'Bratura'}
+      // The name is the same in every language; the slogan, when shown, sets how it is read aloud.
+      lang={slogan ? slogan.lang : 'pt-BR'}
+      aria-label={slogan ? `Bratura, ${slogan.text}` : 'Bratura'}
     >
       <div className="bt-logo-mark" aria-hidden="true">
         <svg
@@ -68,12 +72,14 @@ export function Logo({ withSlogan = true, className = '' }: LogoProps) {
           ))}
         </span>
       </div>
-      {withSlogan && (
+      {slogan && (
         <svg className="bt-logo-slogan" viewBox="0 0 300 64" aria-hidden="true">
-          <path id={arcId} d="M 18 14 Q 150 74 282 14" fill="none" />
+          {/* The smile's parabola (lowest at y 44), drawn wider than the box: text past the end of a
+              path is not drawn, and a translated slogan can be longer than the Portuguese one. */}
+          <path id={arcId} d="M -10 0 Q 150 88 310 0" fill="none" />
           <text textAnchor="middle">
             <textPath href={`#${arcId}`} startOffset="50%">
-              {SLOGAN}
+              {slogan.text}
             </textPath>
           </text>
         </svg>

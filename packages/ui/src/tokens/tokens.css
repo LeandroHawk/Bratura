@@ -50,7 +50,12 @@
   --bt-blue-600: #1f5fbf;
   --bt-green-400: #2fc46a;
   --bt-green-600: #009c3b;
+  --bt-green-800: #006b29;
+  --bt-green-900: #0b3d1e;
   --bt-white: #ffffff;
+  --bt-velvet-600: #9b1b30;
+  --bt-velvet-800: #6e1022;
+  --bt-velvet-900: #4f0b17;
 }
 
 /* Semantic tokens: light theme (default) */
@@ -86,6 +91,20 @@
   --bt-wood-shadow: var(--bt-walnut-700);
   --bt-twine: var(--bt-twine-500);
   --bt-glow: var(--bt-glow-100);
+  --bt-curtain: var(--bt-velvet-600);
+  --bt-curtain-fold: var(--bt-velvet-900);
+  --bt-curtain-shadow: var(--bt-walnut-950);
+  --bt-art-green: var(--bt-green-600);
+  --bt-art-yellow: var(--bt-yellow-500);
+  --bt-art-blue: var(--bt-blue-600);
+  --bt-art-red: var(--bt-velvet-600);
+  --bt-ticket: var(--bt-parchment-50);
+  --bt-ticket-shine: var(--bt-parchment-50);
+  --bt-ticket-ink: var(--bt-walnut-700);
+  --bt-ticket-muted: var(--bt-walnut-500);
+  --bt-ticket-edge: var(--bt-parchment-200);
+  --bt-ticket-stamp: var(--bt-red-500);
+  --bt-ticket-stamp-ready: var(--bt-green-800);
   color-scheme: light;
 }
 
@@ -119,6 +138,20 @@
   --bt-wood-shadow: var(--bt-walnut-950);
   --bt-twine: var(--bt-twine-300);
   --bt-glow: var(--bt-glow-200);
+  --bt-curtain: var(--bt-velvet-600);
+  --bt-curtain-fold: var(--bt-velvet-900);
+  --bt-curtain-shadow: var(--bt-walnut-950);
+  --bt-art-green: var(--bt-green-600);
+  --bt-art-yellow: var(--bt-yellow-500);
+  --bt-art-blue: var(--bt-blue-600);
+  --bt-art-red: var(--bt-velvet-600);
+  --bt-ticket: var(--bt-brass-400);
+  --bt-ticket-shine: var(--bt-brass-200);
+  --bt-ticket-ink: var(--bt-walnut-900);
+  --bt-ticket-muted: var(--bt-walnut-600);
+  --bt-ticket-edge: var(--bt-brass-600);
+  --bt-ticket-stamp: var(--bt-velvet-800);
+  --bt-ticket-stamp-ready: var(--bt-green-900);
   color-scheme: dark;
 }
 
@@ -145,6 +178,31 @@
   --color-logo-green: var(--bt-logo-green);
   --color-logo-yellow: var(--bt-logo-yellow);
   --color-logo-blue: var(--bt-logo-blue);
+  --color-logo-outline: var(--bt-logo-outline);
+  --color-cord: var(--bt-cord);
+  --color-cord-shade: var(--bt-cord-shade);
+  --color-cord-highlight: var(--bt-cord-highlight);
+  --color-wood: var(--bt-wood);
+  --color-wood-grain: var(--bt-wood-grain);
+  --color-wood-edge: var(--bt-wood-edge);
+  --color-wood-ink: var(--bt-wood-ink);
+  --color-wood-shadow: var(--bt-wood-shadow);
+  --color-twine: var(--bt-twine);
+  --color-glow: var(--bt-glow);
+  --color-curtain: var(--bt-curtain);
+  --color-curtain-fold: var(--bt-curtain-fold);
+  --color-curtain-shadow: var(--bt-curtain-shadow);
+  --color-art-green: var(--bt-art-green);
+  --color-art-yellow: var(--bt-art-yellow);
+  --color-art-blue: var(--bt-art-blue);
+  --color-art-red: var(--bt-art-red);
+  --color-ticket: var(--bt-ticket);
+  --color-ticket-shine: var(--bt-ticket-shine);
+  --color-ticket-ink: var(--bt-ticket-ink);
+  --color-ticket-muted: var(--bt-ticket-muted);
+  --color-ticket-edge: var(--bt-ticket-edge);
+  --color-ticket-stamp: var(--bt-ticket-stamp);
+  --color-ticket-stamp-ready: var(--bt-ticket-stamp-ready);
 
   --font-logo: var(--bt-face-logo), 'Arial Black', sans-serif;
   --font-display: var(--bt-face-display), Georgia, serif;
@@ -155,6 +213,8 @@
 
   /* Hard offset shadow, like a paper cut-out lifted off the page (no blur). */
   --shadow-cutout: 3px 3px 0 var(--bt-foreground);
+  /* A card lying on the page, lifted at one corner; recolour with `shadow-<token>`. */
+  --shadow-lifted: 6px 8px 0 var(--bt-border);
 
   /* Type sizes the defaults lack: badge text and the compact body used in cards and lists. */
   --text-caption: 0.8125rem;

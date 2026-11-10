@@ -12,7 +12,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   return (
     <footer className="border-t border-border">
       <Container className="flex flex-wrap items-center justify-between gap-6 py-10 text-sm text-muted-foreground">
-        <Logo withSlogan={false} className="text-3xl" />
+        <Logo slogan={false} className="text-3xl" />
         <p>
           {content.madeFor}
           <br />
