@@ -148,7 +148,7 @@ pnpm check      # lint, typecheck, tests and build: what CI runs
 The backend will add a Convex deployment and keys for WorkOS, Firecrawl, Resend, Gemini and the
 WhatsApp Cloud API, with a `.env.example` to copy. Keys live in Convex and Vercel, never in the repo.
 
-## Next rooms: accessibility
+## Other ways to visit: accessibility
 
 Planned after the essentials, if the deadline allows:
 
@@ -157,6 +157,10 @@ Planned after the essentials, if the deadline allows:
   on Portuguese pages, and only when asked for.
 - **Listen:** a button on each part that matters reads it aloud with the device's own voice (Web
   Speech API), for people who see the page but find reading hard. No cost, nothing to install.
+- **WhatsApp** as a second front end: two front ends (site and WhatsApp), one backend. For someone
+  already signed up with a portfolio: see the calls they are eligible for, apply, and get an alert
+  when a new call opens, in the app they already use. Signing up and building the portfolio over
+  WhatsApp may come later, once what the portfolio is has been decided.
 
 ## Team
 
