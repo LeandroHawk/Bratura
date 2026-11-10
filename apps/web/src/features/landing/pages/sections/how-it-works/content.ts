@@ -50,7 +50,7 @@ export const HOW_IT_WORKS_CONTENT: Record<Locale, typeof ptBR> = {
         text: 'Amount, deadline, who can apply and which documents they ask for. If you lack a SICAB or CCMEI, Bratura shows where and how to get it.',
       },
       {
-        title: 'Application ready',
+        title: 'Ready to apply',
         medium: 'In the format of each call',
         text: 'A formatted portfolio, texts suggested from your own work and the document checklist, with a reminder before the deadline.',
       },
