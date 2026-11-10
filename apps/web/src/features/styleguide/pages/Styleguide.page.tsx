@@ -9,6 +9,7 @@ import {
   Logo,
   Tag,
 } from '@bratura/ui';
+import { MAIN_CONTENT_ID } from '@/features/common/components/layout/mainContentId';
 import { COLOR_GROUP_LABEL, COLOR_TOKEN_LABEL } from './content';
 
 /** Token groups in the order tokens.ts lists them. */
@@ -22,7 +23,12 @@ const THEMES = [
 /** Living reference for @bratura/ui: every block renders once per theme, side by side. */
 export function StyleguidePage() {
   return (
-    <Container as="main" className="grid gap-8 py-12">
+    <Container
+      as="main"
+      id={MAIN_CONTENT_ID}
+      tabIndex={-1}
+      className="grid gap-8 py-12 outline-none"
+    >
       <div className="grid gap-2">
         <Heading as="h1" size="section">
           Design system
