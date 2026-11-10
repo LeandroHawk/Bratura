@@ -32,6 +32,7 @@ it). **Read the one for the folder you are about to change before creating a fil
 | `apps/web/src/app/`          | routing only: thin files, locale rewrite, 404s, root-file limits   |
 | `apps/web/src/features/`     | page anatomy, sections, `common/` levels, copy per locale          |
 | `docs/architecture.md`       | the map, the backend (Convex, Firecrawl, LLM), cross-folder rules  |
+| `docs/review.md`             | reviewing any change: owners to open, four lenses, repo checks     |
 
 The rules that hold everywhere:
 
