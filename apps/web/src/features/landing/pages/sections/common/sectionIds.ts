@@ -7,5 +7,5 @@ export const SECTION_IDS = {
   howItWorks: 'como-funciona',
   whyItMatters: 'por-que',
   businessModel: 'modelo-de-negocio',
-  futurePlans: 'proximas-salas',
+  futurePlans: 'outras-formas',
 } as const;

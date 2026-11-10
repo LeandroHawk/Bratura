@@ -39,8 +39,9 @@ landing/pages/              Landing.page.tsx fits the sections, in page order
   sections/how-it-works/    the product flow as four museum rooms
   sections/why-it-matters/  the problem, as a call's ticket without and with Bratura
   sections/business-model/  who uses and who pays, as a theatre: stage, curtains, audience
-  sections/future-plans/    accessibility rooms still being installed
-  sections/common/          what two sections share: section frames and ids, the wall label
+  sections/future-plans/    other ways to visit, as a floor plan: two entrances, one building
+  sections/common/          what two sections share: section frames and ids, the wall label,
+                            the room label
 ```
 
 A section holds everything of its region, flat; the file name says the kind. Kind subfolders
@@ -73,7 +74,7 @@ and its result list over 4; this layout is the fix they measured.
   or extra in English breaks `tsc`:
 
   ```ts
-  const ptBR = { title: 'Do acervo à inscrição, em quatro salas', room: 'Sala', rooms: [...] };
+  const ptBR = { title: 'Do acervo à inscrição, em quatro salas', rooms: [...] };
   export const HOW_IT_WORKS_CONTENT: Record<Locale, typeof ptBR> = { 'pt-BR': ptBR, en: {...} };
   ```
 

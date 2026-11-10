@@ -5,9 +5,10 @@ import { SECTION_IDS } from '../common/sectionIds';
 import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
 import { WallLabel } from '../common/WallLabel';
 import { FUTURE_PLANS_CONTENT } from './content';
+import { FloorPlan } from './FloorPlan';
 
-/** Planned features, still being installed. */
-export function FuturePlans({ locale }: { locale: Locale }) {
+/** Planned features, drawn as a floor plan: one building, two entrances. */
+export function FuturePlans({ locale, roomCount }: { locale: Locale; roomCount: number }) {
   const content = FUTURE_PLANS_CONTENT[locale];
   return (
     <SectionColumns id={SECTION_IDS.futurePlans}>
@@ -16,9 +17,12 @@ export function FuturePlans({ locale }: { locale: Locale }) {
           {content.title}
         </Heading>
         <p className="max-w-[40ch] text-muted-foreground">{content.lead}</p>
+        <div className="mt-6">
+          <FloorPlan locale={locale} roomCount={roomCount} />
+        </div>
       </div>
       <ul className="grid max-w-[60ch] gap-6">
-        {content.plans.map((plan) => (
+        {Object.values(content.plans).map((plan) => (
           <li key={plan.title} className="grid gap-1 border-t border-border pt-5">
             <WallLabel title={plan.title} medium={plan.medium}>
               <p className="text-lg">{plan.text}</p>
