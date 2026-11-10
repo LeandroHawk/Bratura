@@ -1,6 +1,7 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { PageShell } from '@/features/common/components/layout/PageShell';
 import { WebApplicationJsonLd } from './LandingJsonLd';
+import { BusinessModel } from './sections/business-model/BusinessModel';
 import { FuturePlans } from './sections/future-plans/FuturePlans';
 import { Hero } from './sections/hero/Hero';
 import { HowItWorks } from './sections/how-it-works/HowItWorks';
@@ -13,6 +14,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
       <Hero locale={locale} />
       <HowItWorks locale={locale} />
       <WhyItMatters locale={locale} />
+      <BusinessModel locale={locale} />
       <FuturePlans locale={locale} />
     </PageShell>
   );
