@@ -55,6 +55,10 @@ rg -n '<button|onClick' apps/web/src
 
 # the design system has prefersReducedMotion and the theme helpers
 rg -n 'matchMedia|localStorage' apps/web/src
+
+# focus made invisible: fails eMAG 4.4 (ASES); focus-ring is the visible focus, and a skip-link
+# target needs neither tabIndex nor outline-none
+rg -n 'outline-none|outline-hidden|outline: *(none|0)' apps/web/src packages/ui/src
 ```
 
 Also: doc comments over 3 lines or telling the session's story (root `AGENTS.md`); new public

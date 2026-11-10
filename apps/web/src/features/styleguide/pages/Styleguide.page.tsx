@@ -23,12 +23,7 @@ const THEMES = [
 /** Living reference for @bratura/ui: every block renders once per theme, side by side. */
 export function StyleguidePage() {
   return (
-    <Container
-      as="main"
-      id={MAIN_CONTENT_ID}
-      tabIndex={-1}
-      className="grid gap-8 py-12 outline-none"
-    >
+    <Container as="main" id={MAIN_CONTENT_ID} className="grid gap-8 py-12">
       <div className="grid gap-2">
         <Heading as="h1" size="section">
           Design system
