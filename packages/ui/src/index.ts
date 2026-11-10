@@ -25,7 +25,7 @@ export {
 export { PullCord, type PullCordCopy } from './components/PullCord/PullCord';
 
 // Theme
-export { THEME_STORAGE_KEY, themeInitScript, type Theme } from './theme/script';
+export { restoreSavedTheme, THEME_STORAGE_KEY, themeInitScript, type Theme } from './theme/script';
 export { switchTheme, useTheme } from './theme/useTheme';
 
 // Tokens

@@ -4,6 +4,7 @@ import { Fraunces, Instrument_Sans, Titan_One } from 'next/font/google';
 import type { ReactNode } from 'react';
 import '../../styles/globals.css';
 import { InlineScript } from '../InlineScript';
+import { RestoreSavedTheme } from '../RestoreSavedTheme';
 
 const logoFace = Titan_One({ weight: '400', subsets: ['latin'], variable: '--bt-face-logo' });
 const displayFace = Fraunces({
@@ -14,8 +15,8 @@ const displayFace = Fraunces({
 const bodyFace = Instrument_Sans({ subsets: ['latin'], variable: '--bt-face-body' });
 
 /**
- * `<html>` and `<body>` of every page: fonts, global styles and the theme script. Shared by the
- * `[lang]` root layout and `global-not-found`, which renders outside any layout.
+ * `<html>` and `<body>` of every page, for the `[lang]` layout and `global-not-found`: fonts, styles,
+ * and the saved theme on both paths (`<head>` script for server HTML, `RestoreSavedTheme` for 404s).
  */
 export function SiteDocument({ locale, children }: { locale: Locale; children: ReactNode }) {
   return (
@@ -30,7 +31,10 @@ export function SiteDocument({ locale, children }: { locale: Locale; children: R
       <head>
         <InlineScript html={themeInitScript} />
       </head>
-      <body className="bg-background font-body text-foreground antialiased">{children}</body>
+      <body className="bg-background font-body text-foreground antialiased">
+        <RestoreSavedTheme />
+        {children}
+      </body>
     </html>
   );
 }
