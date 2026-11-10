@@ -1,7 +1,6 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { SLOGAN } from '@bratura/ui';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
-import { SITE_DESCRIPTION, SITE_URL, TEAM } from '@/features/common/config/site';
+import { SITE_DESCRIPTION, SITE_SLOGAN, SITE_URL, TEAM } from '@/features/common/config/site';
 
 /** Tells search engines what this is: a free web app, in the page's language, by this team. */
 function webApplicationFromLocale(locale: Locale) {
@@ -9,7 +8,7 @@ function webApplicationFromLocale(locale: Locale) {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'Bratura',
-    alternateName: SLOGAN,
+    alternateName: SITE_SLOGAN[locale],
     url: `${SITE_URL}${localizedPathFromLocale(locale, '/')}`,
     description: SITE_DESCRIPTION[locale],
     applicationCategory: 'BusinessApplication',
