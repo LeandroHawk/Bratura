@@ -70,9 +70,10 @@ source or "não informado"), axe clean on every touched page in both themes (and
 after the deploy), screenshots at phone, tablet and desktop widths in both themes. For the Brazilian
 government's eMAG (checked by ASES): adjacent links go in a list, `SiteDocument` keeps the "skip to
 content" link as every page's first stop, with access key 1 (ASES 1.5.4 looks for an `accesskey`),
-words in another language carry `lang` ("Design system"), and `SiteDocument` keeps the `<noscript>`
-note. Known and accepted, not to fix: WAVE's contrast errors on the logo's yellow letters in the
-light theme (logotype, `packages/ui/AGENTS.md`).
+focus keeps `focus-ring`, which also colours a bordered control's border (ASES 4.4.1 looks for
+`border` in focus styles), words in another language carry `lang` ("Design system"), and
+`SiteDocument` keeps the `<noscript>` note. Known and accepted, not to fix: WAVE's contrast errors
+on the logo's yellow letters in the light theme (logotype, `packages/ui/AGENTS.md`).
 Then `pnpm check`.
 
 ## 4. Report

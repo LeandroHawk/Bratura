@@ -1,7 +1,10 @@
-/* Keyboard focus ring shared by every interactive component: use the `focus-ring` class. */
+/* Keyboard focus ring shared by every interactive component: use the `focus-ring` class. A bordered
+   control also takes the ring colour on its border, a second cue that ASES's eMAG check (4.4.1,
+   which looks for `border` in focus styles) recognises; a borderless one is unchanged. */
 @utility focus-ring {
   &:focus-visible {
     outline: 3px solid var(--bt-ring);
     outline-offset: 2px;
+    border-color: var(--bt-ring);
   }
 }
