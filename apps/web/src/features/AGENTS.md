@@ -39,7 +39,7 @@ landing/pages/              Landing.page.tsx fits the sections, in page order
   sections/how-it-works/    the product flow as four museum rooms
   sections/why-it-matters/  the problem, as a call's ticket without and with Bratura
   sections/business-model/  who uses and who pays, as a theatre: stage, curtains, audience
-  sections/future-plans/    accessibility rooms still being installed
+  sections/future-plans/    other ways to visit, as a floor plan: two entrances, one building
   sections/common/          what two sections share: section frames and ids, the wall label
 ```
 

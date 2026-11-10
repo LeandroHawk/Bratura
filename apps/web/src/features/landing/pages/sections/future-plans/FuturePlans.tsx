@@ -5,8 +5,9 @@ import { SECTION_IDS } from '../common/sectionIds';
 import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
 import { WallLabel } from '../common/WallLabel';
 import { FUTURE_PLANS_CONTENT } from './content';
+import { FloorPlan } from './FloorPlan';
 
-/** Planned features, still being installed. */
+/** Planned features, drawn as a floor plan: one building, two entrances. */
 export function FuturePlans({ locale }: { locale: Locale }) {
   const content = FUTURE_PLANS_CONTENT[locale];
   return (
@@ -16,6 +17,9 @@ export function FuturePlans({ locale }: { locale: Locale }) {
           {content.title}
         </Heading>
         <p className="max-w-[40ch] text-muted-foreground">{content.lead}</p>
+        <div className="mt-6">
+          <FloorPlan locale={locale} />
+        </div>
       </div>
       <ul className="grid max-w-[60ch] gap-6">
         {content.plans.map((plan) => (
