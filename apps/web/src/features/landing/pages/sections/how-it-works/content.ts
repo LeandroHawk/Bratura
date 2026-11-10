@@ -3,7 +3,6 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 /** The product flow, written as museum wall labels: title, medium, then the description. */
 const ptBR = {
   title: 'Do acervo à inscrição, em quatro salas',
-  room: 'Sala',
   rooms: [
     {
       title: 'Seu acervo',
@@ -32,7 +31,6 @@ export const HOW_IT_WORKS_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     title: 'From portfolio to application, in four rooms',
-    room: 'Room',
     rooms: [
       {
         title: 'Your portfolio',

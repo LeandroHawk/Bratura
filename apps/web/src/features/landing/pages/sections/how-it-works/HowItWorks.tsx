@@ -1,5 +1,6 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Eyebrow, Heading } from '@bratura/ui';
+import { Heading } from '@bratura/ui';
+import { RoomLabel } from '../common/RoomLabel';
 import { SectionBand } from '../common/SectionBand';
 import { SECTION_IDS } from '../common/sectionIds';
 import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
@@ -19,9 +20,7 @@ export function HowItWorks({ locale }: { locale: Locale }) {
             key={room.title}
             className="grid content-start gap-2 border-l-2 border-primary bg-background py-4 pr-4 pl-5"
           >
-            <Eyebrow as="span">
-              {content.room} {i + 1}
-            </Eyebrow>
+            <RoomLabel locale={locale} number={i + 1} />
             <WallLabel title={room.title} medium={room.medium}>
               <p className="text-small">{room.text}</p>
             </WallLabel>
