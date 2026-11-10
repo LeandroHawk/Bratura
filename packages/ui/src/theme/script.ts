@@ -15,11 +15,21 @@ export function syncThemeColor() {
 }
 
 /**
- * Inline this in <head>, before the page paints, so a visitor who chose dark never sees a flash of
- * the light theme. Light is the default; storage may be blocked, so failures are ignored. Once the
- * document has loaded, the browser bar follows the dark background (`syncThemeColor`).
+ * Sets dark on `<html>` when the visitor chose it (light is the default; blocked storage is ignored).
+ * Run from `<head>` by `themeInitScript` and on mount for client-rendered documents. Inlined as
+ * source text, so it may touch only its arguments and browser globals.
  */
-export const themeInitScript =
-  `try{if(localStorage.getItem('${THEME_STORAGE_KEY}')==='dark'){` +
-  `document.documentElement.dataset.theme='dark';` +
-  `document.addEventListener('DOMContentLoaded',${syncThemeColor.toString()})}}catch(e){}`;
+export function restoreSavedTheme(storageKey = THEME_STORAGE_KEY, syncColor = syncThemeColor) {
+  try {
+    if (localStorage.getItem(storageKey) !== 'dark') return;
+    document.documentElement.dataset.theme = 'dark';
+    // While <head> is parsing, the theme-color meta is not in the document yet.
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', syncColor);
+    else syncColor();
+  } catch {
+    // Storage blocked (private window): the default light theme stays.
+  }
+}
+
+/** Inline this in <head> so a visitor who chose dark never sees a flash of the light theme. */
+export const themeInitScript = `(${restoreSavedTheme.toString()})('${THEME_STORAGE_KEY}',${syncThemeColor.toString()})`;
