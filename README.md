@@ -1,165 +1,167 @@
-# Bratura — grant copilot for creators
+<a href="https://bratura.vercel.app/en">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/hero-dark.webp">
+    <img src="docs/readme/hero-light.webp" alt="Bratura's landing page: the Bratura logo, the headline &quot;Build your portfolio once. We find the funding calls.&quot; and an example call card for Dona Maria, a fictional artisan, showing that she is missing a CCMEI.">
+  </picture>
+</a>
 
-> **Monte seu portfólio uma vez. A gente encontra as oportunidades, diz o que falta e prepara sua inscrição.**
+# Bratura
 
-**Em português:** um copiloto para artesãos, músicos, artistas e MEIs da cultura. O criador monta o
-portfólio uma vez; o sistema encontra editais, festivais e feiras compatíveis, explica cada um em
-linguagem simples, aponta o que falta (MEI, SICAB, comprovação de atuação) e gera a inscrição no formato
-de cada chamada, com alerta de prazo por e-mail e WhatsApp.
+> **Monte seu portfólio uma vez. A gente encontra as oportunidades, diz o que falta e prepara sua inscrição.**<br>
+> *Build your portfolio once. We find the funding calls, say what is missing and get the application ready.*
 
-Hack Brasil 2026 · Track **Cultura & economia criativa** · [Repository](https://github.com/LeandroHawk/Bratura) · [Demo](https://…) · [Video](https://…) ·
-[Manifesto](MANIFEST.md)
+A copilot for the people who make Brazil's culture by hand: artisans, musicians, theatre, dance and
+visual artists, many of them MEI or informal, from the outskirts and the countryside. They build a
+portfolio once; Bratura finds the public calls (*editais*), festivals and fairs that fit them,
+explains each one in plain Portuguese, shows what is missing and prepares the application.
+
+**[See it live](https://bratura.vercel.app/)** · [in English](https://bratura.vercel.app/en) ·
+[design system](https://bratura.vercel.app/design) · [manifesto](MANIFEST.md)
+
+Hack Brasil 2026 · track **Cultura & economia criativa**
 
 ---
 
-## The problem
+## The ticket only producers can buy
 
-Brazil distributes billions of reais to culture every year through public calls (editais). Most of it
-never reaches small creators: calls are scattered across dozens of websites, written in legal language
-inside PDFs, and ask for things creators lack — a portfolio, dated proof of years of activity, an
-artisan registration (SICAB), a micro-entrepreneur certificate (CCMEI). People who can afford a producer
-apply. Everyone else misses deadlines or gets disqualified for a missing document.
+<a href="https://bratura.vercel.app/en#por-que">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/tickets-dark.webp">
+    <img align="right" width="420" src="docs/readme/tickets-light.webp" alt="Two theatre tickets for a culture funding call. The one without Bratura costs a portfolio, proven years of work, SICAB and CCMEI, its box office is dozens of websites, its language is legalese in a PDF, and it is stamped &quot;Producers only&quot;.">
+  </picture>
+</a>
 
-## What it does
+The money for culture exists. The road to it is the hard part.
 
-1. **Portfolio with evidence.** Upload photos, links, documents, or tell your story by text or voice.
-   AI turns it into a dated timeline of activities, each one backed by evidence.
-2. **Matching.** That portfolio is your profile. We match it against open calls, festivals and fairs:
-   *eligible*, *almost eligible (missing X)*, or *not eligible (why)*.
-3. **Plain-language explanation.** Value, who can apply, deadline and documents, each with a link to
-   the official source.
-4. **Gaps, with the fix.** "This fair requires SICAB — here is how to get it."
-5. **Application kit.** The portfolio in the format the call asks for, suggested texts drawn only from
-   your own portfolio, and a document checklist.
-6. **Alerts.** E-mail and WhatsApp before each deadline; ask "o que falta?" right in the chat.
+Calls are scattered across dozens of websites, written in legal language inside PDFs, and ask for
+things many people do not have: a portfolio, proof of years of work, an artisan registration
+(SICAB), a MEI certificate (CCMEI).
 
-**Trust rule:** every value, deadline or requirement comes from the official source, with a link. The
-AI summarizes and suggests; it never invents facts about a call. If a field is not in the source, the
-app says "não informado".
+Those who can pay a producer apply. Those who cannot miss the deadline, or are disqualified over
+one document. Bratura is the same ticket, with the way to each document.
 
-## Data sources
+<br clear="right">
 
-Only open sources that allow automated access (robots.txt and terms checked):
+## Four rooms, from portfolio to application
 
-| Source | Access |
+| | | |
+|---|---|---|
+| **Room 1** | **Your portfolio** | Photos, links, documents or audio, told whatever way is easiest. The AI arranges them into a dated timeline, and every activity keeps its proof. |
+| **Room 2** | **The right calls** | The portfolio is the profile, matched against open calls, festivals and fairs: *eligible*, *almost eligible* or *not eligible*, always with the reason. |
+| **Room 3** | **What is missing** | Amount, deadline, who can apply and which documents, in plain language. Missing a SICAB or a CCMEI? Bratura shows where and how to get it. |
+| **Room 4** | **Ready to apply** | The portfolio in the format each call asks for, texts suggested only from the creator's own work, the document checklist, and a reminder by e-mail and WhatsApp before the deadline. |
+
+### Nothing is made up
+
+Every amount, deadline and requirement comes from an official source, with the link. The AI reads,
+summarizes and suggests; it never invents a fact about a call. When the source does not say,
+Bratura says *"não informado"*.
+
+## The stage belongs to creators. The audience buys the tickets.
+
+<a href="https://bratura.vercel.app/en#modelo-de-negocio">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/readme/theatre-dark.webp">
+    <img src="docs/readme/theatre-light.webp" alt="A theatre stage with red curtains open. Under the spotlight: Creators, R$ 0, always. No share of the prize, no selling of data. All included: search, portfolio, what is missing, application kit, alerts. A vase, a painting, a viola and a quilt stand on the stage.">
+  </picture>
+</a>
+
+Creators never pay, for anything. The bill goes to those who serve many creators or distribute the
+money for culture, because they win when more people apply properly:
+
+| Seat | Who | How they pay |
+|---|---|---|
+| Row A · main revenue | Associations, cooperatives and producers | Per managed profile, for a panel that follows many creators at once |
+| Row B · expansion | City culture departments | Annual contract: fuller applications, fewer disqualified ones, a map of cultural demand |
+| Box seats · phase 2 | Sponsoring companies | Subscription, to find organized projects for the Rouanet law or ProAC |
+
+## Where the calls come from
+
+Only open sources that allow automated access, with robots.txt and terms checked one by one.
+
+| Source | How |
 |---|---|
-| Mapas Culturais — federal, Ceará, Pernambuco, Santo André, Canindé | Public JSON API |
-| Edital PDFs linked by those APIs | Firecrawl |
-| São Paulo city culture editais page | Firecrawl |
-| Amigos da Arte (São Paulo state calls) | Firecrawl |
-| Goiás government (craft fairs) | Firecrawl |
+| Mapas Culturais: federal, Ceará, Pernambuco, Santo André, Canindé | Public JSON API |
+| The edital PDFs those APIs link to | Firecrawl |
+| São Paulo city culture calls · Amigos da Arte (SP state) · Goiás craft fairs | Firecrawl |
 | The creator's own uploads | Convex storage, with consent |
 
-Excluded on purpose: platforms whose terms forbid scraping (e.g. Prosas, social networks), sources
-that block crawlers, and anything exposing personal data. The demo uses a **fictional** creator.
+Left out on purpose: platforms whose terms forbid extraction (Prosas, social networks), sources that
+block crawlers, and anything that exposes personal data. The demo stars a **fictional** creator,
+Dona Maria.
 
-## Architecture
+## How it is built
+
+**Live today:** the landing page in Portuguese and English, the design system and its `/design`
+reference, CI. **Being built for the hackathon:** the Convex backend (ingestion, portfolio,
+matching, alerts) and the app screens.
 
 ```
- Web (Next.js) ──┐                      ┌── Mapas Culturais APIs
- WhatsApp ───────┼──►  Convex backend ◄─┼── Official pages + PDFs (Firecrawl)
- E-mail (Resend) ┘   ingestion · portfolio · matching · alerts
-                     DB · cron · vector search · file storage
- Login: WorkOS        LLM: Gemini API (free tier, behind a swappable adapter)
+ Web (Next.js) ───┐                       ┌── Mapas Culturais APIs
+ WhatsApp ────────┼──►  Convex backend  ◄─┼── official pages and PDFs (Firecrawl)
+ E-mail (Resend) ─┘   ingestion · portfolio · matching · alerts
+                      database · cron · vector search · file storage
+ Login: WorkOS         LLM: Gemini API, free tier, behind a swappable adapter
 ```
 
-- **Ingestion** (scheduled): fetch opportunities → read the PDF → LLM classifies (is it a real
-  opportunity?) and extracts requirements as zod-validated JSON with source quotes → store with the
-  source link and an embedding → recompute matches → schedule alerts.
-- **Matching** is rule-based (region, applicant type, art form, deadline, MEI/SICAB/CCMEI); the LLM is
-  used for reading PDFs, organizing portfolios and drafting texts.
-- **WhatsApp** is not a separate service: its webhook is a Convex HTTP action sharing the same logic as
-  the web app.
-
-## Stack
+- **Ingestion**, on a schedule: fetch the calls, read each PDF, let the LLM classify it (a real
+  opportunity or an admin form?) and extract the requirements as Zod-validated JSON with a verbatim
+  quote for every field, then store them with the source link and an embedding.
+- **Matching is rules, not guesses:** region, applicant type, art form, deadline, MEI, SICAB,
+  CCMEI. The LLM reads PDFs, organizes portfolios and drafts texts; the backend computes, the web
+  displays.
+- **WhatsApp is not a separate service:** its webhook is a Convex HTTP action sharing the web app's
+  logic.
 
 | Layer | Tech |
 |---|---|
-| Web | Next.js (App Router), TypeScript, Vercel |
-| Backend / DB | Convex (queries, mutations, actions, cron, vector index, file storage, HTTP actions) |
-| Auth | WorkOS AuthKit |
-| E-mail | Resend |
-| Messaging | WhatsApp Cloud API |
-| Crawling | Firecrawl |
-| AI | Gemini API (free tier) |
-| Validation | zod: one schema per concept, shared by web and backend |
+| Web | Next.js (App Router), TypeScript, Tailwind CSS 4, Vercel |
+| Backend and database | Convex: queries, mutations, actions, cron, vector index, file storage, HTTP actions |
+| Auth · e-mail · messaging | WorkOS AuthKit · Resend · WhatsApp Cloud API |
+| Crawling · AI | Firecrawl · Gemini API (free tier) |
+| Contract | Zod: one schema per concept, shared by web and backend |
 
-## Repository structure
-
-pnpm workspaces + Turborepo. The web app and the backend share one design system and one set of
-schemas.
+### Repository map
 
 ```
-apps/web/            Next.js app: src/app (routing) and src/features (one folder per screen)
-packages/ui/         @bratura/ui design system; its living reference is the /design route
-packages/shared/     the contract: Zod entities and primitives used by web and backend
-packages/backend/    (next) Convex: schema, ingestion, portfolio, matching, alerts, WhatsApp
-docs/architecture.md how it fits together and why
+apps/web/             Next.js: src/app routes, src/features holds one folder per screen
+packages/ui/          @bratura/ui, the design system (its living reference is /design)
+packages/shared/      the contract: Zod entities and primitives for web and backend
+packages/backend/     next: Convex schema, ingestion, portfolio, matching, alerts, WhatsApp
+docs/architecture.md  how the pieces fit, and why
+docs/review.md        the checklist every change is reviewed against
 ```
 
-Each of these folders has an `AGENTS.md` with its rules and examples, for contributors and coding
-agents alike; the root `AGENTS.md` lists them.
+Each folder has an `AGENTS.md` with its rules and examples, for people and coding agents alike; the
+root [`AGENTS.md`](AGENTS.md) lists them.
 
-## Getting started
+## Run it
 
-Requirements: Node 22, pnpm, a Convex account, and API keys for WorkOS, Firecrawl, Resend, Gemini
-(and WhatsApp Cloud API for the chat flow).
+Node 22 and pnpm.
 
 ```bash
 pnpm install
-cp .env.example .env.local          # fill in your keys — never commit them
-pnpm exec convex dev                # Convex dev deployment (keep it running)
-pnpm dev                            # Next.js on http://localhost:3000
+pnpm dev        # http://localhost:3000, Portuguese at / and English at /en
+pnpm check      # lint, typecheck, tests and build: what CI runs
 ```
 
-Useful scripts:
+The backend will add a Convex deployment and keys for WorkOS, Firecrawl, Resend, Gemini and the
+WhatsApp Cloud API, with a `.env.example` to copy. Keys live in Convex and Vercel, never in the repo.
 
-```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm check          # lint + typecheck + test + build, what CI runs
-```
+## Next rooms: accessibility
 
-## Environment variables
+Planned after the essentials, if the deadline allows:
 
-| Variable | Used by |
-|---|---|
-| `CONVEX_DEPLOYMENT`, `NEXT_PUBLIC_CONVEX_URL` | web, backend |
-| `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `WORKOS_REDIRECT_URI` | auth |
-| `FIRECRAWL_API_KEY` | ingestion |
-| `GEMINI_API_KEY` | ingestion, portfolio, kit |
-| `RESEND_API_KEY` | alerts |
-| `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` | WhatsApp |
-
-## Future plans (if time allows)
-
-- **Libras (Brazilian Sign Language) with [VLibras](https://www.gov.br/governodigital/pt-br/vlibras):**
-  the federal government's free, open-source widget, where a 3D avatar signs the text the reader
-  selects or clicks. Integration is one script and one element. Load it only on pt-BR pages (it
-  translates from Portuguese) and only when the reader asks for it, since it downloads a lot from
-  `vlibras.gov.br`. Hand Talk is the paid alternative.
-- **"Ouvir" (listen) button**, for readers who see the page but struggle to read it (low literacy,
-  dyslexia, fatigue), who do not use a screen reader. Uses the browser's Web Speech API
-  (`speechSynthesis`): native, free, no dependency; the voice is the reader's system voice in the
-  page's language. One button per block that matters (a call's plain summary, what is missing),
-  toggling listen/stop and announcing its state. **Start on the landing page** (hero and "how it
-  works"), where judges see it first, then the app screens.
-
-## Business model
-
-Creators never pay; organizations that look after many creators, culture departments and, later,
-sponsors do. The full model, kept in one place, is on the
-[landing page](https://bratura.vercel.app/en#modelo-de-negocio).
+- **Libras** with [VLibras](https://www.gov.br/governodigital/pt-br/vlibras), the federal
+  government's free, open-source widget: an avatar signs the text the reader selects. Loaded only
+  on Portuguese pages, and only when asked for.
+- **Listen:** a button on each part that matters reads it aloud with the device's own voice (Web
+  Speech API), for people who see the page but find reading hard. No cost, nothing to install.
 
 ## Team
 
-| | Role |
-|---|---|
-| **Atilio Almeida** | Idea and product lead |
-| **Leandro** | [role] |
-| **Kaik** | [role] |
-| **João Victor** | [role] |
+**Atilio Almeida** (idea and product lead), **Leandro**, **Kaik** and **João Victor**. Authorship,
+originality and the use of AI are in the [manifesto](MANIFEST.md).
 
 ## License
 
