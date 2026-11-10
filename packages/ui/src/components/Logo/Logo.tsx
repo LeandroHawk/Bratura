@@ -16,6 +16,13 @@ export const LOGO_LETTER_COLORS = [
   'green',
 ] as const;
 
+/** Full class names, so Tailwind sees them; the letters' colours, without inline styles. */
+const LETTER_CLASS: Record<(typeof LOGO_LETTER_COLORS)[number], string> = {
+  green: 'text-logo-green',
+  yellow: 'text-logo-yellow',
+  blue: 'text-logo-blue',
+};
+
 const TONE_FILL: Record<SplatTone, string> = {
   front: 'fill-logo-yellow',
   'back-left': 'fill-logo-blue',
@@ -67,7 +74,7 @@ export function Logo({ slogan = { text: SLOGAN, lang: 'pt-BR' }, className = '' 
         </svg>
         <span className="bt-logo-word">
           {LETTERS.map((letter, i) => (
-            <span key={i} style={{ color: `var(--bt-logo-${LOGO_LETTER_COLORS[i]})` }}>
+            <span key={i} className={LETTER_CLASS[LOGO_LETTER_COLORS[i]!]}>
               {letter}
             </span>
           ))}

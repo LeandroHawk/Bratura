@@ -41,9 +41,10 @@ export function SiteDocument({ locale, children }: { locale: Locale; children: R
             {LAYOUT_CONTENT[locale].withoutJavaScript}
           </p>
         </noscript>
-        {/* First stop of the keyboard on every page: skips the header's controls (eMAG 1.5). */}
+        {/* First stop of the keyboard on every page, also on access key 1 (eMAG 1.5). */}
         <a
           href={`#${MAIN_CONTENT_ID}`}
+          accessKey="1"
           className="focus-ring sr-only rounded-md border border-border bg-card px-4 py-2 font-semibold focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
         >
           {LAYOUT_CONTENT[locale].skipToContent}
