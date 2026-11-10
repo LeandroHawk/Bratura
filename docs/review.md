@@ -36,7 +36,7 @@ a hit in a changed file is a question, not a verdict.
 
 ```sh
 # token by hand: use its class (gradients, multi-part shadows, stop-color excepted)
-rg -n 'var\(--bt-|\(--bt-' apps/web/src
+rg -n 'var\(--bt-|\(--bt-' apps/web/src packages/ui/src/components -g '*.tsx'
 
 # literal colour: needs a token (known and kept: the sign's light and shade in hanging-sign.css,
 # the mask in light-switch.css)
@@ -56,8 +56,8 @@ rg -n '<button|onClick' apps/web/src
 # the design system has prefersReducedMotion and the theme helpers
 rg -n 'matchMedia|localStorage' apps/web/src
 
-# focus made invisible: fails eMAG 4.4 (ASES); focus-ring is the visible focus, and a skip-link
-# target needs neither tabIndex nor outline-none
+# focus made invisible (WCAG 2.4.7): focus-ring is the visible focus, and a skip-link target needs
+# neither tabIndex nor outline-none
 rg -n 'outline-none|outline-hidden|outline: *(none|0)' apps/web/src packages/ui/src
 ```
 
@@ -69,9 +69,10 @@ And for anything the visitor sees: copy in pt-BR and en in the same change, noth
 source or "não informado"), axe clean on every touched page in both themes (and WAVE on production
 after the deploy), screenshots at phone, tablet and desktop widths in both themes. For the Brazilian
 government's eMAG (checked by ASES): adjacent links go in a list, `SiteDocument` keeps the "skip to
-content" link as every page's first stop, words in another language carry `lang` ("Design system"),
-and `SiteDocument` keeps the `<noscript>` note. Known and accepted, not to fix: WAVE's contrast
-errors on the logo's yellow letters in the light theme (logotype, `packages/ui/AGENTS.md`).
+content" link as every page's first stop, with access key 1 (ASES 1.5.4 looks for an `accesskey`),
+words in another language carry `lang` ("Design system"), and `SiteDocument` keeps the `<noscript>`
+note. Known and accepted, not to fix: WAVE's contrast errors on the logo's yellow letters in the
+light theme (logotype, `packages/ui/AGENTS.md`).
 Then `pnpm check`.
 
 ## 4. Report
