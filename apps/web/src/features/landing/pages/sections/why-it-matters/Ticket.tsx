@@ -63,19 +63,38 @@ export function Ticket({
           {side.priceNote && <p className="text-small font-semibold">{side.priceNote}</p>}
         </div>
       </div>
-      <div className="relative grid content-start gap-3 border-l-2 border-dashed border-ticket-edge p-5">
+      <div className="@container relative grid content-start gap-3 border-l-2 border-dashed border-ticket-edge p-5">
         {side.stub.map((line) => (
           <p key={line.label} className="grid">
             <span className={LABEL}>{line.label}</span>
             <span className="text-small font-semibold">{line.value}</span>
           </p>
         ))}
-        <span
-          className={`-rotate-12 justify-self-start rounded-md border-2 border-current px-2 py-0.5 font-display text-caption font-bold uppercase ${accent}`}
-        >
-          {side.stamp}
-        </span>
+        <Stamp text={side.stamp} accent={accent} />
       </div>
     </div>
+  );
+}
+
+/**
+ * The stub's rubber stamp. Where one line does not fit the stub, the last word drops to a second
+ * line so the border keeps hugging the text: a wrapped inline box would stretch to the stub's full
+ * width and stop reading as a stamp. On narrow stubs it sits by the perforation and its type
+ * shrinks with the stub (`cqi`), so the rotated corner never crosses the ticket's edge.
+ */
+function Stamp({ text, accent }: { text: string; accent: string }) {
+  const cut = text.lastIndexOf(' ');
+  const lines = [text.slice(0, cut), text.slice(cut + 1)];
+  const longestLine = Math.max(...lines.map((line) => line.length));
+  // 142cqi per character of the longest line: measured fit, 6px clear of the edge, 280–1280px.
+  const fontSize = `min(var(--text-caption), ${(142 / longestLine).toFixed(2)}cqi)`;
+  const line = 'block @min-[156px]:inline';
+  return (
+    <span
+      className={`-ml-4 -rotate-12 justify-self-start rounded-md border-2 border-current px-2 py-0.5 font-display text-caption font-bold whitespace-nowrap uppercase @min-[96px]:-ml-3 @min-[156px]:ml-0 ${accent}`}
+      style={{ fontSize }}
+    >
+      <span className={line}>{lines[0]}</span> <span className={line}>{lines[1]}</span>
+    </span>
   );
 }

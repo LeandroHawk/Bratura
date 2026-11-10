@@ -71,7 +71,7 @@ export const WHY_IT_MATTERS_CONTENT: Record<Locale, typeof ptBR> = {
         label: 'With Bratura',
         showOther: 'See it without Bratura',
         priceNote: 'The same documents, with the way to each one.',
-        stamp: 'Application ready',
+        stamp: 'Ready to apply',
         stub: [
           { label: 'Box office', value: 'one place' },
           { label: 'Language', value: 'plain words' },

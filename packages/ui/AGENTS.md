@@ -42,7 +42,7 @@ not by the cord's glow.
   from `--bt-status-missing`: red-for-missing stays the bright red of the statuses.
   The ticket (`--bt-ticket-*`) is parchment in Acervo and a golden ticket, brass, in Galeria;
   its stamp darkens to deep velvet on gold (`--bt-velvet-800`, darker than the curtain's) so it
-  keeps 4.5:1. The "application ready" stamp (`--bt-ticket-stamp-ready`) is a dark green, darker
+  keeps 4.5:1. The "ready to apply" stamp (`--bt-ticket-stamp-ready`) is a dark green, darker
   on gold, kept apart from the logo's green. Both stamps are in `CONTRAST_PAIRS`. The panels that
   close the stage cast `--bt-curtain-shadow`.
 - **Painted things on stage use `--bt-art-*`, never the logo's tokens.** The scenery's art (a
