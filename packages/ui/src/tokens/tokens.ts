@@ -68,7 +68,7 @@ export const CONTRAST_PAIRS = [
   { fg: 'wood-ink', bg: 'wood', min: 4.5 },
   { fg: 'wood-ink', bg: 'wood-grain', min: 4.5 },
   { fg: 'wood-edge', bg: 'background', min: 3 },
-  // The ticket's stamps and labels ("only with a producer", "application ready"): bold text on it.
+  // The ticket's stamps and labels ("only with a producer", "ready to apply"): bold text on it.
   { fg: 'ticket-stamp', bg: 'ticket', min: 4.5 },
   { fg: 'ticket-stamp-ready', bg: 'ticket', min: 4.5 },
 ] as const;

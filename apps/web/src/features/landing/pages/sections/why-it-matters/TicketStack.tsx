@@ -30,8 +30,9 @@ function PointingHand({ bouncing }: { bouncing: boolean }) {
 }
 
 /**
- * Both tickets stacked, "without" in front; the button swaps them. Both stay in the page, so a
- * screen reader reads both and, without JavaScript, the one behind still shows its label.
+ * Both tickets stacked in one grid cell, "without" in front; the button swaps them. Each stretches
+ * to the taller one, so the pair keeps one height whichever is in front. Both stay in the page, so
+ * a screen reader reads both and, without JavaScript, the one behind still shows its label.
  */
 export function TicketStack({ tickets }: { tickets: TicketsContent }) {
   const [front, setFront] = useState<TicketKind>('without');
@@ -44,13 +45,13 @@ export function TicketStack({ tickets }: { tickets: TicketsContent }) {
   return (
     <figure className="grid max-w-140 gap-4">
       <Eyebrow as="figcaption">{tickets.caption}</Eyebrow>
-      <div className="grid items-start pt-24">
+      <div className="grid pt-24">
         {TICKET_KINDS.map((kind) => {
           const inFront = kind === front;
           return (
             <div
               key={kind}
-              className={`relative [grid-area:1/1] ${MOVE} ${inFront ? FRONT : BEHIND}`}
+              className={`relative grid [grid-area:1/1] ${MOVE} ${inFront ? FRONT : BEHIND}`}
             >
               <Ticket tickets={tickets} kind={kind} topNotch={!inFront} />
               {!inFront && (
