@@ -49,6 +49,7 @@ export function Logo({ slogan = { text: SLOGAN, lang: 'pt-BR' }, className = '' 
           className="bt-logo-splat"
           viewBox={`0 0 ${SPLAT_VIEWBOX.width} ${SPLAT_VIEWBOX.height}`}
           preserveAspectRatio="none"
+          aria-hidden="true"
         >
           {SPLAT.map((shape, i) =>
             shape.kind === 'path' ? (

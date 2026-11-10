@@ -23,16 +23,22 @@ export function Hero({ locale }: { locale: Locale }) {
         titleId={titleIdFromSectionId(SECTION_IDS.hero)}
         lead={content.lead}
       >
-        <div className="flex flex-wrap gap-3">
-          <ButtonLink href={`#${SECTION_IDS.howItWorks}`}>{content.howItWorks}</ButtonLink>
-          <ButtonLink href={REPO_URL} variant="ghost" target="_blank" rel="noreferrer">
-            {content.seeCode}
-            <NewTabHint locale={locale} />
-          </ButtonLink>
-          <ButtonLink href="/design" hrefLang="pt-BR" variant="ghost">
-            Design system
-          </ButtonLink>
-        </div>
+        <ul className="flex flex-wrap gap-3">
+          <li>
+            <ButtonLink href={`#${SECTION_IDS.howItWorks}`}>{content.howItWorks}</ButtonLink>
+          </li>
+          <li>
+            <ButtonLink href={REPO_URL} variant="ghost" target="_blank" rel="noreferrer">
+              {content.seeCode}
+              <NewTabHint locale={locale} />
+            </ButtonLink>
+          </li>
+          <li>
+            <ButtonLink href="/design" hrefLang="pt-BR" lang="en" variant="ghost">
+              Design system
+            </ButtonLink>
+          </li>
+        </ul>
       </PageIntro>
       <ExampleCall locale={locale} />
     </Container>

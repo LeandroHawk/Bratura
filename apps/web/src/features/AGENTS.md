@@ -88,6 +88,7 @@ and its result list over 4; this layout is the fix they measured.
 - **Pages render inside `PageShell`** (header, main, footer; at least one screen tall, so a short
   page keeps the footer at the bottom). The header reserves the height the sign and the cord hang
   into: a page never adds top padding for them.
+  A page outside it (`/design`) gives its `<main>` `MAIN_CONTENT_ID`, where the skip link lands.
 - **The look follows the house**: no small uppercase kicker above a section title; a new section
   reuses the page's grid and rhythm (heading left, content right, items split by a hairline)
   before inventing cards.

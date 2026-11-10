@@ -9,6 +9,9 @@ const ptBR = {
     turnedOn: 'Luzes acesas: tema claro',
   } satisfies PullCordCopy,
   languageNav: 'Idioma',
+  skipToContent: 'Ir para o conteúdo',
+  withoutJavaScript:
+    'Sem JavaScript, a página funciona inteira; só a luz, a troca dos ingressos e a cortina ficam paradas.',
   madeFor: 'Feito para o Hack Brasil 2026 · Trilha Cultura & economia criativa',
   aboutNav: 'Sobre o projeto',
   repoLink: 'GitHub · licença MIT',
@@ -24,6 +27,9 @@ export const LAYOUT_CONTENT: Record<Locale, typeof ptBR> = {
       turnedOn: 'Lights on: light theme',
     },
     languageNav: 'Language',
+    skipToContent: 'Skip to content',
+    withoutJavaScript:
+      'Without JavaScript the whole page still works; only the light switch, the ticket swap and the curtain stay still.',
     madeFor: 'Made for Hack Brasil 2026 · Culture & creative economy track',
     aboutNav: 'About the project',
     repoLink: 'GitHub · MIT licence',

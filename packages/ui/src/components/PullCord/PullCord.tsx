@@ -48,7 +48,7 @@ export function PullCord({ copy, className = '' }: { copy: PullCordCopy; classNa
           aria-hidden="true"
         >
           <span className="bt-pull-string" />
-          <svg className="bt-pull-knob" viewBox="0 0 16 26">
+          <svg className="bt-pull-knob" viewBox="0 0 16 26" aria-hidden="true">
             <rect x="5" y="0" width="6" height="4" rx="1.5" className="bt-brass-dark" />
             <path
               d="M8 3 C4 3 3.5 9 3 15 C2.6 19 1 21 1 23 C1 25 15 25 15 23 C15 21 13.4 19 13 15 C12.5 9 12 3 8 3 Z"
