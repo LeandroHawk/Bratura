@@ -1,4 +1,18 @@
-import { Badge, Button, Card, COLOR_TOKENS, Container, Eyebrow, Heading, Logo } from '@bratura/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  COLOR_TOKENS,
+  Container,
+  Eyebrow,
+  Heading,
+  Logo,
+  Tag,
+} from '@bratura/ui';
+import { COLOR_GROUP_LABEL, COLOR_TOKEN_LABEL } from './content';
+
+/** Token groups in the order tokens.ts lists them. */
+const COLOR_GROUPS = [...new Set(COLOR_TOKENS.map((token) => token.group))];
 
 const THEMES = [
   { id: 'light', name: 'Claro · Acervo' },
@@ -37,18 +51,23 @@ export function StyleguidePage() {
 
             <div className="grid gap-3">
               <Eyebrow as="span">Cores</Eyebrow>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
-                {COLOR_TOKENS.map((token) => (
-                  <li key={token.name} className="grid gap-1 text-xs">
-                    <span
-                      className="block h-12 rounded-xl border border-border"
-                      style={{ background: `var(--bt-${token.name})` }}
-                    />
-                    <span className="font-semibold">{token.label}</span>
-                    <code className="text-muted-foreground">--bt-{token.name}</code>
-                  </li>
-                ))}
-              </ul>
+              {COLOR_GROUPS.map((group) => (
+                <div key={group} className="grid gap-2">
+                  <p className="font-display text-small italic">{COLOR_GROUP_LABEL[group]}</p>
+                  <ul className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
+                    {COLOR_TOKENS.filter((token) => token.group === group).map((token) => (
+                      <li key={token.name} className="grid gap-1 text-xs">
+                        <span
+                          className="block h-12 rounded-xl border border-border"
+                          style={{ background: `var(--bt-${token.name})` }}
+                        />
+                        <span className="font-semibold">{COLOR_TOKEN_LABEL[token.name]}</span>
+                        <code className="text-muted-foreground">--bt-{token.name}</code>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
 
             <div className="grid gap-3">
@@ -66,11 +85,19 @@ export function StyleguidePage() {
               <div className="flex flex-wrap gap-3">
                 <Button>Começar meu acervo</Button>
                 <Button variant="ghost">Ver editais abertos</Button>
+                <Button variant="ghost" size="sm">
+                  Botão pequeno
+                </Button>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Badge tone="open">Aberto até 12/12</Badge>
                 <Badge tone="soon">Prazo curto</Badge>
                 <Badge tone="missing">Falta: CCMEI</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Tag>Portfólio</Tag>
+                <Tag>SICAB</Tag>
+                <Tag size="md">Kit de inscrição</Tag>
               </div>
             </div>
 
