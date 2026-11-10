@@ -5,7 +5,7 @@ const ptBR = {
   howItWorks: 'Como funciona',
   seeCode: 'Ver o código',
   exampleCall: {
-    caption: 'Exemplo · Dona Rita, artesã (personagem fictícia)',
+    caption: 'Exemplo · Dona Maria, artesã (personagem fictícia)',
     name: 'Edital de Feiras de Artesanato 2027',
     issuer: 'Secretaria estadual de Cultura · vagas para artesão individual',
     open: 'Aberto até 12/12',
@@ -27,7 +27,7 @@ export const HERO_CONTENT: Record<Locale, typeof ptBR> = {
     howItWorks: 'How it works',
     seeCode: 'See the code',
     exampleCall: {
-      caption: 'Example · Dona Rita, artisan (fictional character)',
+      caption: 'Example · Dona Maria, artisan (fictional character)',
       name: 'Craft Fairs Call 2027',
       issuer: 'State Department of Culture · places for individual artisans',
       open: 'Open until 12 Dec',
