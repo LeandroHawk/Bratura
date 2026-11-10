@@ -1,9 +1,14 @@
 name: CI
 
+# Pull requests only: a merge into main or dev carries code a PR already checked
+# (the dev → main release PR runs on the same tree), so a push run would repeat it.
 on:
   pull_request:
-  push:
-    branches: [main]
+
+# A new push to the same PR cancels the run it made obsolete.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   check:
