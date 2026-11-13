@@ -20,7 +20,7 @@ const listing = (sourceId: Id<'sources'>) => ({
   title: 'Edital de Difusão Cultural 2026',
   summary: null,
   officialUrl: 'https://mapa.cultura.gov.br/oportunidade/4321/',
-  documentUrl: null,
+  documentUrls: [],
   registrationOpens: inFortaleza(Date.UTC(2026, 10, 1, 3), 'day'),
   registrationCloses: inFortaleza(Date.UTC(2026, 11, 2, 2, 59), 'minute'),
 });

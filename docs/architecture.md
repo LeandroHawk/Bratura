@@ -113,9 +113,9 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 
 | stage | what it adds | writer | where it comes from | when |
 | --- | --- | --- | --- | --- |
-| listed | `listing` (title, official page, document link, id at the source), `registration-window` | `ingestion/` per source kind | Mapas API; an official page through Firecrawl `/map` | **now** |
+| listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion/` per source kind | Mapas API; an official page through Firecrawl `/map` | **now** |
 | seen | `tracking` (first and last seen) | the server, on every write | the clock | **now** |
-| document read | `document`: the Markdown of the PDF, its hash, when it was read | `ingestion/` | Firecrawl `/scrape` of `documentUrl` | PR C |
+| document read | `document`: which of `documentUrls` is the call notice, its Markdown, hash and when it was read | `ingestion/` | Firecrawl `/scrape` | PR C |
 | extracted | `extraction`: amounts, applicant types, art forms, region, required documents, each `null` or with a verbatim quote | `llm/`, checked against the text | the document's Markdown | 16–18/11 |
 | classified | whether it is a call for creators or noise (payment forms, council elections) and why | `llm/` + rules | the extraction | 16–18/11 |
 | matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |

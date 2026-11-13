@@ -18,7 +18,7 @@ export const CallNoticeListingFields = z.object({
   summary: nullableString(),
   /** The page a creator opens to read and apply [`singleUrl`]. */
   officialUrl: requiredHttpUrl,
-  /** The call notice's document, usually a PDF [`@files:downloads[0].url`]: eligibility, amounts and
-   * required documents live only there. `null` when the source links none. */
-  documentUrl: requiredHttpUrl.nullable(),
+  /** The text files the source attaches, in its order [`@files:downloads`]: the call notice and its
+   * annexes, media left out. Which one is the call notice is decided when documents are read. */
+  documentUrls: z.array(requiredHttpUrl).max(50),
 });

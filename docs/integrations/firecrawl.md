@@ -11,7 +11,7 @@ only there). Which sites: `docs/data-sources.md`. Based on the team's analysis o
 crons.ts (daily)
   └─ ingestion reads the `sources` table
        ├─ Mapas Culturais → public JSON API (no Firecrawl, no credits)
-       │     └─ PDF links of each call ─────────────────────────────┐
+       │     └─ document links of each call (`documentUrls`) ──────┐
        └─ sites without an API (SP city, Amigos da Arte, Goiás)      │
              └─ /map (lists the site's URLs) → keep call-like URLs ──┤
                                                                      ▼

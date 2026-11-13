@@ -82,7 +82,7 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
   ("resultado final", lists of approved applicants) carries individuals' names and sometimes CPFs.
   Classification drops such documents before their text is stored (competition rule 6.8, LGPD).
 - **Our code fetches only what the team registered.** A Convex action calls `fetch` only on a
-  registered source's `https` base URL. A link from a source's data (`documentUrl`, written by
+  registered source's `https` base URL. A link from a source's data (`documentUrls`, written by
   anyone who can publish on Mapas) is read only through Firecrawl, outside our infrastructure, so a
   crafted link cannot make our backend call an internal address. `requiredHttpUrl` also refuses IPs
   and `localhost`, but not a domain that points inside.
