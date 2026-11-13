@@ -11,7 +11,7 @@ import {
   localizedPathFromLocale,
   sitePathFromPathname,
   type SitePath,
-} from '../../utils/locale-path';
+} from '@/features/common/utils/locale-path';
 import { LAYOUT_CONTENT } from './content';
 
 /** Each language named in itself, so a reader finds theirs whatever the page language is. */

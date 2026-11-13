@@ -1,6 +1,6 @@
 import { LIGHT_THEME_COLORS as C } from '@bratura/ui';
 import { ImageResponse } from 'next/og';
-import { loadGoogleFont } from '../../utils/load-google-font';
+import { loadGoogleFont } from '@/features/common/utils/load-google-font';
 import { SplatArt } from './share-art';
 
 /** The artwork is drawn on a 180px square (the Apple home-screen size) and scaled from it. */

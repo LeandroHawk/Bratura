@@ -1,10 +1,10 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Heading } from '@bratura/ui';
-import { RoomLabel } from '../common/RoomLabel';
-import { SectionBand } from '../common/SectionBand';
-import { SECTION_IDS } from '../common/sectionIds';
-import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
-import { WallLabel } from '../common/WallLabel';
+import { RoomLabel } from '@/features/landing/pages/sections/common/RoomLabel';
+import { SectionBand } from '@/features/landing/pages/sections/common/SectionBand';
+import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
+import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
+import { WallLabel } from '@/features/landing/pages/sections/common/WallLabel';
 import { HOW_IT_WORKS_CONTENT } from './content';
 
 export function HowItWorks({ locale }: { locale: Locale }) {
