@@ -117,7 +117,7 @@ matching, alerts) and the app screens.
 |---|---|
 | Web | Next.js (App Router), TypeScript, Tailwind CSS 4, Vercel |
 | Backend and database | Convex: queries, mutations, actions, cron, vector index, file storage, HTTP actions |
-| Auth · e-mail · messaging | WorkOS AuthKit · Resend · WhatsApp Cloud API |
+| Auth · e-mail · messaging | WorkOS AuthKit · Resend · WhatsApp through Nvoip |
 | Crawling · AI | Firecrawl · Gemini API (free tier) |
 | Contract | Zod: one schema per concept, shared by web and backend |
 
@@ -128,7 +128,7 @@ apps/web/             Next.js: src/app routes, src/features holds one folder per
 packages/ui/          @bratura/ui, the design system (its living reference is /design)
 packages/shared/      the contract: Zod entities and primitives for web and backend
 packages/backend/     next: Convex schema, ingestion, portfolio, matching, alerts, WhatsApp
-docs/architecture.md  how the pieces fit, and why
+docs/                 architecture, contracts, security, data sources, integrations, the plan to 30/11
 docs/review.md        the checklist every change is reviewed against
 ```
 
@@ -145,8 +145,8 @@ pnpm dev        # http://localhost:3000, Portuguese at / and English at /en
 pnpm check      # lint, typecheck, tests and build: what CI runs
 ```
 
-The backend will add a Convex deployment and keys for WorkOS, Firecrawl, Resend, Gemini and the
-WhatsApp Cloud API, with a `.env.example` to copy. Keys live in Convex and Vercel, never in the repo.
+The backend will add a Convex deployment and keys for WorkOS, Firecrawl, Resend, Gemini and
+Nvoip (WhatsApp), with a `.env.example` to copy. Keys live in Convex and Vercel, never in the repo.
 
 ## Other ways to visit: accessibility
 
@@ -164,8 +164,14 @@ Planned after the essentials, if the deadline allows:
 
 ## Team
 
-**Atilio Almeida** (idea and product lead), **Leandro**, **Kaik** and **João Victor**. Authorship,
-originality and the use of AI are in the [manifesto](MANIFEST.md).
+| Who | Role | Focus |
+|---|---|---|
+| **Atilio Almeida** | Product owner | The idea, product insights, research inputs, business model and monetization |
+| **João Victor** | Tech lead | Repository foundation (front-end patterns, the contract, the tools we use) and Firecrawl ingestion |
+| **Leandro** | Integrations developer | WhatsApp front end; helps with Firecrawl ingestion |
+| **Kaik** | Integrations developer | WhatsApp front end |
+
+Authorship, originality and the use of AI are in the [manifesto](MANIFEST.md).
 
 ## License
 
