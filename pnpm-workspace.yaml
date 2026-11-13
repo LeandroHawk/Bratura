@@ -16,3 +16,8 @@ catalog:
   typescript-eslint: ^8.72.1
   vitest: ^5.1.0
   zod: ^4.6.7
+
+# Install scripts run only for packages approved here by name (docs/security.md §5). esbuild (from
+# convex) is denied: its script only verifies the platform binary, which pnpm already installs.
+allowBuilds:
+  esbuild: false

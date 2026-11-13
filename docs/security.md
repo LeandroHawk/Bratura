@@ -105,8 +105,10 @@ Every dependency runs with the backend's secrets or in the creator's browser.
 - **Versions are pinned and not brand new**: an exact version in the `catalog:` of
   `pnpm-workspace.yaml`, published about two weeks before it is adopted, so a hijacked release has
   time to be caught (`convex` 1.48.0 and `convex-helpers` 0.1.131 were chosen that way).
-- **pnpm's block on install scripts stays on.** A package that needs one is approved by name
-  (`pnpm approve-builds`), after reading what it runs; `esbuild` works without its own.
+- **pnpm's block on install scripts stays on.** Each package with one is approved or denied by
+  name in `allowBuilds` (`pnpm-workspace.yaml`, through `pnpm approve-builds`), after reading what
+  it runs; CI's frozen install fails on any package left undecided. `esbuild` is denied: it works
+  without its own.
 - **An install script piped from the web is read before it runs** (the Devin CLI installer was).
 
 ## Open for brainstorming
