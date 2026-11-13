@@ -12,7 +12,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "^4.6.7"
+    "convex": "catalog:",
+    "convex-helpers": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@bratura/eslint-config": "workspace:*",

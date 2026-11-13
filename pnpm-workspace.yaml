@@ -7,9 +7,12 @@ catalog:
   '@types/node': ^22.20.5
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
+  convex: 1.48.0
+  convex-helpers: 0.1.131
   eslint: ^9.39.5
   react: ^19.3.1
   react-dom: ^19.3.1
   typescript: ~6.0.3
   typescript-eslint: ^8.72.1
   vitest: ^5.1.0
+  zod: ^4.6.7

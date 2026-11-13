@@ -4,7 +4,8 @@
 product's concepts. It is the end-to-end level of "shared" (`docs/architecture.md` §1). A piece
 belongs here only when it crosses the wire and has a consumer on the other side **today**.
 
-Today it holds one primitive, the locale. Entities arrive with the first Convex table.
+Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
+tables: `source`, `call-notice`, `ingestion-run`.
 
 ```
 src/
@@ -12,6 +13,7 @@ src/
     entity.ts                  the row, built by spreading its fields and fragments
     enums/                     values that belong to this entity only
     fragments/                 a part of THIS entity (rules below)
+    kinds/<kind>/variant.ts    one variant of an entity that is a union by kind (`source`)
     dto/<port>/<concept>/<query|mutation>.ts   args and returns of one function, per port
                                (common/, bratura-portal/, whatsapp/: docs/contracts.md §2)
   primitives/                  no identity: two equal values are the same value
@@ -42,13 +44,13 @@ Before declaring anything:
 > **Does it have a table?** Then it has identity, a lifecycle and an owner → **entity**.
 > **No table?** Then two equal ones are the same value → **primitive**.
 
-Two `opportunities` rows with the same title are not the same call; `'MEI' === 'MEI'`.
+Two `callNotices` rows with the same title are not the same call; `'MEI' === 'MEI'`.
 
 - **A catalog with a table is an entity.** `sources` (the Mapas Culturais instances and official
   pages we read) looks like a fixed list, but it is a Convex table someone edits: it has an owner.
 - **A part of one entity is not a top-level thing.** The evidence quote attached to each
-  extracted field has no table and is not a universal value: it is a fragment of the opportunity.
-- **Planned tables** (`docs/plan.md`, What to build): `sources`, `opportunities`, `ingestionRuns`,
+  extracted field has no table and is not a universal value: it is a fragment of the call notice.
+- **Planned tables** (`docs/plan.md`, What to build): `sources`, `callNotices`, `ingestionRuns`,
   `creators`, `portfolioItems`, `matches`, `applicationKits`, `alerts`, `organizations`,
   `memberships`. Each becomes `entities/<kebab-name>/` when its table is written.
 
@@ -68,11 +70,11 @@ entities/<entity>/                     the field of that entity, and only of it
 An entity is the **spread** of its parts, so you read the whole row in one place:
 
 ```ts
-// entities/opportunity/entity.ts
-export const OpportunitySchema = z.object({
-  ...OpportunityIdentityFields.shape, // title, source, link to the official page
-  ...OpportunityDeadlineFields.shape, // registration window, in São Paulo dates
-  ...OpportunityFundingFields.shape, // amount in BRL, number of places
+// entities/call-notice/entity.ts
+export const CallNoticeSchema = z.object({
+  ...CallNoticeListingFields.shape, // source, id there, title, official page, document link
+  ...CallNoticeRegistrationWindowFields.shape, // when applications open and close
+  ...CallNoticeTrackingFields.shape, // first and last seen, set by the server
 });
 ```
 
@@ -94,7 +96,7 @@ With pieces this project will need (none exists yet):
 | piece                                        | mentions        | decides about     | lives in                                 |
 | -------------------------------------------- | --------------- | ----------------- | ---------------------------------------- |
 | `MeiStatusEnum`                              | —               | MEI registration  | `primitives/external/mei-status/`        |
-| `CallRequirementEnum` (MEI, SICAB, CCMEI…)   | MEI, SICAB      | what a call asks  | `entities/opportunity/enums/`            |
+| `CallRequirementEnum` (MEI, SICAB, CCMEI…)   | MEI, SICAB      | what a call asks  | `entities/call-notice/enums/`            |
 | "is this creator eligible for this call?"    | MEI, the call   | a **match**       | backend `matching/`, not `shared`        |
 
 The naive rule, "it goes where the value it names lives", is wrong: the eligibility check names
@@ -124,12 +126,37 @@ silently carries less than the row. Name a subset when the same list appears a s
 - ⚠️ **Open: messages in two languages.** "Text lives in the Zod declaration" and "copy exists in
   pt-BR and en" meet at the first form. Decide then (`docs/architecture.md`, Open).
 - **"If A then B exists"** → `z.discriminatedUnion` first. **"A compared with B"** (the
-  registration window closes after it opens) → `superRefine` next to the entity, so both sides run
-  one check.
+  registration window closes after it opens) → a `with…` function next to the entity that adds the
+  `refine`, so both sides run one check (`withOrderedRegistrationWindow`). Never on the entity
+  itself: Zod 4 throws on `.pick`/`.omit`/`.partial` of a refined object, so the rule is attached
+  last, to the schema that parses.
+- **No conversion in an entity**: no `.transform`, `.pipe` or `z.preprocess`. Convex builds the
+  table from the input side: a transform gives the column the input type (the write is refused) and
+  a preprocess gives it `any` (the column accepts anything). Overwrites that keep the type
+  (`.trim()`) are fine. Converting is the edge's job: the Mapas client turns its date strings into
+  instants, a form turns text into numbers. `entities/no-conversion.test.ts` reads every entity
+  module and fails on one.
+- **Every text from outside has a ceiling**, picked by name from `textLengths` (`short`, `medium`,
+  `long`, `max`): `requiredString('long')`, `nullableString()`. A number cannot be passed, so a
+  ceiling is raised only by a new row in the table. Links: `requiredHttpsUrl` (ours),
+  `requiredHttpUrl` (from a source), both capped.
 - **Nothing here throws a backend error class.** Return a violation as data; the Convex function
   decides whether it is terminal (`ConvexError`). An error class is backend code; a schema crosses
   the wire.
-- **Nothing here imports Convex, Next or React.** Both sides must be able to import any file.
+- **Nothing here imports Convex, Next or React.** Both sides must be able to import any file. One
+  exception, held by lint to one file: `primitives/code/id/fields.ts` re-exports convex-helpers'
+  `zid` as `documentId`, so a reference to another row has the backend's `Id<'table'>` type
+  (validators only, from `convex/values`; the web depends on `convex` for its client anyway).
+
+## Messages
+
+The error text a person reads lives in `src/messages/`, the one place in this package with pt-BR
+and en copy: a Zod error map per locale (issue code and its numbers → text) and a text per
+`AppErrorCode`. Fields carry no text; a rule of our own names its message with
+`params: { message: '<key>' }`. The map is applied where an error is shown (a form's parse, a
+caught `appError`), with the reader's locale. Zod's built-in `pt` locale is not used: it is
+European Portuguese and reads like a log ("Demasiado grande: esperava que o texto tivesse <= 5
+caracteres"). Born with the first form; until then only the team reads errors, raw.
 
 ## Naming
 
