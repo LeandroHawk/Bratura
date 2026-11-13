@@ -25,8 +25,8 @@ repeats hide. This skill reads the owners first.
 
 ## Report
 
-Per lens: what ran, on which files, what was fixed, what waits for a decision. Never claim
-"nothing left"; name the lenses and checks that ran instead.
+As `docs/review.md`, Report (or, in a repo without one: per lens, what ran, on which files, what was
+fixed, what waits for a decision; never "nothing left").
 
 ## Do not
 

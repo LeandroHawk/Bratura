@@ -1,6 +1,6 @@
 # Data sources
 
-Where opportunities come from, what we may collect, and what we never touch. How Firecrawl reads the
+Where call notices (editais) come from, what we may collect, and what we never touch. How Firecrawl reads the
 pages and PDFs: `docs/integrations/firecrawl.md`. Sources verified on **2026-11-07**; recheck a
 source's robots.txt and terms before adding or changing it.
 
@@ -45,8 +45,8 @@ GET https://{host}/api/opportunity/find
   parse with that timezone.
 - The PDF URL is in `"@files:downloads": [{ "url": … }]`.
 - Filters: `EQ`, `LIKE` (with `*`), `BET(a,b)`, `GTE`, `LTE`, `AND(...)`, `OR(...)`, `!`.
-- **Dirty data**: payment forms ("habilitação de pagamento"), council elections, opportunities
-  created by individuals. Classification drops them from creator-facing lists.
+- **Dirty data**: payment forms ("habilitação de pagamento"), council elections, Mapas
+  opportunities created by individuals. Classification drops them from creator-facing lists.
 - SP capital (`spcultura.prefeitura.sp.gov.br`) did not answer in 90 s: keep as inactive, retry.
 
 ## Official pages (Firecrawl)

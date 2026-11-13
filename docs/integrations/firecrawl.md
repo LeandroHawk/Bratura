@@ -21,7 +21,7 @@ crons.ts (daily)
                                                                      ▼ yes
                       llm/ (Gemini): JSON with a verbatim quote per field
                                                                      ▼
-                      Zod safeParse + evidence check → `opportunities`
+                      Zod safeParse + evidence check → `callNotices`
                                                                      ▼
                       matching (rules) → `matches`
 ```
@@ -39,7 +39,7 @@ The team's draft of this flow also stored an embedding per call; matching is rul
 3. **New calls and amendments.** `changeTracking` (`git-diff` mode) says what changed since the last
    scrape: an unchanged page spends no Gemini call; an amended deadline triggers a new extraction and
    an alert ("o prazo mudou").
-4. **Provenance.** Store with each opportunity the `sourceUrl`, `scrapedAt`, the Markdown hash and
+4. **Provenance.** Store with each call notice the `sourceUrl`, `scrapedAt`, the Markdown hash and
    the verbatim quote per extracted field.
 5. **Long batches without hitting Convex action limits.** Async `/batch/scrape` or `/crawl` with a
    **webhook** (`page`, `completed`) into a Convex HTTP action in `http.ts`. This postpones the
