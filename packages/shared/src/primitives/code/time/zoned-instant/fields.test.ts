@@ -16,6 +16,12 @@ describe('ZonedInstantSchema', () => {
     expect(ZonedInstantSchema.safeParse({ ...closesInAcre, precision: 'day' }).success).toBe(true);
   });
 
+  test('accepts the fixed-offset zones some sources send', () => {
+    for (const timeZone of ['Etc/GMT+3', 'UTC']) {
+      expect(ZonedInstantSchema.safeParse({ ...closesInAcre, timeZone }).success).toBe(true);
+    }
+  });
+
   test('refuses a zone the runtime does not know', () => {
     const result = ZonedInstantSchema.safeParse({ ...closesInAcre, timeZone: 'America/Atlantis' });
     expect(result.error?.issues[0]).toMatchObject({
