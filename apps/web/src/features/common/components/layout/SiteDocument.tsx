@@ -2,9 +2,9 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { themeInitScript } from '@bratura/ui';
 import { Fraunces, Instrument_Sans, Titan_One } from 'next/font/google';
 import type { ReactNode } from 'react';
-import '../../styles/globals.css';
-import { InlineScript } from '../InlineScript';
-import { RestoreSavedTheme } from '../RestoreSavedTheme';
+import '@/features/common/styles/globals.css';
+import { InlineScript } from '@/features/common/components/InlineScript';
+import { RestoreSavedTheme } from '@/features/common/components/RestoreSavedTheme';
 import { LAYOUT_CONTENT } from './content';
 import { MAIN_CONTENT_ID } from './mainContentId';
 

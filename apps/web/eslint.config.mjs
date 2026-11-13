@@ -6,4 +6,21 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   globalIgnores(['.next/**', 'out/**', 'next-env.d.ts']),
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*'],
+              message:
+                "Outside the current folder, import with '@/' (AGENTS.md, Code conventions).",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);

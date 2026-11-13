@@ -2,7 +2,7 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Container, Logo } from '@bratura/ui';
 import Link from 'next/link';
 import { REPO_URL, TEAM } from '@/features/common/config/site';
-import { NewTabHint } from '../NewTabHint';
+import { NewTabHint } from '@/features/common/components/NewTabHint';
 import { LAYOUT_CONTENT } from './content';
 
 const FOOTER_LINK = 'focus-ring font-semibold text-foreground underline underline-offset-4';

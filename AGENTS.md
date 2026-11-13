@@ -54,6 +54,11 @@ The rules that hold everywhere:
   §5). Unsure → propose options and ask.
 - **No barrels inside a package**; import from the source file. Across packages, go through the
   package's `exports`.
+- **Import paths**: `./` only for the same folder; anything else in an app through `@/`
+  (`@/features/common/utils/locale-path`), never `../`; another workspace through
+  `@bratura/<package>/...`. **Inside `packages/` imports stay relative**: a package is compiled by the
+  app that imports it, so an `@/` there would resolve against the app's `src/`. Lint enforces the
+  app side.
 - **No new dependency without asking the team.** Native API or standard library first. A version
   used by several workspaces is declared once, in the `catalog:` of `pnpm-workspace.yaml`, and the
   `package.json` says `catalog:`.
