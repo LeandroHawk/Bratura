@@ -92,7 +92,13 @@ and its result list over 4; this layout is the fix they measured.
   A page outside it (`/design`) gives its `<main>` `MAIN_CONTENT_ID`, where the skip link lands.
 - **The look follows the house**: no small uppercase kicker above a section title; a new section
   reuses the page's grid and rhythm (heading left, content right, items split by a hairline)
-  before inventing cards.
+  before inventing cards. Not an eyebrow plus a title on every section either: it reads as a site
+  made by AI.
+- **What matters is visible text**: no hover `title` tooltip as the way to explain something (touch
+  and keyboard never see it, screen readers read it inconsistently); acronyms are spelled out on
+  first use ("registro de artesão (SICAB)", "Certificado de MEI (CCMEI)").
+- **No number on a page without a source**: an example call or a business model shows no R$ value
+  that is not sourced (the pitch carries the numbers).
 - **Check at 390px, 768px and desktop, in both themes**, before calling a screen done.
 
 ## Names
