@@ -18,6 +18,7 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@bratura/eslint-config": "workspace:*",
     "@tailwindcss/postcss": "^4.3.5",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
