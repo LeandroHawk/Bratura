@@ -4,6 +4,10 @@ How Bratura is laid out and why, across folders. The rules of each folder live *
 in its `AGENTS.md`; this file is the map, the decisions that cross folders, and the backend until it
 has a folder of its own. `AGENTS.md` at the root lists the rules in one line each.
 
+Cross-cutting subjects have their own file: `docs/contracts.md` (shapes, ports, what the front
+sends), `docs/security.md` (ownership, abuse, prompt injection), `docs/data-sources.md`,
+`docs/integrations/` (Firecrawl, WhatsApp), `docs/product.md` and, until 30/11, `docs/plan.md`.
+
 Status: **2026-11-08.** The web app and the design system follow it. `packages/shared` holds one
 primitive (the locale). The backend does not exist yet: §3 describes the shape it is born with.
 
@@ -61,6 +65,9 @@ packages/
 
 - **A second backend nobody imports goes to `apps/`.** A crawler worker talks to Convex through its
   HTTP client and validates what it writes with `shared`; fronts never call it directly.
+- **The web app is on Vercel** (one owner, Hobby plan, root `apps/web`, production branch `main`):
+  Next 16's `proxy.ts`, `next/og` and `global-not-found` work there without an adapter, and the
+  Convex integration is built in. Every push of the public repo builds a preview.
 - **Each deployable ships on its own**, only when something it uses changed: a Vercel project per
   web app with `turbo-ignore` as the ignored build step; `convex deploy` in CI when
   `packages/backend` or `packages/shared` change; `turbo prune <app> --docker` for a worker image.
@@ -73,7 +80,8 @@ packages/
 The rule that ties the workspaces together: **one Zod declaration per concept**, travelling Convex
 table → function args and returns → web data hook → form → screen; derived (`.pick`, `.omit`,
 `.extend`), never retyped; parsed wherever data passes through `any`. Entities, primitives,
-fields, fragments and naming: `packages/shared/AGENTS.md`.
+fields, fragments and naming: `packages/shared/AGENTS.md`. How the row travels between fronts and
+backend, ports and the function builders: `docs/contracts.md`.
 
 ## 3. Backend (Convex)
 
@@ -93,30 +101,20 @@ packages/backend/convex/
 ```
 
 - **A Convex table is an entity**; its Zod declaration lives in `packages/shared/entities/` and the
-  Convex validator is **derived** from it, never written beside it.
-  ⚠️ **Open, before the first table:** how the bridge behaves, not whether it exists.
-  `convex-helpers` 0.1.134 (2026-11-05) takes `zod ^4` as a peer and exports
-  `convex-helpers/server/zod4`. Still to check on the first table: a Convex validator is only a
-  shape, so refinements (`superRefine`, `.min()` on a string) and transforms cannot live in
-  `schema.ts`; confirm that function args go through the full Zod parse, and parse the rest inside
-  the function.
-- **Every outside input is parsed at the edge**, in the module that reads it, with Zod:
-  - **Mapas Culturais API** responses: the module's own schema of the API's shape, in
-    `ingestion/`. It is not an entity and not in `shared`: only ingestion reads it.
-  - **Firecrawl** pages and PDFs: text in, then the LLM extracts.
-  - **LLM output**: a schema where every field is nullable and each non-null field carries a short
-    verbatim evidence quote. Parsed with `safeParse`; a failure is a retry, never a guess.
+  Convex validator is **derived** from it, never written beside it. Functions are declared through
+  builders that carry auth and Zod `args`/`returns` (`docs/contracts.md` §3).
+- **Every outside input is parsed at the edge**, in the module that reads it, with a local Zod
+  schema that is not an entity and not in `shared`: Mapas API responses and Firecrawl output in
+  `ingestion/`, provider webhooks in `http.ts`, LLM output in `llm/` (every field nullable, each
+  with a verbatim quote checked against the text: `docs/security.md` §3).
 - **Nothing is invented.** Every amount, deadline and requirement shown comes from a stored field
   with its source link; a field not found is stored as `null` and shown as "não informado".
-- **Only allowed sources** (`devin-followup.md` §5): respect robots.txt and terms, batch crawling
-  only, never the excluded sites.
+- **Only allowed sources**, batch crawling only: `docs/data-sources.md`.
 - **The backend computes, the web displays.** Eligibility, gaps and deadlines are computed in
-  Convex and stored (`matches`); the web never re-derives them.
-- **The LLM sits behind `llm/`** so the provider can change; free-tier limits mean a queue and
-  retries in ingestion, and only public call text and the fictional demo creator are sent.
-- **Errors**: shared schemas return violations as data; a Convex function decides what is terminal
-  and throws `ConvexError` with a message the web can show.
-- **Secrets** live in Convex and Vercel environment variables, never in the repo.
+  Convex and stored (`matches`); the web and the WhatsApp bot never re-derive them.
+- **Adapters for what may change**: the LLM behind `llm/` (Gemini free tier: a queue and retries in
+  ingestion), message channels behind `alerts/` (Resend, Nvoip).
+- **Ownership, abuse limits and secrets**: `docs/security.md`.
 
 ## 4. Languages (pt-BR, en)
 
@@ -153,8 +151,34 @@ packages/backend/convex/
 
 ## 7. Open
 
-- **Convex × Zod bridge** (§3).
+- **Convex × Zod bridge, before the first table:** how it behaves, not whether it exists.
+  `convex-helpers` (0.1.135 on 2026-11-12) exports `convex-helpers/server/zod4` with `zodToConvex`,
+  `withSystemFields` and `zCustomQuery`/`zCustomMutation`/`zCustomAction`. A Convex validator is
+  only a shape, so refinements (`superRefine`, `.min()` on a string) and transforms cannot live in
+  `schema.ts`: confirm that function args go through the full Zod parse.
+- **Headless components for the app screens** (team analysis, 2026-11-12): keep `@bratura/ui` as
+  the design system and add **React Aria Components** inside `packages/ui` as an unstyled layer for
+  what the screens will need: portfolio upload (`DropZone`, `FileTrigger`), filters by state, city
+  and art form (`ComboBox`, `Select`, `TagGroup`), deadlines and the portfolio timeline
+  (`DatePicker`, `DateRangePicker`, `Calendar`), the document checklist (`CheckboxGroup`), a call
+  in plain language (`Disclosure`, `Tabs`, `Dialog`/`Modal`), eligible / almost / not (`Meter`,
+  `ProgressBar`), the org panel (`Table`), notices (`Toast`). Why: accessibility rigour (eMAG, axe), pt-BR built in, dates with time
+  zones through `@internationalized/date` (the São Paulo zone and `hourCycle` traps of
+  `primitives/AGENTS.md`), states styled with our tokens as `data-[focus-visible]`/`data-[selected]`
+  variants, each wrapped as `components/<Name>/` with `focus-ring` and markup tests, and custom
+  validation so the error text stays in the Zod declaration. Not a styled kit (MUI, Chakra, Mantine,
+  Ant): their themes fight `@theme` and the identity; the gov.br design system is a reference for
+  eMAG only. Alternative: shadcn/ui, faster to copy and already token-compatible (`background`,
+  `primary`, `ring`…), with more dependencies (Radix, `class-variance-authority`, `tailwind-merge`,
+  icons) and less i18n. A new dependency: the team decides before the first form. The 2026-11-08
+  rule was "Radix only when a complex widget appears"; whichever wins replaces it. Already discarded
+  with evidence (2026-11-08): Material UI (Google look, CSS-in-JS friction with Server Components,
+  hides the design system) and Storybook for now (`/design` already ships with the site; axe in CI
+  comes first; revisit after the demo works).
 - **Validation messages in two languages**: "text lives in the Zod declaration" meets "copy exists
   in pt-BR and en" at the first form.
 - **Enforcement**: these rules are prose. The ones visible in the syntax (a section importing
   another, `primitives` importing `entities`) become lint rules when they first break.
+
+Every doc here is open for brainstorming: a rule that does not fit a case, or a simpler one, is a
+discussion to open in the PR or with the team, not a reason to work around it in silence.

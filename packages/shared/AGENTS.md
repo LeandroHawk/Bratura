@@ -12,7 +12,8 @@ src/
     entity.ts                  the row, built by spreading its fields and fragments
     enums/                     values that belong to this entity only
     fragments/                 a part of THIS entity (rules below)
-    dto/<verb>/                request and response of one operation
+    dto/<port>/<concept>/<query|mutation>.ts   args and returns of one function, per port
+                               (common/, bratura-portal/, whatsapp/: docs/contracts.md §2)
   primitives/                  no identity: two equal values are the same value
     code/  domain/  external/  → primitives/AGENTS.md
 ```
@@ -47,7 +48,7 @@ Two `opportunities` rows with the same title are not the same call; `'MEI' === '
   pages we read) looks like a fixed list, but it is a Convex table someone edits: it has an owner.
 - **A part of one entity is not a top-level thing.** The evidence quote attached to each
   extracted field has no table and is not a universal value: it is a fragment of the opportunity.
-- **Planned tables** (`devin-followup.md` §7): `sources`, `opportunities`, `ingestionRuns`,
+- **Planned tables** (`docs/plan.md`, What to build): `sources`, `opportunities`, `ingestionRuns`,
   `creators`, `portfolioItems`, `matches`, `applicationKits`, `alerts`, `organizations`,
   `memberships`. Each becomes `entities/<kebab-name>/` when its table is written.
 
