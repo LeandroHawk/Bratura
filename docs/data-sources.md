@@ -1,6 +1,6 @@
 # Data sources
 
-Where opportunities come from, what we may collect, and what we never touch. How Firecrawl reads the
+Where call notices (editais) come from, what we may collect, and what we never touch. How Firecrawl reads the
 pages and PDFs: `docs/integrations/firecrawl.md`. Sources verified on **2026-11-07**; recheck a
 source's robots.txt and terms before adding or changing it.
 
@@ -23,30 +23,40 @@ source's robots.txt and terms before adding or changing it.
 
 Public JSON, no auth. Instances confirmed working:
 
-| Instance | Host | Open on 2026-11-07 |
-| --- | --- | --- |
-| Federal | `mapa.cultura.gov.br` | 64 |
-| Ceará | `mapacultural.secult.ce.gov.br` | 30 |
-| Pernambuco | `mapacultural.pe.gov.br` | 15 |
-| Santo André-SP | `culturaz.santoandre.sp.gov.br` | 1 |
-| Canindé-CE | `mapacultural.caninde.ce.gov.br` | 0 (monitor) |
+| Instance | Host | Open on 2026-11-07 | Open on 2026-11-13 | Zone it sends |
+| --- | --- | --- | --- | --- |
+| Federal | `mapa.cultura.gov.br` | 64 | 59 | `Etc/GMT+3` |
+| Ceará | `mapacultural.secult.ce.gov.br` | 30 | 35 | `America/Fortaleza` |
+| Pernambuco | `mapacultural.pe.gov.br` | 15 | 11 | `America/Recife` |
+| Santo André-SP | `culturaz.santoandre.sp.gov.br` | 1 | 3 | `Etc/GMT+3` |
+| Canindé-CE | `mapacultural.caninde.ce.gov.br` | 0 (monitor) | 0 | — |
+
+`robots.txt` answers 404 on all five (2026-11-13): nothing declared. Terms: see Rules; Ceará's are a
+PDF (`termo_de_uso_-_mapa_cultural_do_ceara_v1.0.pdf`), the others publish none found.
 
 ```
 GET https://{host}/api/opportunity/find
-  ?@select=id,name,shortDescription,registrationFrom,registrationTo,owner.name,singleUrl
+  ?@select=id,name,shortDescription,registrationFrom,registrationTo,singleUrl
   &@files=(downloads):url
   &registrationFrom=LTE({today})
   &registrationTo=GTE({today})
   &@order=registrationTo ASC
 ```
 
-- Always an explicit `@select`: `@select=*` returned non-JSON. `{today}` is `YYYY-MM-DD`.
-- Dates come as `{ "date": "2026-11-08 23:59:00.000000", "timezone": "America/Fortaleza", … }`:
-  parse with that timezone.
-- The PDF URL is in `"@files:downloads": [{ "url": … }]`.
+- Always an explicit `@select`: `@select=*` returned non-JSON. `{today}` is `YYYY-MM-DD`. **Never
+  `owner`**: it can be a private person, and nothing of it is used.
+- Dates come as `{ "date": "2026-11-15 23:59:00.000000", "timezone": "Etc/GMT+3", … }`: a wall clock
+  in that zone. The zone is a place (`America/Recife`) or a fixed offset (`Etc/GMT+3` is UTC−3: POSIX
+  inverts the sign); `Intl.supportedValuesOf` omits the latter, `Intl.DateTimeFormat` reads both.
+- **Midnight closings are common** (38 of 59 federal calls close at `00:00`): Mapas closes its form
+  at that minute, so "15/11 00:00" means "until the end of the 14th". A screen should say so.
+- `"@files:downloads": [{ "url": … }]` is every attachment, absent when there is none (41 of 59
+  federal calls): the call notice and its annexes (up to 37 on one call), plus `.docx` forms and
+  media (`.mp4`, `.mp3`, `.jpg`). A call notice stores the text files in order (`documentUrls`),
+  media left out; which one is the call notice is decided when documents are read.
 - Filters: `EQ`, `LIKE` (with `*`), `BET(a,b)`, `GTE`, `LTE`, `AND(...)`, `OR(...)`, `!`.
-- **Dirty data**: payment forms ("habilitação de pagamento"), council elections, opportunities
-  created by individuals. Classification drops them from creator-facing lists.
+- **Dirty data**: payment forms ("habilitação de pagamento"), council elections, Mapas
+  opportunities created by individuals. Classification drops them from creator-facing lists.
 - SP capital (`spcultura.prefeitura.sp.gov.br`) did not answer in 90 s: keep as inactive, retry.
 
 ## Official pages (Firecrawl)

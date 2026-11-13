@@ -12,7 +12,7 @@ to delete them.
 
 | folder                | who controls it                                          | Bratura examples                                                   |
 | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `date/`, `url/`, `id/`                                  |
+| `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `time/instant/`, `time/zoned-instant/` |
 | `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL), `deadline/` (a registration window) |
 | `external/<subject>/` | neither: law, an agency, an outside standard             | `locale/` (BCP 47, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/` |
 
@@ -41,9 +41,22 @@ primitives never import entities
 - **One folder per subject, the file named after its nature** (`external/locale/enum.ts`): the
   rule and its cost are in `../../AGENTS.md`, Naming.
 - **What a piece returns decides its folder**, not what it receives or uses. A function that takes
-  two instants and returns a number of days belongs to `date/`, not to a `number/`.
-- **A time zone is a reading, not a concept: it goes in the name, never in a folder**
-  (`daysBetweenInSaoPaulo`, not `sao-paulo/days-between`).
+  two instants and returns a number of days belongs to `calendar/`, not to a `number/`.
+- **Time and calendar are two families, each a folder of subjects.** `code/time/` is the timeline:
+  `instant/` (a point, the same everywhere), `time-zone/` (the zone a time was written in),
+  `zoned-instant/` (a time as a source published it). `code/calendar/` is what people read: dates,
+  days between, "faltam 3 dias"; it is born with its first piece. An instant has no calendar until
+  it is read in a zone, so `calendar/` depends on `time/`, never the reverse.
+- **A time zone a function reads in goes in its name, never in a folder** (`daysBetweenInSaoPaulo`,
+  not `sao-paulo/days-between`). A zone **stored as data** (the one a source wrote a deadline in) is
+  a value: `time/time-zone/`. It is `code/`, not `external/`: we keep no list, the runtime's
+  `Intl.supportedValuesOf('timeZone')` decides.
+- **Native first, no wrapper that only renames**: `z.iso.date()` for a calendar day, `z.iso.time()`
+  for a wall-clock time, `z.httpUrl()` for a link from outside (never `javascript:`), `Date.now()`
+  for now, `Intl.DateTimeFormat` to show a time in a zone. A primitive earns its name by adding a
+  rule or a meaning the native expression lacks: `requiredInstant` says what the integer is,
+  `requiredHttpsUrl` adds a policy, `requiredString(max)` a ceiling. The `Temporal` API is not in
+  Node 22: its vocabulary (`Instant`, `ZonedDateTime`) names our pieces, its API does not exist.
 - **A folder is born when a piece returns that concept**, not when the concept can be mentioned.
   A sibling project created `hour/` and `second/` folders with aliases (`HourOfDay = number`) and
   removed them: a type alias of a native type vanishes at compile time and guarantees nothing.
@@ -62,7 +75,7 @@ primitives never import entities
 
 ## Traps measured in sibling projects
 
-Registration deadlines are dates in Brazil, so `date/` will meet these:
+Registration deadlines are times published in Brazil, so `time/` and `calendar/` meet these:
 
 - **Fix `timeZone: 'America/Sao_Paulo'`** when reading a deadline; tests should run in a zone that
   is neither UTC nor São Paulo, so both "forgot the zone" and "assumed the host" fail.

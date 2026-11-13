@@ -3,3 +3,4 @@ pnpm-lock.yaml
 .turbo/
 coverage/
 *.md
+packages/backend/convex/_generated/

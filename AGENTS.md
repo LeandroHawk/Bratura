@@ -30,11 +30,12 @@ it). **Read the one for the folder you are about to change before creating a fil
 | `packages/shared/`           | the contract: entity or primitive, fields, fragments, one Zod      |
 | `packages/shared/src/primitives/` | `code/`, `domain/`, `external/`, naming, measured traps       |
 | `packages/ui/`               | tokens, themes, components without product copy                   |
+| `packages/backend/`          | Convex: tables from the entities, builders, running it, the Zod bridge |
 | `apps/web/src/app/`          | routing only: thin files, locale rewrite, 404s, root-file limits   |
 | `apps/web/src/features/`     | page anatomy, sections, `common/` levels, copy per locale          |
 | `docs/architecture.md`       | the map, the backend (Convex, Firecrawl, LLM), cross-folder rules  |
 | `docs/contracts.md`          | ports, DTO folders, the row the front sends, function builders, writers and readers |
-| `docs/security.md`           | ownership, spam and abuse, prompt injection, personal data         |
+| `docs/security.md`           | ownership, abuse, prompt injection, personal data, fetch, errors, dependencies |
 | `docs/data-sources.md`       | allowed and excluded sources, the Mapas API                        |
 | `docs/integrations/`         | Firecrawl, WhatsApp (Nvoip)                                        |
 | `docs/plan.md`               | until 30/11: product, competition rules, tools, dates              |

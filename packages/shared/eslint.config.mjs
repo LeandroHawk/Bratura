@@ -1,15 +1,27 @@
-import { defineConfig, globalIgnores } from 'eslint/config';
-import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
+import { typescriptPackageConfig } from '@bratura/eslint-config';
 
 // The contract is imported by the web app and by Convex alike, so it depends on neither.
+// convex-helpers enters through one file, the table reference (primitives/code/id/fields.ts).
 const frameworkImports = {
-  group: ['convex', 'convex/*', 'next', 'next/*', 'react', 'react/*', 'react-dom', 'react-dom/*'],
-  message: 'packages/shared must be importable by both sides: no Convex, Next or React here.',
+  group: [
+    'convex',
+    'convex/*',
+    'convex-helpers',
+    'convex-helpers/*',
+    'next',
+    'next/*',
+    'react',
+    'react/*',
+    'react-dom',
+    'react-dom/*',
+  ],
+  message:
+    'packages/shared must be importable by both sides: no Convex, Next or React here. A table reference is documentId (primitives/code/id/fields.ts).',
 };
 
 export default defineConfig([
-  globalIgnores(['coverage/**']),
-  ...tseslint.configs.recommended,
+  ...typescriptPackageConfig(import.meta.dirname),
   {
     rules: {
       'no-restricted-imports': ['error', { patterns: [frameworkImports] }],
@@ -32,5 +44,9 @@ export default defineConfig([
         },
       ],
     },
+  },
+  {
+    files: ['src/primitives/code/id/fields.ts'],
+    rules: { 'no-restricted-imports': 'off' },
   },
 ]);

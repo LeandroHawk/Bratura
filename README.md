@@ -105,7 +105,7 @@ matching, alerts) and the app screens.
 ```
 
 - **Ingestion**, on a schedule: fetch the calls, read each PDF, let the LLM classify it (a real
-  opportunity or an admin form?) and extract the requirements as Zod-validated JSON with a verbatim
+  call for creators or an admin form?) and extract the requirements as Zod-validated JSON with a verbatim
   quote for every field, then store them with the source link and an embedding.
 - **Matching is rules, not guesses:** region, applicant type, art form, deadline, MEI, SICAB,
   CCMEI. The LLM reads PDFs, organizes portfolios and drafts texts; the backend computes, the web
