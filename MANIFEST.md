@@ -17,10 +17,10 @@ The money for culture already exists. This project is about making it reach the 
 
 | Name | GitHub | Role |
 |---|---|---|
-| Atilio Almeida | [@handle] | Idea and product lead |
-| Leandro | [@handle] | [role] |
-| Kaik | [@handle] | [role] |
-| João Victor | [@handle] | [role] |
+| Atilio Almeida | [@handle] | Product owner: the idea, product insights, research inputs, business model and monetization |
+| João Victor | [@Joao-Crivoi](https://github.com/Joao-Crivoi) | Tech lead: repository foundation (front-end patterns, the contract, the tools we use) and Firecrawl ingestion |
+| Leandro | [@LeandroHawk](https://github.com/LeandroHawk) | Integrations developer: WhatsApp front end; helps with Firecrawl ingestion |
+| Kaik | [@handle] | Integrations developer: WhatsApp front end |
 
 The intellectual property of this project belongs entirely to the team above (regulation item 11.1).
 The team warrants that the project does not infringe third-party rights (11.3).
@@ -46,7 +46,9 @@ comes from the official source, with a link. When a field is not in the source, 
 ## Data and privacy
 
 - We only collect from **open sources that allow it**, respecting robots.txt and terms of use:
-  Mapas Culturais public APIs (federal, Ceará, Pernambuco, Santo André) and official government pages.
+  Mapas Culturais public APIs (federal, Ceará, Pernambuco, Santo André, Canindé), the edital PDFs they
+  link to, and official pages read with Firecrawl (São Paulo city culture calls, Amigos da Arte,
+  Goiás craft fairs). The full list and the checks are in `docs/data-sources.md`.
 - We deliberately **do not** collect from platforms whose terms forbid it (e.g. Prosas, social networks).
 - Creators' portfolios are provided by the creators themselves, with consent, and are never sold.
 - The demo uses a **fictional creator** and does not expose real personal data of third parties
@@ -72,15 +74,17 @@ packages/shared/    Zod entities and primitives shared by web and backend
 packages/backend/   Convex backend: ingestion, portfolio, matching, alerts, WhatsApp webhook
 ```
 
-How the code is organised and why: `docs/architecture.md`. Rules for contributors and coding
+How the code is organised and why: `docs/architecture.md`, with contracts, security, data sources
+and integrations beside it in `docs/`. Rules for contributors and coding
 agents: `AGENTS.md`.
 
 ## Run locally
 
 ```
 pnpm install
-pnpm exec convex dev       # creates a Convex dev deployment
 pnpm dev                   # Next.js on http://localhost:3000
+pnpm check                 # lint, typecheck, tests and build: what CI runs
 ```
 
-Required environment variables are listed in `.env.example` (never commit real keys).
+The Convex backend is not in the repository yet. When it arrives, this section gains its command and
+a `.env.example` to copy (never commit real keys).
