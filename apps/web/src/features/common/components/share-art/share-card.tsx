@@ -1,8 +1,8 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { LIGHT_THEME_COLORS as C } from '@bratura/ui';
-import { SITE_SLOGAN, TAGLINE } from '../../config/site';
+import { SITE_SLOGAN, TAGLINE } from '@/features/common/config/site';
 import { ImageResponse } from 'next/og';
-import { loadGoogleFont } from '../../utils/load-google-font';
+import { loadGoogleFont } from '@/features/common/utils/load-google-font';
 import { SHARE_CARD_CONTENT } from './content';
 import { LogoArt } from './share-art';
 

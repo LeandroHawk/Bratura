@@ -1,6 +1,6 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { ReactNode } from 'react';
-import type { SitePath } from '../../utils/locale-path';
+import type { SitePath } from '@/features/common/utils/locale-path';
 import { SiteFooter } from './SiteFooter';
 import { MAIN_CONTENT_ID } from './mainContentId';
 import { SiteHeader } from './SiteHeader';

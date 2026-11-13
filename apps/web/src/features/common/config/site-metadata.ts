@@ -1,6 +1,9 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { Metadata } from 'next';
-import { languageAlternatesFromPath, localizedPathFromLocale } from '../utils/locale-path';
+import {
+  languageAlternatesFromPath,
+  localizedPathFromLocale,
+} from '@/features/common/utils/locale-path';
 import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from './site';
 
 /** Open Graph wants `language_TERRITORY`, not BCP 47. */

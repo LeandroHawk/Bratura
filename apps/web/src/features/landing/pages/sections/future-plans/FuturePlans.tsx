@@ -1,9 +1,9 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Heading } from '@bratura/ui';
-import { SectionColumns } from '../common/SectionColumns';
-import { SECTION_IDS } from '../common/sectionIds';
-import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
-import { WallLabel } from '../common/WallLabel';
+import { SectionColumns } from '@/features/landing/pages/sections/common/SectionColumns';
+import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
+import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
+import { WallLabel } from '@/features/landing/pages/sections/common/WallLabel';
 import { FUTURE_PLANS_CONTENT } from './content';
 import { FloorPlan } from './FloorPlan';
 

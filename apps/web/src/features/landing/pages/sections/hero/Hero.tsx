@@ -4,8 +4,8 @@ import { PageIntro } from '@/features/common/components/PageIntro';
 import { NewTabHint } from '@/features/common/components/NewTabHint';
 import { REPO_URL, TAGLINE } from '@/features/common/config/site';
 import { HERO_CONTENT } from './content';
-import { SECTION_IDS } from '../common/sectionIds';
-import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
+import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
+import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
 import { ExampleCall } from './ExampleCall';
 
 export function Hero({ locale }: { locale: Locale }) {

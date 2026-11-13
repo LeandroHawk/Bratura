@@ -1,8 +1,8 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Eyebrow, Heading, Tag } from '@bratura/ui';
-import { SectionBand } from '../common/SectionBand';
-import { SECTION_IDS } from '../common/sectionIds';
-import { titleIdFromSectionId } from '../common/titleIdFromSectionId';
+import { SectionBand } from '@/features/landing/pages/sections/common/SectionBand';
+import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
+import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
 import { BUSINESS_MODEL_CONTENT } from './content';
 import { Stage } from './Stage';
 import { StageScenery } from './StageScenery';

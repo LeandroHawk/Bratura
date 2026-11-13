@@ -1,7 +1,7 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Heading, Logo } from '@bratura/ui';
 import type { ReactNode } from 'react';
-import { SITE_SLOGAN } from '../config/site';
+import { SITE_SLOGAN } from '@/features/common/config/site';
 
 /** The opening of a page: the logo, the page's h1, a lead paragraph, then its actions. */
 export function PageIntro({

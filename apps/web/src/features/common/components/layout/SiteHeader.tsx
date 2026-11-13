@@ -1,6 +1,6 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Container, PullCord } from '@bratura/ui';
-import type { SitePath } from '../../utils/locale-path';
+import type { SitePath } from '@/features/common/utils/locale-path';
 import { LAYOUT_CONTENT } from './content';
 import { LanguageSwitch } from './LanguageSwitch';
 

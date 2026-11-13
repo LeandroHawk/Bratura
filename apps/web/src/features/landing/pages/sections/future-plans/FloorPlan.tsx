@@ -1,5 +1,5 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { RoomLabel } from '../common/RoomLabel';
+import { RoomLabel } from '@/features/landing/pages/sections/common/RoomLabel';
 import { FUTURE_PLANS_CONTENT, type FuturePlanId } from './content';
 
 /** Plans that are a door of their own; every other plan works in every room. */
