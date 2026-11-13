@@ -8,8 +8,9 @@ Cross-cutting subjects have their own file: `docs/contracts.md` (shapes, ports, 
 sends), `docs/security.md` (ownership, abuse, prompt injection), `docs/data-sources.md`,
 `docs/integrations/` (Firecrawl, WhatsApp), `docs/product.md` and, until 30/11, `docs/plan.md`.
 
-Status: **2026-11-08.** The web app and the design system follow it. `packages/shared` holds one
-primitive (the locale). The backend does not exist yet: §3 describes the shape it is born with.
+Status: **2026-11-13.** The web app and the design system follow it. `packages/shared` holds the
+locale and the first entities (`sources`, `callNotices`, `ingestionRuns`); `packages/backend` holds
+their Convex tables and nothing else yet.
 
 ## 1. Workspaces and the three levels of "shared"
 
@@ -85,20 +86,8 @@ backend, ports and the function builders: `docs/contracts.md`.
 
 ## 3. Backend (Convex)
 
-Moves to `packages/backend/AGENTS.md` when the package is created.
-
-```
-packages/backend/convex/
-  schema.ts       tables, derived from the Zod entities in packages/shared
-  http.ts         WhatsApp webhook (GET verify + POST messages)
-  crons.ts        scheduled ingestion and deadline alerts
-  ingestion/      sources, Mapas Culturais client, Firecrawl client, PDF extraction, classification
-  portfolio/      uploads, timeline, portfolio PDF, public page data
-  matching/       eligibility and gaps per creator × call
-  alerts/         deadline alerts (Resend e-mail, WhatsApp)
-  orgs/           organizations and memberships
-  llm/            the provider adapter (Gemini free tier) and its prompts
-```
+The folder layout, how to run it and the Zod bridge findings: `packages/backend/AGENTS.md`. What
+holds across folders:
 
 - **A Convex table is an entity**; its Zod declaration lives in `packages/shared/entities/` and the
   Convex validator is **derived** from it, never written beside it. Functions are declared through
@@ -115,6 +104,86 @@ packages/backend/convex/
 - **Adapters for what may change**: the LLM behind `llm/` (Gemini free tier: a queue and retries in
   ingestion), message channels behind `alerts/` (Resend, Nvoip).
 - **Ownership, abuse limits and secrets**: `docs/security.md`.
+
+### Call notice lifecycle
+
+A call notice (edital) fills in stage by stage, and each stage has **one writer**. Each stage is a
+fragment of `call-notice` in `packages/shared`, born with the code that writes it: the stages marked
+"later" are the agreed shape, not files to create now (§6).
+
+| stage | what it adds | writer | where it comes from | when |
+| --- | --- | --- | --- | --- |
+| listed | `listing` (title, official page, document link, id at the source), `registration-window` | `ingestion/` per source kind | Mapas API; an official page through Firecrawl `/map` | **now** |
+| seen | `tracking` (first and last seen) | the server, on every write | the clock | **now** |
+| document read | `document`: the Markdown of the PDF, its hash, when it was read | `ingestion/` | Firecrawl `/scrape` of `documentUrl` | PR C |
+| extracted | `extraction`: amounts, applicant types, art forms, region, required documents, each `null` or with a verbatim quote | `llm/`, checked against the text | the document's Markdown | 16–18/11 |
+| classified | whether it is a call for creators or noise (payment forms, council elections) and why | `llm/` + rules | the extraction | 16–18/11 |
+| matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
+| alerted | not on the call notice: an `alerts` row per message sent (creator, call notice, template, channel, status), so a reminder never goes twice | `alerts/` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
+
+- **A source kind decides only how a call notice is listed.** From "document read" on, every call
+  notice follows the same path, whichever kind listed it. A `newsSite` lists nothing: it is a
+  signal that sends the team to an official source.
+- **A changed document reruns the stages after it**: a new hash means a new extraction, and an
+  amended deadline means new matches and an alert ("o prazo mudou"). For that, `recordCallNotice`
+  will report a changed window once `alerts/` exists to consume it.
+- **WhatsApp and e-mail are channels of "alerted"**, behind the adapter in `alerts/`; they read
+  what the stages stored and never compute (`docs/integrations/whatsapp.md`). Who writes and reads
+  each part, folder by folder: `docs/contracts.md` §4.
+- **Creator-facing lists show only call notices classified as calls for creators**; the noise stays
+  stored, for the admin review.
+
+### The database is Convex
+
+One store, no second database. Convex is documents with a schema (the Zod entities), references by
+typed `Id` with indexes, serializable ACID transactions, and full-text and vector search if they
+are ever needed. What it lacks, and the answer here:
+
+- **No SQL joins or aggregates**: a count is a counter kept by the writer, not a scan.
+- **1 MiB per document**: a document's Markdown that may pass it goes to File Storage, the row
+  keeping its hash and link.
+- **Per function: 16 MiB read or written, 32,000 documents scanned, 1 s of user code** in queries
+  and mutations: ingestion works in batches. Actions run up to 10 min (Node) or 30 min.
+- **No unique constraint**: uniqueness is one mutation doing "look up by index → insert". Serializable
+  transactions make that safe under concurrency, so **one natural key, one writer**.
+
+### Errors
+
+Functions are called over a WebSocket, not URLs: there is no status code and no response envelope.
+
+- **An expected failure is thrown, never returned**: `throw appError({ code })`
+  (`packages/backend/convex/appError.ts`), whose data is `AppErrorSchema` in `packages/shared`.
+  Throwing also undoes every write the mutation made; returning `{ success: false }` would commit
+  them. The data reaches the front intact.
+- **Codes, not text**: `invalidInput` (with Zod's issues), `notFound`, `forbidden`, `conflict`,
+  `unavailable`. The front words them in the reader's language (`packages/shared/AGENTS.md`,
+  Messages).
+- **An unexpected failure is not ours to shape**: Convex shows it as "Server Error" with a request
+  id, and logs the stack.
+- **`http.ts` is the only HTTP**: webhooks answer with a status from the code (`invalidInput` 400,
+  `forbidden` 403, `notFound` 404, `conflict` 409, `unavailable` 503), born with the first webhook.
+- **Calls to the outside carry a timeout**: `fetch(url, { signal: AbortSignal.timeout(ms) })` in
+  every action; a source that does not answer ends as `unavailable`, not as a hung run (SP Cultura
+  took over 90 s).
+- **Public builders carry a rate limit** (`convex-helpers` `rateLimit`, already a dependency) when
+  the first public function is written: `docs/security.md` §2.
+
+### Idempotency and concurrency
+
+**Concurrency is Convex's**: every mutation is a serializable transaction under optimistic
+concurrency control; when two collide, Convex reruns one, so a read-then-write inside a mutation
+never races. Queries and mutations are retried on Convex's internal errors. **Actions are neither
+undone nor retried**: anything that touches the outside follows one of these patterns, chosen by
+flow.
+
+| pattern | how | Bratura flow | key |
+| --- | --- | --- | --- |
+| 1. Natural-key upsert | one mutation looks the key up in its index, then patches or inserts | a call notice from its source (`recordCallNotice`) | `sourceId` + `externalId` |
+| 2. Content-addressed work | the same input is never processed twice | reading a document (Firecrawl credits), extracting it (Gemini quota) | the document's hash |
+| 3. Outbox: reserve → act → confirm | a mutation reserves the row (`sending`), the action calls the outside, a mutation marks `sent` or `failed`; nothing is sent without a reserved row | WhatsApp and e-mail alerts | creator + call notice + template + occurrence (the D-7 of a given deadline) |
+| 4. Inbox | the provider's event id is stored first; a repeated id answers 200 and stops | Nvoip webhooks, a payment webhook if it comes | the provider's event id |
+| 5. Lease | at most one `running` row per job; a stale one (past its time limit) may be taken over | ingestion of a source, which a cron may fire while a run is still going | `sourceId` with status `running` |
+| 6. Client intent | a front's mutation sets a state (`setX`) rather than adding one more; a create carries a natural key or one made by the client | the creator's forms (a double click) | the natural key, or a client-generated id |
 
 ## 4. Languages (pt-BR, en)
 
@@ -134,10 +203,13 @@ packages/backend/convex/
 - **Names are long and declarative**: the concept, never the mechanics. Converters are
   `<output>From<input>` (`siteMetadataFromLocale`). When the right name is not obvious, propose
   options and ask: a rename later is a diff across every caller.
-- **The nature is in the file name**: `entity.ts`, `enum.ts`, `fields.ts`, `dto.ts`, `content.ts`,
+- **The nature is in the file name**: `entity.ts`, `enum.ts`, `fields.ts`, `variant.ts`, `dto.ts`, `content.ts`,
   `*.page.tsx`, `*.mapper.ts`, `use*.ts`. Folders are kebab-case; component files PascalCase.
 - **Domain language is English in code.** Product terms keep a Portuguese word only when the
-  English loses meaning; decide per term and list it here. So far: none (`opportunity`, `call`).
+  English loses meaning; decide per term and list it here. So far: none. An edital is a **call
+  notice** (`call-notice`, `callNotices`; decided 2026-11-13); `opportunity` is only Mapas Culturais'
+  name for it, used inside the Mapas client. A Convex module file cannot hold a hyphen, so modules
+  are camelCase (`ingestion/callNotices.ts`).
 
 ## 6. What stops a new piece
 
@@ -151,11 +223,8 @@ packages/backend/convex/
 
 ## 7. Open
 
-- **Convex × Zod bridge, before the first table:** how it behaves, not whether it exists.
-  `convex-helpers` (0.1.135 on 2026-11-12) exports `convex-helpers/server/zod4` with `zodToConvex`,
-  `withSystemFields` and `zCustomQuery`/`zCustomMutation`/`zCustomAction`. A Convex validator is
-  only a shape, so refinements (`superRefine`, `.min()` on a string) and transforms cannot live in
-  `schema.ts`: confirm that function args go through the full Zod parse.
+- **The one Convex import in `shared`** (`documentId`, decided 2026-11-13) is open to the team's
+  questioning: the exception and why, `packages/shared/AGENTS.md`.
 - **Headless components for the app screens** (team analysis, 2026-11-12): keep `@bratura/ui` as
   the design system and add **React Aria Components** inside `packages/ui` as an unstyled layer for
   what the screens will need: portfolio upload (`DropZone`, `FileTrigger`), filters by state, city

@@ -62,7 +62,7 @@ Never a share of the prize, never selling data.
 ## What to build
 
 1. **Ingestion**: Mapas API + Firecrawl → classification and extraction (every field nullable, each
-   with a verbatim quote, checked against the text) → `opportunities`.
+   with a verbatim quote, checked against the text) → `callNotices`.
 2. **Portfolio**: uploads, links, text → dated items the creator confirms; MEI/SICAB/CCMEI asked,
    never inferred.
 3. **Matching and gaps**: deterministic rules (region, applicant type, art form, deadline) → status
@@ -71,9 +71,9 @@ Never a share of the prize, never selling data.
    checklist, the portfolio in the call's format.
 5. **Alerts**: e-mail at D-7 and D-1; WhatsApp templates.
 
-Starting tables: `sources`, `opportunities`, `ingestionRuns`, `creators`, `portfolioItems`,
+Starting tables: `sources`, `callNotices`, `ingestionRuns`, `creators`, `portfolioItems`,
 `matches`, `applicationKits`, `alerts`, `organizations`, `memberships`. Screens: onboarding,
-portfolio builder, opportunities (Elegível / Quase / Todos), opportunity detail, kit, org panel,
+portfolio builder, call notices (Elegível / Quase / Todos), call notice detail, kit, org panel,
 admin review. The landing still lacks the way into the app ("Começar meu portfólio", "Sou uma
 organização"), which comes with login.
 
@@ -99,8 +99,8 @@ there is no backend. **Proposal, to confirm with the team:**
 
 | Dates | Deliverable | Who |
 | --- | --- | --- |
-| 13–15/11 | `packages/backend` with Convex, Zod bridge check, `sources` / `opportunities` / `ingestionRuns`; Mapas ingestion; first PDFs through Firecrawl (free plan until the draft's credits) | João Victor, Leandro |
-| 16–18/11 | Extraction with evidence check for ~10 chosen calls, admin review, opportunity list and detail with source links | João Victor, Leandro |
+| 13–15/11 | `packages/backend` with Convex, Zod bridge check, `sources` / `callNotices` / `ingestionRuns`; Mapas ingestion; first PDFs through Firecrawl (free plan until the draft's credits) | João Victor, Leandro |
+| 16–18/11 | Extraction with evidence check for ~10 chosen calls, admin review, call notice list and detail with source links | João Victor, Leandro |
 | 13–18/11 | Nvoip answers (`docs/integrations/whatsapp.md`), templates submitted for approval, opt-in fields | Leandro, Kaik |
 | 13–18/11 | Who the demo creator is, which calls to show, pitch numbers from the data | Atilio |
 | 19–22/11 | Fictional creator, simple portfolio, matching and gaps | João Victor |
