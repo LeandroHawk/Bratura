@@ -1,5 +1,5 @@
-import { defineConfig, globalIgnores } from 'eslint/config';
-import tseslint from 'typescript-eslint';
+import { typescriptPackageConfig } from '@bratura/eslint-config';
+import { defineConfig } from 'eslint/config';
 
 // The contract is imported by the web app and by Convex alike, so it depends on neither.
 const frameworkImports = {
@@ -8,8 +8,7 @@ const frameworkImports = {
 };
 
 export default defineConfig([
-  globalIgnores(['coverage/**']),
-  ...tseslint.configs.recommended,
+  ...typescriptPackageConfig(import.meta.dirname),
   {
     rules: {
       'no-restricted-imports': ['error', { patterns: [frameworkImports] }],
