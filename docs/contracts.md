@@ -120,7 +120,8 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
   model/
     ingestion/runSourceIngestion.ts  the loop every kind shares: lease, parse, record, count, close
     mapasCulturais/         the Mapas reader: client, edge Zod (payload.ts), listing, date
-    firecrawl/  nvoip/  llm/                                (later) outside APIs, the LLM adapter
+    firecrawl/  nvoip/      clients of the outside APIs, each with its payload.ts
+    llm/                    generateJson.ts (the only import; provider and model from env), evidence.ts
   crons.ts  http.ts         Convex's entry files
   extraction.ts             (16–18/11) fields from the Markdown, through model/llm
   whatsapp.ts  matching.ts  alerts.ts                       (later)

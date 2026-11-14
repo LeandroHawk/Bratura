@@ -8,20 +8,23 @@ in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 convex/
   schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
   crons.ts        the daily ingestion (09:00 UTC); deadline alerts later        } entry files:
-  http.ts         routes only: Nvoip inbound, Firecrawl webhooks   (not yet)    } fixed names
-  lib/            builders.ts (Zod args/returns), appError.ts: no functions
+  http.ts         routes only (Nvoip inbound, Firecrawl webhooks: not yet)      } fixed names
+  lib/            builders.ts (Zod args/returns), appError.ts, env.ts: no functions
 
   sources.ts      the sources the team registers and ingestion reads
   callNotices.ts  the call notice's only writer
   ingestion.ts    the daily schedule, one action per source kind, the run lease (`ingestionRuns`)
-  documents.ts    a call notice's documents read as Markdown (Firecrawl)        (not yet)
-  extraction.ts   a call notice's fields from its Markdown (the LLM)            (not yet)
-  whatsapp.ts  portfolio.ts  matching.ts  alerts.ts  orgs.ts                    (not yet)
+  documents.ts    a call notice's documents read as Markdown (Firecrawl)        (skeleton)
+  whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
+  extraction.ts   a call notice's fields from its Markdown (the LLM)            (skeleton)
+  portfolio.ts  matching.ts  alerts.ts  orgs.ts                                 (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
-    firecrawl/  nvoip/  llm/   clients of the outside APIs and the LLM adapter     (not yet)
+    firecrawl/       client.ts, payload.ts
+    nvoip/           client.ts, payload.ts
+    llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
 ```
 
@@ -55,9 +58,14 @@ pnpm exec convex run ingestion:ingestMapasCulturaisInstance '{"sourceId":"…"}'
 pnpm exec convex run ingestion:scheduleDailyIngestion '{}'
 ```
 
-Secrets (`FIRECRAWL_API_KEY`, the Nvoip and LLM keys) live **only** in the deployment's
-environment: `pnpm exec convex env set NAME` with no value prompts for it, so it stays out of shell
-history.
+Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `LLM_API_KEY`) live
+**only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
+it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).
+The LLM is configuration, not code: `LLM_BASE_URL` (any provider in the OpenAI chat format;
+Gemini's is `https://generativelanguage.googleapis.com/v1beta/openai`), `LLM_MODEL` (what AI
+Studio lists for the key's project) and `LLM_API_KEY`.
+`convex run whatsapp:checkNvoipCredentials '{}'` and `convex run extraction:checkLlmCredentials
+'{}'` prove a key works (the second spends one free-tier call).
 
 ## Rules
 
@@ -114,6 +122,6 @@ Errors, invariants.
 
 `convex-test` runs the real functions against the real schema in memory, in the edge runtime
 (`vitest.config.ts`). `convex/test.setup.ts` lists the modules for it. A test sits next to the
-module it covers (`sources.test.ts`, `model/mapasCulturais/listing.test.ts`); shared test data is a
+module it covers (`sources.test.ts`, `model/firecrawl/client.test.ts`); shared test data is a
 `*.fixture.ts` beside them (`sources.fixture.ts`). The Convex CLI skips any file name with two dots, so tests and
 fixtures never deploy.
