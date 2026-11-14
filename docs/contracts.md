@@ -57,16 +57,19 @@ packages/shared/src/entities/<entity>/
 - **A DTO starts in its port's folder** and moves to `common/` when the second port uses it (the
   three-levels rule of `docs/architecture.md` §1, applied to ports).
 - **A provider's payload is not a DTO.** What Nvoip, Firecrawl or Mapas send is parsed by a local Zod
-  schema in the backend module that reads it (`http.ts`, `ingestion/`), then translated into a call
+  schema beside the backend client that reads it (`model/<provider>/payload.ts`), then translated into a call
   to the same functions the site uses. It never enters `shared`.
 - **Names**: `<Concept><Query|Mutation>From<Port>{Args,Returns}Schema`, e.g.
   `EligibleCallNoticesQueryFromBraturaPortalArgsSchema`. Long on purpose: the name is what a grep
   finds.
+  A function no port calls (ingestion, crons) drops `From<Port>` and keeps its schemas beside it:
+  `GetMapasCulturaisInstanceQueryArgsSchema`, `StartIngestionRunMutationReturnsSchema`. Never
+  `Request`/`Response`: a function is not an HTTP call.
 
 ## 3. Declaring a function: the `withRoute` of Convex
 
 In a Next.js backend one wrapper (`withRoute`) declares auth, parses input, validates output and
-maps errors. In Bratura that is `packages/backend/convex/builders.ts`: builders take Zod `args`
+maps errors. In Bratura that is `packages/backend/convex/lib/builders.ts`: builders take Zod `args`
 and `returns`, parse both whole, and (once there is a caller) resolve auth before the handler.
 
 - **Auth is declared once, in the builder**: `publicQuery`, `creatorQuery`, `creatorMutation`,
@@ -97,7 +100,7 @@ and read under an old assumption by another breaks without a type error.
 
 The folders answer three questions without opening a doc. **Who writes and where it comes from**:
 the fragment, whose header says it (`Writes: … Comes from: …`), and the backend module it names.
-**Where it is read from**: the `ingestion/` folder of a source kind. **Who reads**: the port folder
+**Where it is read from**: the `model/` folder of a source kind. **Who reads**: the port folder
 of a DTO (§2). Stages and dates: `docs/architecture.md`, Call notice lifecycle.
 
 ```
@@ -108,18 +111,28 @@ packages/shared/src/entities/call-notice/
   dto/                      who reads, one folder per port (§2)
     bratura-portal/  whatsapp/                              (later)
 
-packages/backend/convex/
-  ingestion/
-    sources.ts              the team registers a source
-    callNotices.ts          the call notice's only writer
-    mapasCulturais/  officialPage/  newsSite/               (later) one reader per source kind
-  llm/  matching/  alerts/  http.ts                         (later)
+packages/backend/convex/    a root file is a door (Convex functions); model/ is what doors share
+  sources.ts                the team registers a source; ingestion reads one, or the active ones
+  callNotices.ts            the call notice's only writer
+  ingestion.ts              the process, not an entity: the daily schedule, one action per
+                            source kind, the run lease (the only writer of `ingestionRuns`)
+  documents.ts              (PR C) a call notice's documents as Markdown, through model/firecrawl
+  model/
+    ingestion/runSourceIngestion.ts  the loop every kind shares: lease, parse, record, count, close
+    mapasCulturais/         the Mapas reader: client, edge Zod (payload.ts), listing, date
+    firecrawl/  nvoip/  llm/                                (later) outside APIs, the LLM adapter
+  crons.ts  http.ts         Convex's entry files
+  extraction.ts             (16–18/11) fields from the Markdown, through model/llm
+  whatsapp.ts  matching.ts  alerts.ts                       (later)
 ```
 
+- **A source kind brings only what is its own** (`SourceReader` in `runSourceIngestion.ts`): how
+  to fetch, its edge Zod, its mapping to a listing. A new kind is a `model/` folder, an action in
+  `ingestion.ts` and a line in `ingestActionByKind`, which fails `tsc` until the kind is mapped.
 - **The source-kind folders mirror each other**: `entities/source/kinds/<kind>/` declares a kind,
-  `ingestion/<kind>/` reads it (camelCase there: Convex rejects a hyphen in a module path).
+  `model/<kind>/` reads it (camelCase there: Convex rejects a hyphen in a module path).
 - **A writer's args stay beside the writer** when no port calls it: ingestion is not a port, so
-  `recordCallNotice`'s args live in `ingestion/callNotices.ts`, not in `dto/` (`shared` holds only
+  `recordCallNotice`'s args live in `callNotices.ts`, not in `dto/` (`shared` holds only
   what crosses the wire).
 
 ## Open for brainstorming

@@ -161,7 +161,8 @@ caracteres"). Born with the first form; until then only the team reads errors, r
 ## Naming
 
 - **Every subject is a folder, even with one file**, and the file name says the nature:
-  `entity.ts`, `enum.ts`, `fields.ts`, `dto.ts`. Growing then adds a file; it never rewrites a
+  `entity.ts`, `enum.ts`, `fields.ts`, `dto.ts`, and `<subject>.ts` for its functions
+  (`calendar.ts`). Growing then adds a file; it never rewrites a
   consumer's import. Promoting a 19-consumer file to a folder later cost 21 import rewrites in a
   sibling project.
 - **The symbol suffix says the nature too**: a Zod enum ends in `...Enum` (`LocaleEnum`); what

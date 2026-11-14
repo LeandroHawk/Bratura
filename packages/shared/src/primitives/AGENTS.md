@@ -12,7 +12,7 @@ to delete them.
 
 | folder                | who controls it                                          | Bratura examples                                                   |
 | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `time/instant/`, `time/zoned-instant/` |
+| `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `time/instant/`, `time/zoned-instant/`, `calendar/` |
 | `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL), `deadline/` (a registration window) |
 | `external/<subject>/` | neither: law, an agency, an outside standard             | `locale/` (BCP 47, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/` |
 
@@ -45,8 +45,12 @@ primitives never import entities
 - **Time and calendar are two families, each a folder of subjects.** `code/time/` is the timeline:
   `instant/` (a point, the same everywhere), `time-zone/` (the zone a time was written in),
   `zoned-instant/` (a time as a source published it). `code/calendar/` is what people read: dates,
-  days between, "faltam 3 dias"; it is born with its first piece. An instant has no calendar until
-  it is read in a zone, so `calendar/` depends on `time/`, never the reverse.
+  days between, "faltam 3 dias"; `calendar/calendar.ts` holds the concept as a whole today
+  (`PlainDateTime`, `plainDateInSaoPaulo`). An instant has no calendar until it is read in a zone,
+  so `calendar/` depends on `time/`, never the reverse. **A conversion between the two families
+  lives in `calendar/`**, whatever it returns (`instantFromPlainDateTimeInZone`): placed in `time/`
+  it would import a calendar notion. `calendar/date/`, `day/`, `month/`, `year/` are born with
+  their first piece (rule below).
 - **A time zone a function reads in goes in its name, never in a folder** (`daysBetweenInSaoPaulo`,
   not `sao-paulo/days-between`). A zone **stored as data** (the one a source wrote a deadline in) is
   a value: `time/time-zone/`. It is `code/`, not `external/`: we keep no list, the runtime's
@@ -56,12 +60,18 @@ primitives never import entities
   for now, `Intl.DateTimeFormat` to show a time in a zone. A primitive earns its name by adding a
   rule or a meaning the native expression lacks: `requiredInstant` says what the integer is,
   `requiredHttpsUrl` adds a policy, `requiredString(max)` a ceiling. The `Temporal` API is not in
-  Node 22: its vocabulary (`Instant`, `ZonedDateTime`) names our pieces, its API does not exist.
+  Node 22: its vocabulary (`Instant`, `PlainDateTime`, `ZonedDateTime`) names our pieces, its API does not exist.
 - **A folder is born when a piece returns that concept**, not when the concept can be mentioned.
   A sibling project created `hour/` and `second/` folders with aliases (`HourOfDay = number`) and
   removed them: a type alias of a native type vanishes at compile time and guarantees nothing.
 - **No empty `formatters.ts` / `validator.ts`** in every folder. A file is born with its first
   piece.
+- **A subject's functions live in a file named after the subject**, beside its `fields.ts`:
+  `calendar/calendar.ts` (`instantFromPlainDateTimeInZone`, `plainDateInSaoPaulo`). The function's
+  name carries the meaning; a catch-all `utils.ts` is not a subject.
+- **A value checked by a refine is branded** when functions take it (`IanaTimeZone`): a plain
+  `string` then fails `tsc`, so the check cannot be skipped. A brand is type-only: Convex stores
+  the base type.
 
 ## Before naming a piece of `code/`
 

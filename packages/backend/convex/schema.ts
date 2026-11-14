@@ -11,5 +11,8 @@ export default defineSchema({
     'sourceId',
     'externalId',
   ]),
-  ingestionRuns: defineTable(zodToConvex(IngestionRunSchema)).index('by_source', ['sourceId']),
+  ingestionRuns: defineTable(zodToConvex(IngestionRunSchema)).index('by_source_and_status', [
+    'sourceId',
+    'status',
+  ]),
 });

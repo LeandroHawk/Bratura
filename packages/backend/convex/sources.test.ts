@@ -1,12 +1,12 @@
 import { convexTest } from 'convex-test';
 import { describe, expect, test } from 'vitest';
 import type { Source } from '@bratura/shared/entities/source/entity';
-import { internal } from '../_generated/api';
-import schema from '../schema';
-import { modules } from '../test.setup';
-import { federalMapasSource } from './source.fixture';
+import { internal } from './_generated/api';
+import schema from './schema';
+import { modules } from './test.setup';
+import { federalMapasSource } from './sources.fixture';
 
-const addSource = internal.ingestion.sources.addSource;
+const addSource = internal.sources.addSource;
 
 // The Convex validator derived by zodToConvex is only a shape (`slug: v.string()`). These tests
 // prove the builder still runs the entity's field rules (docs/contracts.md §3).
@@ -72,5 +72,38 @@ describe('addSource', () => {
     const t = convexTest(schema, modules);
     await t.mutation(addSource, { source: federalMapasSource });
     await expect(t.mutation(addSource, { source: federalMapasSource })).rejects.toThrow(/conflict/);
+  });
+});
+
+const newsSite: Source = {
+  kind: 'newsSite',
+  slug: 'news',
+  name: 'News',
+  isActive: true,
+  robotsCheckedOn: '2026-11-13',
+  termsCheckedOn: '2026-11-13',
+  siteUrl: 'https://example.com.br',
+};
+
+describe('getSource', () => {
+  test('gives the source as registered, without system fields', async () => {
+    const t = convexTest(schema, modules);
+    const sourceId = await t.mutation(addSource, { source: federalMapasSource });
+    expect(await t.query(internal.sources.getSource, { sourceId })).toEqual(federalMapasSource);
+  });
+});
+
+describe('listActiveSources', () => {
+  test('lists only active sources, with their kind', async () => {
+    const t = convexTest(schema, modules);
+    const mapasId = await t.mutation(addSource, { source: federalMapasSource });
+    await t.mutation(addSource, {
+      source: { ...federalMapasSource, slug: 'mapas-off', isActive: false },
+    });
+    const newsId = await t.mutation(addSource, { source: newsSite });
+    expect(await t.query(internal.sources.listActiveSources, {})).toEqual([
+      { sourceId: mapasId, kind: 'mapasCulturaisInstance' },
+      { sourceId: newsId, kind: 'newsSite' },
+    ]);
   });
 });
