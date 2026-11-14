@@ -40,7 +40,7 @@ it). **Read the one for the folder you are about to change before creating a fil
 | `docs/integrations/`         | Firecrawl, WhatsApp (Nvoip)                                        |
 | `docs/plan.md`               | until 30/11: product, competition rules, tools, dates              |
 | `docs/product.md`            | the idea, track fit, competitors, who pays, phases (owner: the PO) |
-| `docs/review.md`             | reviewing any change: owners to open, four lenses, repo checks     |
+| `docs/review.md`             | reviewing any change: owners, four lenses, backend, repo checks    |
 
 **Every one of these is open for brainstorming**, security above all: question a rule in the PR or
 with the team instead of working around it.

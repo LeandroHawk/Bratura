@@ -4,7 +4,9 @@ type EyebrowProps = HTMLAttributes<HTMLElement> & {
   as?: 'p' | 'span' | 'figcaption';
 };
 
-/** Small uppercase label that sits above or beside content: a room number, a caption, a group name. */
+/**
+ * Small uppercase label that sits above or beside content: a room number, a caption, a group name.
+ */
 export function Eyebrow({ as: Tag = 'p', className = '', ...props }: EyebrowProps) {
   return (
     <Tag

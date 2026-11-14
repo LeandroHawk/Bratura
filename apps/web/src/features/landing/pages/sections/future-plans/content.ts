@@ -1,6 +1,9 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
-/** Accessibility features planned but not built yet: other ways through the same rooms, not new ones. */
+/**
+ * Accessibility features planned but not built yet: other ways through the same rooms, not new
+ * ones.
+ */
 const ptBR = {
   title: 'Outras formas de visitar',
   lead: 'Planejado para depois do essencial, se o prazo da maratona permitir.',

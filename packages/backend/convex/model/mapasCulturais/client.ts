@@ -1,6 +1,8 @@
 import { plainDateInSaoPaulo } from '@bratura/shared/primitives/code/calendar/calendar';
 
-/** A Mapas instance that has not answered in this long is `unavailable` (SP Cultura took over 90 s). */
+/**
+ * A Mapas instance that has not answered in this long is `unavailable` (SP Cultura took over 90 s).
+ */
 const mapasTimeoutMs = 60_000;
 
 /**

@@ -19,7 +19,8 @@ const RecordCallNoticeMutationReturnsSchema = z.object({
 
 /**
  * Stores a call notice as its source lists it now: a new one is inserted, a known one (same source
- * and external id) is updated in place, so a notice read every day stays one row (natural-key upsert).
+ * and external id) is updated in place, so a notice read every day stays one row (natural-key
+ * upsert).
  */
 export const recordCallNotice = internalZodMutation({
   args: RecordCallNoticeMutationArgsSchema,

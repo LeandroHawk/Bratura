@@ -15,9 +15,9 @@ export function syncThemeColor() {
 }
 
 /**
- * Sets dark on `<html>` when the visitor chose it (light is the default; blocked storage is ignored).
- * Run from `<head>` by `themeInitScript` and on mount for client-rendered documents. Inlined as
- * source text, so it may touch only its arguments and browser globals.
+ * Sets dark on `<html>` when the visitor chose it (light is the default; blocked storage is
+ * ignored). Run from `<head>` by `themeInitScript` and on mount for client-rendered documents.
+ * Inlined as source text, so it may touch only its arguments and browser globals.
  */
 export function restoreSavedTheme(storageKey = THEME_STORAGE_KEY, syncColor = syncThemeColor) {
   try {

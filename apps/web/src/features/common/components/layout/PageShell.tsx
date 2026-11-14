@@ -19,7 +19,7 @@ export function PageShell({
   return (
     // At least one screen tall, so a short page (the 404) keeps the footer at the bottom.
     <div className="flex min-h-dvh flex-col">
-      {/* Full-width clip: the cord's glow fades off the right edge of the screen, not the column. */}
+      {/* Full-width clip: the cord's glow fades off the screen's right edge, not the column's. */}
       <div className="flex-1 overflow-x-clip">
         <SiteHeader locale={locale} path={path} />
         <main id={MAIN_CONTENT_ID}>{children}</main>
