@@ -26,7 +26,7 @@ export const CallNoticeDocumentFailureEnum = z.enum([
 ]);
 export type CallNoticeDocumentFailure = z.infer<typeof CallNoticeDocumentFailureEnum>;
 
-/** Past this, a document's Markdown would not fit a Convex row (1 MiB); the largest measured: 54k. */
+/** Past this, the Markdown would not fit a Convex row (1 MiB); the largest measured: 54k. */
 export const callNoticeDocumentMarkdownMax = 900_000;
 
 const callNoticeDocumentCommonFields = {

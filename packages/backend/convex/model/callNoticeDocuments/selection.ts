@@ -39,9 +39,9 @@ export function reasonToSkipReadingDocuments(
 }
 
 /**
- * File-name rules, first match wins. `lista` only as a word: inside one it is a profession
- * (instrumentalista, especialista), and a call for them is still a call. `null` is never read: results and lists of applicants carry
+ * File-name rules, first match wins. `null` is never read: results and lists of applicants carry
  * personal data (`docs/security.md` §4), and forms are what an applicant fills in, not the rules.
+ * `lista` only as a word: inside one it is a profession (instrumentalista), still a call.
  */
 const documentRoleByFileName: [CallNoticeDocumentRole | null, RegExp][] = [
   [
