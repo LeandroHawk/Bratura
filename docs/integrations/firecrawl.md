@@ -68,6 +68,10 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   portfolio is scored: only there). **Never** results, rankings or lists of applicants (personal
   data), nor the forms an applicant fills in. A call whose notice no file name identifies is left
   for the admin review.
+- **Every measured number here is Mapas Culturais, mostly Ceará** (2026-11-14): file names,
+  Markdown from its PDFs, the `2111` sentinel, extraction accuracy. A new source (another Mapas
+  instance, a city's own site, a scanned PDF) is measured on a sample before it is trusted; its
+  `valuesRefused` in the extractions is the first sign it needs its own rules.
 - **Reading is run by hand for now** (`convex run`, with a credit ceiling per run), not by the
   daily cron, so no read spends credits nobody planned.
 - **robots.txt is respected** (Firecrawl's default; never turn it off). Blocked URLs show up as
