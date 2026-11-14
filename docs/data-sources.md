@@ -31,6 +31,16 @@ Public JSON, no auth. Instances confirmed working:
 | Santo André-SP | `culturaz.santoandre.sp.gov.br` | 1 | 3 | `Etc/GMT+3` |
 | Canindé-CE | `mapacultural.caninde.ce.gov.br` | 0 (monitor) | 0 | — |
 
+**The list of instances** is the `mapasculturais` README on GitHub
+(`https://github.com/mapasculturais/mapasculturais`, branch `develop`, sections "Instalações em
+nível federal ou internacional", "estaduais", "municipais", "outras"). Every listed host was probed
+on 2026-11-14. São Paulo state: **Mauá** (`mapacultural.maua.sp.gov.br`, 3 open, 1 with documents;
+17 opened in 2026) and Itatiba (`mapacultural.itatiba.sp.gov.br`, 0 open; 12 in 2026, 2 with
+documents) work; Campinas, Limeira and Santo Anastácio answer with nothing open. Listed but dead:
+Guarujá, Guarulhos, Itu and São Caetano (no DNS); São Bernardo and Osasco (no answer); SPCultura
+(`spcultura.prefeitura.sp.gov.br`, no byte in 120 s, third check). No Baixada Santista city runs a
+working instance.
+
 `robots.txt` answers 404 on all five (2026-11-13): nothing declared. Terms: see Rules; Ceará's are a
 PDF (`termo_de_uso_-_mapa_cultural_do_ceara_v1.0.pdf`), the others publish none found.
 
@@ -67,7 +77,8 @@ GET https://{host}/api/opportunity/find
 | Source | URL | robots |
 | --- | --- | --- |
 | São Paulo city culture calls | `https://prefeitura.sp.gov.br/web/cultura/editais/` | allows all |
-| Amigos da Arte (SP state calls) | `https://amigosdaarte.org.br` (current list not found; `/editais/` redirects to `/editais-antigos/`) | allows except wp-admin |
+| Amigos da Arte (SP state calls) | `https://amigosdaarte.org.br/editais_/` (with the underscore; RSS at `/editais_/feed/`); the 4 calls of 2026 are closed | allows except wp-admin |
+| Santos (SECULT: PNAB 2026, FACULT) | official pages with the PDFs; all 2026 calls closed (2026-11-14) | 404: nothing declared |
 | Goiás government (craft fairs) | `https://goias.gov.br` (the fairs page is still to find) | allows except wp-admin |
 
 Gap-fixing guidance (Portal do Empreendedor for MEI/CCMEI, SICAB via the state craft coordination,
@@ -84,14 +95,17 @@ later.
 
 | What | Finding |
 | --- | --- |
-| Other Mapas instances | No official list. Guessed hosts for BA, GO, ES, SP, RS, MS do not resolve; `mapacultural.es.gov.br` returns no API JSON |
+| Guessed Mapas hosts | Guessed hosts for BA, GO, ES, SP, RS, MS and the Baixada Santista cities do not resolve; use the GitHub list (Mapas Culturais API above) |
 | Espírito Santo fair sites | `aderes.es.gov.br`, `www.es.gov.br`, `secult.es.gov.br` return 404 for robots.txt: check each site before use |
 | SMC Editais, Promac (`smceditais…`, `smcpromac…`) | Application systems (API 401): link to them, not sources |
+| Fomento CultSP (`fomentocultsp.sp.gov.br/editais-vigentes`, SP state) | The state's list of open calls, but the page redirects to a login (`/auth/login`, 2026-11-14): link to it, not a source |
+| SP state culture portal (`cultura.sp.gov.br`, Portal do Fomento) | Behind Incapsula (anti-bot); `proac.sp.gov.br` redirects there |
+| Mongaguá, Guarujá, Itanhaém | Cloudflare content signals leave AI input undecided: a team call before use |
 | ProAC (SP state, ~R$ 90 mi in 2026) | Applications closed 3/8; current official page not found |
 | São José dos Campos | Uses Prosas: out |
 | News (e.g. Catraca Livre) | robots allows except search and `wp-json`; a signal only, never stored |
 | DOU via dados.gov.br | The API needs a token (401); the Imprensa Nacional open-data page did not answer. A key or an INLABS sign-up would be easy, but DOU only adds federal calls already in the federal Mapas instance |
-| Querido Diário | API down (HTTP 522 since 2026-10-19, open issue in `okfn-brasil/querido-diario-api`); its robots says `Content-Signal: search=yes,ai-train=no,use=reference`; the API moved to `api.queridodiario.org.br`. Recheck later |
+| Querido Diário | Down from 2026-10-19 (HTTP 522); on 2026-11-14 one 200 then timeouts, terms page needs JavaScript; its robots says `Content-Signal: search=yes,ai-train=no,use=reference`; the API moved to `api.queridodiario.org.br`. Recheck later |
 | Rouanet open data | SALIC API (`api.salic.cultura.gov.br`) 404; VerSalic "Serviço em migração"; the dados.turismo.gov.br dataset was last updated 2022-01-25; the Zenodo copy (CC-BY) covers 2010–2014. Pitch only |
 
 Never use a team member's personal gov.br login to reach a source; an API key goes in the environment
@@ -108,7 +122,7 @@ variables, never in chat or the repo.
 
 ## Open for brainstorming
 
-New sources are welcome as proposals, with the robots.txt and terms check. Open now: other Mapas
-instances (no official list found), where ProAC and Amigos da Arte list current calls, the Goiás
-fairs page, and whether the demo shows recently closed SP calls marked as closed (most 2026 SP
-windows closed June–September) while matching only lists open ones.
+New sources are welcome as proposals, with the robots.txt and terms check. Open now: which listed
+Mapas instances to register (Mauá first for SP), where ProAC lists current calls, the Goiás fairs
+page, and whether the demo shows recently closed SP calls marked as closed (most 2026 SP windows
+closed June–September) while matching only lists open ones.
