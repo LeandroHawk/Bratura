@@ -37,7 +37,7 @@ const permanentFailures: ReadonlySet<CallNoticeDocumentFailure> = new Set(['noTe
 /** A reservation older than this is taken as dead (its action stopped) and may be read again. */
 export const documentReadingLeaseMs = 10 * 60 * 1000;
 
-/** Whether a stored document still needs a read: never read, a retryable failure, a dead reservation. */
+/** Whether a document still needs a read: never read, a retryable failure, a dead reservation. */
 function needsRead(known: CallNoticeDocument | null, now: number) {
   if (!known) return true;
   if (known.status === 'read') return false;
