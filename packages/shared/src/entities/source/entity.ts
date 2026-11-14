@@ -15,3 +15,12 @@ export const SourceSchema = z.discriminatedUnion('kind', [
 ]);
 
 export type Source = z.infer<typeof SourceSchema>;
+
+/** Which kind a source is: what decides how ingestion reads it. */
+export const SourceKindSchema = z.union([
+  MapasCulturaisInstanceSourceSchema.shape.kind,
+  OfficialPageSourceSchema.shape.kind,
+  NewsSiteSourceSchema.shape.kind,
+]);
+
+export type SourceKind = z.infer<typeof SourceKindSchema>;

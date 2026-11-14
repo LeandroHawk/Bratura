@@ -93,16 +93,16 @@ holds across folders:
   Convex validator is **derived** from it, never written beside it. Functions are declared through
   builders that carry auth and Zod `args`/`returns` (`docs/contracts.md` §3).
 - **Every outside input is parsed at the edge**, in the module that reads it, with a local Zod
-  schema that is not an entity and not in `shared`: Mapas API responses and Firecrawl output in
-  `ingestion/`, provider webhooks in `http.ts`, LLM output in `llm/` (every field nullable, each
+  schema that is not an entity and not in `shared`: Mapas, Firecrawl and Nvoip answers in the
+  `payload.ts` beside their client in `model/`, LLM output in `model/llm/` (every field nullable, each
   with a verbatim quote checked against the text: `docs/security.md` §3).
 - **Nothing is invented.** Every amount, deadline and requirement shown comes from a stored field
   with its source link; a field not found is stored as `null` and shown as "não informado".
 - **Only allowed sources**, batch crawling only: `docs/data-sources.md`.
 - **The backend computes, the web displays.** Eligibility, gaps and deadlines are computed in
   Convex and stored (`matches`); the web and the WhatsApp bot never re-derive them.
-- **Adapters for what may change**: the LLM behind `llm/` (Gemini free tier: a queue and retries in
-  ingestion), message channels behind `alerts/` (Resend, Nvoip).
+- **Adapters for what may change**: the LLM behind `model/llm/`, any provider in the OpenAI chat format
+  chosen by the deployment's env (Gemini's API free tier today: a queue and retries in ingestion), message channels behind one adapter in `model/` (Resend, Nvoip).
 - **Ownership, abuse limits and secrets**: `docs/security.md`.
 
 ### Call notice lifecycle
@@ -113,21 +113,24 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 
 | stage | what it adds | writer | where it comes from | when |
 | --- | --- | --- | --- | --- |
-| listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion/` per source kind | Mapas API; an official page through Firecrawl `/map` | **now** |
+| listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion.ts`, one action per source kind | Mapas API (`model/mapasCulturais/`, daily cron); an official page through Firecrawl `/map` | **now** |
 | seen | `tracking` (first and last seen) | the server, on every write | the clock | **now** |
-| document read | `document`: which of `documentUrls` is the call notice, its Markdown, hash and when it was read | `ingestion/` | Firecrawl `/scrape` | PR C |
-| extracted | `extraction`: amounts, applicant types, art forms, region, required documents, each `null` or with a verbatim quote | `llm/`, checked against the text | the document's Markdown | 16–18/11 |
-| classified | whether it is a call for creators or noise (payment forms, council elections) and why | `llm/` + rules | the extraction | 16–18/11 |
+| document read | `document`: which of `documentUrls` is the call notice, its Markdown, hash and when it was read | `documents.ts` | Firecrawl `/scrape` | PR C |
+| extracted | `extraction`: amounts, applicant types, art forms, region, required documents, each `null` or with a verbatim quote | `extraction.ts` through `model/llm/`, checked against the text (`evidence.ts`) | the document's Markdown | 16–18/11 |
+| classified | whether it is a call for creators or noise (payment forms, council elections) and why | `model/llm/` + rules | the extraction | 16–18/11 |
 | matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
-| alerted | not on the call notice: an `alerts` row per message sent (creator, call notice, template, channel, status), so a reminder never goes twice | `alerts/` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
+| alerted | not on the call notice: an `alerts` row per message sent (creator, call notice, template, channel, status), so a reminder never goes twice | `alerts.ts` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
 
 - **A source kind decides only how a call notice is listed.** From "document read" on, every call
   notice follows the same path, whichever kind listed it. A `newsSite` lists nothing: it is a
   signal that sends the team to an official source.
 - **A changed document reruns the stages after it**: a new hash means a new extraction, and an
   amended deadline means new matches and an alert ("o prazo mudou"). For that, `recordCallNotice`
-  will report a changed window once `alerts/` exists to consume it.
-- **WhatsApp and e-mail are channels of "alerted"**, behind the adapter in `alerts/`; they read
+  will report a changed window once `alerts.ts` exists to consume it.
+- **A structured date beats an extracted one**: when the Mapas API gives the registration window,
+  it stays; a different date in the PDF is kept as a flagged divergence, not a replacement (user,
+  2026-11-14).
+- **WhatsApp and e-mail are channels of "alerted"**, behind the channel adapter in `model/`; they read
   what the stages stored and never compute (`docs/integrations/whatsapp.md`). Who writes and reads
   each part, folder by folder: `docs/contracts.md` §4.
 - **Creator-facing lists show only call notices classified as calls for creators**; the noise stays
@@ -152,7 +155,7 @@ are ever needed. What it lacks, and the answer here:
 Functions are called over a WebSocket, not URLs: there is no status code and no response envelope.
 
 - **An expected failure is thrown, never returned**: `throw appError({ code })`
-  (`packages/backend/convex/appError.ts`), whose data is `AppErrorSchema` in `packages/shared`.
+  (`packages/backend/convex/lib/appError.ts`), whose data is `AppErrorSchema` in `packages/shared`.
   Throwing also undoes every write the mutation made; returning `{ success: false }` would commit
   them. The data reaches the front intact.
 - **Codes, not text**: `invalidInput` (with Zod's issues), `notFound`, `forbidden`, `conflict`,
@@ -209,7 +212,7 @@ flow.
   English loses meaning; decide per term and list it here. So far: none. An edital is a **call
   notice** (`call-notice`, `callNotices`; decided 2026-11-13); `opportunity` is only Mapas Culturais'
   name for it, used inside the Mapas client. A Convex module file cannot hold a hyphen, so modules
-  are camelCase (`ingestion/callNotices.ts`).
+  are camelCase (`callNotices.ts`).
 
 ## 6. What stops a new piece
 

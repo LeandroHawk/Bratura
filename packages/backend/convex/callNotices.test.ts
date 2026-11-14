@@ -1,16 +1,20 @@
 import { convexTest } from 'convex-test';
+import {
+  ianaTimeZone,
+  type IanaTimeZone,
+} from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { describe, expect, test } from 'vitest';
-import { internal } from '../_generated/api';
-import type { Id } from '../_generated/dataModel';
-import schema from '../schema';
-import { modules } from '../test.setup';
-import { federalMapasSource } from './source.fixture';
+import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
+import schema from './schema';
+import { modules } from './test.setup';
+import { federalMapasSource } from './sources.fixture';
 
-const recordCallNotice = internal.ingestion.callNotices.recordCallNotice;
+const recordCallNotice = internal.callNotices.recordCallNotice;
 
 const inFortaleza = (at: number, precision: 'day' | 'minute') => ({
   at,
-  timeZone: 'America/Fortaleza',
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
   precision,
 });
 
@@ -27,7 +31,7 @@ const listing = (sourceId: Id<'sources'>) => ({
 
 async function withSource() {
   const t = convexTest(schema, modules);
-  const sourceId = await t.mutation(internal.ingestion.sources.addSource, {
+  const sourceId = await t.mutation(internal.sources.addSource, {
     source: federalMapasSource,
   });
   return { t, sourceId };
@@ -45,12 +49,13 @@ describe('recordCallNotice', () => {
   test('a call notice read again stays one row, updated in place', async () => {
     const { t, sourceId } = await withSource();
     const first = await t.mutation(recordCallNotice, listing(sourceId));
+    expect(first.isNew).toBe(true);
     const again = await t.mutation(recordCallNotice, {
       ...listing(sourceId),
       title: 'Edital de Difusão Cultural 2026 (retificado)',
     });
     const stored = await t.run((ctx) => ctx.db.query('callNotices').collect());
-    expect(again).toBe(first);
+    expect(again).toEqual({ callNoticeId: first.callNoticeId, isNew: false });
     expect(stored).toHaveLength(1);
     expect(stored[0]?.title).toBe('Edital de Difusão Cultural 2026 (retificado)');
   });
@@ -93,14 +98,18 @@ describe('recordCallNotice', () => {
     await expect(
       t.mutation(recordCallNotice, {
         ...listing(sourceId),
-        registrationCloses: { ...inFortaleza(0, 'day'), timeZone: 'America/Atlantis' },
+        // Cast on purpose: the brand stops this at compile time; the test proves the runtime does too.
+        registrationCloses: {
+          ...inFortaleza(0, 'day'),
+          timeZone: 'America/Atlantis' as IanaTimeZone,
+        },
       }),
     ).rejects.toThrow(/unknownTimeZone/);
   });
 
   test('rejects an id from another table as the source', async () => {
     const { t, sourceId } = await withSource();
-    const callNoticeId = await t.mutation(recordCallNotice, listing(sourceId));
+    const { callNoticeId } = await t.mutation(recordCallNotice, listing(sourceId));
     await expect(
       t.mutation(recordCallNotice, {
         ...listing(sourceId),

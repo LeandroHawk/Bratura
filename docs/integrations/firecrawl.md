@@ -5,7 +5,7 @@ call's PDF**, including the PDFs linked from the Mapas API (eligibility, amounts
 only there). Which sites: `docs/data-sources.md`. Based on the team's analysis of the Firecrawl docs
 (`docs.firecrawl.dev`: scrape, crawl, change tracking, `maxAge`, webhooks, billing).
 
-## Ingestion flow (`packages/backend/convex/ingestion/`)
+## Ingestion flow (`packages/backend/convex/`: `ingestion.ts`, `documents.ts`, `model/firecrawl/`)
 
 ```
 crons.ts (daily)
@@ -19,7 +19,7 @@ crons.ts (daily)
                                                                      ▼
                       changed? (changeTracking or a hash of the Markdown) ── no → stop
                                                                      ▼ yes
-                      llm/ (Gemini): JSON with a verbatim quote per field
+                      model/llm/ (Gemini): JSON with a verbatim quote per field
                                                                      ▼
                       Zod safeParse + evidence check → `callNotices`
                                                                      ▼
@@ -50,7 +50,7 @@ The team's draft of this flow also stored an embedding per call; matching is rul
 ## Decisions
 
 - **Firecrawl's Markdown + our own Gemini extraction**, not Firecrawl's JSON mode: JSON mode costs
-  extra credits per page and would take extraction out of `llm/`, where the evidence check and the
+  extra credits per page and would take extraction out of `model/llm/`, where the evidence check and the
   swappable provider live (`docs/security.md` §3).
 - **Credits are the budget.** The team gets 5,000 credits per member once the competition draft is
   approved; before that, only the free plan (1,000 credits a month). Per the team's reading of the
@@ -62,7 +62,7 @@ plan has no pay-as-you-go: when credits run out, calls fail with HTTP 402, so in
 `ingestionRuns` and stops.
 - **robots.txt is respected** (Firecrawl's default; never turn it off). Blocked URLs show up as
   `robotsBlocked` in the crawl errors: record them in `ingestionRuns`.
-- **The response is parsed at the edge** by a Zod schema inside `ingestion/`; it is not a DTO and
+- **The response is parsed at the edge** by a Zod schema in `model/firecrawl/payload.ts`; it is not a DTO and
   not in `shared` (`docs/contracts.md` §2).
 - **`FIRECRAWL_API_KEY` lives only in Convex environment variables.** The official SDK
   (`@mendable/firecrawl-js`, in a `"use node"` action) is a new dependency: the team decides, or

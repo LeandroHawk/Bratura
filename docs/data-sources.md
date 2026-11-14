@@ -54,6 +54,7 @@ GET https://{host}/api/opportunity/find
   federal calls): the call notice and its annexes (up to 37 on one call), plus `.docx` forms and
   media (`.mp4`, `.mp3`, `.jpg`). A call notice stores the text files in order (`documentUrls`),
   media left out; which one is the call notice is decided when documents are read.
+- One federal summary had 5,753 characters: past the contract's 5,000, it is cut and marked "…".
 - Filters: `EQ`, `LIKE` (with `*`), `BET(a,b)`, `GTE`, `LTE`, `AND(...)`, `OR(...)`, `!`.
 - **Dirty data**: payment forms ("habilitação de pagamento"), council elections, Mapas
   opportunities created by individuals. Classification drops them from creator-facing lists.

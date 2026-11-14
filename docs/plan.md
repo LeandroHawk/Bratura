@@ -54,7 +54,7 @@ Never a share of the prize, never selling data.
 | Devin | Pair programming in small PRs that follow the `AGENTS.md` files; never in production | After the competition draft is approved (the coupon comes with it) |
 | Convex | Database, functions, ingestion cron, portfolio files, `http.ts` for webhooks | First, after the Zod bridge check (`docs/architecture.md` §7) |
 | Firecrawl | Reads pages without an API and the text of every call PDF | Batch ingestion only; credits come with the draft (`docs/integrations/firecrawl.md`) |
-| Gemini (free tier) | Classifies and extracts call fields, plain summaries, kit texts | Behind `llm/` in the backend |
+| Gemini (free tier) | Classifies and extracts call fields, plain summaries, kit texts | Behind `model/llm/` in the backend |
 | WorkOS | Login (Google, e-mail code) | Can come last: the demo uses a fictional creator |
 | Resend | Deadline e-mails | With alerts |
 | Nvoip | WhatsApp templates (and inbound, if available) | A plus, owned by the WhatsApp team (`docs/integrations/whatsapp.md`) |

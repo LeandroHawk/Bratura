@@ -16,7 +16,7 @@ the files that own what a change is tempted to redo:
 | `sections/common/` of the page          | pieces shared by that page's sections                     |
 | `packages/shared` exports               | every shape and its Zod (one shape, one Zod)              |
 | `packages/shared/src/primitives/code/`  | field rules: `requiredString`, URLs, `time/`, `id/`, `error/` |
-| `packages/backend/convex/builders.ts`   | how a function is declared; `appError.ts`, how it fails   |
+| `packages/backend/convex/lib/builders.ts` | how a function is declared; `lib/appError.ts`, how it fails |
 
 ## 2. The four lenses
 

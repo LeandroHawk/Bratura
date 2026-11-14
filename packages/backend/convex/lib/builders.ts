@@ -13,11 +13,11 @@ import {
   type ActionCtx,
   type MutationCtx,
   type QueryCtx,
-} from './_generated/server';
+} from '../_generated/server';
 import { appError } from './appError';
 
 /** The args as callers see them: Convex's reading of the Zod shape, where a documentId is an `Id`. */
-type CallerArgs<Args extends z.ZodObject> = ObjectType<{
+export type CallerArgs<Args extends z.ZodObject> = ObjectType<{
   [Field in keyof Args['shape']]: ConvexValidatorFromZod<Args['shape'][Field], 'required'>;
 }>;
 
