@@ -5,7 +5,7 @@ product's concepts. It is the end-to-end level of "shared" (`docs/architecture.m
 belongs here only when it crosses the wire and has a consumer on the other side **today**.
 
 Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
-tables: `source`, `call-notice`, `call-notice-document`, `ingestion-run`.
+tables: `source`, `call-notice`, `call-notice-document`, `call-notice-extraction`, `ingestion-run`.
 
 ```
 src/

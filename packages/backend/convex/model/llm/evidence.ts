@@ -10,6 +10,61 @@ export function quoteAppearsInText(quote: string, text: string): boolean {
   return normalizedQuote.length > 0 && normalizeWhitespace(text).includes(normalizedQuote);
 }
 
+const wordsOf = (text: string) => text.split(/\s+/).filter(Boolean);
+const comparableWord = (word: string) =>
+  word
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, '');
+
+/** Share of the quote's words a source passage must hold for the passage to replace the quote. */
+const repairableShare = 0.85;
+
+/**
+ * The source passage a quote stands for: the quote itself when it appears word for word, else the
+ * stretch of the text, as long as the quote, that holds at least 85% of its words (the model
+ * dropped a dash, an accent, a word); `null` when none does. What is stored and shown is then
+ * always the call notice's own text, and the caller checks the value against that passage.
+ */
+export function sourcePassageForQuote(quote: string, text: string): string | null {
+  if (quoteAppearsInText(quote, text)) return normalizeWhitespace(quote);
+  const quoteWords = wordsOf(quote).map(comparableWord).filter(Boolean);
+  const textTokens = wordsOf(text);
+  // Positions of the text's words; a lone dash or bullet is no word, as in the quote.
+  const textWords = textTokens.flatMap((token, position) => {
+    const word = comparableWord(token);
+    return word ? [{ word, position }] : [];
+  });
+  const length = quoteWords.length;
+  if (length < 3 || textWords.length < length) return null;
+
+  const wanted = new Map<string, number>();
+  for (const word of quoteWords) wanted.set(word, (wanted.get(word) ?? 0) + 1);
+  const held = new Map<string, number>();
+  let shared = 0;
+  const count = (word: string, change: 1 | -1) => {
+    const before = held.get(word) ?? 0;
+    const need = wanted.get(word) ?? 0;
+    held.set(word, before + change);
+    shared += Math.min(before + change, need) - Math.min(before, need);
+  };
+  let bestShared = 0;
+  let bestStart = -1;
+  for (let end = 0; end < textWords.length; end++) {
+    count(textWords[end]!.word, 1);
+    if (end >= length) count(textWords[end - length]!.word, -1);
+    if (end >= length - 1 && shared > bestShared) {
+      bestShared = shared;
+      bestStart = end - length + 1;
+    }
+  }
+  if (bestStart < 0 || bestShared / length < repairableShare) return null;
+  const first = textWords[bestStart]!.position;
+  const last = textWords[bestStart + length - 1]!.position;
+  return textTokens.slice(first, last + 1).join(' ');
+}
+
 // "5.000,00", "5000", "1,5" — a Brazilian number — optionally followed by "mil" / "milhão(ões)".
 // Spelled-out amounts ("cinco mil reais") are not read: such a field becomes `null`.
 const brazilianAmount =
