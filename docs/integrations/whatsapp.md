@@ -25,8 +25,8 @@ From Nvoip's official SDKs and n8n node (`github.com/Nvoip`), checked 2026-11-12
   as `Authorization: Bearer`. **The old v2 user token and `napikey` do not authenticate v3**, so
   the v2 endpoints in older notes (`/oauth/token`, `/wa/sendTemplates`) need checking against v3,
   and the v2 credentials (`user-token`, `numbersip`, `napikey`) give way to the Client ID and
-  Secret, in Convex environment variables only. Whether v3 still needs the WhatsApp `instance` id
-  per send: to check.
+  Secret, in Convex environment variables only. v3 still takes the WhatsApp `instance` id per
+  send (`NVOIP_WA_INSTANCE`; confirmed in Nvoip's SDK example, 2026-11-14).
 - WhatsApp: **list templates** and **send a template**. A recipient is a phone number (or a
   BSUID), never an @username.
 - No webhook for **inbound** messages appears in the SDKs.

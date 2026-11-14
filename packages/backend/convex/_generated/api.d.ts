@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as alerts from "../alerts.js";
 import type * as callNotices from "../callNotices.js";
 import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
@@ -33,8 +34,10 @@ import type * as model_mapasCulturais_client from "../model/mapasCulturais/clien
 import type * as model_mapasCulturais_date from "../model/mapasCulturais/date.js";
 import type * as model_mapasCulturais_listing from "../model/mapasCulturais/listing.js";
 import type * as model_mapasCulturais_payload from "../model/mapasCulturais/payload.js";
+import type * as model_messaging_sendTemplateMessage from "../model/messaging/sendTemplateMessage.js";
 import type * as model_nvoip_client from "../model/nvoip/client.js";
 import type * as model_nvoip_payload from "../model/nvoip/payload.js";
+import type * as model_nvoip_templateLanguage from "../model/nvoip/templateLanguage.js";
 import type * as sources from "../sources.js";
 import type * as whatsapp from "../whatsapp.js";
 
@@ -45,6 +48,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  alerts: typeof alerts;
   callNotices: typeof callNotices;
   crons: typeof crons;
   documents: typeof documents;
@@ -70,8 +74,10 @@ declare const fullApi: ApiFromModules<{
   "model/mapasCulturais/date": typeof model_mapasCulturais_date;
   "model/mapasCulturais/listing": typeof model_mapasCulturais_listing;
   "model/mapasCulturais/payload": typeof model_mapasCulturais_payload;
+  "model/messaging/sendTemplateMessage": typeof model_messaging_sendTemplateMessage;
   "model/nvoip/client": typeof model_nvoip_client;
   "model/nvoip/payload": typeof model_nvoip_payload;
+  "model/nvoip/templateLanguage": typeof model_nvoip_templateLanguage;
   sources: typeof sources;
   whatsapp: typeof whatsapp;
 }>;

@@ -123,12 +123,15 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
     ingestion/runSourceIngestion.ts  the loop every kind shares: lease, parse, record, count, close
     mapasCulturais/         the Mapas reader: client, edge Zod (payload.ts), listing, date
     firecrawl/  nvoip/      clients of the outside APIs, each with its payload.ts
+    messaging/              sendTemplateMessage.ts, the channel adapter alerts sends through
     callNoticeDocuments/    selection.ts: which calls and files are worth reading, from the listing
     llm/                    generateJson.ts (the only import; provider and model from env), evidence.ts
   crons.ts  http.ts         Convex's entry files
   extraction.ts             fields from the read documents, by hand, through model/llm; the only
                             writer of `callNoticeExtractions`
-  whatsapp.ts  matching.ts  alerts.ts                       (later)
+  alerts.ts                 the outbox every creator-facing message goes through: reserve, send
+                            through model/messaging, confirm; the only writer of `alerts`
+  whatsapp.ts  matching.ts                                  (later)
 ```
 
 - **A source kind brings only what is its own** (`SourceReader` in `runSourceIngestion.ts`): how

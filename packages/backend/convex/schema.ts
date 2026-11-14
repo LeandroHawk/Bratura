@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server';
 import { zodToConvex } from 'convex-helpers/server/zod4';
+import { AlertSchema } from '@bratura/shared/entities/alert/entity';
 import { CallNoticeSchema } from '@bratura/shared/entities/call-notice/entity';
 import { CallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-document/entity';
 import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
@@ -25,4 +26,12 @@ export default defineSchema({
     'sourceId',
     'status',
   ]),
+  alerts: defineTable(zodToConvex(AlertSchema))
+    .index('by_creator_call_template_occurrence', [
+      'creatorId',
+      'callNoticeId',
+      'template',
+      'occurrence',
+    ])
+    .index('by_status', ['status']),
 });

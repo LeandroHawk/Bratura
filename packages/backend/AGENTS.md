@@ -15,9 +15,10 @@ convex/
   callNotices.ts  the call notice's only writer
   ingestion.ts    the daily schedule, one action per source kind, the run lease (`ingestionRuns`)
   documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments`
-  whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
+  whatsapp.ts     WhatsApp through Nvoip: inbound later, credentials check      (skeleton)
+  alerts.ts       the outbox every creator-facing message goes through          (`alerts` writer)
   extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
-  portfolio.ts  matching.ts  alerts.ts  orgs.ts                                 (not yet)
+  portfolio.ts  matching.ts  orgs.ts                                            (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
@@ -25,7 +26,8 @@ convex/
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits (rules, no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
-    nvoip/           client.ts, payload.ts
+    nvoip/           client.ts, payload.ts, templateLanguage.ts
+    messaging/       sendTemplateMessage.ts, the channel adapter (Nvoip today, swappable inside it)
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
 ```
@@ -37,7 +39,8 @@ what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `nvoip/`) or 
 run (`ingestion/`). **A provider we may swap is named by what it does** (`llm/`): doors import one
 neutral function (`llm/generateJson.ts`), which alone picks the client and reads its key; a fixed
 one is named by itself (`mapasCulturais/` is the source). `nvoip/` gets its channel adapter with the
-first alert. A root file past ~6 functions becomes a folder of the same name, one file per door.
+first alert (now `messaging/`). A root file past ~6 functions becomes a folder of the same name,
+one file per door.
 
 ## Running it
 
@@ -68,7 +71,8 @@ pnpm exec convex run documents:readPendingDocuments '{"creditCeiling":200}'
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10}'
 ```
 
-Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `LLM_API_KEY`) live
+Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `NVOIP_WA_INSTANCE`,
+`LLM_API_KEY`) live
 **only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
 it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).
 The LLM is configuration, not code: `LLM_BASE_URL` (any provider in the OpenAI chat format;
