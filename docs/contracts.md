@@ -107,20 +107,23 @@ of a DTO (§2). Stages and dates: `docs/architecture.md`, Call notice lifecycle.
 packages/shared/src/entities/call-notice/
   fragments/                one fragment = one writer; its header names both
     listing/  registration-window/  tracking/
-    document/  extraction/                                  (later)
+    extraction/                                             (later)
   dto/                      who reads, one folder per port (§2)
     bratura-portal/  whatsapp/                              (later)
+packages/shared/src/entities/call-notice-document/  one row per document read (its own table)
 
 packages/backend/convex/    a root file is a door (Convex functions); model/ is what doors share
   sources.ts                the team registers a source; ingestion reads one, or the active ones
   callNotices.ts            the call notice's only writer
   ingestion.ts              the process, not an entity: the daily schedule, one action per
                             source kind, the run lease (the only writer of `ingestionRuns`)
-  documents.ts              (PR C) a call notice's documents as Markdown, through model/firecrawl
+  documents.ts              which documents are worth credits, the read by hand through
+                            model/firecrawl, the only writer of `callNoticeDocuments`
   model/
     ingestion/runSourceIngestion.ts  the loop every kind shares: lease, parse, record, count, close
     mapasCulturais/         the Mapas reader: client, edge Zod (payload.ts), listing, date
     firecrawl/  nvoip/      clients of the outside APIs, each with its payload.ts
+    callNoticeDocuments/    selection.ts: which calls and files are worth reading, from the listing
     llm/                    generateJson.ts (the only import; provider and model from env), evidence.ts
   crons.ts  http.ts         Convex's entry files
   extraction.ts             (16–18/11) fields from the Markdown, through model/llm
