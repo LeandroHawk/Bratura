@@ -3,7 +3,7 @@ import {
   callNoticeDeadline,
   openEndedRegistrationAfterMs,
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
-import type { CallNoticeDocumentRole } from '@bratura/shared/entities/call-notice-document/entity';
+import type { CallNoticeDocumentRole } from '@bratura/shared/entities/call-notice-document/fragments/identity/fields';
 
 // Which calls and which of their files are worth Firecrawl credits, decided before any read, from
 // the listing alone. Measured on 254 real files (2026-11-14): `docs/integrations/firecrawl.md`.
