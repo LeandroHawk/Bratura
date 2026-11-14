@@ -7,11 +7,14 @@ import { COLOR_TOKENS, CONTRAST_PAIRS } from './tokens';
 // tokens.css is the single source of the token values; these tests read it as text.
 const css = readFileSync(new URL('./tokens.css', import.meta.url), 'utf8');
 
-/** Every file of the package with the given extensions, relative to src/. */
+/**
+ * Every file of the package with the given extensions, relative to src/, separators normalized:
+ * readdirSync returns `\` on Windows, and the patterns are written with `/`.
+ */
 function sourceFiles(pattern: RegExp): string[] {
-  return readdirSync(new URL('../', import.meta.url), { recursive: true, encoding: 'utf8' }).filter(
-    (f) => pattern.test(f) && !f.includes('.test.'),
-  );
+  return readdirSync(new URL('../', import.meta.url), { recursive: true, encoding: 'utf8' })
+    .map((f) => f.split('\\').join('/'))
+    .filter((f) => pattern.test(f) && !f.includes('.test.'));
 }
 const read = (file: string) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 
