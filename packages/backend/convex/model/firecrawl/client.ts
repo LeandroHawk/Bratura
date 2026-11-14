@@ -14,8 +14,17 @@ export class FirecrawlOutOfCreditsError extends Error {
   }
 }
 
+/** Past about 10 scrapes a minute Firecrawl answers 429; it costs nothing, the read waits and retries. */
+export class FirecrawlRateLimitedError extends Error {
+  constructor() {
+    super('Firecrawl answered HTTP 429: rate limited');
+  }
+}
+
+export type ScrapedMarkdown = { markdown: string; creditsUsed: number | null };
+
 /** Reads one page or PDF as Markdown. Throws when Firecrawl does not answer or answers an error. */
-export async function scrapeMarkdown(url: string, apiKey: string): Promise<string> {
+export async function scrapeMarkdown(url: string, apiKey: string): Promise<ScrapedMarkdown> {
   const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -23,6 +32,8 @@ export async function scrapeMarkdown(url: string, apiKey: string): Promise<strin
     signal: AbortSignal.timeout(firecrawlTimeoutMs),
   });
   if (response.status === 402) throw new FirecrawlOutOfCreditsError();
+  if (response.status === 429) throw new FirecrawlRateLimitedError();
   if (!response.ok) throw await httpAnswerError('Firecrawl', response);
-  return FirecrawlScrapeResponseSchema.parse(await response.json()).data.markdown;
+  const { data } = FirecrawlScrapeResponseSchema.parse(await response.json());
+  return { markdown: data.markdown, creditsUsed: data.metadata?.creditsUsed ?? null };
 }

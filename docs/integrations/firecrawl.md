@@ -15,7 +15,7 @@ crons.ts (daily)
        └─ sites without an API (SP city, Amigos da Arte, Goiás)      │
              └─ /map (lists the site's URLs) → keep call-like URLs ──┤
                                                                      ▼
-                           /scrape or /batch/scrape → Markdown (PDFs included)
+          by hand for now (documents.ts) → /scrape → Markdown (PDFs included)
                                                                      ▼
                       changed? (changeTracking or a hash of the Markdown) ── no → stop
                                                                      ▼ yes
@@ -53,13 +53,23 @@ The team's draft of this flow also stored an embedding per call; matching is rul
   extra credits per page and would take extraction out of `model/llm/`, where the evidence check and the
   swappable provider live (`docs/security.md` §3).
 - **Credits are the budget.** The team gets 5,000 credits per member once the competition draft is
-  approved; before that, only the free plan (1,000 credits a month). Per the team's reading of the
-  billing page (recheck before relying on it): a scrape costs 1 credit per page and a PDF adds about
-  1 per PDF page, so a 30-page call costs around 31: about 30 calls a month on the free plan, about
-  160 per member's 5,000. JSON mode would add 4 credits per page. Hence: Mapas through its API first, Firecrawl only where there is no
+  approved; before that, only the free plan (1,000 credits a month). **Measured 2026-11-14** (50
+  real call documents, `creditsUsed` in each answer): **a PDF costs 1 credit per page** (26 pages,
+  26 credits), a main call notice runs 3–41 pages (about 19 on average); `.doc`, `.docx` and `.odt`
+  read too. **The rate limit is about 10 scrapes a minute**: past it Firecrawl answers 429, which
+  costs nothing and says when to retry. JSON mode would add 4 credits per page. Hence: Mapas through its API first, Firecrawl only where there is no
   API, `maxAge` caching (default 2 days) and change tracking so nothing is read twice. The free
-plan has no pay-as-you-go: when credits run out, calls fail with HTTP 402, so ingestion logs it in
-`ingestionRuns` and stops.
+plan has no pay-as-you-go: when credits run out, calls fail with HTTP 402, and the run stops (a
+document read stores it as the `outOfCredits` failure of the document it was reading).
+- **Which of a call's documents are read, by file name** (a call lists up to 37; reading them all
+  costs about ten times more): the call notice itself (or its consolidated text), its amendments
+  (errata, aditivo, adendo, prorrogação, reabertura: they move deadlines), and the annexes with
+  categories and amounts per project (only there in 3 of 5 calls) or evaluation criteria (how a
+  portfolio is scored: only there). **Never** results, rankings or lists of applicants (personal
+  data), nor the forms an applicant fills in. A call whose notice no file name identifies is left
+  for the admin review.
+- **Reading is run by hand for now** (`convex run`, with a credit ceiling per run), not by the
+  daily cron, so no read spends credits nobody planned.
 - **robots.txt is respected** (Firecrawl's default; never turn it off). Blocked URLs show up as
   `robotsBlocked` in the crawl errors: record them in `ingestionRuns`.
 - **The response is parsed at the edge** by a Zod schema in `model/firecrawl/payload.ts`; it is not a DTO and
