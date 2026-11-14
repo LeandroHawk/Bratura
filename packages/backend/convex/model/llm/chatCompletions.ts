@@ -1,3 +1,4 @@
+import { httpAnswerError } from '../../lib/httpError';
 import { ChatCompletionsResponseSchema } from './chatCompletionsPayload';
 
 /** A long call notice on a Pro model can take minutes; past this, the call fails and is retried. */
@@ -28,7 +29,7 @@ export async function generateJsonWithChatCompletions(
     }),
     signal: AbortSignal.timeout(chatCompletionsTimeoutMs),
   });
-  if (!response.ok) throw new Error(`${url.host} answered HTTP ${response.status}`);
+  if (!response.ok) throw await httpAnswerError(url.host, response);
   const answer = ChatCompletionsResponseSchema.parse(await response.json());
   return JSON.parse(answer.choices[0]!.message.content);
 }

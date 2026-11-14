@@ -9,7 +9,7 @@ convex/
   schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
   crons.ts        the daily ingestion (09:00 UTC); deadline alerts later        } entry files:
   http.ts         routes only (Nvoip inbound, Firecrawl webhooks: not yet)      } fixed names
-  lib/            builders.ts (Zod args/returns), appError.ts, env.ts: no functions
+  lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts: no functions
 
   sources.ts      the sources the team registers and ingestion reads
   callNotices.ts  the call notice's only writer

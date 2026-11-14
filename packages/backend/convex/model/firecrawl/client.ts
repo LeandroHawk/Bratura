@@ -1,3 +1,4 @@
+import { httpAnswerError } from '../../lib/httpError';
 import { FirecrawlScrapeResponseSchema } from './payload';
 
 /** A PDF of 30 pages or more can take minutes to read; past this, the read fails and is retried. */
@@ -22,6 +23,6 @@ export async function scrapeMarkdown(url: string, apiKey: string): Promise<strin
     signal: AbortSignal.timeout(firecrawlTimeoutMs),
   });
   if (response.status === 402) throw new FirecrawlOutOfCreditsError();
-  if (!response.ok) throw new Error(`Firecrawl answered HTTP ${response.status}`);
+  if (!response.ok) throw await httpAnswerError('Firecrawl', response);
   return FirecrawlScrapeResponseSchema.parse(await response.json()).data.markdown;
 }
