@@ -14,6 +14,8 @@ export const OfficialPageSourceSchema = z.object({
   ...SourceComplianceFields.shape,
   /** Where the site lists its calls; `/map` starts here. */
   listingUrl: requiredHttpsUrl,
-  /** Parts of a URL that mark a call notice (`/edital`, `/chamamento`, `.pdf`); others are skipped. */
+  /**
+   * Parts of a URL that mark a call notice (`/edital`, `/chamamento`, `.pdf`); others are skipped.
+   */
   callUrlPatterns: z.array(requiredString('short')).min(1).max(20),
 });

@@ -4,8 +4,9 @@ import { prefersReducedMotion } from '@bratura/ui';
 import { type RefObject, useEffect } from 'react';
 
 /**
- * Sets `data-curtain` on the stage: `closed` once JavaScript runs, `open` when it scrolls into view.
- * Absent (no JavaScript, reduced motion) means open and still, so nobody faces a closed curtain.
+ * Sets `data-curtain` on the stage: `closed` once JavaScript runs, `open` when it scrolls into
+ * view. Absent (no JavaScript, reduced motion) means open and still, so nobody faces a closed
+ * curtain.
  */
 export function useCurtains(stage: RefObject<HTMLElement | null>) {
   useEffect(() => {

@@ -10,7 +10,9 @@ import { fetchNvoipAccessToken } from './model/nvoip/client';
 const CheckNvoipCredentialsActionArgsSchema = z.object({});
 const CheckNvoipCredentialsActionReturnsSchema = z.literal(true);
 
-/** Proves this deployment's Nvoip credentials get a token; sends nothing. Run it after `env set`. */
+/**
+ * Proves this deployment's Nvoip credentials get a token; sends nothing. Run it after `env set`.
+ */
 export const checkNvoipCredentials = internalZodAction({
   args: CheckNvoipCredentialsActionArgsSchema,
   returns: CheckNvoipCredentialsActionReturnsSchema,

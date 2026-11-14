@@ -23,7 +23,10 @@ export type HangingSignProps = {
   className?: string;
 };
 
-/** How long the board takes to turn before the link is followed. Matches the transition on `.bt-sign-faces` in hanging-sign.css. */
+/**
+ * How long the board takes to turn before the link is followed. Matches the transition on
+ * `.bt-sign-faces` in hanging-sign.css.
+ */
 const TURN_MS = 450;
 
 /**

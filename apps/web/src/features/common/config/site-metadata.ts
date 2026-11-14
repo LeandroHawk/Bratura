@@ -17,7 +17,8 @@ export function siteMetadataFromLocale(locale: Locale): Metadata {
   return {
     metadataBase: new URL(SITE_URL),
     alternates: { canonical: url, languages: languageAlternatesFromPath('/') },
-    // A page sets only its own name (`title: 'Design system'`); the tab then reads "Design system · Bratura".
+    // A page sets only its own name (`title: 'Design system'`); the tab then reads "Design system ·
+    // Bratura".
     title: { default: title, template: '%s · Bratura' },
     description,
     applicationName: 'Bratura',

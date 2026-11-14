@@ -31,7 +31,31 @@ the files that own what a change is tempted to redo:
 4. **Derivable.** Two values that must agree (props, constants, a doc restating code), meaning taken
    from position or order, a list written by hand that the code or the file system already knows.
 
-## 3. Repo checks
+## 3. Backend: what a change to `packages/backend` or an entity answers
+
+Found reviewing the first document reader (2026-11-14); each one was a real defect there. Lint
+enforces what a selector can see (marked **lint**); the rest is read.
+
+- **Outside text never reaches a table.** A provider's error body, an LLM's prose, a page's text
+  outside its own field: store a code (`failure: 'providerError'`), log the message.
+- **Every paid or rate-limited call has brakes**: a ceiling per run, a time budget under the
+  action's 10 min counted at its worst case (timeouts plus retry waits), and a stop when the cost
+  is unknown, since a ceiling cannot hold without it.
+- **A failure that would repeat at the same cost is not retried** (an image-only PDF, a file too
+  large); only a transient one is (timeout, 5xx, 429, 402).
+- **A side effect reserves before it acts**, one of the patterns in `docs/architecture.md`,
+  Idempotency and concurrency; check its lease against the action's own lifetime.
+- **No whole-table scan** (**lint**): a table that grows reads through an index range.
+- **Every `fetch` has a timeout** (**lint**).
+- **A regex over real names is tested against a sample of them**, and a short word matches only
+  as a word (`lista` is inside `instrumentalista`).
+- **Placement**: a rule only the backend answers stays in the backend; a primitive never knows an
+  entity (`callNoticeDeadline` lives in its fragment); a field repeated inside one entity is
+  declared once; a shape two entities share moves down to `primitives/`.
+- **A doc that restates the code is checked in the same diff** (folder trees, what a failure
+  stores, who triggers what).
+
+## 4. Repo checks
 
 Each search runs over the folders as written (`rg` drops `-g` filters for files passed one by one);
 a hit in a changed file is a question, not a verdict.
@@ -63,9 +87,10 @@ rg -n 'matchMedia|localStorage' apps/web/src
 rg -n 'outline-none|outline-hidden|outline: *(none|0)' apps/web/src packages/ui/src
 ```
 
-Also: doc comments over 3 lines or telling the session's story (root `AGENTS.md`); new public
-names declarative, `<output>From<input>`, proposed and asked; every decorative `<svg>` carries
-`aria-hidden` itself (WAVE flags one that only sits inside an `aria-hidden` parent).
+Comments past 100 columns fail lint (Prettier wraps code, never a comment). Also: doc comments
+over 3 lines or telling the session's story (root `AGENTS.md`); new public names declarative,
+`<output>From<input>`, proposed and asked; every decorative `<svg>` carries `aria-hidden` itself
+(WAVE flags one that only sits inside an `aria-hidden` parent).
 
 And for anything the visitor sees: copy in pt-BR and en in the same change, nothing invented (a
 source or "não informado"), axe clean on every touched page in both themes (and WAVE on production
@@ -78,7 +103,7 @@ focus keeps `focus-ring`, which also colours a bordered control's border (ASES 4
 on the logo's yellow letters in the light theme (logotype, `packages/ui/AGENTS.md`).
 Then `pnpm check`.
 
-## 4. Report
+## 5. Report
 
 Per lens: what ran, on which files, what was fixed, what needs a decision. Names, behaviour
 changes and removed copy are decisions for the person, with proposals. Never "nothing left":

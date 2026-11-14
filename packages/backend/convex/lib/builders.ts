@@ -16,7 +16,9 @@ import {
 } from '../_generated/server';
 import { appError } from './appError';
 
-/** The args as callers see them: Convex's reading of the Zod shape, where a documentId is an `Id`. */
+/**
+ * The args as callers see them: Convex's reading of the Zod shape, where a documentId is an `Id`.
+ */
 export type CallerArgs<Args extends z.ZodObject> = ObjectType<{
   [Field in keyof Args['shape']]: ConvexValidatorFromZod<Args['shape'][Field], 'required'>;
 }>;
@@ -28,8 +30,9 @@ type ZodFunction<Ctx, Args extends z.ZodObject, Returns extends z.ZodType> = {
 };
 
 /**
- * Convex checks the shape, then the whole Zod `args` parses (`invalidInput` on failure) and `returns`
- * parses the result. Why not convex-helpers' zCustom*: `packages/backend/AGENTS.md`, The Zod bridge.
+ * Convex checks the shape, then the whole Zod `args` parses (`invalidInput` on failure) and
+ * `returns` parses the result. Why not convex-helpers' zCustom*: `packages/backend/AGENTS.md`, The
+ * Zod bridge.
  */
 function parsedWithZod<Ctx, Args extends z.ZodObject, Returns extends z.ZodType>({
   args,
@@ -53,8 +56,8 @@ function parsedWithZod<Ctx, Args extends z.ZodObject, Returns extends z.ZodType>
 }
 
 // Internal: callable from functions, crons, the CLI and the dashboard; auth comes with the first
-// public builder. The casts restate for callers what `parsedWithZod` enforces at run time: TypeScript
-// cannot carry Zod generics through Convex's validator inference.
+// public builder. The casts restate for callers what `parsedWithZod` enforces at run time:
+// TypeScript cannot carry Zod generics through Convex's validator inference.
 export const internalZodQuery = <Args extends z.ZodObject, Returns extends z.ZodType>(
   definition: ZodFunction<QueryCtx, Args, Returns>,
 ) =>

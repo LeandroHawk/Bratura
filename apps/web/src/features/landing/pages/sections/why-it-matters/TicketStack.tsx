@@ -5,7 +5,9 @@ import { useState } from 'react';
 import { TICKET_KINDS, type TicketKind, type TicketsContent } from './content';
 import { Ticket } from './Ticket';
 
-/** Front sits square; the one behind is lifted and turned so its label shows above the front one. */
+/**
+ * Front sits square; the one behind is lifted and turned so its label shows above the front one.
+ */
 const FRONT = 'z-10 translate-x-0 translate-y-0 -rotate-1';
 const BEHIND = 'z-0 translate-x-3 -translate-y-20 rotate-2 saturate-75 hover:-translate-y-22';
 const MOVE = 'transition-transform duration-500 ease-out motion-reduce:transition-none';

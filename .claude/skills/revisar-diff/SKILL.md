@@ -15,7 +15,8 @@ repeats hide. This skill reads the owners first.
 2. **Rules.** Read the repo's review checklist (`docs/review.md`). If the repo has none, derive the
    owners from its `AGENTS.md` / `CLAUDE.md` and package entry points, and say so.
 3. **Owners.** Open every owner the checklist names for the folders touched, before judging.
-4. **Lenses.** For each changed file, run the four lenses and the repo checks from the checklist.
+4. **Lenses.** For each changed file, run the four lenses and the repo checks from the checklist,
+   plus its backend section when the diff touches the backend or an entity.
    Record each finding with file, lens and the owner it should use.
 5. **Fix or ask.** Fix what is unambiguous and keeps behaviour. Ask about names, behaviour
    changes, removed copy and structure, with a proposal for each.
