@@ -5,6 +5,7 @@ import {
   type CallNoticeDocument,
   type CallNoticeDocumentFailure,
 } from '@bratura/shared/entities/call-notice-document/entity';
+import { CallNoticeDocumentIdentityFields } from '@bratura/shared/entities/call-notice-document/fragments/identity/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
@@ -58,11 +59,7 @@ const knownDocument = (
 
 // What is left to read ----------------------------------------------------------------------------
 
-const DocumentToReadSchema = ReadCallNoticeDocumentSchema.pick({
-  callNoticeId: true,
-  url: true,
-  role: true,
-});
+const DocumentToReadSchema = CallNoticeDocumentIdentityFields;
 type DocumentToRead = z.infer<typeof DocumentToReadSchema>;
 
 const ListDocumentsToReadQueryArgsSchema = z.object({});
