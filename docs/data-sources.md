@@ -48,8 +48,10 @@ GET https://{host}/api/opportunity/find
 - Dates come as `{ "date": "2026-11-15 23:59:00.000000", "timezone": "Etc/GMT+3", … }`: a wall clock
   in that zone. The zone is a place (`America/Recife`) or a fixed offset (`Etc/GMT+3` is UTC−3: POSIX
   inverts the sign); `Intl.supportedValuesOf` omits the latter, `Intl.DateTimeFormat` reads both.
-- **Midnight closings are common** (38 of 59 federal calls close at `00:00`): Mapas closes its form
-  at that minute, so "15/11 00:00" means "until the end of the 14th". A screen should say so.
+- **`00:00` is mostly "no deadline"**: most federal calls at `00:00` close on `2111-01-01` (also
+  2050, 2052, 2076, 2100), a sentinel for an open-ended form, not a date. **Real midnight closings
+  are rare but exist** (first ingestion: 2 CE, 1 federal): Mapas closes the form at that minute, so
+  "15/11 00:00" means "until the end of the 14th", and a screen must show the previous day.
 - `"@files:downloads": [{ "url": … }]` is every attachment, absent when there is none (41 of 59
   federal calls): the call notice and its annexes (up to 37 on one call), plus `.docx` forms and
   media (`.mp4`, `.mp3`, `.jpg`). A call notice stores the text files in order (`documentUrls`),

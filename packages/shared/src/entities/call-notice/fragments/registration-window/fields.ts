@@ -28,3 +28,27 @@ export function withOrderedRegistrationWindow<Schema extends z.ZodType<Registrat
     { path: ['registrationCloses'] },
   );
 }
+
+/**
+ * A close past this is no deadline: Mapas writes `2111-01-01` for an open-ended form (also seen:
+ * 2050, 2052, 2076, 2100), and nearly all such calls are noise, not calls for creators.
+ */
+export const openEndedRegistrationAfterMs = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * Where a call's deadline stands: `open` (a real close still ahead), `closed`, `openEnded` (a close
+ * so far ahead it means none), `notInformed` (the source gives none). Never show an `openEnded`
+ * close as a date: "até 01/01/2111" is the sentinel, not a deadline.
+ */
+export const CallNoticeDeadlineEnum = z.enum(['open', 'closed', 'openEnded', 'notInformed']);
+export type CallNoticeDeadline = z.infer<typeof CallNoticeDeadlineEnum>;
+
+export function callNoticeDeadline(
+  { registrationCloses }: Pick<RegistrationWindow, 'registrationCloses'>,
+  now: number,
+): CallNoticeDeadline {
+  if (registrationCloses === null) return 'notInformed';
+  if (registrationCloses.at < now) return 'closed';
+  if (registrationCloses.at > now + openEndedRegistrationAfterMs) return 'openEnded';
+  return 'open';
+}

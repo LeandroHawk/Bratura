@@ -115,7 +115,7 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 | --- | --- | --- | --- | --- |
 | listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion.ts`, one action per source kind | Mapas API (`model/mapasCulturais/`, daily cron); an official page through Firecrawl `/map` | **now** |
 | seen | `tracking` (first and last seen) | the server, on every write | the clock | **now** |
-| document read | `document`: which of `documentUrls` is the call notice, its Markdown, hash and when it was read | `documents.ts` | Firecrawl `/scrape` | PR C |
+| document read | not on the call notice: a `callNoticeDocuments` row per file read (the notice, its amendments, categories and criteria, picked by file name), its Markdown, hash and cost | `documents.ts`, run by hand | Firecrawl `/scrape` | **now** |
 | extracted | `extraction`: amounts, applicant types, art forms, region, required documents, each `null` or with a verbatim quote | `extraction.ts` through `model/llm/`, checked against the text (`evidence.ts`) | the document's Markdown | 16–18/11 |
 | classified | whether it is a call for creators or noise (payment forms, council elections) and why | `model/llm/` + rules | the extraction | 16–18/11 |
 | matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
@@ -143,8 +143,8 @@ typed `Id` with indexes, serializable ACID transactions, and full-text and vecto
 are ever needed. What it lacks, and the answer here:
 
 - **No SQL joins or aggregates**: a count is a counter kept by the writer, not a scan.
-- **1 MiB per document**: a document's Markdown that may pass it goes to File Storage, the row
-  keeping its hash and link.
+- **1 MiB per document**: a call document's Markdown stays in its row (the largest measured: 54k
+  characters); one past 900k is stored as a failed read, and File Storage comes if one ever is.
 - **Per function: 16 MiB read or written, 32,000 documents scanned, 1 s of user code** in queries
   and mutations: ingestion works in batches. Actions run up to 10 min (Node) or 30 min.
 - **No unique constraint**: uniqueness is one mutation doing "look up by index → insert". Serializable

@@ -12,8 +12,8 @@ to delete them.
 
 | folder                | who controls it                                          | Bratura examples                                                   |
 | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `time/instant/`, `time/zoned-instant/`, `calendar/` |
-| `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL), `deadline/` (a registration window) |
+| `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `hash/`, `time/instant/`, `time/zoned-instant/`, `calendar/` |
+| `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL) |
 | `external/<subject>/` | neither: law, an agency, an outside standard             | `locale/` (BCP 47, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/` |
 
 `Math.round` does not mean money; composed with the BRL rules it becomes `money/` and gets a
@@ -34,7 +34,8 @@ primitives never import entities
 - **Primitive → primitive is fine.** When the same piece shows up in two, it moves **down** a
   level instead of being copied.
 - **A primitive knowing an entity was never a primitive.** The locale does not know what a
-  creator is.
+  creator is; a call's deadline (`callNoticeDeadline`) lives in the call notice's
+  `registration-window` fragment, not in `domain/`.
 
 ## Inside a subject
 
