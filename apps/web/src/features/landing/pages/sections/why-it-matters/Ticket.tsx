@@ -15,8 +15,9 @@ function Notch({ edge }: { edge: 'top' | 'bottom' }) {
 const LABEL = 'text-caption text-ticket-muted';
 
 /**
- * A theatre ticket for a public call, paid in documents. Label and stamp: red without Bratura, green
- * with it. `topNotch` off for the ticket in front of a stack, or it cuts a hole over the one behind.
+ * A theatre ticket for a public call, paid in documents. Label and stamp: red without Bratura,
+ * green with it. `topNotch` off for the ticket in front of a stack, or it cuts a hole over the one
+ * behind.
  */
 export function Ticket({
   tickets,

@@ -3,8 +3,8 @@ import type { IanaTimeZone } from '../time/time-zone/fields';
 /** A date and time with no zone, as a source writes it: read in a zone to become an instant. */
 export type PlainDateTime = Record<'year' | 'month' | 'day' | 'hour' | 'minute' | 'second', number>;
 
-// One formatter, built once: building a formatter costs far more than formatting with it. `en-CA` writes the
-// ISO order; the locale extension pins the Gregorian calendar and Latin digits.
+// One formatter, built once: building a formatter costs far more than formatting with it. `en-CA`
+// writes the ISO order; the locale extension pins the Gregorian calendar and Latin digits.
 const saoPauloDateFormatter = new Intl.DateTimeFormat('en-CA-u-ca-gregory-nu-latn', {
   timeZone: 'America/Sao_Paulo',
   year: 'numeric',

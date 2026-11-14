@@ -3,7 +3,9 @@ import { z } from 'zod';
 /** Longer links are refused: browsers and servers stop agreeing past this length. */
 const urlMaxLength = 2048;
 
-/** A link the team registers and ingestion fetches: https only, so nothing is read over plain http. */
+/**
+ * A link the team registers and ingestion fetches: https only, so nothing is read over plain http.
+ */
 export const requiredHttpsUrl = z.url({ protocol: /^https$/ }).max(urlMaxLength);
 
 /**

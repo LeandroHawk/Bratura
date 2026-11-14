@@ -27,7 +27,9 @@ export const addSource = internalZodMutation({
 const GetSourceQueryArgsSchema = z.object({ sourceId: documentId('sources') });
 const GetSourceQueryReturnsSchema = SourceSchema.nullable();
 
-/** A source as the team registered it, for the ingestion that reads it; `null` if the id is gone. */
+/**
+ * A source as the team registered it, for the ingestion that reads it; `null` if the id is gone.
+ */
 export const getSource = internalZodQuery({
   args: GetSourceQueryArgsSchema,
   returns: GetSourceQueryReturnsSchema,
@@ -44,9 +46,10 @@ export const listActiveSources = internalZodQuery({
   args: ListActiveSourcesQueryArgsSchema,
   returns: ListActiveSourcesQueryReturnsSchema,
   handler: async (ctx) => {
-    const sources = await ctx.db.query('sources').collect();
-    return sources
-      .filter((source) => source.isActive)
-      .map((source) => ({ sourceId: source._id, kind: source.kind }));
+    const sources = await ctx.db
+      .query('sources')
+      .withIndex('by_is_active', (index) => index.eq('isActive', true))
+      .collect();
+    return sources.map((source) => ({ sourceId: source._id, kind: source.kind }));
   },
 });

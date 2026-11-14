@@ -98,7 +98,8 @@ describe('recordCallNotice', () => {
     await expect(
       t.mutation(recordCallNotice, {
         ...listing(sourceId),
-        // Cast on purpose: the brand stops this at compile time; the test proves the runtime does too.
+        // Cast on purpose: the brand stops this at compile time; the test proves the runtime does
+        // too.
         registrationCloses: {
           ...inFortaleza(0, 'day'),
           timeZone: 'America/Atlantis' as IanaTimeZone,

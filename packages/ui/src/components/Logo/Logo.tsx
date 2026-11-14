@@ -1,7 +1,9 @@
 import { useId } from 'react';
 import { LOGO_SPLAT_SEED, SPLAT_VIEWBOX, splatShapesFromSeed, type SplatTone } from './splat';
 
-/** The original slogan, in Portuguese: the default, and what a page in another language translates. */
+/**
+ * The original slogan, in Portuguese: the default, and what a page in another language translates.
+ */
 export const SLOGAN = 'o seu país com mais cultura';
 
 const LETTERS = [...'Bratura'];

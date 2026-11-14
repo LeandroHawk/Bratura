@@ -16,8 +16,8 @@ export const MapasDateSchema = z.object({
 export type MapasDate = z.infer<typeof MapasDateSchema>;
 
 /**
- * One opportunity as `GET /api/opportunity/find` returns it, with the `@select` our client asks for.
- * The owner is never selected: it can be a private person (`docs/data-sources.md`, Rules).
+ * One opportunity as `GET /api/opportunity/find` returns it, with the `@select` our client asks
+ * for. The owner is never selected: it can be a private person (`docs/data-sources.md`, Rules).
  */
 export const MapasOpportunitySchema = z.object({
   id: z.int().positive(),

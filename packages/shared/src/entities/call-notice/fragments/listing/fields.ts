@@ -13,7 +13,9 @@ function hasDocumentExtension(url: string) {
   return extension !== undefined && callNoticeDocumentExtensions.has(extension);
 }
 
-/** A link to one of a call notice's text files. Ingestion filters a source's attachments with it. */
+/**
+ * A link to one of a call notice's text files. Ingestion filters a source's attachments with it.
+ */
 export const CallNoticeDocumentUrlSchema = requiredHttpUrl.refine(hasDocumentExtension, {
   params: { message: 'notADocument' },
 });

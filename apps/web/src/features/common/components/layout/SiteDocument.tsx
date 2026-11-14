@@ -17,8 +17,9 @@ const displayFace = Fraunces({
 const bodyFace = Instrument_Sans({ subsets: ['latin'], variable: '--bt-face-body' });
 
 /**
- * `<html>` and `<body>` of every page, for the `[lang]` layout and `global-not-found`: fonts, styles,
- * and the saved theme on both paths (`<head>` script for server HTML, `RestoreSavedTheme` for 404s).
+ * `<html>` and `<body>` of every page, for the `[lang]` layout and `global-not-found`: fonts,
+ * styles, and the saved theme on both paths (`<head>` script for server HTML, `RestoreSavedTheme`
+ * for 404s).
  */
 export function SiteDocument({ locale, children }: { locale: Locale; children: ReactNode }) {
   return (

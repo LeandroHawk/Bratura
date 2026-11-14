@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 
-/** What a call's status means to the creator. Each maps to one status token (same hue in both themes). */
+/**
+ * What a call's status means to the creator. Each maps to one status token (same hue in both
+ * themes).
+ */
 export type BadgeTone = 'open' | 'soon' | 'missing';
 
 const TONE: Record<BadgeTone, string> = {

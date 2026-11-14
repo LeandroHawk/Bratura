@@ -14,7 +14,10 @@ export class FirecrawlOutOfCreditsError extends Error {
   }
 }
 
-/** Past about 10 scrapes a minute Firecrawl answers 429; it costs nothing, the read waits and retries. */
+/**
+ * Past about 10 scrapes a minute Firecrawl answers 429; it costs nothing, the read waits and
+ * retries.
+ */
 export class FirecrawlRateLimitedError extends Error {
   constructor() {
     super('Firecrawl answered HTTP 429: rate limited');
