@@ -17,6 +17,7 @@ import type * as ingestion from "../ingestion.js";
 import type * as lib_appError from "../lib/appError.js";
 import type * as lib_builders from "../lib/builders.js";
 import type * as lib_env from "../lib/env.js";
+import type * as lib_httpError from "../lib/httpError.js";
 import type * as model_firecrawl_client from "../model/firecrawl/client.js";
 import type * as model_firecrawl_payload from "../model/firecrawl/payload.js";
 import type * as model_ingestion_runSourceIngestion from "../model/ingestion/runSourceIngestion.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   "lib/appError": typeof lib_appError;
   "lib/builders": typeof lib_builders;
   "lib/env": typeof lib_env;
+  "lib/httpError": typeof lib_httpError;
   "model/firecrawl/client": typeof model_firecrawl_client;
   "model/firecrawl/payload": typeof model_firecrawl_payload;
   "model/ingestion/runSourceIngestion": typeof model_ingestion_runSourceIngestion;

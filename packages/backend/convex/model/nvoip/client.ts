@@ -1,3 +1,4 @@
+import { httpAnswerError } from '../../lib/httpError';
 import { NvoipTokenResponseSchema } from './payload';
 
 const nvoipTimeoutMs = 15_000;
@@ -21,6 +22,6 @@ export async function fetchNvoipAccessToken({
     body: new URLSearchParams({ grant_type: 'client_credentials' }),
     signal: AbortSignal.timeout(nvoipTimeoutMs),
   });
-  if (!response.ok) throw new Error(`Nvoip answered HTTP ${response.status}`);
+  if (!response.ok) throw await httpAnswerError('Nvoip', response);
   return NvoipTokenResponseSchema.parse(await response.json()).access_token;
 }
