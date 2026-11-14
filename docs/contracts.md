@@ -107,10 +107,10 @@ of a DTO (§2). Stages and dates: `docs/architecture.md`, Call notice lifecycle.
 packages/shared/src/entities/call-notice/
   fragments/                one fragment = one writer; its header names both
     listing/  registration-window/  tracking/
-    extraction/                                             (later)
   dto/                      who reads, one folder per port (§2)
     bratura-portal/  whatsapp/                              (later)
 packages/shared/src/entities/call-notice-document/  one row per document read (its own table)
+packages/shared/src/entities/call-notice-extraction/  one row per call extracted (its own table)
 
 packages/backend/convex/    a root file is a door (Convex functions); model/ is what doors share
   sources.ts                the team registers a source; ingestion reads one, or the active ones
@@ -126,7 +126,8 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
     callNoticeDocuments/    selection.ts: which calls and files are worth reading, from the listing
     llm/                    generateJson.ts (the only import; provider and model from env), evidence.ts
   crons.ts  http.ts         Convex's entry files
-  extraction.ts             (16–18/11) fields from the Markdown, through model/llm
+  extraction.ts             fields from the read documents, by hand, through model/llm; the only
+                            writer of `callNoticeExtractions`
   whatsapp.ts  matching.ts  alerts.ts                       (later)
 ```
 

@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { amountAppearsInQuote, dateAppearsInQuote, quoteAppearsInText } from './evidence';
+import {
+  amountAppearsInQuote,
+  dateAppearsInQuote,
+  quoteAppearsInText,
+  sourcePassageForQuote,
+} from './evidence';
 
 const text = 'Inscrições até 20/11/2026.\n\nValor:   R$ 5.000,00 por projeto.';
 
@@ -75,5 +80,38 @@ describe('dateAppearsInQuote', () => {
   test('a quote without the year never backs a date', () => {
     expect(backs('2026-11-20', 'até 20 de novembro')).toBe(false);
     expect(backs('2026-11-20', 'até 20/11')).toBe(false);
+  });
+});
+
+describe('sourcePassageForQuote', () => {
+  const notice =
+    'II – certidão negativa de débitos relativos a créditos tributários federais e Dívida Ativa da União; III – certidão do FGTS.';
+
+  test('a quote copied word for word is its own passage', () => {
+    expect(sourcePassageForQuote('certidão do FGTS.', notice)).toBe('certidão do FGTS.');
+  });
+
+  test('a quote the model retyped slightly is replaced by the source text it stands for', () => {
+    expect(
+      sourcePassageForQuote(
+        'II - certidao negativa de debitos relativos a creditos tributarios federais e Divida Ativa da Uniao;',
+        notice,
+      ),
+    ).toBe(
+      'II – certidão negativa de débitos relativos a créditos tributários federais e Dívida Ativa da União;',
+    );
+  });
+
+  test('a quote mostly absent from the text has no passage: the model made it up', () => {
+    expect(
+      sourcePassageForQuote(
+        'certidão negativa de débitos trabalhistas emitida pelo TST e pelo TRT',
+        notice,
+      ),
+    ).toBeNull();
+  });
+
+  test('a quote of fewer than three words is never repaired: too short to prove anything', () => {
+    expect(sourcePassageForQuote('certidão FGTSS', notice)).toBeNull();
   });
 });

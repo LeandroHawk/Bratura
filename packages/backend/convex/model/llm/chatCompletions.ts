@@ -20,6 +20,8 @@ export async function generateJsonWithChatCompletions(
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model,
+      // Extraction wants the same answer for the same text; it lowers the variance, not to zero.
+      temperature: 0,
       messages: [
         // JSON mode in the OpenAI format refuses a conversation that never says "JSON".
         { role: 'system', content: 'Answer with one JSON object and nothing else.' },

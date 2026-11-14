@@ -16,7 +16,7 @@ convex/
   ingestion.ts    the daily schedule, one action per source kind, the run lease (`ingestionRuns`)
   documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments`
   whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
-  extraction.ts   a call notice's fields from its Markdown (the LLM)            (skeleton)
+  extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
   portfolio.ts  matching.ts  alerts.ts  orgs.ts                                 (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
@@ -24,6 +24,7 @@ convex/
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits (rules, no I/O)
+    callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
     nvoip/           client.ts, payload.ts
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
@@ -59,11 +60,12 @@ pnpm exec convex run ingestion:ingestMapasCulturaisInstance '{"sourceId":"…"}'
 pnpm exec convex run ingestion:scheduleDailyIngestion '{}'
 ```
 
-Read call notices' documents by hand (Firecrawl credits, never by cron yet); it returns what it
-read, spent and left, so run it again for the rest:
+Read call notices' documents, then extract them, by hand (Firecrawl credits and the LLM's free
+tier, never by cron yet); each returns what it did and what is left, so run it again for the rest:
 
 ```bash
 pnpm exec convex run documents:readPendingDocuments '{"creditCeiling":200}'
+pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10}'
 ```
 
 Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `LLM_API_KEY`) live
