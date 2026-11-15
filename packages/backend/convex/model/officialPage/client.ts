@@ -20,17 +20,39 @@ function decoderFor(contentType: string) {
   }
 }
 
+/** Paraná renames pages and answers the old slug with a 301 (2026-11-15: 6 call pages). */
+const maxRedirects = 3;
+
+/**
+ * The page's answer, following a redirect only to https on the same host: one elsewhere could
+ * lead anywhere, an internal address included.
+ */
+async function fetchOnSameHost(url: string): Promise<Response> {
+  let current = url;
+  for (let hop = 0; hop <= maxRedirects; hop++) {
+    const response = await fetch(current, {
+      headers: { Accept: 'text/html', 'User-Agent': 'Bratura (+https://bratura.vercel.app)' },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(pageTimeoutMs),
+    });
+    const location = response.headers.get('location');
+    if (response.status < 300 || response.status >= 400 || !location) return response;
+    const next = new URL(location, current).href;
+    if (!isFetchableFromListing(next, url)) {
+      throw new Error(`${new URL(url).host} redirected off its host`);
+    }
+    current = next;
+  }
+  throw new Error(`${new URL(url).host} redirected over ${maxRedirects} times`);
+}
+
 /**
  * One page's HTML, fetched plainly (no Firecrawl credits). Throws when the site does not answer,
- * redirects (a redirect could lead anywhere), answers an error or something other than HTML, or
- * sends more than `pageMaxBytes`.
+ * redirects off its own host, answers an error or something other than HTML, or sends more than
+ * `pageMaxBytes`.
  */
 export async function fetchPageHtml(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: { Accept: 'text/html', 'User-Agent': 'Bratura (+https://bratura.vercel.app)' },
-    redirect: 'error',
-    signal: AbortSignal.timeout(pageTimeoutMs),
-  });
+  const response = await fetchOnSameHost(url);
   const host = new URL(url).host;
   if (!response.ok) throw new Error(`${host} answered HTTP ${response.status}`);
   const type = response.headers.get('content-type') ?? '';

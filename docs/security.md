@@ -83,7 +83,8 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
   Classification drops such documents before their text is stored (competition rule 6.8, LGPD).
 - **Our code fetches only what the team registered.** A Convex action calls `fetch` only on a
   registered source's `https` base URL, or, for an official page, an `https` page on its listing's
-  own host, with redirects refused (`model/officialPage/client.ts`: a redirect could lead anywhere).
+  own host, following a redirect only to `https` on that same host (`model/officialPage/client.ts`:
+  one elsewhere could lead anywhere).
   A link from a source's data (`documentUrls`, written by anyone who can publish on Mapas) is read
   only through Firecrawl, outside our infrastructure, so a crafted link cannot make our backend call
   an internal address. `requiredHttpUrl` also refuses IPs and `localhost`, but not a domain that
