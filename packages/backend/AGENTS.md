@@ -28,6 +28,7 @@ convex/
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
     nvoip/           client.ts, payload.ts
+    sources/         registry.ts: every source the team checked, what `registerSource` copies
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
 ```
@@ -100,7 +101,7 @@ Studio lists for the key's project) and `LLM_API_KEY`.
   path ("can only contain alphanumeric characters, underscores, or periods").
 - **An expected failure is `throw appError({ code })`** (`lib/appError.ts`), never a returned
   `success: false` (the mutation's writes would commit) and never a text. The builder throws
-  `invalidInput` with Zod's issues; `addSource` throws `conflict`. Codes and HTTP statuses:
+  `invalidInput` with Zod's issues; `registerSource` throws `notFound`. Codes and HTTP statuses:
   `docs/architecture.md`, Errors.
 - **Every `fetch` to the outside has a timeout** (`AbortSignal.timeout`), and every side effect
   outside Convex follows an idempotency pattern: `docs/architecture.md`, Idempotency and
@@ -108,10 +109,10 @@ Studio lists for the key's project) and `LLM_API_KEY`.
 - **A module that schedules or calls its own functions writes its handlers' return types**
   (`ingestion.ts`, `model/ingestion/runSourceIngestion.ts`): without them TypeScript cannot type the generated API and turns all of `internal`
   into `any`, silently disabling every `Id` check in the package.
-- **Args are an object.** An entity that is a union (`SourceSchema`) goes under a key:
-  `addSource({ source })`.
+- **Args are an object**, even with one field (`registerSource({ slug })`); an entity that is a
+  union goes under a key (`{ source }`).
 
-## The Zod bridge: what is checked where (tested in `sources.test.ts`, `callNotices.test.ts`)
+## The Zod bridge: what is checked where (tested in `callNotices.test.ts`)
 
 `zodToConvex` turns an entity into a Convex validator, which is **only a shape**: `slug` becomes
 `v.string()`, the regex is gone. Our builders (`lib/builders.ts`) close the gap:
@@ -135,5 +136,6 @@ Errors, invariants.
 `convex-test` runs the real functions against the real schema in memory, in the edge runtime
 (`vitest.config.ts`). `convex/test.setup.ts` lists the modules for it. A test sits next to the
 module it covers (`sources.test.ts`, `model/firecrawl/client.test.ts`); shared test data is a
-`*.fixture.ts` beside them (`sources.fixture.ts`). The Convex CLI skips any file name with two dots, so tests and
-fixtures never deploy.
+`*.fixture.ts` beside them (`model/mapasCulturais/mapasOpportunity.fixture.ts`); sources come
+from `model/sources/registry.ts`, the production list. The Convex CLI skips any file name with two
+dots, so tests and fixtures never deploy.

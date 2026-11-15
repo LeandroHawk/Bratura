@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
 import { documentReadingLeaseMs } from './documents';
 import schema from './schema';
-import { federalMapasSource } from './sources.fixture';
+import { federalMapasSource } from './model/sources/registry';
 import { modules } from './test.setup';
 
 const day = 24 * 60 * 60 * 1000;
@@ -34,7 +34,7 @@ async function addCallNotice(
 ) {
   const sourceId =
     (await t.run((ctx) => ctx.db.query('sources').first()))?._id ??
-    (await t.mutation(internal.sources.addSource, { source: federalMapasSource }));
+    (await t.run((ctx) => ctx.db.insert('sources', federalMapasSource)));
   const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
     sourceId,
     externalId,

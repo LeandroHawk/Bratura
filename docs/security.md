@@ -93,7 +93,7 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
   issues carry the path, the rule and its numbers, never the value sent; Convex redacts any other
   error to "Server Error" in production. Keep it so: returning `error.message` from a caught
   exception to a front reopens what this closes.
-- **Who can act as admin today.** Internal functions (`addSource`, ingestion) can be run from the
+- **Who can act as admin today.** Internal functions (`registerSource`, ingestion) can be run from the
   Convex dashboard and CLI. Team roles (2026-11-13): João Victor is the only Admin; Atilio, Leandro
   and Kaik are Developers, who may read production data but cannot write to it. Granting Admin or
   Project Admin grants production writes. Until `adminMutation` exists, the Convex team is the

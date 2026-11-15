@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { requiredString } from '../../../../primitives/code/string/fields';
 
 /**
- * Writes: the team, through `addSource`. Comes from: the team's own naming.
+ * Writes: the team, in the backend's `model/sources/registry.ts`. Comes from: their own naming.
  * What names a source for people, whatever its kind.
  */
 export const SourceIdentityFields = z.object({
