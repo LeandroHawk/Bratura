@@ -32,7 +32,7 @@ describe('fetchPageHtml', () => {
   test('gives the page back in its own charset, never letting fetch follow a redirect', async () => {
     const latin1 = new Uint8Array([0x53, 0x65, 0x6c, 0x65, 0xe7, 0xe3, 0x6f]); // "Seleção"
     const fetchMock = siteAnswers(latin1, { 'content-type': 'text/html; charset=ISO-8859-1' });
-    expect(await fetchPageHtml(page)).toBe('Seleção');
+    expect(await fetchPageHtml(page)).toEqual({ html: 'Seleção', url: page });
     expect(fetchMock.mock.calls[0]?.[1]?.redirect).toBe('manual');
   });
 
@@ -48,10 +48,9 @@ describe('fetchPageHtml', () => {
       return fetchMock;
     };
     const fetchMock = answers('/Pagina/Programa-Mobilidade-Cultural');
-    expect(await fetchPageHtml(renamed)).toBe('<html>ok');
-    expect(String(fetchMock.mock.calls[1]?.[0])).toBe(
-      'https://www.cultura.pr.gov.br/Pagina/Programa-Mobilidade-Cultural',
-    );
+    const final = 'https://www.cultura.pr.gov.br/Pagina/Programa-Mobilidade-Cultural';
+    expect(await fetchPageHtml(renamed)).toEqual({ html: '<html>ok', url: final });
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe(final);
     answers('https://example.com/x');
     await expect(fetchPageHtml(renamed)).rejects.toThrow('redirected off its host');
     answers('http://www.cultura.pr.gov.br/Pagina/Programa-Mobilidade-Cultural');

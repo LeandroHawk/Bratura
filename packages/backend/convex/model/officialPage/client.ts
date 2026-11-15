@@ -27,7 +27,7 @@ const maxRedirects = 3;
  * The page's answer, following a redirect only to https on the same host: one elsewhere could
  * lead anywhere, an internal address included.
  */
-async function fetchOnSameHost(url: string): Promise<Response> {
+async function fetchOnSameHost(url: string): Promise<{ response: Response; finalUrl: string }> {
   let current = url;
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const response = await fetch(current, {
@@ -36,7 +36,9 @@ async function fetchOnSameHost(url: string): Promise<Response> {
       signal: AbortSignal.timeout(pageTimeoutMs),
     });
     const location = response.headers.get('location');
-    if (response.status < 300 || response.status >= 400 || !location) return response;
+    if (response.status < 300 || response.status >= 400 || !location) {
+      return { response, finalUrl: current };
+    }
     await response.body?.cancel();
     const next = new URL(location, current).href;
     if (!isFetchableFromListing(next, url)) {
@@ -47,13 +49,16 @@ async function fetchOnSameHost(url: string): Promise<Response> {
   throw new Error(`${new URL(url).host} redirected over ${maxRedirects} times`);
 }
 
+/** A page's HTML and the URL it came from after redirects: its relative links resolve there. */
+export type FetchedPage = { html: string; url: string };
+
 /**
  * One page's HTML, fetched plainly (no Firecrawl credits). Throws when the site does not answer,
  * redirects off its own host, answers an error or something other than HTML, or sends more than
  * `pageMaxBytes`.
  */
-export async function fetchPageHtml(url: string): Promise<string> {
-  const response = await fetchOnSameHost(url);
+export async function fetchPageHtml(url: string): Promise<FetchedPage> {
+  const { response, finalUrl } = await fetchOnSameHost(url);
   const host = new URL(url).host;
   if (!response.ok) throw new Error(`${host} answered HTTP ${response.status}`);
   const type = response.headers.get('content-type') ?? '';
@@ -63,5 +68,5 @@ export async function fetchPageHtml(url: string): Promise<string> {
   if (Number(response.headers.get('content-length')) > pageMaxBytes) throw tooLarge;
   const body = await response.arrayBuffer();
   if (body.byteLength > pageMaxBytes) throw tooLarge;
-  return decoderFor(type).decode(body);
+  return { html: decoderFor(type).decode(body), url: finalUrl };
 }

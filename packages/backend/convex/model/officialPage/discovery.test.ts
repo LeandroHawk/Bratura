@@ -25,7 +25,7 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     'https://www.ba.gov.br/fundacaocultural/editais-2026': [
       a('/fundacaocultural/convocatoria-sala-do-coro', 'EDITAL 027/2026 - SALA DO CORO'),
       a('/fundacaocultural/edital-0222026-apoio', 'EDITAL 022/2026 - APOIO A ESPETÁCULOS'),
-      a('/fundacaocultural/edital-0042025-bolsas', 'EDITAL 004/2025 - BOLSAS'),
+      a('/fundacaocultural/edital-0042024-bolsas', 'EDITAL 004/2024 - BOLSAS'),
       a('/fundacaocultural/institucional', 'Institucional'),
       a('https://outro.gov.br/fundacaocultural/edital-x', 'EDITAL 030/2026 - OUTRO SITE'),
     ].join(''),
@@ -96,7 +96,7 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     ]);
   });
 
-  test('skips a call that posts results, one numbered in a past year, and other hosts unfetched', async () => {
+  test('skips a call that posts results, one numbered before last year, and other hosts unfetched', async () => {
     const fetchMock = siteAnswers();
     await callsOf(bahiaFuncebSource);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
@@ -106,10 +106,13 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     ]);
   });
 
-  test('skips a page whose notice names a past year in its text or file name', async () => {
+  test("skips a page whose notice's name numbers it before last year; last year's stays", async () => {
     siteAnswers();
     const calls = await callsOf(paranaSeecSource);
-    expect(calls.map(({ title }) => title)).toEqual(['Edital MOVCEU Paraná']);
+    expect(calls.map(({ title }) => title)).toEqual([
+      'Edital MOVCEU Paraná',
+      'Edital de Parcerias com Organizações Sociais – MON',
+    ]);
   });
 
   test('stops opening call pages after 5 min, keeping the calls found', async () => {
@@ -128,6 +131,29 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     const calls = await callsOf(everyPage);
     expect(fetchMock).toHaveBeenCalledTimes(3); // the listing and 2 of its 3 call pages
     expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
+  });
+
+  test("after a redirect, a page's relative links resolve against where it landed", async () => {
+    const moved = 'https://www.ba.gov.br/fundacaocultural/convocatoria-sala-do-coro';
+    const landed = 'https://www.ba.gov.br/fundacaocultural/2026/sala-do-coro/';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input) => {
+        const html =
+          String(input) === landed
+            ? a('../../sites/site-funceb/files/2026-11/EDITAL%20027.pdf', 'EDITAL 027/2026.pdf')
+            : pages[String(input)];
+        if (String(input) === moved) {
+          return new Response(null, { status: 301, headers: { location: landed } });
+        }
+        return new Response(html ?? '', { headers: { 'content-type': 'text/html' } });
+      }),
+    );
+    const [call] = await callsOf(bahiaFuncebSource);
+    expect(call?.externalId).toBe(moved);
+    expect(call?.documents.map(({ url }) => url)).toEqual([
+      `https://www.ba.gov.br${files}/2026-11/EDITAL%20027.pdf`,
+    ]);
   });
 
   test('a call page that fails is skipped, not the whole run', async () => {
@@ -178,7 +204,7 @@ describe('fileNameAsLabel', () => {
     expect(callNumberOf(fileNameAsLabel(at(name)))).toEqual(number);
   });
 
-  // Mapas notices of 2026 in the dev DB (2026-11-15): read as "06/11" and "005/20" before.
+  // Real 2026 notices (Mapas): a chain of numbers is no call 06 of 2011, nor 005 of 2020.
   test.each([
     'i-edital-de-chamamento-publico-n-c2-ba-06-11-008-2026-an.pdf',
     'edital-005-20-2026-socorro-andrade.pdf',
@@ -204,14 +230,14 @@ describe('callsOfDocumentsOnListing (Minas Gerais, Maranhão)', () => {
     a(`${mg}?download=4833`, 'Anexo I - Critérios de avaliação'),
     a(`${mg}?download=4900`, 'Edital FEC 01/2026 - Afromineiridades'),
     a(`${mg}?download=5055`, 'Resultado FEC e Edital atualizado - Edital 01'),
-    a(`${mg}?download=3000`, 'Edital FEC 03/2025 - Antigo'),
+    a(`${mg}?download=3000`, 'Edital FEC 03/2024 - Antigo'),
     a(`${mg}?download=3100`, 'PREGÃO ELETRÔNICO 044/2026 - ELEVADORES'),
     a('/editais/editais-pnab', 'Editais PNAB'),
   ].join('');
   const url = (id: number) => `https://www.secult.mg.gov.br${mg}?download=${id}`;
 
   test('one call per number: its newest notice and its annexes, the listing as its link', () => {
-    expect(callsOfDocumentsOnListing(source, html)).toEqual([
+    expect(callsOfDocumentsOnListing(source, { html, url: source.listingUrl })).toEqual([
       {
         externalId: 'fec 6/2026',
         title: 'Edital FEC 06/2026 - Coreto - Retificado em 10/11/26',
