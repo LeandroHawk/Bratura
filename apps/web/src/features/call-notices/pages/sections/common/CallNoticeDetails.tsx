@@ -21,6 +21,7 @@ import {
   artFormName,
   askedText,
   CALL_NOTICE_LANGUAGE,
+  isAskedInTheCallsWording,
   justificationText,
   locationText,
 } from './callNoticeTexts';
@@ -229,7 +230,14 @@ export function CallNoticeDetails({
                         {copy.requirementStatus[requirement.status]}
                       </Badge>
                       <p className="font-semibold">
-                        {copy.requirementKind[requirement.kind]}: {askedText(requirement, locale)}
+                        {copy.requirementKind[requirement.kind]}:{' '}
+                        <span
+                          lang={
+                            isAskedInTheCallsWording(requirement) ? CALL_NOTICE_LANGUAGE : undefined
+                          }
+                        >
+                          {askedText(requirement, locale)}
+                        </span>
                       </p>
                     </div>
                     <p className="text-small text-muted-foreground">

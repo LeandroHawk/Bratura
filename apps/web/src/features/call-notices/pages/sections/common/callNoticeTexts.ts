@@ -42,6 +42,11 @@ export function askedText({ kind, asked }: MatchRequirement, locale: Locale) {
   return asked;
 }
 
+/** Whether `askedText` gives the call's own wording, in the call's language, not a name of ours. */
+export function isAskedInTheCallsWording({ kind }: Pick<MatchRequirement, 'kind'>) {
+  return kind === 'residence' || kind === 'document';
+}
+
 /** "Juazeiro do Norte · Ceará · Municipal", with what the call gives; `null` when it gives none. */
 export function locationText(
   { city, state, coverage }: Pick<CallNoticeWithMatch, 'city' | 'state' | 'coverage'>,
