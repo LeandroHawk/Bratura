@@ -12,6 +12,7 @@ import { plainDateInSaoPaulo } from '@bratura/shared/primitives/code/calendar/ca
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Badge, type BadgeTone } from '@bratura/ui';
 import { useState } from 'react';
+import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { formattedPlainDate } from '@/features/common/utils/format';
 import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
 import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
@@ -26,6 +27,7 @@ const STATUS_TONE: Record<PortfolioDocumentStatus, BadgeTone> = {
 
 export function Documents({ locale, items }: { locale: Locale; items: DocumentPortfolioItem[] }) {
   const content = DOCUMENTS_CONTENT[locale];
+  const { documentKind } = CREATOR_LABELS[locale];
   // Read once, when the section mounts: a render must give the same answer twice.
   const [today] = useState(() => plainDateInSaoPaulo(Date.now()));
   const fields: FormField<keyof typeof content.fields>[] = [
@@ -33,7 +35,7 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
       name: 'documentKind',
       control: 'select',
       isRequired: true,
-      options: { values: PortfolioDocumentKindEnum.options, labels: content.documentKind },
+      options: { values: PortfolioDocumentKindEnum.options, labels: documentKind },
     },
     { name: 'description', control: 'text', isRequired: true },
     { name: 'registrationNumber', control: 'text', isWide: true },
@@ -56,7 +58,7 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
         return {
           title: item.description,
           meta: [
-            content.documentKind[item.documentKind],
+            documentKind[item.documentKind],
             item.validUntil && content.validUntil(formattedPlainDate(item.validUntil, locale)),
           ],
           badge: <Badge tone={STATUS_TONE[status]}>{content.status[status]}</Badge>,

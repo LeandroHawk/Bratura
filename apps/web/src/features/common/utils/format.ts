@@ -14,3 +14,11 @@ export function formattedAmountInCents(amountInCents: number, locale: Locale): s
     amountInCents / 100,
   );
 }
+
+/** The calendar day an instant falls on in São Paulo, written for a reader. */
+export function formattedDayOfInstant(instant: number, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: 'medium',
+    timeZone: 'America/Sao_Paulo',
+  }).format(instant);
+}

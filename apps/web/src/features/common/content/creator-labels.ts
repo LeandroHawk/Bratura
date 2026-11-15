@@ -1,5 +1,6 @@
 import type { CulturalArea } from '@bratura/shared/entities/creator/enums/cultural-area/enum';
 import type { CreatorProfileType } from '@bratura/shared/entities/creator/enums/profile-type/enum';
+import type { PortfolioDocumentKind } from '@bratura/shared/entities/portfolio-item/enums/document-kind/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
@@ -28,6 +29,17 @@ const ptBR = {
     digitalCulture: 'Cultura digital',
     other: 'Outros',
   } satisfies Record<CulturalArea, string>,
+  documentKind: {
+    cpf: 'CPF',
+    cnpj: 'CNPJ',
+    ccmei: 'Certificado de MEI (CCMEI)',
+    sicab: 'Registro de artesão (SICAB)',
+    proofOfResidence: 'Comprovante de residência',
+    proofOfCulturalExperience: 'Comprovante de atuação cultural',
+    certificate: 'Certificado',
+    declaration: 'Declaração',
+    other: 'Outro documento',
+  } satisfies Record<PortfolioDocumentKind, string>,
   notInformed: 'Não informado',
   optional: '(opcional)',
   chooseOne: 'Escolha',
@@ -61,6 +73,17 @@ export const CREATOR_LABELS: Record<Locale, typeof ptBR> = {
       fashion: 'Fashion',
       digitalCulture: 'Digital culture',
       other: 'Other',
+    },
+    documentKind: {
+      cpf: 'CPF (taxpayer number)',
+      cnpj: 'CNPJ (company number)',
+      ccmei: 'MEI certificate (CCMEI)',
+      sicab: 'Artisan registry (SICAB)',
+      proofOfResidence: 'Proof of residence',
+      proofOfCulturalExperience: 'Proof of cultural activity',
+      certificate: 'Certificate',
+      declaration: 'Declaration',
+      other: 'Other document',
     },
     notInformed: 'Not informed',
     optional: '(optional)',

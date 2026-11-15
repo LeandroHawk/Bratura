@@ -1,4 +1,3 @@
-import type { PortfolioDocumentKind } from '@bratura/shared/entities/portfolio-item/enums/document-kind/enum';
 import type { PortfolioDocumentStatus } from '@bratura/shared/entities/portfolio-item/kinds/document/variant';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { PortfolioItemsCopy } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
@@ -17,17 +16,6 @@ const ptBR = {
     validUntil: 'Data de validade',
     file: 'Arquivo',
   },
-  documentKind: {
-    cpf: 'CPF',
-    cnpj: 'CNPJ',
-    ccmei: 'Certificado de MEI (CCMEI)',
-    sicab: 'Registro de artesão (SICAB)',
-    proofOfResidence: 'Comprovante de residência',
-    proofOfCulturalExperience: 'Comprovante de atuação cultural',
-    certificate: 'Certificado',
-    declaration: 'Declaração',
-    other: 'Outro documento',
-  } satisfies Record<PortfolioDocumentKind, string>,
   status: {
     registered: 'Cadastrado',
     pending: 'Pendente',
@@ -51,17 +39,6 @@ export const DOCUMENTS_CONTENT: Record<Locale, typeof ptBR> = {
       issuedOn: 'Issue date',
       validUntil: 'Expiry date',
       file: 'File',
-    },
-    documentKind: {
-      cpf: 'CPF (taxpayer number)',
-      cnpj: 'CNPJ (company number)',
-      ccmei: 'MEI certificate (CCMEI)',
-      sicab: 'Artisan registry (SICAB)',
-      proofOfResidence: 'Proof of residence',
-      proofOfCulturalExperience: 'Proof of cultural activity',
-      certificate: 'Certificate',
-      declaration: 'Declaration',
-      other: 'Other document',
     },
     status: { registered: 'Registered', pending: 'Pending', expired: 'Expired' },
     validUntil: (date) => `valid until ${date}`,
