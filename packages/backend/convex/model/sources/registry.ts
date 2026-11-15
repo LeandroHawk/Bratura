@@ -200,6 +200,20 @@ export const arapiracaMapasSource = {
 } satisfies Source;
 
 /**
+ * CultBR Editais, the Ministry of Culture's Mapas for municipalities with no instance of their own:
+ * 261 calls closing in 2026, 13 open on 2026-11-15. The city is only in the call's text.
+ */
+export const culturaMunicipalitiesMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-culteditais',
+  name: 'Mapas Culturais — CultBR Editais (MinC, municípios)',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  baseUrl: 'https://culteditais.cultura.gov.br',
+} satisfies Source;
+
+/**
  * Bahia's FUNCEB: one page per call, linked from its 2026 listing (measured 2026-11-15). The
  * training centre's calls are `/fundacaocultural/centro-de-formacao-em-artes-convocatoria-…`.
  */
@@ -424,6 +438,7 @@ export const registeredSources: readonly Source[] = [
   paulistaMapasSource,
   petrolinaMapasSource,
   arapiracaMapasSource,
+  culturaMunicipalitiesMapasSource,
   bahiaFuncebSource,
   maranhaoSecmaSource,
   minasGeraisSecultPnabSource,

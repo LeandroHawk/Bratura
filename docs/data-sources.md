@@ -86,6 +86,16 @@ Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas tem
 full); Anápolis and Arapiraca publish none found (Arapiraca's `/termos-de-uso` is a 404). Unlike
 the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
 
+**CultBR Editais** (`culteditais.cultura.gov.br`, added on 2026-11-15): the Ministry of Culture's
+Mapas for municipalities with no instance of their own, mostly PNAB. 261 opportunities closing in
+2026, 13 open that day (zone `Etc/GMT+3`), none named as a phase, so it reads as is. The city is not
+in the API: `owner` is a clerk's personal agent (never read), so the city comes from
+`shortDescription` or the name ("PNAB Quixelô"). Of the 13, `documentsWorthReading` reads 4; 2 have
+no files and 7 only annexes or a notice with an unmatched name (`pnab-assinada-2.pdf`), which wait
+for the admin review. `robots.txt` answers 404: nothing declared. Terms: `/termos-de-uso` is the
+federal Mapa da Cultura's (account, password, LGPD; forbids copying other users' personal data), with
+no clause on automated access or reuse of call data, 2026-11-15.
+
 ```
 GET https://{host}/api/opportunity/find
   ?@select=id,name,shortDescription,registrationFrom,registrationTo,singleUrl
