@@ -75,19 +75,20 @@ function setState(next: DemoState) {
 }
 
 function subscribe(listener: () => void) {
-  // Another tab changed the storage: read it again.
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== STORAGE_KEY) return;
-    state = null;
-    listener();
-  };
   listeners.add(listener);
-  window.addEventListener('storage', onStorage);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener('storage', onStorage);
   };
 }
+
+// Another tab changed the storage: read it again before the next write, even on a page that
+// draws nothing from the store (sign-in), or that write would put the older copy back.
+if (typeof window !== 'undefined')
+  window.addEventListener('storage', (event) => {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    state = null;
+    listeners.forEach((listener) => listener());
+  });
 
 /** `null` on the server and on the first paint, before the browser's storage is read. */
 export function useDemoState(): DemoState | null {
