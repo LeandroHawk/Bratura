@@ -166,7 +166,6 @@ describe('callsOfCallPages', () => {
         a(`${site}/edital-sem-titulo/`, 'Clique aqui!'),
       ].join(''),
       [`${site}/edital-atelie-itinerante/`]: [
-        '<title>Ateliê Itinerante abre inscrições – FGM Cultura</title>',
         '<h1 class="entry-title">Edital Ateliê Itinerante de Restauro abre inscrições</h1>',
         a(`${uploads}/EDITAL-N-092026-ATELIE.pdf`, 'Edital'),
         a(`${uploads}/ANEXO-XII-MODELO-DE-INTERPOSICAO-DE-RECURSO-QUANTO-AO-RESULTADO.docx`, 'XII'),

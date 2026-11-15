@@ -41,7 +41,7 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < new Date().getUTCFullYear() - 1;
 
-/** A link text, file name or page heading that names such a call. */
+/** A link text or file name that names such a call. */
 const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
 
 /**
@@ -110,7 +110,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       page = linksOfHtml(fetched.html, fetched.url);
       if (namesNoCall(label)) {
         title = headingOfHtml(fetched.html);
-        if (!title || namesACallBeforeLastYear(title)) continue;
+        if (!title) continue;
       }
     } catch (error) {
       console.warn('Call page not read', url, String(error));
