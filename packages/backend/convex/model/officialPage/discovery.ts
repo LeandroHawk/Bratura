@@ -71,6 +71,13 @@ function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   const { html, url: listingUrl } = await fetchPageHtml(source.listingUrl);
   const listing = linksOfHtml(html, listingUrl);
+  /**
+   * A document the listing links too is the site's frame, not the call's (Funarte, 2026-11-15:
+   * every page links an internal "Edital No. 409/2025"). Without this, it is each call's notice.
+   */
+  const frameDocumentUrls = new Set(
+    documentLinksOf(listing, source.documentUrlParts).map(({ url }) => url),
+  );
   const callPages = listing.filter(
     ({ url, label }) =>
       label &&
@@ -97,7 +104,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       console.warn('Call page not read', url, String(error));
       continue;
     }
-    const documents = documentLinksOf(page, source.documentUrlParts);
+    const documents = documentLinksOf(page, source.documentUrlParts).filter(
+      ({ url }) => !frameDocumentUrls.has(url),
+    );
     if (
       documents.length === 0 ||
       hasPublishedResult(documents) ||
