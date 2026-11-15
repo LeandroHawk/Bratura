@@ -1,8 +1,8 @@
 import { CallNoticeDocumentUrlSchema } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
 import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
 import { plainText } from '../../lib/text';
-import { callNoticeDocumentRole, postsResult } from '../callNoticeDocuments/selection';
-import { fetchPageHtml, isFetchableFromListing } from './client';
+import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
+import { fetchPageHtml, isFetchableFromListing, type FetchedPage } from './client';
 import { linksOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
@@ -11,6 +11,12 @@ type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
 
 /** Between two call pages of one site: a public office's server, not a crawl. */
 const callPageSpacingMs = 1_000;
+
+/**
+ * No call page is opened past this: a page can take 2 min (4 fetches × 30 s), so the listing,
+ * this and the last page stay under the action's 10 min. The calls found so far are kept.
+ */
+const callPagesBudgetMs = 5 * 60_000;
 
 /**
  * A call whose page or listing already posts results is past its registration (Bahia, 2026-11-15:
@@ -29,36 +35,76 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 }
 
 /**
- * A call numbered in a past year ("Edital 03/2024") is closed by now: listings keep years of them
- * (Minas Gerais PNAB, Maranhão), and each would cost a read.
+ * A call numbered before last year ("Edital 03/2024" in 2026) is closed: listings keep years of
+ * them, each a read. Not last year's: 4 of 28 numbered calls in the dev DB close in a later year.
  */
-const isNumberedInPastYear = (callNumber: CallNumber | null) =>
-  callNumber !== null && callNumber.year < new Date().getUTCFullYear();
+const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
+  callNumber !== null && callNumber.year < new Date().getUTCFullYear() - 1;
+
+/**
+ * `lpg-edital-012-2023.pdf` as `lpg edital 012/2023`, a label `callNumberOf` reads. A chain stays
+ * one (`06-11-008-2026` → `06/11/008/2026`), which `callNumberOf` refuses: no "06/11" as 2011.
+ */
+export const fileNameAsLabel = (url: string) =>
+  fileNameOf(url)
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/(?<=\d)[\s_-]+(?=\d)/g, '/')
+    .replace(/[_-]+/g, ' ');
+
+/**
+ * A call page whose title names no year can still hold only old notices (Paraná, 2026-11-15:
+ * "Edital Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the page.
+ */
+function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
+  const notices = documents.filter(
+    ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
+  );
+  return (
+    notices.length > 0 &&
+    notices.every(({ url, label }) =>
+      [label, fileNameAsLabel(url)].some((name) => isNumberedBeforeLastYear(callNumberOf(name))),
+    )
+  );
+}
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
-  const listing = linksOfHtml(await fetchPageHtml(source.listingUrl), source.listingUrl);
+  const { html, url: listingUrl } = await fetchPageHtml(source.listingUrl);
+  const listing = linksOfHtml(html, listingUrl);
   const callPages = listing.filter(
     ({ url, label }) =>
       label &&
-      !isNumberedInPastYear(callNumberOf(label)) &&
+      !isNumberedBeforeLastYear(callNumberOf(label)) &&
       url !== source.listingUrl &&
+      url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
       isFetchableFromListing(url, source.listingUrl) &&
       !source.documentUrlParts.some((part) => url.includes(part)),
   );
   const calls: OfficialPageCall[] = [];
+  const startedAt = Date.now();
   for (const [index, { url, label }] of callPages.entries()) {
+    if (Date.now() - startedAt > callPagesBudgetMs) {
+      console.warn('Call pages left unread for lack of time', callPages.length - index);
+      break;
+    }
     if (index > 0) await new Promise((done) => setTimeout(done, callPageSpacingMs));
     let page: PageLink[];
     try {
-      page = linksOfHtml(await fetchPageHtml(url), url);
+      const fetched = await fetchPageHtml(url);
+      page = linksOfHtml(fetched.html, fetched.url);
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
     }
     const documents = documentLinksOf(page, source.documentUrlParts);
-    if (documents.length === 0 || hasPublishedResult(documents)) continue;
+    if (
+      documents.length === 0 ||
+      hasPublishedResult(documents) ||
+      noticesAreNumberedBeforeLastYear(documents)
+    ) {
+      continue;
+    }
     calls.push({ externalId: url, title: label, officialUrl: url, documents });
   }
   return calls;
@@ -121,9 +167,9 @@ function withNewestNoticeOnly(documents: PageLink[]) {
  */
 export function callsOfDocumentsOnListing(
   source: OfficialPageSource,
-  html: string,
+  { html, url }: FetchedPage,
 ): OfficialPageCall[] {
-  const documents = documentLinksOf(linksOfHtml(html, source.listingUrl), source.documentUrlParts);
+  const documents = documentLinksOf(linksOfHtml(html, url), source.documentUrlParts);
   const byCall = new Map<string, { callNumber: CallNumber; documents: PageLink[] }>();
   let current: CallNumber | null = null;
   for (const document of documents) {
@@ -136,7 +182,7 @@ export function callsOfDocumentsOnListing(
     });
   }
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
-    if (callNumber.kind === 'pregao' || isNumberedInPastYear(callNumber)) return [];
+    if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
     if (hasPublishedResult(callDocuments)) return [];
     const kept = withNewestNoticeOnly(callDocuments);
     const notice = kept.find(

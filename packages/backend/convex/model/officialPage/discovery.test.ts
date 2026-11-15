@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { bahiaFuncebSource, maranhaoSecmaSource } from '../../sources.fixture';
-import { callNumberOf, callsOfCallPages, callsOfDocumentsOnListing } from './discovery';
+import { bahiaFuncebSource, maranhaoSecmaSource, paranaSeecSource } from '../../sources.fixture';
+import {
+  callNumberOf,
+  callsOfCallPages,
+  callsOfDocumentsOnListing,
+  fileNameAsLabel,
+} from './discovery';
 
 beforeEach(() => {
   vi.useFakeTimers({ now: Date.UTC(2026, 10, 15) });
@@ -13,13 +18,14 @@ afterEach(() => {
 
 const a = (href: string, text: string) => `<a href="${href}">${text}</a>`;
 const files = '/fundacaocultural/sites/site-funceb/files';
+const prFiles = '/sites/default/arquivos_restritos/files/documento/2026-11';
 
 describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
   const pages: Record<string, string> = {
     'https://www.ba.gov.br/fundacaocultural/editais-2026': [
       a('/fundacaocultural/convocatoria-sala-do-coro', 'EDITAL 027/2026 - SALA DO CORO'),
       a('/fundacaocultural/edital-0222026-apoio', 'EDITAL 022/2026 - APOIO A ESPETÁCULOS'),
-      a('/fundacaocultural/edital-0042025-bolsas', 'EDITAL 004/2025 - BOLSAS'),
+      a('/fundacaocultural/edital-0042024-bolsas', 'EDITAL 004/2024 - BOLSAS'),
       a('/fundacaocultural/institucional', 'Institucional'),
       a('https://outro.gov.br/fundacaocultural/edital-x', 'EDITAL 030/2026 - OUTRO SITE'),
     ].join(''),
@@ -32,6 +38,31 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       a(`${files}/2026-07/EDITAL.pdf`, 'EDITAL DE APOIO.pdf'),
       a(`${files}/2026-10/PORTARIA%20269.pdf`, 'PORTARIA 269_2026 - RESULTADO FINAL.pdf'),
     ].join(''),
+    'https://www.cultura.pr.gov.br/': [
+      a('/Pagina/Edital-MOVCEU-Parana', 'Edital MOVCEU Paraná'),
+      a('/Pagina/Edital-Bandas-e-Fanfarras', 'Edital Bandas e Fanfarras'),
+      a('/Pagina/Edital-de-Parcerias-MON', 'Edital de Parcerias com Organizações Sociais – MON'),
+      a('/Pagina/Edital-Premiacao-Trajetorias', 'Edital Premiação de Trajetórias'),
+    ].join(''),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-MOVCEU-Parana': [
+      a(
+        `${prFiles}/0.edital_movceu_parana_-_2026.docx_0.pdf`,
+        'EDITAL MOVCEU PARANÁ - CHAMAMENTO PÚBLICO Nº 015/2026',
+      ),
+      a(`${prFiles}/0._edital_009_2024_movceu.pdf`, 'EDITAL Nº 009/2024 - EDIÇÃO ANTERIOR'),
+    ].join(''),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-Bandas-e-Fanfarras': a(
+      `${prFiles}/lpg-edital-012-2023.pdf`,
+      'EDITAL INTERATIVO',
+    ),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-Premiacao-Trajetorias': a(
+      `${prFiles}/0._edital_premiacao_trajetorias.pdf`,
+      'EDITAL Nº 008/2024 - PREMIAÇÃO DE TRAJETÓRIAS',
+    ),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-de-Parcerias-MON': a(
+      `${prFiles}/edital_-_001_-_2025.docx`,
+      '(.DOC)',
+    ),
   };
   /** Answers each fixture page as HTML and anything else 404, like a site; returns the mock. */
   function siteAnswers(failing: string[] = []) {
@@ -73,7 +104,7 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     ]);
   });
 
-  test('skips a call that posts results, one numbered in a past year, and other hosts unfetched', async () => {
+  test('skips a call that posts results, one numbered before last year, and other hosts unfetched', async () => {
     const fetchMock = siteAnswers();
     await callsOf(bahiaFuncebSource);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
@@ -81,6 +112,78 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       'https://www.ba.gov.br/fundacaocultural/convocatoria-sala-do-coro',
       'https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio',
     ]);
+  });
+
+  test('skips a page whose notices are all numbered before last year by text or file name', async () => {
+    siteAnswers();
+    const calls = await callsOf(paranaSeecSource);
+    expect(calls.map(({ title }) => title)).toEqual([
+      'Edital MOVCEU Paraná',
+      'Edital de Parcerias com Organizações Sociais – MON',
+    ]);
+  });
+
+  test('stops opening call pages after 5 min, keeping the calls found', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      const html = pages[String(input)] ?? '';
+      if (String(input) !== bahiaFuncebSource.listingUrl) {
+        await new Promise((done) => setTimeout(done, 200_000));
+      }
+      return new Response(html, { headers: { 'content-type': 'text/html' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const everyPage = {
+      ...bahiaFuncebSource,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['/fundacaocultural/'] },
+    };
+    const calls = await callsOf(everyPage);
+    expect(fetchMock).toHaveBeenCalledTimes(3); // the listing and 2 of its 3 call pages
+    expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
+  });
+
+  test("after a redirect, a page's relative links resolve against where it landed", async () => {
+    const moved = 'https://www.ba.gov.br/fundacaocultural/convocatoria-sala-do-coro';
+    const landed = 'https://www.ba.gov.br/fundacaocultural/2026/sala-do-coro/';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input) => {
+        const html =
+          String(input) === landed
+            ? a('../../sites/site-funceb/files/2026-11/EDITAL%20027.pdf', 'EDITAL 027/2026.pdf')
+            : pages[String(input)];
+        if (String(input) === moved) {
+          return new Response(null, { status: 301, headers: { location: landed } });
+        }
+        return new Response(html ?? '', { headers: { 'content-type': 'text/html' } });
+      }),
+    );
+    const [call] = await callsOf(bahiaFuncebSource);
+    expect(call?.externalId).toBe(moved);
+    expect(call?.documents.map(({ url }) => url)).toEqual([
+      `https://www.ba.gov.br${files}/2026-11/EDITAL%20027.pdf`,
+    ]);
+  });
+
+  test('a listing that redirects is not read again as one of its own call pages', async () => {
+    const landed = 'https://www.ba.gov.br/fundacaocultural/editais-2026/';
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      if (String(input) === bahiaFuncebSource.listingUrl) {
+        return new Response(null, { status: 301, headers: { location: landed } });
+      }
+      const html =
+        String(input) === landed
+          ? a(landed, 'EDITAIS 2026') + pages[bahiaFuncebSource.listingUrl]
+          : pages[String(input)];
+      return new Response(html ?? '', { headers: { 'content-type': 'text/html' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const everyPage = {
+      ...bahiaFuncebSource,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['/fundacaocultural/'] },
+    };
+    await callsOf(everyPage);
+    const fetched = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(fetched.filter((url) => url === landed)).toHaveLength(1);
   });
 
   test('a call page that fails is skipped, not the whole run', async () => {
@@ -120,6 +223,27 @@ describe('callNumberOf', () => {
   });
 });
 
+describe('fileNameAsLabel', () => {
+  const at = (name: string) => `https://www.cultura.pr.gov.br/files/${name}`;
+
+  test.each([
+    ['lpg-edital-012-2023.pdf', { kind: 'edital', number: 12, year: 2023 }],
+    ['edital_-_001_-_2025.docx', { kind: 'edital', number: 1, year: 2025 }],
+    ['0._edital_012_2026_pontos_de_cultura.pdf', { kind: 'edital', number: 12, year: 2026 }],
+  ])('%s → %o', (name, number) => {
+    expect(callNumberOf(fileNameAsLabel(at(name)))).toEqual(number);
+  });
+
+  // Real 2026 notices (Mapas): a chain of numbers is no call 06 of 2011, nor 005 of 2020.
+  test.each([
+    'i-edital-de-chamamento-publico-n-c2-ba-06-11-008-2026-an.pdf',
+    'edital-005-20-2026-socorro-andrade.pdf',
+    'edital-retificado-10-11-2025.pdf',
+  ])('a chain of numbers or a date names no call: %s', (name) => {
+    expect(callNumberOf(fileNameAsLabel(at(name)))).toBeNull();
+  });
+});
+
 describe('callsOfDocumentsOnListing (Minas Gerais, Maranhão)', () => {
   const mg = '/download/category/15-fundo-estadual-de-cultura-fec';
   const source = {
@@ -136,14 +260,14 @@ describe('callsOfDocumentsOnListing (Minas Gerais, Maranhão)', () => {
     a(`${mg}?download=4833`, 'Anexo I - Critérios de avaliação'),
     a(`${mg}?download=4900`, 'Edital FEC 01/2026 - Afromineiridades'),
     a(`${mg}?download=5055`, 'Resultado FEC e Edital atualizado - Edital 01'),
-    a(`${mg}?download=3000`, 'Edital FEC 03/2025 - Antigo'),
+    a(`${mg}?download=3000`, 'Edital FEC 03/2024 - Antigo'),
     a(`${mg}?download=3100`, 'PREGÃO ELETRÔNICO 044/2026 - ELEVADORES'),
     a('/editais/editais-pnab', 'Editais PNAB'),
   ].join('');
   const url = (id: number) => `https://www.secult.mg.gov.br${mg}?download=${id}`;
 
   test('one call per number: its newest notice and its annexes, the listing as its link', () => {
-    expect(callsOfDocumentsOnListing(source, html)).toEqual([
+    expect(callsOfDocumentsOnListing(source, { html, url: source.listingUrl })).toEqual([
       {
         externalId: 'fec 6/2026',
         title: 'Edital FEC 06/2026 - Coreto - Retificado em 10/11/26',
