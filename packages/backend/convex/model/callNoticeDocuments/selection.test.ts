@@ -100,6 +100,17 @@ describe('callNoticeDocumentRole', () => {
     );
   });
 
+  test('an appeal form shipped with the call posts no result (Salvador, Amapá)', () => {
+    const files = 'https://fgm.salvador.ba.gov.br/wp-content/uploads/2026/10';
+    expect(
+      postsResult(`${files}/ANEXO-XII-MODELO-DE-INTERPOSICAO-DE-RECURSO-QUANTO-AO-RESULTADO.docx`),
+    ).toBe(false);
+    expect(postsResult(`${files}/a.pdf`, 'FORMULÁRIO DE RECURSO DO RESULTADO PRELIMINAR')).toBe(
+      false,
+    );
+    expect(postsResult(`${files}/a.pdf`, 'Resultado da interposição de recursos')).toBe(true);
+  });
+
   test('a call for a profession ending in "lista" is still a call', () => {
     expect(roleOf('edital-instrumentalistas-2026.pdf')).toBe('callNotice');
     expect(roleOf('chamada-especialistas-em-patrimonio.pdf')).toBe('callNotice');

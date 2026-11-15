@@ -3,7 +3,7 @@ import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/o
 import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { fetchPageHtml, isFetchableFromListing, type FetchedPage } from './client';
-import { linksOfHtml, type PageLink } from './html';
+import { linksOfHtml, pageTitleOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -67,6 +67,15 @@ function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
   );
 }
 
+/**
+ * A listing link that names no call: an image card (empty) or a button. Salvador, 2026-11-15:
+ * every link to a call page is a card or "Clique aqui!"; the call page's own title names it.
+ */
+const genericLinkLabel =
+  /^(clique aqui|acesse|acessar|baixar|download|saiba mais|leia mais|veja mais|ver mais|confira|aqui|inscreva-se|inscricoes)?[\s!.:>»]*$/;
+
+const namesNoCall = (label: string) => genericLinkLabel.test(plainText(label));
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   const { html, url: listingUrl } = await fetchPageHtml(source.listingUrl);
@@ -80,7 +89,6 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   );
   const callPages = listing.filter(
     ({ url, label }) =>
-      label &&
       !isNumberedBeforeLastYear(callNumberOf(label)) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
@@ -97,9 +105,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     }
     if (index > 0) await new Promise((done) => setTimeout(done, callPageSpacingMs));
     let page: PageLink[];
+    let title = label;
     try {
       const fetched = await fetchPageHtml(url);
       page = linksOfHtml(fetched.html, fetched.url);
+      if (namesNoCall(label)) title = pageTitleOfHtml(fetched.html) ?? '';
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
@@ -108,13 +118,15 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       ({ url }) => !frameDocumentUrls.has(url),
     );
     if (
+      namesNoCall(title) ||
+      isNumberedBeforeLastYear(callNumberOf(title)) ||
       documents.length === 0 ||
       hasPublishedResult(documents) ||
       noticesAreNumberedBeforeLastYear(documents)
     ) {
       continue;
     }
-    calls.push({ externalId: url, title: label, officialUrl: url, documents });
+    calls.push({ externalId: url, title, officialUrl: url, documents });
   }
   return calls;
 }

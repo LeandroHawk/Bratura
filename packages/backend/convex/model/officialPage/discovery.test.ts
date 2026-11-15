@@ -4,6 +4,7 @@ import {
   funarteCallsSource,
   maranhaoSecmaSource,
   paranaSeecSource,
+  salvadorFgmSource,
 } from '../../sources.fixture';
 import {
   callNumberOf,
@@ -161,6 +162,40 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     const [call] = await callsOf(funarteCallsSource);
     expect(call?.documents.map(({ url }) => url)).toEqual([
       `${chamadas}/marc-ferrez/Edital_MarcFerrez_final.pdf`,
+    ]);
+  });
+
+  test('a card or "Clique aqui!" links the call: the call page\'s own heading names it (Salvador)', async () => {
+    const site = 'https://fgm.salvador.ba.gov.br';
+    const plan = a(`${site}/wp-content/uploads/2023/10/PLANO-MUNICIPAL-DE-CULTURA.pdf`, 'PLANO');
+    const pages: Record<string, string> = {
+      [salvadorFgmSource.listingUrl]: [
+        plan,
+        a(`${site}/edital-atelie-itinerante/`, '<img src="card.jpg">'),
+        a(`${site}/edital-sem-titulo/`, 'Clique aqui!'),
+      ].join(''),
+      [`${site}/edital-atelie-itinerante/`]: [
+        '<title>Ateliê Itinerante abre inscrições – FGM Cultura</title>',
+        '<h1 class="entry-title">Edital Ateliê Itinerante de Restauro abre inscrições</h1>',
+        plan,
+        a(`${site}/wp-content/uploads/2026/10/EDITAL-N-092026-ATELIE.pdf`, 'Edital'),
+        a(
+          `${site}/wp-content/uploads/2026/10/ANEXO-XII-MODELO-DE-INTERPOSICAO-DE-RECURSO-QUANTO-AO-RESULTADO-PRELIMINAR.docx`,
+          'Anexo XII',
+        ),
+      ].join(''),
+      [`${site}/edital-sem-titulo/`]: a(`${site}/wp-content/uploads/2026/10/EDITAL.pdf`, 'Edital'),
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(
+        async (input) =>
+          new Response(pages[String(input)] ?? '', { headers: { 'content-type': 'text/html' } }),
+      ),
+    );
+    const calls = await callsOf(salvadorFgmSource);
+    expect(calls.map(({ title, documents }) => [title, documents.length])).toEqual([
+      ['Edital Ateliê Itinerante de Restauro abre inscrições', 2],
     ]);
   });
 

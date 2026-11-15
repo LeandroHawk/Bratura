@@ -80,3 +80,16 @@ export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
   }
   return [...labelByUrl].map(([url, label]) => ({ url, label }));
 }
+
+/**
+ * A page's own name: its first `<h1>`, else its `<title>` before the site name ("… – FGM Cultura").
+ * `null` when it has neither.
+ */
+export function pageTitleOfHtml(html: string): string | null {
+  const withoutCode = html.replace(/<(script|style)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi, '');
+  const heading = /<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(withoutCode)?.[1];
+  if (heading && plainLabel(heading)) return plainLabel(heading);
+  const title = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(withoutCode)?.[1];
+  const name = title ? plainLabel(title).replace(/\s+[–—|-]\s+[^–—|-]+$/, '') : '';
+  return name || null;
+}
