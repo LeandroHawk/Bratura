@@ -101,6 +101,18 @@ describe('callNoticeDocumentRole', () => {
     expect(roleOf('termo-de-execucao-cultural.pdf')).toBeNull();
   });
 
+  test('a numbered annex named after its notice is not the notice; the notice with its annexes is', () => {
+    expect(roleOf('edital-flecha-anexo-3.pdf')).toBeNull();
+    expect(roleOf('edital-ocupa-mis-2026-anexo10.pdf')).toBeNull();
+    expect(roleOf('edital-003-anexo-vi-tec.pdf')).toBeNull();
+    expect(roleOf('edital-ciclo-de-saberes-anexo-i.pdf')).toBeNull();
+    expect(roleOf('edital-subsidio-cultural-anexo-1-cronograma.pdf')).toBeNull();
+    expect(roleOf('edital-de-fomento-anexos-editaveis.docx')).toBeNull();
+    expect(roleOf('edital-e-anexos-assinado.pdf')).toBe('callNotice');
+    expect(roleOf('001-edital-004-2026-smct-multilinguagens-com-anexos.pdf')).toBe('callNotice');
+    expect(roleOf('edital-conexoes-culturais-sem-anexos.pdf')).toBe('callNotice');
+  });
+
   test('skips the forms an applicant fills in and what it cannot name', () => {
     expect(roleOf('anexo-3-formulario-de-inscricao.docx')).toBeNull();
     expect(roleOf('anexo-vi-declaracao-de-residencia.docx')).toBeNull();

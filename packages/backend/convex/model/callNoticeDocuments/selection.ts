@@ -76,7 +76,14 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ],
   ['criteria', /criterio|pontuacao|avaliacao/],
   ['categories', /categoria|vaga/],
-  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)`)],
+  // The notice bundled with its annexes ("edital-e-anexos"), never one numbered annex
+  // ("edital-flecha-anexo-3", "edital-003-anexo-vi-tec") nor the editable annexes.
+  [
+    'callNotice',
+    new RegExp(
+      `^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo-?(\\d|[ivx]+([-.]|$))|.*editave)`,
+    ),
+  ],
 ];
 
 /**
