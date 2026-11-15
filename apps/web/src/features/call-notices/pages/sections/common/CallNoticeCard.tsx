@@ -82,7 +82,7 @@ export function CallNoticeCard({
           {isNew && <Tag size="sm">{content.card.isNew}</Tag>}
         </div>
         {/* What the call itself says stays in the call's language, whatever the page's. */}
-        <Heading as="h3" size="item" lang="pt-BR">
+        <Heading size="item" lang="pt-BR">
           {callNotice.title}
         </Heading>
         <p className="text-small text-muted-foreground">
