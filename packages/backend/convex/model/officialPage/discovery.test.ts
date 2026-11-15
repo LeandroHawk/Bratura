@@ -42,6 +42,7 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       a('/Pagina/Edital-MOVCEU-Parana', 'Edital MOVCEU Paraná'),
       a('/Pagina/Edital-Bandas-e-Fanfarras', 'Edital Bandas e Fanfarras'),
       a('/Pagina/Edital-de-Parcerias-MON', 'Edital de Parcerias com Organizações Sociais – MON'),
+      a('/Pagina/Edital-Premiacao-Trajetorias', 'Edital Premiação de Trajetórias'),
     ].join(''),
     'https://www.cultura.pr.gov.br/Pagina/Edital-MOVCEU-Parana': [
       a(
@@ -53,6 +54,10 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     'https://www.cultura.pr.gov.br/Pagina/Edital-Bandas-e-Fanfarras': a(
       `${prFiles}/lpg-edital-012-2023.pdf`,
       'EDITAL INTERATIVO',
+    ),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-Premiacao-Trajetorias': a(
+      `${prFiles}/0._edital_premiacao_trajetorias.pdf`,
+      'EDITAL Nº 008/2024 - PREMIAÇÃO DE TRAJETÓRIAS',
     ),
     'https://www.cultura.pr.gov.br/Pagina/Edital-de-Parcerias-MON': a(
       `${prFiles}/edital_-_001_-_2025.docx`,

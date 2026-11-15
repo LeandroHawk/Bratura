@@ -47,7 +47,7 @@ export const maranhaoSecmaSource = {
 export const paranaSeecSource = {
   kind: 'officialPage',
   slug: 'pr-seec',
-  name: 'Secretaria da Cultura do Paraná — editais',
+  name: 'Secretaria de Estado da Cultura do Paraná — editais',
   isActive: true,
   robotsCheckedOn: '2026-11-15',
   termsCheckedOn: '2026-11-15',

@@ -36,7 +36,7 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 
 /**
  * A call numbered before last year ("Edital 03/2024" in 2026) is closed: listings keep years of
- * them, each a read. Not last year's: 4 of 28 numbered calls in the dev DB close a year later.
+ * them, each a read. Not last year's: 4 of 28 numbered calls in the dev DB close in a later year.
  */
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < new Date().getUTCFullYear() - 1;
