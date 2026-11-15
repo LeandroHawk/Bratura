@@ -23,7 +23,7 @@ convex/
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
-    officialPage/    client.ts (plain fetch), html.ts (links), discovery.ts, payload.ts, listing.ts
+    officialPage/    client.ts (plain fetch), html.ts (links, headings), discovery.ts, payload.ts, listing.ts
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)

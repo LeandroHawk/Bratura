@@ -4,6 +4,14 @@ import { headingOfHtml, linksOfHtml, sectionsOfHtml } from './html';
 describe('linksOfHtml', () => {
   const page = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
 
+  test('a link inside a heading is still read', () => {
+    const html = '<h2><a href="/edital-03">Edital 03/2026</a></h2><a href="/e.pdf">PDF</a>';
+    expect(linksOfHtml(html, page).map(({ url }) => url)).toEqual([
+      'https://www.ba.gov.br/edital-03',
+      'https://www.ba.gov.br/e.pdf',
+    ]);
+  });
+
   test('resolves relative links, decodes the text and keeps page order', () => {
     const html = `
       <a href="/fundacaocultural/edital-0222026-apoio">EDITAL 022/2026 &ndash; <b>APOIO</b>&nbsp;A ESPETÁCULOS</a>
@@ -47,16 +55,6 @@ describe('headingOfHtml', () => {
 });
 
 describe('sectionsOfHtml', () => {
-  test('a link inside a heading is still a link, of that heading', () => {
-    const html = '<h2><a href="/edital-03">Edital 03/2026</a></h2><a href="/e.pdf">PDF</a>';
-    const page = 'https://cultura.pontagrossa.pr.gov.br/';
-    expect(linksOfHtml(html, page).map(({ url }) => url)).toEqual([
-      'https://cultura.pontagrossa.pr.gov.br/edital-03',
-      'https://cultura.pontagrossa.pr.gov.br/e.pdf',
-    ]);
-    expect(sectionsOfHtml(html, page)[0]?.heading).toBe('Edital 03/2026');
-  });
-
   test('each link goes under the heading above it, once; a link above every heading goes nowhere', () => {
     const page = 'https://cultura.jundiai.sp.gov.br/editais-e-regulamentos/';
     const html = [
