@@ -3,7 +3,7 @@ import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/o
 import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { fetchPageHtml, isFetchableFromListing, type FetchedPage } from './client';
-import { headingOfHtml, linksOfHtml, type PageLink } from './html';
+import { headingOfHtml, linksOfHtml, sectionsOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -183,6 +183,17 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 }
 
 /**
+ * A call's documents as a listing links them, worth recording: no result posted, a notice among
+ * them, its newest version only. `null` otherwise.
+ */
+function listedCallDocuments(documents: PageLink[]) {
+  if (hasPublishedResult(documents)) return null;
+  const kept = withNewestNoticeOnly(documents);
+  const notice = kept.find(({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice');
+  return notice ? { kept, notice } : null;
+}
+
+/**
  * One hop: the listing's documents, grouped by the call their link names, an unnumbered one going
  * with the call listed just before it. Procurement (`pregão`) is not a culture call.
  */
@@ -204,14 +215,38 @@ export function callsOfDocumentsOnListing(
   }
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
     if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
-    if (hasPublishedResult(callDocuments)) return [];
-    const kept = withNewestNoticeOnly(callDocuments);
-    const notice = kept.find(
-      ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
-    );
-    if (!notice) return [];
+    const listed = listedCallDocuments(callDocuments);
+    if (!listed) return [];
     return [
-      { externalId: key, title: notice.label, officialUrl: source.listingUrl, documents: kept },
+      {
+        externalId: key,
+        title: listed.notice.label,
+        officialUrl: source.listingUrl,
+        documents: listed.kept,
+      },
+    ];
+  });
+}
+
+/**
+ * One hop: the listing's documents, each with the heading above it, which names its call and is
+ * its id at the source. A heading with no notice under it (the page's own title) is no call.
+ */
+export function callsOfDocumentsUnderHeadings(
+  source: OfficialPageSource,
+  { html, url }: FetchedPage,
+): OfficialPageCall[] {
+  return sectionsOfHtml(html, url).flatMap(({ heading, links }) => {
+    if (!heading || namesACallBeforeLastYear(heading)) return [];
+    const listed = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
+    if (!listed) return [];
+    return [
+      {
+        externalId: heading,
+        title: heading,
+        officialUrl: source.listingUrl,
+        documents: listed.kept,
+      },
     ];
   });
 }
@@ -220,5 +255,9 @@ export function callsOfDocumentsOnListing(
 export async function fetchOfficialPageCalls(source: OfficialPageSource): Promise<unknown[]> {
   const { discovery } = source;
   if (discovery.hops === 'callPage') return await callsOfCallPages({ ...source, discovery });
-  return callsOfDocumentsOnListing(source, await fetchPageHtml(source.listingUrl));
+  const listing = await fetchPageHtml(source.listingUrl);
+  if (discovery.hops === 'documentsUnderHeadings') {
+    return callsOfDocumentsUnderHeadings(source, listing);
+  }
+  return callsOfDocumentsOnListing(source, listing);
 }
