@@ -2,7 +2,7 @@
 
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Checkbox, Fieldset, SelectField, TextAreaField, TextField } from '@bratura/ui';
+import { Button, Checkbox, Fieldset, SelectField, TextAreaField, TextField } from '@bratura/ui';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
 import { fieldMessage, type FormDraft, type FormField } from './formFields';
@@ -126,8 +126,9 @@ export function FormFields({
                     className="rise-in flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-1.5 text-small"
                   >
                     <span className="min-w-0 truncate">{file.fileName}</span>
-                    <button
-                      type="button"
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       aria-label={content.removeFile(file.fileName)}
                       onClick={() =>
                         setField(
@@ -135,10 +136,9 @@ export function FormFields({
                           files.filter((other) => other !== file),
                         )
                       }
-                      className="cursor-pointer rounded-full px-2 font-semibold focus-ring hover:text-status-missing"
                     >
                       ×
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
