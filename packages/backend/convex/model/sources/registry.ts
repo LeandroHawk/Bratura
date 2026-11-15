@@ -449,6 +449,20 @@ export const cambePnabCycle2Source = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/** Delmiro Gouveia's PNAB page: the listing links every call's notice itself (2026-11-15). */
+export const delmiroGouveiaPnabSource = {
+  kind: 'officialPage',
+  slug: 'delmiro-gouveia-pnab',
+  name: 'Prefeitura de Delmiro Gouveia — editais PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://delmirogouveia.al.gov.br/editais-pnab/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Maceio'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -486,4 +500,5 @@ export const registeredSources: readonly Source[] = [
   jaboataoPnabCycle2Source,
   pontaGrossaPnabSource,
   cambePnabCycle2Source,
+  delmiroGouveiaPnabSource,
 ];
