@@ -23,6 +23,12 @@ export const CallNoticeDocumentUrlSchema = requiredHttpUrl.refine(hasDocumentExt
   params: { message: 'notADocument' },
 });
 
+/** One document's link with the text a person reads on it ("Edital FEC 02/2026 - Retificado"). */
+export const CallNoticeDocumentLabelSchema = z.object({
+  url: CallNoticeDocumentUrlSchema,
+  label: requiredString('long'),
+});
+
 /** How many document links a call notice keeps (one federal call had 37). */
 export const callNoticeDocumentUrlsMax = 50;
 
@@ -47,8 +53,5 @@ export const CallNoticeListingFields = z.object({
   documentUrls: z.array(CallNoticeDocumentUrlSchema).max(callNoticeDocumentUrlsMax),
   /** The text of each document's link, where the source gives one apart from the file name (an
    * official page: "Edital FEC 02/2026 - Retificado em 10/11/26"). Absent for Mapas Culturais. */
-  documentLabels: z
-    .array(z.object({ url: CallNoticeDocumentUrlSchema, label: requiredString('long') }))
-    .max(callNoticeDocumentUrlsMax)
-    .optional(),
+  documentLabels: z.array(CallNoticeDocumentLabelSchema).max(callNoticeDocumentUrlsMax).optional(),
 });

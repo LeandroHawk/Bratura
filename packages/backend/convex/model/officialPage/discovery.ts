@@ -1,37 +1,24 @@
 import { CallNoticeDocumentUrlSchema } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
-import type { Source } from '@bratura/shared/entities/source/entity';
-import { callNoticeDocumentRole } from '../callNoticeDocuments/selection';
+import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
+import { plainText } from '../../lib/text';
+import { callNoticeDocumentRole, postsResult } from '../callNoticeDocuments/selection';
 import { fetchPageHtml, isFetchableFromListing } from './client';
 import { linksOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
-type OfficialPageSource = Extract<Source, { kind: 'officialPage' }>;
+/** An official page whose listing links one page per call. */
+type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
 
 /** Between two call pages of one site: a public office's server, not a crawl. */
 const callPageSpacingMs = 1_000;
-
-const plainText = (text: string) =>
-  text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ');
 
 /**
  * A call whose page or listing already posts results is past its registration (Bahia, 2026-11-15:
  * 25 of 28 pages; the 3 without were the newest, 2 open). It is not recorded: reading it would pay
  * for a closed call.
  */
-const publishedResult = /resultado|homologa|classificad|selecionad|suplente/;
-
-function readableUrl(url: string) {
-  try {
-    return decodeURI(url);
-  } catch {
-    return url;
-  }
-}
-
 const hasPublishedResult = (documents: PageLink[]) =>
-  documents.some(({ url, label }) =>
-    publishedResult.test(plainText(`${label} ${readableUrl(url)}`)),
-  );
+  documents.some(({ url, label }) => postsResult(url, label));
 
 function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
   return links.filter(
@@ -45,15 +32,12 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
  * A call numbered in a past year ("Edital 03/2024") is closed by now: listings keep years of them
  * (Minas Gerais PNAB, Maranhão), and each would cost a read.
  */
-function isNumberedInPastYear(label: string, now: number) {
-  const year = Number(callNumberOf(label)?.split('/')[1]);
-  return Number.isInteger(year) && year < new Date(now).getUTCFullYear();
-}
+const isNumberedInPastYear = (callNumber: CallNumber | null, now: number) =>
+  callNumber !== null && callNumber.year < new Date(now).getUTCFullYear();
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(
-  source: OfficialPageSource,
-  callPageUrlParts: string[],
+  source: CallPageSource,
   fetchHtml: (url: string) => Promise<string> = fetchPageHtml,
   pause: () => Promise<void> = () => new Promise((done) => setTimeout(done, callPageSpacingMs)),
   now = Date.now(),
@@ -62,9 +46,9 @@ export async function callsOfCallPages(
   const callPages = listing.filter(
     ({ url, label }) =>
       label &&
-      !isNumberedInPastYear(label, now) &&
+      !isNumberedInPastYear(callNumberOf(label), now) &&
       url !== source.listingUrl &&
-      callPageUrlParts.some((part) => url.includes(part)) &&
+      source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
       isFetchableFromListing(url, source.listingUrl) &&
       !source.documentUrlParts.some((part) => url.includes(part)),
   );
@@ -86,21 +70,27 @@ export async function callsOfCallPages(
 }
 
 /** Kind words a call number follows, most specific first ("Edital FEC 02/2026" is FEC). */
-const callKinds = ['fec', 'pnab', 'chamamento', 'selecao', 'chamada', 'pregao', 'edital'];
+const callKinds = ['fec', 'pnab', 'chamamento', 'selecao', 'chamada', 'pregao', 'edital'] as const;
+
+/** Which call a link names: "Edital FEC 02/2026" is `{ kind: 'fec', number: 2, year: 2026 }`. */
+export type CallNumber = { kind: (typeof callKinds)[number]; number: number; year: number };
+
+/** One key per call on a listing (`fec 2/2026`): the call notice's id at the source. */
+const keyOfCallNumber = ({ kind, number, year }: CallNumber) => `${kind} ${number}/${year}`;
 
 /**
- * The call a document's link names ("Edital FEC 02/2026 - Rainha Conga" → `fec 2/2026`), or `null`
- * when it names none (an annex: "Anexo I - Categorias", which follows its call on the listing).
+ * The call a document's link names, or `null` when it names none (an annex: "Anexo I -
+ * Categorias", which follows its call on the listing).
  */
-export function callNumberOf(label: string): string | null {
+export function callNumberOf(label: string): CallNumber | null {
   const text = plainText(label);
   // Not a date: "31/07/25" is no call number, so no digit or `/` may touch the pair.
   for (const match of text.matchAll(/(?<![\d/.])(\d{1,3})\s*[/.-]\s*(20\d{2}|\d{2})(?![\d/.])/g)) {
     const before = text.slice(Math.max(0, match.index - 50), match.index);
     const kind = callKinds.find((word) => before.includes(word));
     if (!kind) continue;
-    const year = match[2]!.length === 2 ? `20${match[2]}` : match[2];
-    return `${kind} ${Number(match[1])}/${year}`;
+    const year = Number(match[2]!.length === 2 ? `20${match[2]}` : match[2]);
+    return { kind, number: Number(match[1]), year };
   }
   return null;
 }
@@ -140,35 +130,34 @@ export function callsOfDocumentsOnListing(
   now = Date.now(),
 ): OfficialPageCall[] {
   const documents = documentLinksOf(linksOfHtml(html, source.listingUrl), source.documentUrlParts);
-  const byCall = new Map<string, PageLink[]>();
-  let current: string | null = null;
+  const byCall = new Map<string, { callNumber: CallNumber; documents: PageLink[] }>();
+  let current: CallNumber | null = null;
   for (const document of documents) {
     current = callNumberOf(document.label) ?? current;
-    if (current) byCall.set(current, [...(byCall.get(current) ?? []), document]);
+    if (!current) continue;
+    const key = keyOfCallNumber(current);
+    byCall.set(key, {
+      callNumber: current,
+      documents: [...(byCall.get(key)?.documents ?? []), document],
+    });
   }
-  return [...byCall].flatMap(([callNumber, callDocuments]) => {
-    if (callNumber.startsWith('pregao ') || hasPublishedResult(callDocuments)) return [];
-    if (isNumberedInPastYear(callNumber.replace(/^\S+ /, 'edital '), now)) return [];
+  return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
+    if (callNumber.kind === 'pregao' || isNumberedInPastYear(callNumber, now)) return [];
+    if (hasPublishedResult(callDocuments)) return [];
     const kept = withNewestNoticeOnly(callDocuments);
     const notice = kept.find(
       ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
     );
     if (!notice) return [];
     return [
-      {
-        externalId: callNumber,
-        title: notice.label,
-        officialUrl: source.listingUrl,
-        documents: kept,
-      },
+      { externalId: key, title: notice.label, officialUrl: source.listingUrl, documents: kept },
     ];
   });
 }
 
 /** Every call an official page lists today, as raw entries the reader's schema parses. */
 export async function fetchOfficialPageCalls(source: OfficialPageSource): Promise<unknown[]> {
-  if (source.discovery.hops === 'callPage') {
-    return await callsOfCallPages(source, source.discovery.callPageUrlParts);
-  }
+  const { discovery } = source;
+  if (discovery.hops === 'callPage') return await callsOfCallPages({ ...source, discovery });
   return callsOfDocumentsOnListing(source, await fetchPageHtml(source.listingUrl));
 }

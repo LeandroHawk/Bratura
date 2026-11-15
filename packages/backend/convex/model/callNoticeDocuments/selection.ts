@@ -4,6 +4,7 @@ import {
   openEndedRegistrationAfterMs,
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import type { CallNoticeDocumentRole } from '@bratura/shared/entities/call-notice-document/fragments/identity/fields';
+import { plainText } from '../../lib/text';
 
 // Which calls and which of their files are worth Firecrawl credits, decided before any read, from
 // the listing alone. Measured on 254 real files (2026-11-14): `docs/integrations/firecrawl.md`.
@@ -19,8 +20,6 @@ export const readableRegistrationCloses = (now: number) => ({
 
 /** Mapas titles of drafts and tests, compared without accents or case. */
 const draftTitlePattern = /\b(teste|em construcao)\b/;
-
-const plainText = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 type CallNoticeToScreen = Pick<CallNotice, 'title' | 'documentUrls' | 'registrationCloses'>;
 
@@ -38,13 +37,20 @@ export function reasonToSkipReadingDocuments(
   return null;
 }
 
+/** A result posted about a call: it names who was picked, and says registration is over. */
+const resultName = /resultado|homologa|classificad|selecionad|suplente/;
+
 /**
  * Never read, whatever else the name says: results, rankings and lists of applicants carry personal
  * data (`docs/security.md` §4). `lista` only as a word: inside one it is a profession
  * (instrumentalista), still a call.
  */
-const personalDataName =
-  /resultado|ranking|(^|[-_.])lista|inscritos|convocacao|homologacao|curriculo|lattes|candidatos|habilitacao|suplente|selecionad|classificad|aprovad/;
+const personalDataName = new RegExp(
+  `${resultName.source}|ranking|(^|[-_.])lista|inscritos|convocacao|curriculo|lattes|candidatos|habilitacao|aprovad`,
+);
+
+/** The words a call notice's own name starts with. */
+const noticeWords = 'edital|chamada|chamamento|convocatoria';
 
 /**
  * Name rules, first match wins; `null` is never read: forms are what an applicant fills in, not the
@@ -53,35 +59,29 @@ const personalDataName =
 const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ['callNotice', /consolidacao/],
   // A notice republished whole with its changes (Minas Gerais: "Edital FEC 02/2026 - Retificado").
-  ['callNotice', /^(edital|chamada|chamamento|convocatoria)(?!.*anexo).*(retificad|consolidad)/],
+  ['callNotice', new RegExp(`^(${noticeWords})(?!.*anexo).*(retificad|consolidad)`)],
   [
     'amendment',
     /errata|aditivo|adendo|prorrogacao|reabertura|retifica|cronograma-(atualizado|alterado|retificado)/,
   ],
   // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
-  [
-    'callNotice',
-    /^(\d+[-_.]*|i+-)?(edital|chamada|chamamento|convocatoria|regulamento)(?!.*anexo)/,
-  ],
+  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo)`)],
   [
     null,
     /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao/,
   ],
   ['criteria', /criterio|pontuacao|avaliacao/],
   ['categories', /categoria|vaga/],
-  ['callNotice', /^(\d+[-_.]*|i+-)?(edital|chamada|chamamento|convocatoria|regulamento)/],
+  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)`)],
 ];
 
 /**
  * A link's text only, last: a notice word later in it ("Centro de Formação em Artes - Convocatória
  * ..."). File names keep their measured rules: there it also matches extracts and FAQs.
  */
-const labelRoles = [
+const labelRoles: [CallNoticeDocumentRole | null, RegExp][] = [
   ...documentRoleByName,
-  [
-    'callNotice',
-    /^(?!.*anexo)(.*-)?(edital|chamada|chamamento|convocatoria|processo-seletivo)-/,
-  ] as const,
+  ['callNotice', new RegExp(`^(?!.*anexo)(.*-)?(${noticeWords}|processo-seletivo)-`)],
 ];
 
 /** A file name or a link's text in the rules' terms: no accents, lower case, words joined by -. */
@@ -114,6 +114,11 @@ export function callNoticeDocumentRole(url: string, label?: string): CallNoticeD
     if (rule) return rule[0];
   }
   return null;
+}
+
+/** Whether a document's link text or file name says a result was posted (`resultName`). */
+export function postsResult(url: string, label?: string) {
+  return [label ?? '', fileNameOf(url)].some((name) => resultName.test(nameOf(name)));
 }
 
 /**

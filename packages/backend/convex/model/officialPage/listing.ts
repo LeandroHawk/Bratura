@@ -1,12 +1,8 @@
 import { callNoticeDocumentUrlsMax } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
-import { textLengths } from '@bratura/shared/primitives/code/string/fields';
 import type { Id } from '../../_generated/dataModel';
 import type { CallNoticeListingToRecord } from '../../callNotices';
+import { cutToTextLength } from '../../lib/text';
 import type { OfficialPageCall } from './payload';
-
-/** A link text past the contract ceiling is cut and marked "…": it names, it is not the rules. */
-const cutToLong = (text: string) =>
-  text.length > textLengths.long ? `${text.slice(0, textLengths.long - 1)}…` : text;
 
 /**
  * An official page's call in the call notice's terms. The page prints no window the reader can
@@ -20,12 +16,12 @@ export function callNoticeListingFromOfficialPageCall(
   return {
     sourceId,
     externalId: call.externalId,
-    title: cutToLong(call.title),
+    title: cutToTextLength(call.title, 'long'),
     summary: null,
     officialUrl: call.officialUrl,
     documentUrls: documents.map(({ url }) => url),
     documentLabels: documents.flatMap(({ url, label }) =>
-      label ? [{ url, label: cutToLong(label) }] : [],
+      label ? [{ url, label: cutToTextLength(label, 'long') }] : [],
     ),
     registrationOpens: null,
     registrationCloses: null,

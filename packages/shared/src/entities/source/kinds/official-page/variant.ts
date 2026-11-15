@@ -38,3 +38,5 @@ export const OfficialPageSourceSchema = z.object({
   /** The site's zone: its dates ("até 20/11") carry none. */
   timeZone: ianaTimeZone,
 });
+
+export type OfficialPageSource = z.infer<typeof OfficialPageSourceSchema>;

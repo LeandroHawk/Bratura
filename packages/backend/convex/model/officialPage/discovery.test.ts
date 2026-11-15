@@ -1,27 +1,8 @@
-import type { Source } from '@bratura/shared/entities/source/entity';
-import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { describe, expect, test } from 'vitest';
+import { bahiaFuncebSource, maranhaoSecmaSource } from '../../sources.fixture';
 import { callNumberOf, callsOfCallPages, callsOfDocumentsOnListing } from './discovery';
 
-type OfficialPageSource = Extract<Source, { kind: 'officialPage' }>;
-
 const now = Date.UTC(2026, 10, 15);
-const sourceOf = (fields: Partial<OfficialPageSource>): OfficialPageSource => ({
-  kind: 'officialPage',
-  slug: 'test',
-  name: 'Test',
-  isActive: true,
-  robotsCheckedOn: '2026-11-15',
-  termsCheckedOn: '2026-11-15',
-  listingUrl: 'https://www.ba.gov.br/fundacaocultural/editais-2026',
-  discovery: {
-    hops: 'callPage',
-    callPageUrlParts: ['/fundacaocultural/edital', '/fundacaocultural/convocatoria'],
-  },
-  documentUrlParts: ['/sites/site-funceb/files/'],
-  timeZone: ianaTimeZone.parse('America/Bahia'),
-  ...fields,
-});
 const a = (href: string, text: string) => `<a href="${href}">${text}</a>`;
 const files = '/fundacaocultural/sites/site-funceb/files';
 
@@ -51,15 +32,8 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     if (html === undefined) throw new Error(`not in the fixture: ${url}`);
     return html;
   };
-  const source = sourceOf({});
-  const run = () =>
-    callsOfCallPages(
-      source,
-      ['/fundacaocultural/edital', '/fundacaocultural/convocatoria'],
-      fetchHtml,
-      async () => {},
-      now,
-    );
+  const source = bahiaFuncebSource;
+  const run = () => callsOfCallPages(source, fetchHtml, async () => {}, now);
 
   test('keeps a call page with its documents, the page as its id and official link', async () => {
     expect(await run()).toEqual([
@@ -96,26 +70,30 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       if (url.endsWith('apoio')) throw new Error('HTTP 500');
       return await fetchHtml(url);
     };
-    const calls = await callsOfCallPages(
-      source,
-      ['/fundacaocultural/'],
-      failing,
-      async () => {},
-      now,
-    );
+    const everyPage = {
+      ...source,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['/fundacaocultural/'] },
+    };
+    const calls = await callsOfCallPages(everyPage, failing, async () => {}, now);
     expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
   });
 });
 
 describe('callNumberOf', () => {
   test.each([
-    ['Edital FEC 02/2026 - Rainha Conga - Retificado em 10/11/26', 'fec 2/2026'],
-    ['Edital FEC 02/26 - Rainha Conga - Cronograma Alterado - 04/09/2026', 'fec 2/2026'],
-    ['EDITAL DE SELEÇÃO PÚBLICA Nº 001/2026 – SECMA', 'selecao 1/2026'],
-    ['EDITAL DE CHAMAMENTO PÚBLICO Nº 006.2024', 'chamamento 6/2024'],
-    ['PREGÃO ELETRÔNICO 044-2025 - SECMA', 'pregao 44/2025'],
-  ])('%s → %s', (label, number) => {
-    expect(callNumberOf(label)).toBe(number);
+    [
+      'Edital FEC 02/2026 - Rainha Conga - Retificado em 10/11/26',
+      { kind: 'fec', number: 2, year: 2026 },
+    ],
+    [
+      'Edital FEC 02/26 - Rainha Conga - Cronograma Alterado - 04/09/2026',
+      { kind: 'fec', number: 2, year: 2026 },
+    ],
+    ['EDITAL DE SELEÇÃO PÚBLICA Nº 001/2026 – SECMA', { kind: 'selecao', number: 1, year: 2026 }],
+    ['EDITAL DE CHAMAMENTO PÚBLICO Nº 006.2024', { kind: 'chamamento', number: 6, year: 2024 }],
+    ['PREGÃO ELETRÔNICO 044-2025 - SECMA', { kind: 'pregao', number: 44, year: 2025 }],
+  ])('%s → %o', (label, number) => {
+    expect(callNumberOf(label)).toEqual(number);
   });
 
   test.each([
@@ -129,11 +107,13 @@ describe('callNumberOf', () => {
 
 describe('callsOfDocumentsOnListing (Minas Gerais, Maranhão)', () => {
   const mg = '/download/category/15-fundo-estadual-de-cultura-fec';
-  const source = sourceOf({
+  const source = {
+    ...maranhaoSecmaSource,
+    slug: 'mg-secult-fec',
+    name: 'Secult-MG — editais FEC',
     listingUrl: 'https://www.secult.mg.gov.br/editais/fundo-estadual-de-cultura-fec/editais-fec',
-    discovery: { hops: 'documentsOnListing' },
     documentUrlParts: ['?download='],
-  });
+  };
   const html = [
     a(`${mg}?download=5062`, 'Edital FEC 06/2026 - Coreto - Retificado em 10/11/26'),
     a(`${mg}?download=5056`, 'Edital FEC 06/2026 - Coreto - Retificado em 06/11/26'),

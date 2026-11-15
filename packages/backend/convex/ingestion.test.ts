@@ -1,12 +1,11 @@
 import { convexTest } from 'convex-test';
 import type { Source } from '@bratura/shared/entities/source/entity';
-import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
 import { ingestionRunLeaseMs } from './ingestion';
 import { mapasOpportunity } from './model/mapasCulturais/mapasOpportunity.fixture';
 import schema from './schema';
-import { federalMapasSource } from './sources.fixture';
+import { federalMapasSource, maranhaoSecmaSource } from './sources.fixture';
 import { modules } from './test.setup';
 
 const newsSite: Source = {
@@ -175,18 +174,6 @@ describe('the run lease', () => {
 });
 
 describe('ingestOfficialPage', () => {
-  const maranhao: Source = {
-    kind: 'officialPage',
-    slug: 'ma-secma',
-    name: 'Secma — editais',
-    isActive: true,
-    robotsCheckedOn: '2026-11-15',
-    termsCheckedOn: '2026-11-15',
-    listingUrl: 'https://cultura.ma.gov.br/programas-ou-campanhas/editais-secma',
-    discovery: { hops: 'documentsOnListing' },
-    documentUrlParts: ['/uploads/secma/docs/'],
-    timeZone: ianaTimeZone.parse('America/Fortaleza'),
-  };
   const docs = 'https://cultura.ma.gov.br/uploads/secma/docs';
 
   test('records each call the listing names, with its documents and their link text', async () => {
@@ -200,7 +187,7 @@ describe('ingestOfficialPage', () => {
       async () => new Response(html, { headers: { 'content-type': 'text/html; charset=UTF-8' } }),
     );
     vi.stubGlobal('fetch', fetchMock);
-    const { t, sourceId } = await withSource(maranhao);
+    const { t, sourceId } = await withSource(maranhaoSecmaSource);
 
     expect(await t.action(internal.ingestion.ingestOfficialPage, { sourceId })).toBe('succeeded');
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -209,7 +196,7 @@ describe('ingestOfficialPage', () => {
       {
         externalId: 'chamamento 4/2026',
         title: 'EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA',
-        officialUrl: maranhao.listingUrl,
+        officialUrl: maranhaoSecmaSource.listingUrl,
         documentUrls: [`${docs}/EDITAL_CHAMAMENTO_04_2026.pdf`],
         documentLabels: [
           {
@@ -227,7 +214,7 @@ describe('ingestOfficialPage', () => {
       'fetch',
       vi.fn<typeof fetch>(async () => new Response('', { status: 503 })),
     );
-    const { t, sourceId } = await withSource(maranhao);
+    const { t, sourceId } = await withSource(maranhaoSecmaSource);
     expect(await t.action(internal.ingestion.ingestOfficialPage, { sourceId })).toBe('failed');
     const [run] = await runsOf(t);
     expect(run).toMatchObject({ status: 'failed', failureReason: expect.stringContaining('503') });

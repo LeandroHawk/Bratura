@@ -8,13 +8,13 @@ import { requiredString, textLengths } from '@bratura/shared/primitives/code/str
 import { requiredAmountInCents } from '@bratura/shared/primitives/domain/money/fields';
 import { z } from 'zod';
 import { amountAppearsInQuote, dateAppearsInQuote, sourcePassageForQuote } from '../llm/evidence';
+import { plainText } from '../../lib/text';
 
 // The model's answer is untrusted (`docs/security.md` §3): each value is parsed on its own, its
 // quote replaced by the source passage it stands for, and the value checked against that passage.
 // A value that fails is dropped and counted, never guessed.
 
-const plain = (text: string) =>
-  text.normalize('NFD').replace(/\p{M}/gu, '').replace(/[–—−]/g, '-').toLowerCase();
+const plain = (text: string) => plainText(text).replace(/[–—−]/g, '-');
 
 /** Words that name each art form in a call notice; a value is kept only when its quote has one. */
 const artFormWords: Record<ArtForm, string[]> = {

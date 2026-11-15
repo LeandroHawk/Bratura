@@ -61,13 +61,14 @@ The team's draft of this flow also stored an embedding per call; matching is rul
   API, `maxAge` caching (default 2 days) and change tracking so nothing is read twice. The free
 plan has no pay-as-you-go: when credits run out, calls fail with HTTP 402, and the run stops (a
 document read stores it as the `outOfCredits` failure of the document it was reading).
-- **Which of a call's documents are read, by file name** (a call lists up to 37; reading them all
-  costs about ten times more): the call notice itself (or its consolidated text), its amendments
+- **Which of a call's documents are read, by name** (the link's text on an official page, else the
+  file name; a call lists up to 37, and reading them all costs about ten times more): the call
+  notice itself (or its consolidated text), its amendments
   (errata, aditivo, adendo, prorrogação, reabertura: they move deadlines), and the annexes with
   categories and amounts per project (only there in 3 of 5 calls) or evaluation criteria (how a
   portfolio is scored: only there). **Never** results, rankings or lists of applicants (personal
-  data), nor the forms an applicant fills in. A call whose notice no file name identifies is left
-  for the admin review.
+  data, ruled out by either name), nor the forms an applicant fills in. A call whose notice no name
+  identifies is left for the admin review. Rules: `model/callNoticeDocuments/selection.ts`.
 - **Every measured number here is Mapas Culturais, mostly Ceará** (2026-11-14): file names,
   Markdown from its PDFs, the `2111` sentinel, extraction accuracy. A new source (another Mapas
   instance, a city's own site, a scanned PDF) is measured on a sample before it is trusted; its
