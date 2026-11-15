@@ -21,7 +21,7 @@ import {
 import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
 import { RecordDetails } from '@/features/portfolio/pages/sections/common/RecordDetails';
 import { RecordFormDialog } from '@/features/portfolio/pages/sections/common/RecordFormDialog';
-import { PORTFOLIO_SECTION_IDS } from '@/features/portfolio/pages/sections/common/sectionIds';
+import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { PROFILE_CONTENT } from './content';
 
 export function Profile({ locale, creator }: { locale: Locale; creator: Creator }) {

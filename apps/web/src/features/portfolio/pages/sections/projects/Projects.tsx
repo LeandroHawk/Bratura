@@ -13,7 +13,7 @@ import { Badge, type BadgeTone } from '@bratura/ui';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
 import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
-import { PORTFOLIO_SECTION_IDS } from '@/features/portfolio/pages/sections/common/sectionIds';
+import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { PROJECTS_CONTENT } from './content';
 
 const ProjectFormSchema = withOrderedPeriod(CulturalProjectPortfolioItemSchema);

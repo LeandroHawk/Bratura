@@ -5,7 +5,7 @@ import { Card, Heading } from '@bratura/ui';
 import { useState } from 'react';
 import type { SignedInState } from '@/features/common/components/app/SignedInArea';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { PORTFOLIO_SECTION_IDS } from '@/features/portfolio/pages/sections/common/sectionIds';
+import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { SUMMARY_CONTENT } from './content';
 
 /** Up to two initials, for the round mark that stands where the photo will be. */

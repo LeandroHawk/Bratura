@@ -16,7 +16,7 @@ import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { formattedPlainDate } from '@/features/common/utils/format';
 import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
 import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
-import { PORTFOLIO_SECTION_IDS } from '@/features/portfolio/pages/sections/common/sectionIds';
+import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { DOCUMENTS_CONTENT } from './content';
 
 const STATUS_TONE: Record<PortfolioDocumentStatus, BadgeTone> = {

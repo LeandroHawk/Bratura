@@ -5,7 +5,7 @@ import type { CulturalExperiencePortfolioItem } from '@bratura/shared/entities/p
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Card, Heading } from '@bratura/ui';
 import { formattedPlainDate } from '@/features/common/utils/format';
-import { PORTFOLIO_SECTION_IDS } from '@/features/portfolio/pages/sections/common/sectionIds';
+import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { SMART_PORTFOLIO_CONTENT } from './content';
 
 /** Under this many characters a biography says too little for a call's reader. */
