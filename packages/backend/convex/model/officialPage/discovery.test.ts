@@ -114,6 +114,32 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     ]);
   });
 
+  test("follows Bahia's call pages outside `/edital…`: the training centre's, `funcebedital`, `selecao`", async () => {
+    const listing = [
+      a(
+        '/fundacaocultural/centro-de-formacao-em-artes-convocatoria-ferias-2027',
+        'CFA FÉRIAS 2027',
+      ),
+      a('/fundacaocultural/funcebedital-no-012026-quarta-que-danca', 'EDITAL 01/2026 QUARTA'),
+      a('/fundacaocultural/selecao-de-bolsista-vila-sul', 'SELEÇÃO DE BOLSISTA VILA SUL'),
+      a('/fundacaocultural/fale-conosco', 'Fale conosco'),
+    ].join('');
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      const html =
+        String(input) === bahiaFuncebSource.listingUrl
+          ? listing
+          : a(`${files}/2026-11/CONVOCATORIA.pdf`, 'CONVOCATÓRIA.pdf');
+      return new Response(html, { headers: { 'content-type': 'text/html' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const calls = await callsOf(bahiaFuncebSource);
+    expect(calls.map(({ title }) => title)).toEqual([
+      'CFA FÉRIAS 2027',
+      'EDITAL 01/2026 QUARTA',
+      'SELEÇÃO DE BOLSISTA VILA SUL',
+    ]);
+  });
+
   test('skips a page whose notices are all numbered before last year by text or file name', async () => {
     siteAnswers();
     const calls = await callsOf(paranaSeecSource);

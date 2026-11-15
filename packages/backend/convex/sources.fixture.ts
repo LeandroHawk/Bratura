@@ -12,7 +12,10 @@ export const federalMapasSource = {
   baseUrl: 'https://mapa.cultura.gov.br',
 } satisfies Source;
 
-/** Bahia's FUNCEB: one page per call, linked from its 2026 listing (measured 2026-11-15). */
+/**
+ * Bahia's FUNCEB: one page per call, linked from its 2026 listing (measured 2026-11-15). The
+ * training centre's calls are `/fundacaocultural/centro-de-formacao-em-artes-convocatoria-…`.
+ */
 export const bahiaFuncebSource = {
   kind: 'officialPage',
   slug: 'ba-funceb',
@@ -23,7 +26,12 @@ export const bahiaFuncebSource = {
   listingUrl: 'https://www.ba.gov.br/fundacaocultural/editais-2026',
   discovery: {
     hops: 'callPage',
-    callPageUrlParts: ['/fundacaocultural/edital', '/fundacaocultural/convocatoria'],
+    callPageUrlParts: [
+      '/fundacaocultural/edital',
+      '/fundacaocultural/funcebedital',
+      '/fundacaocultural/selecao',
+      'convocatoria',
+    ],
   },
   documentUrlParts: ['/sites/site-funceb/files/'],
   timeZone: ianaTimeZone.parse('America/Bahia'),
