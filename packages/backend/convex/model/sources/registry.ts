@@ -214,6 +214,20 @@ export const culturaMunicipalitiesMapasSource = {
 } satisfies Source;
 
 /**
+ * A vendor-run Mapas for Goiás and Rondônia towns: 43 calls closing in 2026, none open on
+ * 2026-11-15. Each call's name starts with its city ("Padre Bernardo-GO - …").
+ */
+export const agenteCulturalMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-agente-cultural',
+  name: 'Mapas Culturais — Agente Cultural (municípios de GO e RO)',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  baseUrl: 'https://agentecultural.com.br',
+} satisfies Source;
+
+/**
  * Bahia's FUNCEB: one page per call, linked from its 2026 listing (measured 2026-11-15). The
  * training centre's calls are `/fundacaocultural/centro-de-formacao-em-artes-convocatoria-…`.
  */
@@ -457,6 +471,7 @@ export const registeredSources: readonly Source[] = [
   petrolinaMapasSource,
   arapiracaMapasSource,
   culturaMunicipalitiesMapasSource,
+  agenteCulturalMapasSource,
   bahiaFuncebSource,
   maranhaoSecmaSource,
   minasGeraisSecultPnabSource,

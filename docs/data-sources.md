@@ -96,6 +96,13 @@ for the admin review. `robots.txt` answers 404: nothing declared. Terms: `/termo
 federal Mapa da Cultura's (account, password, LGPD; forbids copying other users' personal data), with
 no clause on automated access or reuse of call data, 2026-11-15.
 
+**Agente Cultural** (`agentecultural.com.br`, added on 2026-11-15): a Mapas instance run by a
+private vendor for municipalities of Goiás and Rondônia (19 towns, 14 under 100k inhabitants; the
+only municipal aggregator found for Goiás). 43 opportunities closing in 2026, none open that day
+(zone `Etc/GMT+3`); each name starts with its city ("Padre Bernardo-GO - Edital de Chamamento Público
+001/2026 - …"). `robots.txt` answers the app's HTML page: nothing declared. Terms: `/termos-de-uso`
+is the Mapas template's view, rendered by script (not read in full, as Petrolina and Paulista).
+
 ```
 GET https://{host}/api/opportunity/find
   ?@select=id,name,shortDescription,registrationFrom,registrationTo,singleUrl
