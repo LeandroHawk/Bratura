@@ -3,7 +3,7 @@ import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/o
 import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { fetchPageHtml, isFetchableFromListing, type FetchedPage } from './client';
-import { linksOfHtml, type PageLink } from './html';
+import { headingOfHtml, linksOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -41,6 +41,9 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < new Date().getUTCFullYear() - 1;
 
+/** A link text or file name that names such a call. */
+const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
+
 /**
  * `lpg-edital-012-2023.pdf` as `lpg edital 012/2023`, a label `callNumberOf` reads. A chain stays
  * one (`06-11-008-2026` → `06/11/008/2026`), which `callNumberOf` refuses: no "06/11" as 2011.
@@ -61,11 +64,15 @@ function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
   );
   return (
     notices.length > 0 &&
-    notices.every(({ url, label }) =>
-      [label, fileNameAsLabel(url)].some((name) => isNumberedBeforeLastYear(callNumberOf(name))),
-    )
+    notices.every(({ url, label }) => [label, fileNameAsLabel(url)].some(namesACallBeforeLastYear))
   );
 }
+
+/**
+ * A listing link that names no call, only an action (Salvador, 2026-11-15: every call page is
+ * linked as "Clique aqui!"). The call page's own heading names the call instead.
+ */
+const namesNoCall = (label: string) => /^clique aqui[\s!.]*$/.test(plainText(label));
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
@@ -81,7 +88,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   const callPages = listing.filter(
     ({ url, label }) =>
       label &&
-      !isNumberedBeforeLastYear(callNumberOf(label)) &&
+      !namesACallBeforeLastYear(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
@@ -97,9 +104,14 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     }
     if (index > 0) await new Promise((done) => setTimeout(done, callPageSpacingMs));
     let page: PageLink[];
+    let title = label;
     try {
       const fetched = await fetchPageHtml(url);
       page = linksOfHtml(fetched.html, fetched.url);
+      if (namesNoCall(label)) {
+        title = headingOfHtml(fetched.html);
+        if (!title) continue;
+      }
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
@@ -114,7 +126,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     ) {
       continue;
     }
-    calls.push({ externalId: url, title: label, officialUrl: url, documents });
+    calls.push({ externalId: url, title, officialUrl: url, documents });
   }
   return calls;
 }

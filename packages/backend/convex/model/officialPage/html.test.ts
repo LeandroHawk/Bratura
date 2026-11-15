@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { linksOfHtml } from './html';
+import { headingOfHtml, linksOfHtml } from './html';
 
 describe('linksOfHtml', () => {
   const page = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
@@ -35,5 +35,13 @@ describe('linksOfHtml', () => {
     expect(linksOfHtml(html, page)).toEqual([
       { url: 'https://www.ba.gov.br/download?a=1&b=2', label: 'Seleção PÚBLICA Nº 03' },
     ]);
+  });
+});
+
+describe('headingOfHtml', () => {
+  test("the first heading's text, empty when the page has none (Salvador)", () => {
+    const page = '<title>X – FGM</title><h1 class="t">Edital <b>09</b></h1><h1>FALE CONOSCO</h1>';
+    expect(headingOfHtml(page)).toBe('Edital 09');
+    expect(headingOfHtml('<title>Edital 09 – FGM</title><p>sem título</p>')).toBe('');
   });
 });

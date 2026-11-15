@@ -121,9 +121,19 @@ export function callNoticeDocumentRole(url: string, label?: string): CallNoticeD
   return null;
 }
 
+/**
+ * A template an applicant fills to appeal a result, shipped with the open call (Salvador's "Anexo
+ * XII - Modelo de interposição de recurso quanto ao resultado"): no result is posted yet. Narrower
+ * than the forms `documentRoleByName` skips: a "planilha" or a "termo de" can be the result itself.
+ */
+const resultTemplateName = /modelo/;
+
 /** Whether a document's link text or file name says a result was posted (`resultName`). */
 export function postsResult(url: string, label?: string) {
-  return [label ?? '', fileNameOf(url)].some((name) => resultName.test(nameOf(name)));
+  return [label ?? '', fileNameOf(url)].some((name) => {
+    const plain = nameOf(name);
+    return resultName.test(plain) && !resultTemplateName.test(plain);
+  });
 }
 
 /**

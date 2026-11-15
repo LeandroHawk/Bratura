@@ -111,3 +111,20 @@ export const novaIguacuSemcultSource = {
   documentUrlParts: ['/wp-content/uploads/'],
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
+
+/**
+ * Salvador's FGM: its "editais abertos" page lists only open calls, each linked as "Clique aqui!",
+ * so the call page's own heading names it (measured 2026-11-15).
+ */
+export const salvadorFgmSource = {
+  kind: 'officialPage',
+  slug: 'salvador-fgm',
+  name: 'Fundação Gregório de Mattos (Salvador) — editais abertos',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://fgm.salvador.ba.gov.br/editais-abertos/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['edital-'] },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Bahia'),
+} satisfies Source;
