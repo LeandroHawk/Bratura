@@ -417,6 +417,24 @@ export const pontaGrossaPnabSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Cambé's culture office, PNAB Ciclo II: one page per call (measured 2026-11-15). A page for one
+ * cycle: Ciclo III will be a new one.
+ */
+export const cambePnabCycle2Source = {
+  kind: 'officialPage',
+  slug: 'cambe-pnab-ciclo-2',
+  name: 'Secretaria de Cultura de Cambé — PNAB Ciclo II',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl:
+    'https://www.cambe.pr.gov.br/index.php/secretarias/secretarias/cultura/lei-aldir-blanc/pnab-ciclo-ii/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/pnab-ciclo-ii/edital-0'] },
+  documentUrlParts: ['/index.php/download/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -452,4 +470,5 @@ export const registeredSources: readonly Source[] = [
   jundiaiCultureSource,
   jaboataoPnabCycle2Source,
   pontaGrossaPnabSource,
+  cambePnabCycle2Source,
 ];
