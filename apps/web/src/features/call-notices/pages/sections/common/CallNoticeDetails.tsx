@@ -17,7 +17,13 @@ import { setSavedCallNotice } from '@/features/common/data/demoStore';
 import { formattedAmountInCents, formattedDayOfInstant } from '@/features/common/utils/format';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { CLASSIFICATION_TONE, STATUS_TONE } from './CallNoticeCard';
-import { artFormName, askedText, justificationText, locationText } from './callNoticeTexts';
+import {
+  artFormName,
+  askedText,
+  CALL_NOTICE_LANGUAGE,
+  justificationText,
+  locationText,
+} from './callNoticeTexts';
 import { CALL_NOTICES_CONTENT } from './content';
 import type { CallNoticeStatus } from './filtering';
 
@@ -68,8 +74,14 @@ export function CallNoticeDetails({
     instant && formattedDayOfInstant(instant.at, locale);
 
   const about: [string, ReactNode][] = [
-    [content.card.organizer, callNotice.organizer],
-    [copy.summary, callNotice.summary],
+    [
+      content.card.organizer,
+      callNotice.organizer && <span lang={CALL_NOTICE_LANGUAGE}>{callNotice.organizer}</span>,
+    ],
+    [
+      copy.summary,
+      callNotice.summary && <span lang={CALL_NOTICE_LANGUAGE}>{callNotice.summary}</span>,
+    ],
     [
       copy.opportunityKind,
       callNotice.opportunityKind && content.opportunityKind[callNotice.opportunityKind],
@@ -133,7 +145,7 @@ export function CallNoticeDetails({
             {listed.map((document) => (
               <li key={document.asked}>
                 <span aria-hidden="true">{wanted ? '✓ ' : '○ '}</span>
-                {document.asked}
+                <span lang={CALL_NOTICE_LANGUAGE}>{document.asked}</span>
               </li>
             ))}
           </ul>
@@ -143,7 +155,13 @@ export function CallNoticeDetails({
   };
 
   return (
-    <Dialog open onClose={onClose} title={callNotice.title} closeLabel={copy.close}>
+    <Dialog
+      open
+      onClose={onClose}
+      title={callNotice.title}
+      titleLang={CALL_NOTICE_LANGUAGE}
+      closeLabel={copy.close}
+    >
       <div className="grid gap-8">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={STATUS_TONE[status]}>{content.status[status]}</Badge>
@@ -215,7 +233,7 @@ export function CallNoticeDetails({
                       </p>
                     </div>
                     <p className="text-small text-muted-foreground">
-                      {copy.quoteLabel} <q lang="pt-BR">{requirement.quote}</q>
+                      {copy.quoteLabel} <q lang={CALL_NOTICE_LANGUAGE}>{requirement.quote}</q>
                     </p>
                     {guidance && <p className="text-small">{guidance}</p>}
                   </li>

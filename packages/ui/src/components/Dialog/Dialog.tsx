@@ -7,6 +7,8 @@ type DialogProps = {
   /** Called when the person closes it: the close button, Esc, or a form with `method="dialog"`. */
   onClose: () => void;
   title: string;
+  /** The title's language, when it is not the page's (a name quoted from elsewhere). */
+  titleLang?: string;
   /** The close button's accessible name. */
   closeLabel: string;
   children: ReactNode;
@@ -16,7 +18,7 @@ type DialogProps = {
  * A sheet laid over the page for one task (a form, a call's details): the platform's modal
  * `<dialog>`, so focus stays inside, Esc closes it and the page behind is inert.
  */
-export function Dialog({ open, onClose, title, closeLabel, children }: DialogProps) {
+export function Dialog({ open, onClose, title, titleLang, closeLabel, children }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -31,7 +33,11 @@ export function Dialog({ open, onClose, title, closeLabel, children }: DialogPro
     <dialog ref={dialogRef} className="bt-dialog" aria-labelledby={titleId} onClose={onClose}>
       <div className="grid gap-5 p-5 sm:p-7">
         <div className="flex items-start justify-between gap-4">
-          <h2 id={titleId} className="font-display text-2xl leading-tight font-bold text-balance">
+          <h2
+            id={titleId}
+            lang={titleLang}
+            className="font-display text-2xl leading-tight font-bold text-balance"
+          >
             {title}
           </h2>
           <button

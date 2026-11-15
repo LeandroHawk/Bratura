@@ -12,6 +12,9 @@ import { UF_NAME } from '@/features/common/content/uf-names';
 import { CALL_NOTICES_CONTENT } from './content';
 
 /** An art form's name; `any` is every area. */
+/** What a call says of itself stays in the call's language, whatever the page's. */
+export const CALL_NOTICE_LANGUAGE = 'pt-BR';
+
 export function artFormName(artForm: string, locale: Locale) {
   const parsed = ArtFormEnum.safeParse(artForm);
   if (!parsed.success) return artForm;

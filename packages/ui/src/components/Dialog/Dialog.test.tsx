@@ -22,4 +22,14 @@ describe('Dialog', () => {
   it('has a close button with a name', () => {
     expect(html).toMatch(/<button type="button" aria-label="Fechar"/);
   });
+
+  it('says its title’s language when it is not the page’s', () => {
+    const quoted = renderToStaticMarkup(
+      <Dialog open={false} onClose={() => {}} title="Edital" titleLang="pt-BR" closeLabel="Close">
+        content
+      </Dialog>,
+    );
+    expect(quoted).toMatch(/<h2 id="[^"]+" lang="pt-BR"/);
+    expect(html).not.toContain('lang=');
+  });
 });

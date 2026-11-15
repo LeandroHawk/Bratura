@@ -9,7 +9,12 @@ import { Badge, Button, Card, Heading, Tag, type BadgeTone } from '@bratura/ui';
 import { NewTabHint } from '@/features/common/components/NewTabHint';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { formattedAmountInCents, formattedDayOfInstant } from '@/features/common/utils/format';
-import { artFormName, justificationText, locationText } from './callNoticeTexts';
+import {
+  artFormName,
+  CALL_NOTICE_LANGUAGE,
+  justificationText,
+  locationText,
+} from './callNoticeTexts';
 import { CALL_NOTICES_CONTENT } from './content';
 import { largestAmountInCents, type CallNoticeStatus } from './filtering';
 
@@ -83,17 +88,21 @@ export function CallNoticeCard({
           )}
           {isNew && <Tag size="sm">{content.card.isNew}</Tag>}
         </div>
-        {/* What the call itself says stays in the call's language, whatever the page's. */}
-        <Heading size="item" lang="pt-BR">
+        <Heading size="item" lang={CALL_NOTICE_LANGUAGE}>
           {callNotice.title}
         </Heading>
         <p className="text-small text-muted-foreground">
-          {content.card.organizer}: {callNotice.organizer ?? notInformed}
+          {content.card.organizer}:{' '}
+          {callNotice.organizer ? (
+            <span lang={CALL_NOTICE_LANGUAGE}>{callNotice.organizer}</span>
+          ) : (
+            notInformed
+          )}
         </p>
       </div>
 
       {callNotice.summary && (
-        <p className="text-small" lang="pt-BR">
+        <p className="text-small" lang={CALL_NOTICE_LANGUAGE}>
           {callNotice.summary}
         </p>
       )}
