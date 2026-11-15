@@ -58,8 +58,8 @@ export const fileNameAsLabel = (url: string) =>
 const isNotice = ({ url, label }: PageLink) => callNoticeDocumentRole(url, label) === 'callNotice';
 
 /**
- * A call page whose title names no year can still hold only old notices (Paraná, 2026-11-15:
- * "Edital Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the page.
+ * A call whose title names no year can still hold only old notices (Paraná, 2026-11-15: "Edital
+ * Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the call.
  */
 function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
   const notices = documents.filter(isNotice);
@@ -120,9 +120,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     const documents = documentLinksOf(page, source.documentUrlParts).filter(
       ({ url }) => !frameDocumentUrls.has(url),
     );
-    const recorded = callDocumentsWorthRecording(documents);
-    if (!recorded) continue;
-    calls.push({ externalId: url, title, officialUrl: url, documents: recorded.kept });
+    const kept = callDocumentsWorthRecording(documents);
+    if (!kept) continue;
+    calls.push({ externalId: url, title, officialUrl: url, documents: kept });
   }
   return calls;
 }
@@ -179,23 +179,23 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 
 /**
  * A call's documents worth recording, whatever shape the page has: some, no result posted, not
- * every notice from before last year; its newest notice only, `null` when none is identified.
+ * every notice from before last year. Its newest notice only; `null` when not worth it.
  */
 function callDocumentsWorthRecording(documents: PageLink[]) {
   if (documents.length === 0 || hasPublishedResult(documents)) return null;
   if (noticesAreNumberedBeforeLastYear(documents)) return null;
-  const kept = withNewestNoticeOnly(documents);
-  return { kept, notice: kept.find(isNotice) ?? null };
+  return withNewestNoticeOnly(documents);
 }
 
 /**
  * On a listing a notice is what makes documents a call (Ponta Grossa, 2026-11-15: two decrees
  * under "Legislação"); a call page is one by its URL, recorded without one for the admin review.
  */
-const listedCallDocuments = (documents: PageLink[]) => {
-  const recorded = callDocumentsWorthRecording(documents);
-  return recorded?.notice ? { kept: recorded.kept, notice: recorded.notice } : null;
-};
+function listedCallDocuments(documents: PageLink[]) {
+  const kept = callDocumentsWorthRecording(documents);
+  const notice = kept?.find(isNotice);
+  return kept && notice ? { kept, notice } : null;
+}
 
 /**
  * One hop: the listing's documents, grouped by the call their link names, an unnumbered one going
