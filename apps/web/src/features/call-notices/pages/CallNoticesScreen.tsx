@@ -11,6 +11,7 @@ import { CallNoticeDetails } from './sections/common/CallNoticeDetails';
 import { CallNoticeFilters } from './sections/common/CallNoticeFilters';
 import { CALL_NOTICES_CONTENT } from './sections/common/content';
 import {
+  callNoticeStatus,
   emptyCallNoticeFilters,
   filteredCallNotices,
   isNewCallNotice,
@@ -98,6 +99,7 @@ function CallNotices({
                 <CallNoticeCard
                   locale={locale}
                   callNotice={callNotice}
+                  status={callNoticeStatus(callNotice, now)}
                   isNew={isNewCallNotice(callNotice, now)}
                   isSaved={isSaved}
                   index={index}
@@ -128,6 +130,7 @@ function CallNotices({
         <CallNoticeDetails
           locale={locale}
           callNotice={open}
+          status={callNoticeStatus(open, now)}
           saved={savedById.get(open.callNoticeId) ?? null}
           onClose={() => setOpenId(null)}
         />

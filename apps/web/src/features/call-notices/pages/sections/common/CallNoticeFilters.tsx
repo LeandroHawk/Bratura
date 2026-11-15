@@ -19,7 +19,7 @@ import {
   type CallNoticeSort,
 } from './filtering';
 
-const STATUSES = ['open', 'closingSoon', 'closed'] as const;
+const STATUSES = ['notYetOpen', 'open', 'closingSoon', 'closed'] as const;
 const CLOSES_WITHIN_DAYS = [7, 30] as const;
 
 type SelectFilter = Exclude<keyof CallNoticeFilterValues, 'search' | 'city' | 'onlySaved'>;

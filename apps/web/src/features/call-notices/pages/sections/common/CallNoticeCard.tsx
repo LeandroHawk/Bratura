@@ -11,9 +11,10 @@ import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { formattedAmountInCents, formattedDayOfInstant } from '@/features/common/utils/format';
 import { artFormName, justificationText, locationText } from './callNoticeTexts';
 import { CALL_NOTICES_CONTENT } from './content';
-import { callNoticeStatus, largestAmountInCents, type CallNoticeStatus } from './filtering';
+import { largestAmountInCents, type CallNoticeStatus } from './filtering';
 
 export const STATUS_TONE: Record<CallNoticeStatus, BadgeTone> = {
+  notYetOpen: 'soon',
   open: 'open',
   closingSoon: 'soon',
   closed: 'missing',
@@ -30,6 +31,7 @@ export const CLASSIFICATION_TONE: Record<MatchClassification, BadgeTone> = {
 export function CallNoticeCard({
   locale,
   callNotice,
+  status,
   isNew,
   isSaved,
   index,
@@ -39,6 +41,7 @@ export function CallNoticeCard({
 }: {
   locale: Locale;
   callNotice: CallNoticeWithMatch;
+  status: CallNoticeStatus;
   isNew: boolean;
   isSaved: boolean;
   /** The card's place in the list: each one rises a moment after the one before. */
@@ -50,7 +53,6 @@ export function CallNoticeCard({
 }) {
   const content = CALL_NOTICES_CONTENT[locale];
   const { notInformed } = CREATOR_LABELS[locale];
-  const status = callNoticeStatus(callNotice);
   const amount = largestAmountInCents(callNotice);
   const { match, registrationOpens, registrationCloses } = callNotice;
 

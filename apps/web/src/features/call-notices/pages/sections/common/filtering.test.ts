@@ -77,11 +77,20 @@ describe('filteredCallNotices', () => {
 });
 
 describe('callNoticeStatus', () => {
-  it('names the four places a registration can be', () => {
-    expect(callNoticeStatus({ deadline: 'open', closesSoon: false })).toBe('open');
-    expect(callNoticeStatus({ deadline: 'open', closesSoon: true })).toBe('closingSoon');
-    expect(callNoticeStatus({ deadline: 'openEnded', closesSoon: false })).toBe('open');
-    expect(callNoticeStatus({ deadline: 'closed', closesSoon: false })).toBe('closed');
-    expect(callNoticeStatus({ deadline: 'notInformed', closesSoon: false })).toBe('notInformed');
+  const opened = { registrationOpens: null, closesSoon: false };
+
+  it('names the places a registration can be', () => {
+    expect(callNoticeStatus({ ...opened, deadline: 'open' }, NOW)).toBe('open');
+    expect(callNoticeStatus({ ...opened, deadline: 'open', closesSoon: true }, NOW)).toBe(
+      'closingSoon',
+    );
+    expect(callNoticeStatus({ ...opened, deadline: 'openEnded' }, NOW)).toBe('open');
+    expect(callNoticeStatus({ ...opened, deadline: 'closed' }, NOW)).toBe('closed');
+    expect(callNoticeStatus({ ...opened, deadline: 'notInformed' }, NOW)).toBe('notInformed');
+  });
+
+  it('a call that opens later is not open, whatever its deadline', () => {
+    expect(idsWith({ status: 'notYetOpen' })).toEqual(['exemplo-patrocinio-empresas']);
+    expect(idsWith({ status: 'open' })).not.toContain('exemplo-patrocinio-empresas');
   });
 });

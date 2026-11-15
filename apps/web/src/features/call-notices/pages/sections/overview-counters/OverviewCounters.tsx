@@ -21,7 +21,7 @@ export function OverviewCounters({
   now: number;
 }) {
   const content = OVERVIEW_COUNTERS_CONTENT[locale];
-  const statuses = callNotices.map(callNoticeStatus);
+  const statuses = callNotices.map((callNotice) => callNoticeStatus(callNotice, now));
 
   return (
     <div className="grid gap-5">

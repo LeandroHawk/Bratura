@@ -19,7 +19,7 @@ import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { CLASSIFICATION_TONE, STATUS_TONE } from './CallNoticeCard';
 import { artFormName, askedText, justificationText, locationText } from './callNoticeTexts';
 import { CALL_NOTICES_CONTENT } from './content';
-import { callNoticeStatus } from './filtering';
+import type { CallNoticeStatus } from './filtering';
 
 const REQUIREMENT_TONE: Record<MatchRequirementStatus, BadgeTone> = {
   met: 'open',
@@ -48,11 +48,13 @@ function guidanceText(requirement: MatchRequirement, locale: Locale) {
 export function CallNoticeDetails({
   locale,
   callNotice,
+  status,
   saved,
   onClose,
 }: {
   locale: Locale;
   callNotice: CallNoticeWithMatch;
+  status: CallNoticeStatus;
   /** `null` while the call is not saved. */
   saved: SavedCallNotice | null;
   onClose: () => void;
@@ -61,7 +63,6 @@ export function CallNoticeDetails({
   const copy = content.details;
   const { notInformed } = CREATOR_LABELS[locale];
   const { match, extraction, registrationOpens, registrationCloses, callNoticeId } = callNotice;
-  const status = callNoticeStatus(callNotice);
   const documents = match?.requirements.filter((requirement) => requirement.kind === 'document');
   const day = (instant: { at: number } | null) =>
     instant && formattedDayOfInstant(instant.at, locale);

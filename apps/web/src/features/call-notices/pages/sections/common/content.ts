@@ -36,6 +36,7 @@ const ptBR = {
   } satisfies Record<ApplicantType, string>,
   anyArtForm: 'Todas as áreas culturais',
   status: {
+    notYetOpen: 'Ainda não abriu',
     open: 'Aberto',
     closingSoon: 'Encerrando em breve',
     closed: 'Encerrado',
@@ -187,6 +188,7 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
     },
     anyArtForm: 'Every cultural area',
     status: {
+      notYetOpen: 'Not open yet',
       open: 'Open',
       closingSoon: 'Closing soon',
       closed: 'Closed',

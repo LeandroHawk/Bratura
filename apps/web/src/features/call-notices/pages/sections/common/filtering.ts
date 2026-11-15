@@ -1,14 +1,20 @@
 import type { CallNoticeWithMatch } from '@bratura/shared/entities/call-notice/dto/bratura-portal/eligible-call-notices/query';
 
 /** Where a call's registration stands, as the screens name it. */
-export type CallNoticeStatus = 'open' | 'closingSoon' | 'closed' | 'notInformed';
+export type CallNoticeStatus = 'notYetOpen' | 'open' | 'closingSoon' | 'closed' | 'notInformed';
 
-export function callNoticeStatus({
-  deadline,
-  closesSoon,
-}: Pick<CallNoticeWithMatch, 'deadline' | 'closesSoon'>): CallNoticeStatus {
-  if (deadline === 'notInformed') return 'notInformed';
+export function callNoticeStatus(
+  {
+    deadline,
+    closesSoon,
+    registrationOpens,
+  }: Pick<CallNoticeWithMatch, 'deadline' | 'closesSoon' | 'registrationOpens'>,
+  now: number,
+): CallNoticeStatus {
   if (deadline === 'closed') return 'closed';
+  // A deadline ahead is not an open registration: the call may only take applications later.
+  if (registrationOpens !== null && registrationOpens.at > now) return 'notYetOpen';
+  if (deadline === 'notInformed') return 'notInformed';
   return closesSoon ? 'closingSoon' : 'open';
 }
 
@@ -136,7 +142,7 @@ export function filteredCallNotices(
           ) === true) &&
         (filters.opportunityKind === '' ||
           callNotice.opportunityKind === filters.opportunityKind) &&
-        (filters.status === '' || callNoticeStatus(callNotice) === filters.status) &&
+        (filters.status === '' || callNoticeStatus(callNotice, now) === filters.status) &&
         (filters.state === '' || callNotice.state === filters.state) &&
         (city === '' || foldedText(callNotice.city ?? '').includes(city)) &&
         (filters.coverage === '' || callNotice.coverage === filters.coverage) &&
