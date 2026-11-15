@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { bahiaFuncebSource, maranhaoSecmaSource } from '../../sources.fixture';
+import { bahiaFuncebSource, maranhaoSecmaSource, paranaSeecSource } from '../../sources.fixture';
 import { callNumberOf, callsOfCallPages, callsOfDocumentsOnListing } from './discovery';
 
 beforeEach(() => {
@@ -13,6 +13,7 @@ afterEach(() => {
 
 const a = (href: string, text: string) => `<a href="${href}">${text}</a>`;
 const files = '/fundacaocultural/sites/site-funceb/files';
+const prFiles = '/sites/default/arquivos_restritos/files/documento/2026-11';
 
 describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
   const pages: Record<string, string> = {
@@ -32,6 +33,23 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       a(`${files}/2026-07/EDITAL.pdf`, 'EDITAL DE APOIO.pdf'),
       a(`${files}/2026-10/PORTARIA%20269.pdf`, 'PORTARIA 269_2026 - RESULTADO FINAL.pdf'),
     ].join(''),
+    'https://www.cultura.pr.gov.br/': [
+      a('/Pagina/Edital-MOVCEU-Parana', 'Edital MOVCEU Paraná'),
+      a('/Pagina/Edital-Bandas-e-Fanfarras', 'Edital Bandas e Fanfarras'),
+      a('/Pagina/Edital-de-Parcerias-MON', 'Edital de Parcerias com Organizações Sociais – MON'),
+    ].join(''),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-MOVCEU-Parana': a(
+      `${prFiles}/0.edital_movceu_parana_-_2026.docx_0.pdf`,
+      'EDITAL MOVCEU PARANÁ - CHAMAMENTO PÚBLICO Nº 015/2026',
+    ),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-Bandas-e-Fanfarras': a(
+      `${prFiles}/lpg-edital-012-2023.pdf`,
+      'EDITAL INTERATIVO',
+    ),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-de-Parcerias-MON': a(
+      `${prFiles}/edital_-_001_-_2025.docx`,
+      '(.DOC)',
+    ),
   };
   /** Answers each fixture page as HTML and anything else 404, like a site; returns the mock. */
   function siteAnswers(failing: string[] = []) {
@@ -81,6 +99,12 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       'https://www.ba.gov.br/fundacaocultural/convocatoria-sala-do-coro',
       'https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio',
     ]);
+  });
+
+  test('skips a page whose notice names a past year in its text or file name', async () => {
+    siteAnswers();
+    const calls = await callsOf(paranaSeecSource);
+    expect(calls.map(({ title }) => title)).toEqual(['Edital MOVCEU Paraná']);
   });
 
   test('a call page that fails is skipped, not the whole run', async () => {

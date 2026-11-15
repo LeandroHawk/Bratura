@@ -1,7 +1,7 @@
 import { CallNoticeDocumentUrlSchema } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
 import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
 import { plainText } from '../../lib/text';
-import { callNoticeDocumentRole, postsResult } from '../callNoticeDocuments/selection';
+import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { fetchPageHtml, isFetchableFromListing } from './client';
 import { linksOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
@@ -35,6 +35,23 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedInPastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < new Date().getUTCFullYear();
 
+/** `lpg-edital-012-2023.pdf` as `lpg - edital - 012 - 2023`, a label `callNumberOf` reads. */
+const fileNameAsLabel = (url: string) =>
+  fileNameOf(url)
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[_-]+/g, ' - ');
+
+/**
+ * A call page whose title names no year can still hold an old notice (Paraná, 2026-11-15: "Edital
+ * Bandas e Fanfarras" is `Edital 012/2023`, an unnumbered MON page is `edital_-_001_-_2025.pdf`).
+ */
+const noticeIsNumberedInPastYear = (documents: PageLink[]) =>
+  documents.some(
+    ({ url, label }) =>
+      callNoticeDocumentRole(url, label) === 'callNotice' &&
+      [label, fileNameAsLabel(url)].some((name) => isNumberedInPastYear(callNumberOf(name))),
+  );
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   const listing = linksOfHtml(await fetchPageHtml(source.listingUrl), source.listingUrl);
@@ -58,7 +75,13 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       continue;
     }
     const documents = documentLinksOf(page, source.documentUrlParts);
-    if (documents.length === 0 || hasPublishedResult(documents)) continue;
+    if (
+      documents.length === 0 ||
+      hasPublishedResult(documents) ||
+      noticeIsNumberedInPastYear(documents)
+    ) {
+      continue;
+    }
     calls.push({ externalId: url, title: label, officialUrl: url, documents });
   }
   return calls;

@@ -91,7 +91,7 @@ function nameOf(text: string) {
     .replace(/^-+|-+$/g, '');
 }
 
-function fileNameOf(url: string) {
+export function fileNameOf(url: string) {
   try {
     return decodeURIComponent(new URL(url).pathname.split('/').pop() ?? '');
   } catch {
