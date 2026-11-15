@@ -38,7 +38,7 @@ from it, so no step maps field by field:
 
 ## 2. Ports: who calls
 
-A port is a way into the backend. Two today: **the site** (`bratura-portal`) and **WhatsApp**. Both
+A port is a way into the backend. Two today: **the site** (`bratura-portal`) and **Telegram**. Both
 reach the same Convex functions and read the same tables (`matches`, `applicationKits`), so the two
 channels never disagree.
 
@@ -49,14 +49,14 @@ packages/shared/src/entities/<entity>/
   dto/
     common/<concept>/<query|mutation>.ts       shapes both ports use
     bratura-portal/<concept>/<query|mutation>.ts   only the site
-    whatsapp/<concept>/<query|mutation>.ts     only when WhatsApp needs its own shape
+    telegram/<concept>/<query|mutation>.ts     only when Telegram needs its own shape
 ```
 
 - **The folder is the Convex function kind, not an HTTP verb**: `query` reads, `mutation` writes,
   `action` calls the outside world. Fronts call functions, not URLs; HTTP exists only in `http.ts`.
 - **A DTO starts in its port's folder** and moves to `common/` when the second port uses it (the
   three-levels rule of `docs/architecture.md` §1, applied to ports).
-- **A provider's payload is not a DTO.** What Nvoip, Firecrawl or Mapas send is parsed by a local Zod
+- **A provider's payload is not a DTO.** What Telegram, Firecrawl or Mapas send is parsed by a local Zod
   schema beside the backend client that reads it (`model/<provider>/payload.ts`), then translated into a call
   to the same functions the site uses. It never enters `shared`.
 - **Names**: `<Concept><Query|Mutation>From<Port>{Args,Returns}Schema`, e.g.
@@ -90,7 +90,7 @@ and `returns`, parse both whole, and (once there is a caller) resolve auth befor
 and read under an old assumption by another breaks without a type error.
 
 - **A derived value has one writer.** Eligibility and gaps are written by `matching/` only; the web
-  and the WhatsApp bot read them and never recompute.
+  and the Telegram bot read them and never recompute.
 - **Every stored fact knows where it came from**: an ingested field keeps its source link and its
   evidence quote; a field the creator typed is the creator's. The fragment it belongs to (§1) says
   which.
@@ -108,7 +108,7 @@ packages/shared/src/entities/call-notice/
   fragments/                one fragment = one writer; its header names both
     listing/  registration-window/  tracking/
   dto/                      who reads, one folder per port (§2)
-    bratura-portal/  whatsapp/                              (later)
+    bratura-portal/  telegram/                              (later)
 packages/shared/src/entities/call-notice-document/  one row per document read (its own table)
 packages/shared/src/entities/call-notice-extraction/  one row per call extracted (its own table)
 
@@ -122,13 +122,19 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
   model/
     ingestion/runSourceIngestion.ts  the loop every kind shares: lease, parse, record, count, close
     mapasCulturais/         the Mapas reader: client, edge Zod (payload.ts), listing, date
-    firecrawl/  nvoip/      clients of the outside APIs, each with its payload.ts
+    firecrawl/              clients of the outside APIs, each with its payload.ts
+    telegram/               the Telegram channel: sendMessage.ts (the only import), messageText.ts
+                            (kind → pt-BR text), client.ts + payload.ts (the Bot API)
     callNoticeDocuments/    selection.ts: which calls and files are worth reading, from the listing
     llm/                    generateJson.ts (the only import; provider and model from env), evidence.ts
   crons.ts  http.ts         Convex's entry files
   extraction.ts             fields from the read documents, by hand, through model/llm; the only
                             writer of `callNoticeExtractions`
-  whatsapp.ts  matching.ts  alerts.ts                       (later)
+  userNotifications.ts      what to tell a user: the web inbox (the only writer of
+                            `userNotifications`)
+  notificationDeliveries.ts how it left the site: the send outbox (the only writer of
+                            `notificationDeliveries`)
+  telegram.ts  matching.ts                                  (telegram.ts is a skeleton)
 ```
 
 - **A source kind brings only what is its own** (`SourceReader` in `runSourceIngestion.ts`): how
@@ -145,5 +151,5 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
 This file is a first version, not a settled spec. If a rule here does not fit a case, or a simpler
 one would do, open the discussion in the PR or with the team. Known open points:
 
-- Port names: `bratura-portal` and `whatsapp`, or one folder per front (`web`, `whatsapp`)?
+- Port names: `bratura-portal` and `telegram`, or one folder per front (`web`, `telegram`)?
 - Whether `orgs/` becomes a third port (the organization panel) or stays inside the site.

@@ -37,7 +37,7 @@ it). **Read the one for the folder you are about to change before creating a fil
 | `docs/contracts.md`          | ports, DTO folders, the row the front sends, function builders, writers and readers |
 | `docs/security.md`           | ownership, abuse, prompt injection, personal data, fetch, errors, dependencies |
 | `docs/data-sources.md`       | allowed and excluded sources, the Mapas API                        |
-| `docs/integrations/`         | Firecrawl, WhatsApp (Nvoip)                                        |
+| `docs/integrations/`         | Firecrawl, Telegram                                                |
 | `docs/plan.md`               | until 30/11: product, competition rules, tools, dates              |
 | `docs/product.md`            | the idea, track fit, competitors, who pays, phases (owner: the PO) |
 | `docs/review.md`             | reviewing any change: owners, four lenses, backend, repo checks    |
@@ -92,7 +92,7 @@ The rules that hold everywhere:
 ## Git
 
 - **Branch `<type>/<slug>` from `dev`**, where `<type>` is the commit type: `feat/`, `fix/`,
-  `refactor/`, `docs/`, `chore/`, `test/` (`feat/whatsapp-alerts`, `docs/split-architecture-docs`).
+  `refactor/`, `docs/`, `chore/`, `test/` (`feat/telegram-alerts`, `docs/split-architecture-docs`).
 - **Conventional commits** with the workspace as scope when there is one: `feat(web): …`,
   `fix(shared): …`, `docs: …`. The subject says what changes, lowercase, no final period.
 - **One concern per PR, into `dev`.** Review it with `docs/review.md` before opening.

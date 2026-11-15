@@ -1,13 +1,18 @@
 import { defineSchema, defineTable } from 'convex/server';
+import { rateLimitTables } from 'convex-helpers/server/rateLimit';
 import { zodToConvex } from 'convex-helpers/server/zod4';
 import { CallNoticeSchema } from '@bratura/shared/entities/call-notice/entity';
 import { CallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-document/entity';
 import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
 import { IngestionRunSchema } from '@bratura/shared/entities/ingestion-run/entity';
+import { NotificationDeliverySchema } from '@bratura/shared/entities/notification-delivery/entity';
 import { SourceSchema } from '@bratura/shared/entities/source/entity';
+import { UserNotificationSchema } from '@bratura/shared/entities/user-notification/entity';
 
 // Each table is its entity's Zod, never a validator written beside it (docs/architecture.md §3).
+// `rateLimits` is convex-helpers' own table (the send cap), not an entity: it is the exception.
 export default defineSchema({
+  ...rateLimitTables,
   sources: defineTable(zodToConvex(SourceSchema))
     .index('by_slug', ['slug'])
     .index('by_is_active', ['isActive']),
@@ -25,4 +30,11 @@ export default defineSchema({
     'sourceId',
     'status',
   ]),
+  userNotifications: defineTable(zodToConvex(UserNotificationSchema)).index(
+    'by_user_and_dedupe_key',
+    ['userId', 'dedupeKey'],
+  ),
+  notificationDeliveries: defineTable(zodToConvex(NotificationDeliverySchema))
+    .index('by_notification_and_channel', ['notificationId', 'channel'])
+    .index('by_status', ['status']),
 });

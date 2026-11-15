@@ -5,7 +5,8 @@ product's concepts. It is the end-to-end level of "shared" (`docs/architecture.m
 belongs here only when it crosses the wire and has a consumer on the other side **today**.
 
 Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
-tables: `source`, `call-notice`, `call-notice-document`, `call-notice-extraction`, `ingestion-run`.
+tables: `source`, `call-notice`, `call-notice-document`, `call-notice-extraction`, `ingestion-run`,
+`user-notification`, `notification-delivery`.
 
 ```
 src/
@@ -15,7 +16,7 @@ src/
     fragments/                 a part of THIS entity (rules below)
     kinds/<kind>/variant.ts    one variant of an entity that is a union by kind (`source`)
     dto/<port>/<concept>/<query|mutation>.ts   args and returns of one function, per port
-                               (common/, bratura-portal/, whatsapp/: docs/contracts.md §2)
+                               (common/, bratura-portal/, telegram/: docs/contracts.md §2)
   primitives/                  no identity: two equal values are the same value
     code/  domain/  external/  → primitives/AGENTS.md
 ```
