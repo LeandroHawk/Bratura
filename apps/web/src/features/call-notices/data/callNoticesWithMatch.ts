@@ -8,7 +8,7 @@ import { standInMatch } from './standInMatching';
  * The swap point for Convex's `eligibleCallNotices` query, which returns this same shape.
  */
 export function callNoticesWithMatch(
-  { creator, portfolioItems }: SignedInState,
+  { creator, portfolioItems }: Pick<SignedInState, 'creator' | 'portfolioItems'>,
   now: number,
 ): CallNoticeWithMatch[] {
   return sampleCallNotices(now).map((callNotice) => ({
