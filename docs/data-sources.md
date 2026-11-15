@@ -103,8 +103,8 @@ fetched as HTML on the listing's own host, so finding calls costs no credits. Re
 choosing its `discovery` and `documentUrlParts` from the site's real links (measured 2026-11-15 on
 the rows marked so below). Registered on the cloud dev deployment (2026-11-15): Bahia,
 Maranhão and both Minas Gerais listings. Terms checked that day: Bahia and Paraná publish none,
-Minas Gerais only a privacy policy (about its visitors' data), Maranhão's content is CC BY 4.0. Rio is
-not registered: its call pages share no URL part, only the root, with the menu and the news.
+Minas Gerais only a privacy policy (about its visitors' data), Maranhão's content is CC BY 4.0.
+Rio is not registered: its call pages share no URL part, only the root, with the menu and the news.
 
 | Source | URL | robots |
 | --- | --- | --- |

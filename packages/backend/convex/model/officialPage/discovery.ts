@@ -13,6 +13,12 @@ type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
 const callPageSpacingMs = 1_000;
 
 /**
+ * No call page is opened past this: a page can take 2 min (4 fetches × 30 s), so the listing,
+ * this and the last page stay under the action's 10 min. The calls found so far are kept.
+ */
+const callPagesBudgetMs = 5 * 60_000;
+
+/**
  * A call whose page or listing already posts results is past its registration (Bahia, 2026-11-15:
  * 25 of 28 pages; the 3 without were the newest, 2 open). It is not recorded: reading it would pay
  * for a closed call.
@@ -35,11 +41,15 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedInPastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < new Date().getUTCFullYear();
 
-/** `lpg-edital-012-2023.pdf` as `lpg - edital - 012 - 2023`, a label `callNumberOf` reads. */
-const fileNameAsLabel = (url: string) =>
+/**
+ * `lpg-edital-012-2023.pdf` as `lpg edital 012/2023`, a label `callNumberOf` reads. A chain stays
+ * one (`06-11-008-2026` → `06/11/008/2026`), which `callNumberOf` refuses: no "06/11" as 2011.
+ */
+export const fileNameAsLabel = (url: string) =>
   fileNameOf(url)
     .replace(/\.[a-z0-9]+$/i, '')
-    .replace(/[_-]+/g, ' - ');
+    .replace(/(?<=\d)[\s_-]+(?=\d)/g, '/')
+    .replace(/[_-]+/g, ' ');
 
 /**
  * A call page whose title names no year can still hold an old notice (Paraná, 2026-11-15: "Edital
@@ -65,7 +75,12 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       !source.documentUrlParts.some((part) => url.includes(part)),
   );
   const calls: OfficialPageCall[] = [];
+  const startedAt = Date.now();
   for (const [index, { url, label }] of callPages.entries()) {
+    if (Date.now() - startedAt > callPagesBudgetMs) {
+      console.warn('Call pages left unread for lack of time', callPages.length - index);
+      break;
+    }
     if (index > 0) await new Promise((done) => setTimeout(done, callPageSpacingMs));
     let page: PageLink[];
     try {

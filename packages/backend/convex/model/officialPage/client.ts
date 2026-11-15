@@ -37,6 +37,7 @@ async function fetchOnSameHost(url: string): Promise<Response> {
     });
     const location = response.headers.get('location');
     if (response.status < 300 || response.status >= 400 || !location) return response;
+    await response.body?.cancel();
     const next = new URL(location, current).href;
     if (!isFetchableFromListing(next, url)) {
       throw new Error(`${new URL(url).host} redirected off its host`);

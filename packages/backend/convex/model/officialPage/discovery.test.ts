@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { bahiaFuncebSource, maranhaoSecmaSource, paranaSeecSource } from '../../sources.fixture';
-import { callNumberOf, callsOfCallPages, callsOfDocumentsOnListing } from './discovery';
+import {
+  callNumberOf,
+  callsOfCallPages,
+  callsOfDocumentsOnListing,
+  fileNameAsLabel,
+} from './discovery';
 
 beforeEach(() => {
   vi.useFakeTimers({ now: Date.UTC(2026, 10, 15) });
@@ -107,6 +112,24 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     expect(calls.map(({ title }) => title)).toEqual(['Edital MOVCEU Paraná']);
   });
 
+  test('stops opening call pages after 5 min, keeping the calls found', async () => {
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      const html = pages[String(input)] ?? '';
+      if (String(input) !== bahiaFuncebSource.listingUrl) {
+        await new Promise((done) => setTimeout(done, 200_000));
+      }
+      return new Response(html, { headers: { 'content-type': 'text/html' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const everyPage = {
+      ...bahiaFuncebSource,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['/fundacaocultural/'] },
+    };
+    const calls = await callsOf(everyPage);
+    expect(fetchMock).toHaveBeenCalledTimes(3); // the listing and 2 of its 3 call pages
+    expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
+  });
+
   test('a call page that fails is skipped, not the whole run', async () => {
     siteAnswers(['https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio']);
     const everyPage = {
@@ -141,6 +164,27 @@ describe('callNumberOf', () => {
     'Resultado Preliminar - Publicado dia 13/05/2026',
   ])('names no call: %s', (label) => {
     expect(callNumberOf(label)).toBeNull();
+  });
+});
+
+describe('fileNameAsLabel', () => {
+  const at = (name: string) => `https://www.cultura.pr.gov.br/files/${name}`;
+
+  test.each([
+    ['lpg-edital-012-2023.pdf', { kind: 'edital', number: 12, year: 2023 }],
+    ['edital_-_001_-_2025.docx', { kind: 'edital', number: 1, year: 2025 }],
+    ['0._edital_012_2026_pontos_de_cultura.pdf', { kind: 'edital', number: 12, year: 2026 }],
+  ])('%s → %o', (name, number) => {
+    expect(callNumberOf(fileNameAsLabel(at(name)))).toEqual(number);
+  });
+
+  // Mapas notices of 2026 in the dev DB (2026-11-15): read as "06/11" and "005/20" before.
+  test.each([
+    'i-edital-de-chamamento-publico-n-c2-ba-06-11-008-2026-an.pdf',
+    'edital-005-20-2026-socorro-andrade.pdf',
+    'edital-retificado-10-11-2025.pdf',
+  ])('a chain of numbers or a date names no call: %s', (name) => {
+    expect(callNumberOf(fileNameAsLabel(at(name)))).toBeNull();
   });
 });
 
