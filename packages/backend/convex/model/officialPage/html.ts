@@ -51,7 +51,7 @@ function decodeEntities(text: string) {
 
 const plainLabel = (inner: string) =>
   decodeEntities(inner.replace(/<[^>]*>/g, ' '))
-    .replace(/[​-‍﻿]/g, '')
+    .replace(/[\u200b-\u200d\ufeff]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 

@@ -35,6 +35,9 @@ export async function fetchPageHtml(url: string): Promise<string> {
   if (!response.ok) throw new Error(`${host} answered HTTP ${response.status}`);
   const type = response.headers.get('content-type') ?? '';
   if (!type.includes('html')) throw new Error(`${host} answered ${type || 'no content type'}`);
+  if (Number(response.headers.get('content-length')) > pageMaxBytes) {
+    throw new Error(`${host} answered over ${pageMaxBytes} bytes`);
+  }
   const body = await response.arrayBuffer();
   if (body.byteLength > pageMaxBytes)
     throw new Error(`${host} answered over ${pageMaxBytes} bytes`);

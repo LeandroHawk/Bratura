@@ -19,6 +19,7 @@ import type * as lib_builders from "../lib/builders.js";
 import type * as lib_env from "../lib/env.js";
 import type * as lib_httpError from "../lib/httpError.js";
 import type * as lib_sha256 from "../lib/sha256.js";
+import type * as lib_text from "../lib/text.js";
 import type * as model_callNoticeDocuments_selection from "../model/callNoticeDocuments/selection.js";
 import type * as model_callNoticeExtraction_prompt from "../model/callNoticeExtraction/prompt.js";
 import type * as model_callNoticeExtraction_verify from "../model/callNoticeExtraction/verify.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   "lib/env": typeof lib_env;
   "lib/httpError": typeof lib_httpError;
   "lib/sha256": typeof lib_sha256;
+  "lib/text": typeof lib_text;
   "model/callNoticeDocuments/selection": typeof model_callNoticeDocuments_selection;
   "model/callNoticeExtraction/prompt": typeof model_callNoticeExtraction_prompt;
   "model/callNoticeExtraction/verify": typeof model_callNoticeExtraction_verify;
