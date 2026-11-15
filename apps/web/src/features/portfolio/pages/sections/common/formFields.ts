@@ -1,6 +1,7 @@
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import {
   linkFromInput,
+  linesFromInput,
   listFromInput,
   nullableTextFromInput,
 } from '@/features/common/utils/form-text';
@@ -56,7 +57,7 @@ export function valuesFromDraft(fields: FormField[], draft: FormDraft): Record<s
     const typed = draft[name];
     if (typeof typed !== 'string') values[name] = control === 'file' ? (typed?.[0] ?? null) : typed;
     else if (control === 'lines') values[name] = listFromInput(typed);
-    else if (control === 'links') values[name] = listFromInput(typed).map(linkFromInput);
+    else if (control === 'links') values[name] = linesFromInput(typed).map(linkFromInput);
     else if (control === 'year') values[name] = typed.trim() === '' ? null : Number(typed);
     else values[name] = nullableTextFromInput(typed);
   }

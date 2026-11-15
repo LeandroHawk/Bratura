@@ -9,12 +9,21 @@ export function digitsFromInput(text: string): string {
   return text.replace(/\D/g, '');
 }
 
-/** One entry per line or comma, trimmed, empty ones dropped: how a list is typed in a text box. */
-export function listFromInput(text: string): string[] {
+function entriesSplitBy(text: string, separator: RegExp): string[] {
   return text
-    .split(/[\n,]/)
+    .split(separator)
     .map((entry) => entry.trim())
     .filter((entry) => entry !== '');
+}
+
+/** One entry per line or comma, trimmed, empty ones dropped: how a list is typed in a text box. */
+export function listFromInput(text: string): string[] {
+  return entriesSplitBy(text, /[\n,]/);
+}
+
+/** One entry per line only, for entries a comma can be part of (a link's address). */
+export function linesFromInput(text: string): string[] {
+  return entriesSplitBy(text, /\n/);
 }
 
 /** A link typed without its scheme (`instagram.com/maria`) gets `https://`. */
