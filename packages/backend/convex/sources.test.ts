@@ -1,6 +1,7 @@
 import { convexTest } from 'convex-test';
 import { describe, expect, test } from 'vitest';
 import type { Source } from '@bratura/shared/entities/source/entity';
+import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { internal } from './_generated/api';
 import schema from './schema';
 import { modules } from './test.setup';
@@ -20,19 +21,21 @@ describe('addSource', () => {
 
   test('stores each kind with its own fields', async () => {
     const t = convexTest(schema, modules);
-    const spCityPage: Source = {
+    const bahiaFuncebPage: Source = {
       kind: 'officialPage',
-      slug: 'sp-cidade-cultura',
-      name: 'Prefeitura de São Paulo — editais de cultura',
+      slug: 'ba-funceb',
+      name: 'Fundação Cultural do Estado da Bahia — editais 2026',
       isActive: true,
-      robotsCheckedOn: '2026-11-07',
-      termsCheckedOn: '2026-11-07',
-      listingUrl: 'https://prefeitura.sp.gov.br/web/cultura/editais/',
-      callUrlPatterns: ['/edital', '.pdf'],
+      robotsCheckedOn: '2026-11-15',
+      termsCheckedOn: '2026-11-15',
+      listingUrl: 'https://www.ba.gov.br/fundacaocultural/editais-2026',
+      discovery: { hops: 'callPage', callPageUrlParts: ['/fundacaocultural/'] },
+      documentUrlParts: ['/sites/site-funceb/files/'],
+      timeZone: ianaTimeZone.parse('America/Bahia'),
     };
-    await t.mutation(addSource, { source: spCityPage });
+    await t.mutation(addSource, { source: bahiaFuncebPage });
     const [stored] = await t.run((ctx) => ctx.db.query('sources').collect());
-    expect(stored).toMatchObject(spCityPage);
+    expect(stored).toMatchObject(bahiaFuncebPage);
   });
 
   test('rejects a slug the Convex validator alone would let through', async () => {

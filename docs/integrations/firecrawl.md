@@ -1,7 +1,6 @@
 # Firecrawl
 
-What Firecrawl does in Bratura: **reads the official pages that have no API and the text of every
-call's PDF**, including the PDFs linked from the Mapas API (eligibility, amounts and documents live
+What Firecrawl does in Bratura: **reads the text of every call's PDF**, including the PDFs linked from the Mapas API (eligibility, amounts and documents live
 only there). Which sites: `docs/data-sources.md`. Based on the team's analysis of the Firecrawl docs
 (`docs.firecrawl.dev`: scrape, crawl, change tracking, `maxAge`, webhooks, billing).
 
@@ -12,8 +11,8 @@ crons.ts (daily)
   └─ ingestion reads the `sources` table
        ├─ Mapas Culturais → public JSON API (no Firecrawl, no credits)
        │     └─ document links of each call (`documentUrls`) ──────┐
-       └─ sites without an API (SP city, Amigos da Arte, Goiás)      │
-             └─ /map (lists the site's URLs) → keep call-like URLs ──┤
+       └─ official pages (BA FUNCEB, Rio, MG…: no API)               │
+             └─ plain fetch of the listing (no credits) → call pages ┤
                                                                      ▼
           by hand for now (documents.ts) → /scrape → Markdown (PDFs included)
                                                                      ▼
@@ -32,9 +31,10 @@ The team's draft of this flow also stored an embedding per call; matching is rul
 ## Uses
 
 1. **PDF → Markdown.** `/scrape` detects a PDF by its URL and returns clean Markdown. The main use.
-2. **Finding calls on sites without an API.** `/map` lists a site's URLs; filter by patterns
-   (`/edital`, `/chamamento`, `.pdf`) and `/batch/scrape` only the new ones. `/map` costs 1 credit
-   per call. For one section,
+2. **Not for finding calls on official pages.** Their listings are server-rendered HTML (5 of 5
+   measured on 2026-11-15: PR, BA, Rio, MG, MA), so a plain fetch finds the call pages and document
+   links for free (`officialPage` source: `discovery`, `documentUrlParts`). `/map` (1 credit per
+   call) stays the option for a site that renders its list with JavaScript. For one section,
    `/crawl` with `includePaths` and `limit`.
 3. **New calls and amendments.** `changeTracking` (`git-diff` mode) says what changed since the last
    scrape: an unchanged page spends no Gemini call; an amended deadline triggers a new extraction and
