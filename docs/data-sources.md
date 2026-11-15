@@ -44,6 +44,30 @@ working instance.
 `robots.txt` answers 404 on all five (2026-11-13): nothing declared. Terms: see Rules; Ceará's are a
 PDF (`termo_de_uso_-_mapa_cultural_do_ceara_v1.0.pdf`), the others publish none found.
 
+**Added on 2026-11-14** (Mauá above, plus the instances of the GitHub list with a call open that day):
+
+| Instance | Host | Call notices on 2026-11-14 (with documents) | Zone it sends |
+| --- | --- | --- | --- |
+| Espírito Santo (state portal, also hosts Viana, Vila Velha, Divino São Lourenço) | `mapa.cultura.es.gov.br` | 11 (7) | `America/Sao_Paulo` |
+| CIM-AMFRI-SC (municipal consortium, e.g. Bombinhas) | `mapacultural.cim-amfri.sc.gov.br` | 8 (4) | `Etc/GMT+3` |
+| Aparecida de Goiânia-GO | `portaldacultura.aparecida.go.gov.br` | 8 (7) | `Etc/GMT+3` |
+| João Pessoa-PB | `jpcultura.joaopessoa.pb.gov.br` | 1 (1) | `America/Recife` |
+| Natal-RN | `mapacultural.natal.rn.gov.br` | 2 (2) | `Etc/GMT+3` |
+| Parauapebas-PA | `mapacultural.parauapebas.pa.gov.br` | 2 (1) | `Etc/GMT+3` |
+| Nova Lima-MG | `mapacultural.novalima.mg.gov.br` | 2 (2) | `Etc/GMT+3` |
+| Paraíba (state) | `mapacultural.pb.gov.br` | 1 (1) | `America/Recife` |
+| Sergipe (state) | `mapacultural.se.gov.br` | — | — |
+
+`robots.txt` answers 404 on all nine (2026-11-14). Terms: each publishes `/termos-de-uso`, the Mapas
+template (account, password, personal data, liability), with no clause on automated access or reuse
+of call data; Parauapebas publishes none found. **Sergipe** answers from Brazil but the cloud
+ingestion fails ("error sending request" after ~30 s), as Pernambuco and Maringá do: likely non-BR IPs
+blocked; registered, reading it needs a route from Brazil. **Aracaju**
+(`mapacultural.aracaju.se.gov.br`, 1 open) is not added: its `robots.txt` answers HTTP 500, so its
+rules cannot be read; recheck before adding. Instances of the list with nothing open on 2026-11-14
+(Pará, Santa Luzia-MG, Petrolina-PE, Lagoa Santa-MG, Cianorte-PR, Anápolis-GO) are not added yet;
+Lagoa Santa sends Cloudflare content signals, a team call as for Mongaguá.
+
 ```
 GET https://{host}/api/opportunity/find
   ?@select=id,name,shortDescription,registrationFrom,registrationTo,singleUrl
