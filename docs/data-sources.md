@@ -101,7 +101,10 @@ GET https://{host}/api/opportunity/find
 Read by `ingestion:ingestOfficialPage` (`model/officialPage/`): the listing and call pages are
 fetched as HTML on the listing's own host, so finding calls costs no credits. Registering one means
 choosing its `discovery` and `documentUrlParts` from the site's real links (measured 2026-11-15 on
-the rows marked so below).
+the rows marked so below). Registered on the cloud dev deployment (2026-11-15): Bahia,
+Maranhão and both Minas Gerais listings. Terms checked that day: Bahia and Paraná publish none,
+Minas Gerais only a privacy policy (about its visitors' data), Maranhão's content is CC BY 4.0. Rio is
+not registered: its call pages share no URL part, only the root, with the menu and the news.
 
 | Source | URL | robots |
 | --- | --- | --- |
@@ -109,6 +112,7 @@ the rows marked so below).
 | Rio de Janeiro city SMC (measured 2026-11-15) | `https://cultura.prefeitura.rio/`: one page per call, the notice named "REGULAMENTO" | allows except wp-admin |
 | Minas Gerais Secult (measured 2026-11-15) | `https://www.secult.mg.gov.br/editais/editais-pnab/editais-pnab` and `/editais/fundo-estadual-de-cultura-fec/editais-fec`: the listing links the documents (`?download=`) | 404: nothing declared |
 | Maranhão Secma (measured 2026-11-15) | `https://cultura.ma.gov.br/programas-ou-campanhas/editais-secma`: the listing links the PDFs | allows (Semrush, Petal disallowed) |
+| Paraná Seec (measured 2026-11-15) | `https://www.cultura.pr.gov.br/`: one page per call under `/Pagina/Edital-`, some renamed behind a same-host 301 | allows (Drupal default: `/core/`, `/user/`, `/search/` disallowed) |
 | São Paulo city culture calls | `https://prefeitura.sp.gov.br/web/cultura/editais/` | allows all |
 | Amigos da Arte (SP state calls) | `https://amigosdaarte.org.br/editais_/` (with the underscore; RSS at `/editais_/feed/`); the 4 calls of 2026 are closed | allows except wp-admin |
 | Santos (SECULT: PNAB 2026, FACULT) | official pages with the PDFs; all 2026 calls closed (2026-11-14) | 404: nothing declared |
