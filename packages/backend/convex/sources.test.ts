@@ -1,67 +1,61 @@
 import { convexTest } from 'convex-test';
 import { describe, expect, test } from 'vitest';
-import type { Source } from '@bratura/shared/entities/source/entity';
+import { SourceSchema, type Source } from '@bratura/shared/entities/source/entity';
 import { internal } from './_generated/api';
+import * as registry from './model/sources/registry';
+import { federalMapasSource, registeredSources } from './model/sources/registry';
 import schema from './schema';
 import { modules } from './test.setup';
-import { bahiaFuncebSource, federalMapasSource } from './sources.fixture';
 
-const addSource = internal.sources.addSource;
+const registerSource = internal.sources.registerSource;
 
-// The Convex validator derived by zodToConvex is only a shape (`slug: v.string()`). These tests
-// prove the builder still runs the entity's field rules (docs/contracts.md §3).
-describe('addSource', () => {
-  test('stores a source the Zod entity accepts', async () => {
+describe('registeredSources', () => {
+  // `satisfies Source` checks only the shape; the slug pattern, https and trimming are Zod rules.
+  test.each(registeredSources.map((source) => [source.slug, source] as const))(
+    '%s passes the entity unchanged',
+    (_slug, source) => {
+      expect(SourceSchema.parse(source)).toEqual(source);
+    },
+  );
+
+  test('lists every source the registry declares', () => {
+    const declared = Object.values(registry).filter((value) => value !== registeredSources);
+    expect(new Set(registeredSources)).toEqual(new Set(declared));
+  });
+
+  test('no two sources share a slug', () => {
+    const slugs = registeredSources.map((source) => source.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+});
+
+describe('registerSource', () => {
+  test('inserts the registered source the first time', async () => {
     const t = convexTest(schema, modules);
-    await t.mutation(addSource, { source: federalMapasSource });
+    await t.mutation(registerSource, { slug: 'mapas-federal' });
     const stored = await t.run((ctx) => ctx.db.query('sources').collect());
     expect(stored).toMatchObject([federalMapasSource]);
   });
 
-  test('stores each kind with its own fields', async () => {
+  test('replaces a row edited elsewhere with the registry, keeping its id', async () => {
     const t = convexTest(schema, modules);
-    await t.mutation(addSource, { source: bahiaFuncebSource });
-    const [stored] = await t.run((ctx) => ctx.db.query('sources').collect());
-    expect(stored).toMatchObject(bahiaFuncebSource);
+    const sourceId = await t.mutation(registerSource, { slug: 'mapas-federal' });
+    await t.run((ctx) => ctx.db.patch(sourceId, { isActive: false, name: 'Edited' }));
+    expect(await t.mutation(registerSource, { slug: 'mapas-federal' })).toBe(sourceId);
+    const stored = await t.run((ctx) => ctx.db.query('sources').collect());
+    expect(stored).toMatchObject([federalMapasSource]);
+  });
+
+  test('refuses a slug the registry does not have', async () => {
+    const t = convexTest(schema, modules);
+    await expect(t.mutation(registerSource, { slug: 'mapas-unknown' })).rejects.toThrow(/notFound/);
   });
 
   test('rejects a slug the Convex validator alone would let through', async () => {
     const t = convexTest(schema, modules);
-    await expect(
-      t.mutation(addSource, { source: { ...federalMapasSource, slug: 'Mapas Federal' } }),
-    ).rejects.toThrow(/invalidInput/);
-  });
-
-  test('rejects a plain-http url, a refinement of z.url', async () => {
-    const t = convexTest(schema, modules);
-    await expect(
-      t.mutation(addSource, {
-        source: { ...federalMapasSource, baseUrl: 'http://mapa.cultura.gov.br' },
-      }),
-    ).rejects.toThrow(/invalidInput/);
-  });
-
-  test('rejects fields of another kind', async () => {
-    const t = convexTest(schema, modules);
-    await expect(
-      t.mutation(addSource, {
-        // @ts-expect-error a Mapas instance has no listing URL: tsc refuses it too
-        source: { ...federalMapasSource, listingUrl: 'https://mapa.cultura.gov.br/editais' },
-      }),
-    ).rejects.toThrow();
-  });
-
-  test('trims text before storing, a Zod overwrite the Convex validator cannot express', async () => {
-    const t = convexTest(schema, modules);
-    await t.mutation(addSource, { source: { ...federalMapasSource, name: '  Federal  ' } });
-    const stored = await t.run((ctx) => ctx.db.query('sources').first());
-    expect(stored?.name).toBe('Federal');
-  });
-
-  test('refuses a second source with the same slug', async () => {
-    const t = convexTest(schema, modules);
-    await t.mutation(addSource, { source: federalMapasSource });
-    await expect(t.mutation(addSource, { source: federalMapasSource })).rejects.toThrow(/conflict/);
+    await expect(t.mutation(registerSource, { slug: 'Mapas Federal' })).rejects.toThrow(
+      /invalidInput/,
+    );
   });
 });
 
@@ -78,7 +72,7 @@ const newsSite: Source = {
 describe('getSource', () => {
   test('gives the source as registered, without system fields', async () => {
     const t = convexTest(schema, modules);
-    const sourceId = await t.mutation(addSource, { source: federalMapasSource });
+    const sourceId = await t.mutation(registerSource, { slug: 'mapas-federal' });
     expect(await t.query(internal.sources.getSource, { sourceId })).toEqual(federalMapasSource);
   });
 });
@@ -86,11 +80,9 @@ describe('getSource', () => {
 describe('listActiveSources', () => {
   test('lists only active sources, with their kind', async () => {
     const t = convexTest(schema, modules);
-    const mapasId = await t.mutation(addSource, { source: federalMapasSource });
-    await t.mutation(addSource, {
-      source: { ...federalMapasSource, slug: 'mapas-off', isActive: false },
-    });
-    const newsId = await t.mutation(addSource, { source: newsSite });
+    const mapasId = await t.mutation(registerSource, { slug: 'mapas-federal' });
+    await t.mutation(registerSource, { slug: 'mapas-pe' });
+    const newsId = await t.run((ctx) => ctx.db.insert('sources', newsSite));
     expect(await t.query(internal.sources.listActiveSources, {})).toEqual([
       { sourceId: mapasId, kind: 'mapasCulturaisInstance' },
       { sourceId: newsId, kind: 'newsSite' },

@@ -1,26 +1,32 @@
 import { SourceKindSchema, SourceSchema } from '@bratura/shared/entities/source/entity';
+import { SourceIdentityFields } from '@bratura/shared/entities/source/fragments/identity/fields';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { z } from 'zod';
 import { appError } from './lib/appError';
 import { internalZodMutation, internalZodQuery } from './lib/builders';
+import { registeredSources } from './model/sources/registry';
 
-const AddSourceMutationArgsSchema = z.object({ source: SourceSchema });
-const AddSourceMutationReturnsSchema = documentId('sources');
+const RegisterSourceMutationArgsSchema = z.object({ slug: SourceIdentityFields.shape.slug });
+const RegisterSourceMutationReturnsSchema = documentId('sources');
 
 /**
- * Registers a source the team has already checked: robots.txt and terms read, days recorded. Run
- * from the dashboard or `convex run`; ingestion never adds a source by itself.
+ * Copies one source from `model/sources/registry.ts` into the table: inserts it the first time,
+ * replaces the row afterwards (same id, so its call notices stay linked). Run after the registry
+ * changes, `convex run sources:registerSource '{"slug":"…"}'`; ingestion never adds a source.
  */
-export const addSource = internalZodMutation({
-  args: AddSourceMutationArgsSchema,
-  returns: AddSourceMutationReturnsSchema,
-  handler: async (ctx, { source }) => {
+export const registerSource = internalZodMutation({
+  args: RegisterSourceMutationArgsSchema,
+  returns: RegisterSourceMutationReturnsSchema,
+  handler: async (ctx, { slug }) => {
+    const registered = registeredSources.find((source) => source.slug === slug);
+    if (!registered) throw appError({ code: 'notFound' });
     const existing = await ctx.db
       .query('sources')
-      .withIndex('by_slug', (index) => index.eq('slug', source.slug))
+      .withIndex('by_slug', (index) => index.eq('slug', slug))
       .unique();
-    if (existing) throw appError({ code: 'conflict' });
-    return await ctx.db.insert('sources', source);
+    if (!existing) return await ctx.db.insert('sources', registered);
+    await ctx.db.replace(existing._id, registered);
+    return existing._id;
   },
 });
 

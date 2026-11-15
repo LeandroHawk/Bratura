@@ -3,7 +3,7 @@ import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fie
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
 import schema from './schema';
-import { federalMapasSource } from './sources.fixture';
+import { federalMapasSource } from './model/sources/registry';
 import { modules } from './test.setup';
 
 const day = 24 * 60 * 60 * 1000;
@@ -13,7 +13,7 @@ const markdown =
 
 async function withReadCallNotice(closesInDays = 9) {
   const t = convexTest(schema, modules);
-  const sourceId = await t.mutation(internal.sources.addSource, { source: federalMapasSource });
+  const sourceId = await t.run((ctx) => ctx.db.insert('sources', federalMapasSource));
   const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
     sourceId,
     externalId: '8498',

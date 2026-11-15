@@ -6,7 +6,7 @@ import {
   jundiaiCultureSource,
   paranaSeecSource,
   salvadorFgmSource,
-} from '../../sources.fixture';
+} from '../sources/registry';
 import {
   callNumberOf,
   callsOfCallPages,

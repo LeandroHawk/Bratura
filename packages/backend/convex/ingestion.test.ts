@@ -5,7 +5,12 @@ import { internal } from './_generated/api';
 import { ingestionRunLeaseMs } from './ingestion';
 import { mapasOpportunity } from './model/mapasCulturais/mapasOpportunity.fixture';
 import schema from './schema';
-import { federalMapasSource, maranhaoSecmaSource } from './sources.fixture';
+import {
+  cearaMapasSource,
+  federalMapasSource,
+  maranhaoSecmaSource,
+  pernambucoMapasSource,
+} from './model/sources/registry';
 import { modules } from './test.setup';
 
 const newsSite: Source = {
@@ -26,7 +31,7 @@ function mapasAnswers(body: unknown, status = 200) {
 
 async function withSource(source: Source = federalMapasSource) {
   const t = convexTest(schema, modules);
-  const sourceId = await t.mutation(internal.sources.addSource, { source });
+  const sourceId = await t.run((ctx) => ctx.db.insert('sources', source));
   return { t, sourceId };
 }
 
@@ -43,19 +48,16 @@ describe('scheduleDailyIngestion', () => {
     vi.useFakeTimers();
     mapasAnswers([mapasOpportunity()]);
     const t = convexTest(schema, modules);
-    const addSource = internal.sources.addSource;
-    await t.mutation(addSource, { source: federalMapasSource });
-    await t.mutation(addSource, {
-      source: {
-        ...federalMapasSource,
-        slug: 'mapas-ce',
-        baseUrl: 'https://mapacultural.secult.ce.gov.br',
-      },
+    await t.run(async (ctx) => {
+      for (const source of [
+        federalMapasSource,
+        cearaMapasSource,
+        pernambucoMapasSource,
+        newsSite,
+      ]) {
+        await ctx.db.insert('sources', source);
+      }
     });
-    await t.mutation(addSource, {
-      source: { ...federalMapasSource, slug: 'mapas-off', isActive: false },
-    });
-    await t.mutation(addSource, { source: newsSite });
 
     expect(await t.action(internal.ingestion.scheduleDailyIngestion, {})).toBe(2);
     await t.finishAllScheduledFunctions(vi.runAllTimers);

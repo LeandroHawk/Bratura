@@ -7,9 +7,11 @@ source's robots.txt and terms before adding or changing it.
 ## Rules
 
 - **Only sources that allow it**: robots.txt and terms read and recorded before a source enters the
-  `sources` table. A source never enters automatically. The competition excludes "coleta de dados
-  que viole os termos do site de origem ou exponha dados pessoais" (5.2) and scraping that exposes
-  personal data (6.8).
+  `sources` table. A source never enters automatically: it is written in
+  `packages/backend/convex/model/sources/registry.ts`, with the days its robots.txt and terms were
+  read, and copied to a deployment by `sources:registerSource` (the same command changes it). The
+  competition excludes "coleta de dados que viole os termos do site de origem ou exponha dados
+  pessoais" (5.2) and scraping that exposes personal data (6.8).
 - **Eligibility, amounts and documents live only in the call's PDF.** The Mapas API gives name,
   dates and the PDF link; everything a creator decides on is extracted from the PDF.
 - **Nothing is invented**: every value shown has its source link; a field not found is `null`,
@@ -128,7 +130,7 @@ the rows marked so below).
 | Salvador FGM (measured 2026-11-15) | `https://fgm.salvador.ba.gov.br/editais-abertos/`: only open calls, one page per call, each linked as "Clique aqui!" (the page's own heading names the call) | allows (WordPress default: `/wp-admin/` disallowed) | none published (`/lgpd/` explains the LGPD law; no clause on automated access or reuse), 2026-11-15 |
 | Jundiaí Fundação Casa da Cultura (measured 2026-11-15) | `https://cultura.jundiai.sp.gov.br/editais-e-regulamentos/`: one heading per call, its documents under it, labelled "Edital", "PDF", "Anexo I"; closed calls under "ENCERRADOS" | 404: nothing declared | only a privacy policy, about its visitors' data (Google Analytics), 2026-11-15 |
 | Jaboatão dos Guararapes PNAB Ciclo 2 (measured 2026-11-15) | `https://viver.jaboatao.pe.gov.br/pnab/pnab-ciclo-2`: one heading per call ("Edital 002/2026 - …"); a page for one cycle | 404: nothing declared | none published, 2026-11-15 |
-| Ponta Grossa SMC PNAB (measured 2026-11-15) | `https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/`: one heading per call, every document linked as "clique aqui" | allows (WordPress default, plus `/wp-content/uploads/wpforms/` disallowed) | none published, 2026-11-15 |
+| Ponta Grossa SMC PNAB (measured 2026-11-15) | `https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/`: one heading per call, every document linked as "clique aqui"; **off**: it times out from Convex (US East) and answers from Brazil, as Pernambuco | allows (WordPress default, plus `/wp-content/uploads/wpforms/` disallowed) | none published, 2026-11-15 |
 | Paraná Seec (measured 2026-11-15) | `https://www.cultura.pr.gov.br/`: one page per call under `/Pagina/Edital-`, some renamed behind a same-host 301 | allows (Drupal default: `/core/`, `/user/`, `/search/` disallowed) | none published, 2026-11-15 |
 | São Paulo city culture calls | `https://prefeitura.sp.gov.br/web/cultura/editais/` | allows all | not recorded here |
 | Amigos da Arte (SP state calls) | `https://amigosdaarte.org.br/editais_/` (with the underscore; RSS at `/editais_/feed/`); the 4 calls of 2026 are closed | allows except wp-admin | not recorded here |

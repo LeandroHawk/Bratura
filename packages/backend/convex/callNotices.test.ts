@@ -8,7 +8,7 @@ import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import schema from './schema';
 import { modules } from './test.setup';
-import { federalMapasSource } from './sources.fixture';
+import { federalMapasSource } from './model/sources/registry';
 
 const recordCallNotice = internal.callNotices.recordCallNotice;
 
@@ -31,9 +31,7 @@ const listing = (sourceId: Id<'sources'>) => ({
 
 async function withSource() {
   const t = convexTest(schema, modules);
-  const sourceId = await t.mutation(internal.sources.addSource, {
-    source: federalMapasSource,
-  });
+  const sourceId = await t.run((ctx) => ctx.db.insert('sources', federalMapasSource));
   return { t, sourceId };
 }
 
@@ -78,6 +76,13 @@ describe('recordCallNotice', () => {
         registrationCloses: inFortaleza(Date.UTC(2026, 11, 1), 'day'),
       }),
     ).rejects.toThrow(/registrationCloses/);
+  });
+
+  test('trims text before storing, a Zod overwrite the Convex validator cannot express', async () => {
+    const { t, sourceId } = await withSource();
+    await t.mutation(recordCallNotice, { ...listing(sourceId), title: '  Edital das Artes  ' });
+    const stored = await t.run((ctx) => ctx.db.query('callNotices').first());
+    expect(stored?.title).toBe('Edital das Artes');
   });
 
   test('accepts a window with an end the source did not give', async () => {
