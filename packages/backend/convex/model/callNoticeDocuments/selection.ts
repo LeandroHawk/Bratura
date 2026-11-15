@@ -37,8 +37,12 @@ export function reasonToSkipReadingDocuments(
   return null;
 }
 
-/** A result posted about a call: it names who was picked, and says registration is over. */
-const resultName = /resultado|homologa|classificad|selecionad|suplente/;
+/**
+ * A result posted about a call: it names who was picked, and says registration is over. Duque de
+ * Caxias posts them as "Lista preliminar/final de seleção" (2026-11-15).
+ */
+const resultName =
+  /resultado|homologa|classificad|selecionad|suplente|(^|-)lista-(preliminar|final)/;
 
 /**
  * Never read, whatever else the name says: results, rankings and lists of applicants carry personal
