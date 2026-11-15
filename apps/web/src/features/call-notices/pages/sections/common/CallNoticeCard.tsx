@@ -81,7 +81,8 @@ export function CallNoticeCard({
           )}
           {isNew && <Tag size="sm">{content.card.isNew}</Tag>}
         </div>
-        <Heading as="h3" size="item">
+        {/* What the call itself says stays in the call's language, whatever the page's. */}
+        <Heading as="h3" size="item" lang="pt-BR">
           {callNotice.title}
         </Heading>
         <p className="text-small text-muted-foreground">
@@ -89,7 +90,11 @@ export function CallNoticeCard({
         </p>
       </div>
 
-      {callNotice.summary && <p className="text-small">{callNotice.summary}</p>}
+      {callNotice.summary && (
+        <p className="text-small" lang="pt-BR">
+          {callNotice.summary}
+        </p>
+      )}
 
       <ul className="flex flex-wrap gap-1.5">
         {callNotice.opportunityKind && (
