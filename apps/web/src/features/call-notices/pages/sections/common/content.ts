@@ -7,10 +7,7 @@ import type {
   MatchRequirementKind,
   MatchRequirementStatus,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/eligible-call-notices/query';
-import type {
-  ApplicantType,
-  ArtForm,
-} from '@bratura/shared/entities/call-notice-extraction/entity';
+import type { ApplicantType } from '@bratura/shared/entities/call-notice-extraction/entity';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { CallNoticeSort, CallNoticeStatus } from './filtering';
 
