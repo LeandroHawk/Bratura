@@ -1,8 +1,16 @@
 import { describe, expect, test } from 'vitest';
-import { headingOfHtml, linksOfHtml } from './html';
+import { headingOfHtml, linksOfHtml, sectionsOfHtml } from './html';
 
 describe('linksOfHtml', () => {
   const page = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
+
+  test('a link inside a heading is still read', () => {
+    const html = '<h2><a href="/edital-03">Edital 03/2026</a></h2><a href="/e.pdf">PDF</a>';
+    expect(linksOfHtml(html, page).map(({ url }) => url)).toEqual([
+      'https://www.ba.gov.br/edital-03',
+      'https://www.ba.gov.br/e.pdf',
+    ]);
+  });
 
   test('resolves relative links, decodes the text and keeps page order', () => {
     const html = `
@@ -43,5 +51,28 @@ describe('headingOfHtml', () => {
     const page = '<title>X – FGM</title><h1 class="t">Edital <b>09</b></h1><h1>FALE CONOSCO</h1>';
     expect(headingOfHtml(page)).toBe('Edital 09');
     expect(headingOfHtml('<title>Edital 09 – FGM</title><p>sem título</p>')).toBe('');
+  });
+});
+
+describe('sectionsOfHtml', () => {
+  test('each link goes under the heading above it, once; a link above every heading goes nowhere', () => {
+    const page = 'https://cultura.jundiai.sp.gov.br/editais-e-regulamentos/';
+    const html = [
+      '<a href="/decreto.pdf">Decreto</a><h1>Editais</h1>',
+      '<h1>BLOCOS DE CARNAVAL</h1><p>Período</p><a href="/b.pdf">PDF</a><a href="/b.pdf">Edital</a>',
+      '<h2>ENCERRADOS</h2><h1>CORTE <em>AFRO</em></h1><a href="/c.pdf">Edital</a>',
+    ].join('');
+    expect(sectionsOfHtml(html, page)).toEqual([
+      { heading: 'Editais', links: [] },
+      {
+        heading: 'BLOCOS DE CARNAVAL',
+        links: [{ url: 'https://cultura.jundiai.sp.gov.br/b.pdf', label: 'PDF' }],
+      },
+      { heading: 'ENCERRADOS', links: [] },
+      {
+        heading: 'CORTE AFRO',
+        links: [{ url: 'https://cultura.jundiai.sp.gov.br/c.pdf', label: 'Edital' }],
+      },
+    ]);
   });
 });

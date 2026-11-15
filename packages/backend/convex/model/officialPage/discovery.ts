@@ -3,7 +3,7 @@ import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/o
 import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { fetchPageHtml, isFetchableFromListing, type FetchedPage } from './client';
-import { headingOfHtml, linksOfHtml, type PageLink } from './html';
+import { headingOfHtml, linksOfHtml, sectionsOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -54,14 +54,15 @@ export const fileNameAsLabel = (url: string) =>
     .replace(/(?<=\d)[\s_-]+(?=\d)/g, '/')
     .replace(/[_-]+/g, ' ');
 
+/** Whether a document is a call's notice, by its link text and file name. */
+const isNotice = ({ url, label }: PageLink) => callNoticeDocumentRole(url, label) === 'callNotice';
+
 /**
- * A call page whose title names no year can still hold only old notices (Paraná, 2026-11-15:
- * "Edital Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the page.
+ * A call whose title names no year can still hold only old notices (Paraná, 2026-11-15: "Edital
+ * Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the call.
  */
 function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
-  const notices = documents.filter(
-    ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
-  );
+  const notices = documents.filter(isNotice);
   return (
     notices.length > 0 &&
     notices.every(({ url, label }) => [label, fileNameAsLabel(url)].some(namesACallBeforeLastYear))
@@ -119,14 +120,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     const documents = documentLinksOf(page, source.documentUrlParts).filter(
       ({ url }) => !frameDocumentUrls.has(url),
     );
-    if (
-      documents.length === 0 ||
-      hasPublishedResult(documents) ||
-      noticesAreNumberedBeforeLastYear(documents)
-    ) {
-      continue;
-    }
-    calls.push({ externalId: url, title, officialUrl: url, documents });
+    const kept = callDocumentsWorthRecording(documents);
+    if (!kept) continue;
+    calls.push({ externalId: url, title, officialUrl: url, documents: kept });
   }
   return calls;
 }
@@ -169,17 +165,36 @@ function versionDateOf(label: string) {
 
 /**
  * One call's documents with only its newest notice: Minas Gerais lists the original and every
- * rectified version side by side, and each is the whole notice (one read instead of five).
+ * rectified version side by side, Salvador one notice as PDF and `.docx`, and each is the whole
+ * notice (one read instead of five). Without a version date, the first listed stays.
  */
 function withNewestNoticeOnly(documents: PageLink[]) {
-  const notices = documents.filter(
-    ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
-  );
+  const notices = documents.filter(isNotice);
   if (notices.length < 2) return documents;
   const newest = notices.reduce((best, notice) =>
     versionDateOf(notice.label) > versionDateOf(best.label) ? notice : best,
   );
   return documents.filter((document) => !notices.includes(document) || document === newest);
+}
+
+/**
+ * A call's documents worth recording, whatever shape the page has: some, no result posted, not
+ * every notice from before last year. Its newest notice only; `null` when not worth it.
+ */
+function callDocumentsWorthRecording(documents: PageLink[]) {
+  if (documents.length === 0 || hasPublishedResult(documents)) return null;
+  if (noticesAreNumberedBeforeLastYear(documents)) return null;
+  return withNewestNoticeOnly(documents);
+}
+
+/**
+ * On a listing a notice is what makes documents a call (Ponta Grossa, 2026-11-15: two decrees
+ * under "Legislação"); a call page is one by its URL, recorded without one for the admin review.
+ */
+function listedCallDocuments(documents: PageLink[]) {
+  const kept = callDocumentsWorthRecording(documents);
+  const notice = kept?.find(isNotice);
+  return kept && notice ? { kept, notice } : null;
 }
 
 /**
@@ -204,14 +219,38 @@ export function callsOfDocumentsOnListing(
   }
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
     if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
-    if (hasPublishedResult(callDocuments)) return [];
-    const kept = withNewestNoticeOnly(callDocuments);
-    const notice = kept.find(
-      ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
-    );
-    if (!notice) return [];
+    const recorded = listedCallDocuments(callDocuments);
+    if (!recorded) return [];
     return [
-      { externalId: key, title: notice.label, officialUrl: source.listingUrl, documents: kept },
+      {
+        externalId: key,
+        title: recorded.notice.label,
+        officialUrl: source.listingUrl,
+        documents: recorded.kept,
+      },
+    ];
+  });
+}
+
+/**
+ * One hop: the listing's documents, each with the heading above it, which names its call and is
+ * its id at the source. A heading with no notice under it (the page's own title) is no call.
+ */
+export function callsOfDocumentsUnderHeadings(
+  source: OfficialPageSource,
+  { html, url }: FetchedPage,
+): OfficialPageCall[] {
+  return sectionsOfHtml(html, url).flatMap(({ heading, links }) => {
+    if (!heading || namesACallBeforeLastYear(heading)) return [];
+    const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
+    if (!recorded) return [];
+    return [
+      {
+        externalId: heading,
+        title: heading,
+        officialUrl: source.listingUrl,
+        documents: recorded.kept,
+      },
     ];
   });
 }
@@ -220,5 +259,9 @@ export function callsOfDocumentsOnListing(
 export async function fetchOfficialPageCalls(source: OfficialPageSource): Promise<unknown[]> {
   const { discovery } = source;
   if (discovery.hops === 'callPage') return await callsOfCallPages({ ...source, discovery });
-  return callsOfDocumentsOnListing(source, await fetchPageHtml(source.listingUrl));
+  const listing = await fetchPageHtml(source.listingUrl);
+  if (discovery.hops === 'documentsUnderHeadings') {
+    return callsOfDocumentsUnderHeadings(source, listing);
+  }
+  return callsOfDocumentsOnListing(source, listing);
 }

@@ -128,3 +128,48 @@ export const salvadorFgmSource = {
   documentUrlParts: ['/wp-content/uploads/'],
   timeZone: ianaTimeZone.parse('America/Bahia'),
 } satisfies Source;
+
+/** Jundiaí's culture foundation: one heading per call, its documents under it (2026-11-15). */
+export const jundiaiCultureSource = {
+  kind: 'officialPage',
+  slug: 'jundiai-cultura',
+  name: 'Fundação Casa da Cultura e Esportes de Jundiaí — editais e regulamentos',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://cultura.jundiai.sp.gov.br/editais-e-regulamentos/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Jaboatão dos Guararapes' PNAB Ciclo 2 page: one heading per call (measured 2026-11-15). A page
+ * for one cycle: Ciclo 3 will be a new one.
+ */
+export const jaboataoPnabCycle2Source = {
+  kind: 'officialPage',
+  slug: 'jaboatao-pnab-ciclo-2',
+  name: 'Secretaria de Cultura de Jaboatão dos Guararapes — PNAB Ciclo 2',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://viver.jaboatao.pe.gov.br/pnab/pnab-ciclo-2',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/document/', '/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Recife'),
+} satisfies Source;
+
+/** Ponta Grossa's culture office: its PNAB page, one heading per call (measured 2026-11-15). */
+export const pontaGrossaPnabSource = {
+  kind: 'officialPage',
+  slug: 'ponta-grossa-pnab',
+  name: 'Secretaria Municipal de Cultura de Ponta Grossa — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;

@@ -11,7 +11,8 @@ const urlParts = z.array(requiredString('short')).min(1).max(20);
 /**
  * How the site reaches a call's documents. `callPage` (PR, BA, Rio): listing → one page per call →
  * its documents. `documentsOnListing` (MG, MA): the listing links every version and annex itself,
- * and only the link text says which call each belongs to.
+ * and only the link text says which call each belongs to. `documentsUnderHeadings` (Jundiaí,
+ * Jaboatão): the listing links them under one heading per call, which names the call.
  */
 export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
   z.object({
@@ -20,6 +21,7 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
     callPageUrlParts: urlParts,
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
+  z.object({ hops: z.literal('documentsUnderHeadings') }),
 ]);
 
 /**

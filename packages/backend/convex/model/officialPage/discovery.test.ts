@@ -3,6 +3,7 @@ import {
   bahiaFuncebSource,
   funarteCallsSource,
   maranhaoSecmaSource,
+  jundiaiCultureSource,
   paranaSeecSource,
   salvadorFgmSource,
 } from '../../sources.fixture';
@@ -10,6 +11,7 @@ import {
   callNumberOf,
   callsOfCallPages,
   callsOfDocumentsOnListing,
+  callsOfDocumentsUnderHeadings,
   fileNameAsLabel,
 } from './discovery';
 
@@ -178,6 +180,27 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
+  test('a notice in two formats is kept once; a call page with no notice still is a call (Salvador, Paraná)', async () => {
+    const ba = 'https://www.ba.gov.br/fundacaocultural';
+    siteAnswers({
+      [bahiaFuncebSource.listingUrl]: [
+        a(`${ba}/edital-0092026-atelie`, 'EDITAL 09/2026 - ATELIÊ'),
+        a(`${ba}/edital-gestao-mon`, 'EDITAL DE GESTÃO MON'),
+      ].join(''),
+      [`${ba}/edital-0092026-atelie`]: [
+        a(`${files}/2026-10/EDITAL-N-092026-ATELIE.pdf`, 'Edital'),
+        a(`${files}/2026-10/FGM-EDITAL-09-2026-ATELIE.docx`, 'Edital'),
+        a(`${files}/2026-10/ANEXO-I-CRONOGRAMA.docx`, 'Anexo I'),
+      ].join(''),
+      [`${ba}/edital-gestao-mon`]: a(`${files}/2026-10/ANEXO-I-PLANO.pdf`, 'Anexo I'),
+    });
+    const calls = await callsOf(bahiaFuncebSource);
+    expect(calls.map(({ documents }) => documents.map(({ url }) => url.split('/').pop()))).toEqual([
+      ['EDITAL-N-092026-ATELIE.pdf', 'ANEXO-I-CRONOGRAMA.docx'],
+      ['ANEXO-I-PLANO.pdf'],
+    ]);
+  });
+
   test('skips a page whose notices are all numbered before last year by text or file name', async () => {
     siteAnswers();
     const calls = await callsOf(paranaSeecSource);
@@ -339,6 +362,44 @@ describe('callsOfDocumentsOnListing', () => {
         documents: [
           { url: url(5062), label: 'Edital FEC 06/2026 - Coreto - Retificado em 10/11/26' },
           { url: url(4833), label: 'Anexo I - Critérios de avaliação' },
+        ],
+      },
+    ]);
+  });
+});
+
+describe('callsOfDocumentsUnderHeadings', () => {
+  const site = 'https://cultura.jundiai.sp.gov.br';
+  const files = `${site}/wp-content/uploads/2026/11`;
+  const html = [
+    '<h1>Editais e Regulamentos</h1>',
+    `<h1>BLOCOS DE CARNAVAL DE RUA 2027</h1><p>Período de inscrições: 03/11 a 19/11</p>`,
+    a(`${files}/Publicacao_edital-Blocos.pdf`, 'Imprensa'),
+    a(`${files}/Edital_Blocos-de-Carnaval_2027.pdf`, 'PDF'),
+    a(`${files}/ANEXO-I_-EDITAL-No-25_2026_Blocos.pdf`, 'Anexo I'),
+    '<h1>PROESC 2026</h1>',
+    a(`${files}/EDITAL-No-24_2026-PROESC.pdf`, 'EDITAL'),
+    a(`${files}/Publicacao_PROESC-2026_Inscritos.pdf`, 'Resultado Preliminar da Admissibilidade'),
+    '<h1>FESTA LITERÁRIA</h1>',
+    a(`${files}/Anexo-I-Autodeclaracao.pdf`, 'Anexo I'),
+    '<h2>ENCERRADOS</h2><h1>Edital 02/2023 - Bandas</h1>',
+    a(`${files}/Edital-02-2023.pdf`, 'Edital'),
+  ].join('');
+
+  test('one call per heading with a notice under it, the heading as its name and id; no result posted, none older', () => {
+    const calls = callsOfDocumentsUnderHeadings(jundiaiCultureSource, {
+      html,
+      url: jundiaiCultureSource.listingUrl,
+    });
+    expect(calls).toEqual([
+      {
+        externalId: 'BLOCOS DE CARNAVAL DE RUA 2027',
+        title: 'BLOCOS DE CARNAVAL DE RUA 2027',
+        officialUrl: jundiaiCultureSource.listingUrl,
+        documents: [
+          { url: `${files}/Publicacao_edital-Blocos.pdf`, label: 'Imprensa' },
+          { url: `${files}/Edital_Blocos-de-Carnaval_2027.pdf`, label: 'PDF' },
+          { url: `${files}/ANEXO-I_-EDITAL-No-25_2026_Blocos.pdf`, label: 'Anexo I' },
         ],
       },
     ]);
