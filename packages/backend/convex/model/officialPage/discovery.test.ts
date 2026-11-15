@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { bahiaFuncebSource, maranhaoSecmaSource, paranaSeecSource } from '../../sources.fixture';
+import {
+  bahiaFuncebSource,
+  funarteCallsSource,
+  maranhaoSecmaSource,
+  paranaSeecSource,
+} from '../../sources.fixture';
 import {
   callNumberOf,
   callsOfCallPages,
@@ -137,6 +142,25 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       'CFA FÉRIAS 2027',
       'EDITAL 01/2026 QUARTA',
       'SELEÇÃO DE BOLSISTA VILA SUL',
+    ]);
+  });
+
+  test('drops a document the listing links too: the site frame, not the call (Funarte)', async () => {
+    const frame = a('/funarte/frame/edital-no-409-2025.pdf/view', 'Edital No. 409/2025, Cofin');
+    const chamadas = 'https://www.gov.br/funarte/pt-br/fomento/chamadas-2026';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input) => {
+        const html =
+          String(input) === chamadas
+            ? frame + a(`${chamadas}/marc-ferrez`, 'XVIII Seleção Marc Ferrez')
+            : frame + a(`${chamadas}/marc-ferrez/Edital_MarcFerrez_final.pdf`, 'ACESSE AQUI');
+        return new Response(html, { headers: { 'content-type': 'text/html' } });
+      }),
+    );
+    const [call] = await callsOf(funarteCallsSource);
+    expect(call?.documents.map(({ url }) => url)).toEqual([
+      `${chamadas}/marc-ferrez/Edital_MarcFerrez_final.pdf`,
     ]);
   });
 
