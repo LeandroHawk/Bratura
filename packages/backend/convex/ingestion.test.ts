@@ -209,7 +209,7 @@ describe('ingestOfficialPage', () => {
     ]);
   });
 
-  test('a listing that does not answer fails the run and says why', async () => {
+  test('a listing that answers an error fails the run and says why', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(async () => new Response('', { status: 503 })),

@@ -108,11 +108,14 @@ describe('callNoticeDocumentRole', () => {
 });
 
 describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () => {
-  test("reads the link's text when the file name says nothing", () => {
+  test("Rio's notice is a regulation, whatever number its file name starts with", () => {
     const rio = 'https://cultura.prefeitura.rio/wp-content/uploads/sites/38/2026/05';
     expect(
       callNoticeDocumentRole(`${rio}/0.-REGULAMENTO-SMC-No-04-DE-28-DE-MAIO-DE-2026.pdf`),
     ).toBe('callNotice');
+  });
+
+  test("reads the link's text when the file name says nothing", () => {
     const mg = 'https://www.secult.mg.gov.br/download/category/15-fundo-estadual-de-cultura-fec';
     expect(callNoticeDocumentRole(`${mg}?download=5062`, 'Edital FEC 02/2026 - Rainha Conga')).toBe(
       'callNotice',
