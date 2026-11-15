@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { linksOfHtml, pageTitleOfHtml } from './html';
+import { headingOfHtml, linksOfHtml } from './html';
 
 describe('linksOfHtml', () => {
   const page = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
@@ -38,14 +38,10 @@ describe('linksOfHtml', () => {
   });
 });
 
-describe('pageTitleOfHtml', () => {
-  test('the first heading, else the title without the site name; a hyphen stays', () => {
-    expect(pageTitleOfHtml('<title>X – FGM</title><h1 class="t">Edital <b>09</b></h1>')).toBe(
-      'Edital 09',
-    );
-    expect(pageTitleOfHtml('<title>Edital 01/2026 - Dança &#8211; FGM Cultura</title>')).toBe(
-      'Edital 01/2026 - Dança',
-    );
-    expect(pageTitleOfHtml('<h1> </h1><p>sem título</p>')).toBeNull();
+describe('headingOfHtml', () => {
+  test("the first heading's text, empty when the page has none (Salvador)", () => {
+    const page = '<title>X – FGM</title><h1 class="t">Edital <b>09</b></h1><h1>FALE CONOSCO</h1>';
+    expect(headingOfHtml(page)).toBe('Edital 09');
+    expect(headingOfHtml('<title>Edital 09 – FGM</title><p>sem título</p>')).toBe('');
   });
 });

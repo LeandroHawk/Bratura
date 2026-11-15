@@ -3,7 +3,7 @@ import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/o
 import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { fetchPageHtml, isFetchableFromListing, type FetchedPage } from './client';
-import { linksOfHtml, pageTitleOfHtml, type PageLink } from './html';
+import { headingOfHtml, linksOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -41,7 +41,7 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < new Date().getUTCFullYear() - 1;
 
-/** A link text, file name or page title that names such a call. */
+/** A link text, file name or page heading that names such a call. */
 const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
 
 /**
@@ -70,12 +70,9 @@ function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
 
 /**
  * A listing link that names no call, only an action (Salvador, 2026-11-15: every call page is
- * linked as "Clique aqui!"). The call page's own title names the call instead.
+ * linked as "Clique aqui!"). The call page's own heading names the call instead.
  */
-const genericLinkLabel =
-  /^(clique aqui|acesse|acessar|baixar|download|saiba mais|leia mais|veja mais|ver mais|confira|aqui|inscreva-se|inscricoes)[\s!.:>»]*$/;
-
-const namesNoCall = (label: string) => genericLinkLabel.test(plainText(label));
+const namesNoCall = (label: string) => /^clique aqui[\s!.]*$/.test(plainText(label));
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
@@ -112,9 +109,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       const fetched = await fetchPageHtml(url);
       page = linksOfHtml(fetched.html, fetched.url);
       if (namesNoCall(label)) {
-        const pageTitle = pageTitleOfHtml(fetched.html);
-        if (!pageTitle || namesNoCall(pageTitle) || namesACallBeforeLastYear(pageTitle)) continue;
-        title = pageTitle;
+        title = headingOfHtml(fetched.html);
+        if (!title || namesACallBeforeLastYear(title)) continue;
       }
     } catch (error) {
       console.warn('Call page not read', url, String(error));

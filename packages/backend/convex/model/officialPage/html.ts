@@ -84,15 +84,6 @@ export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
   return [...labelByUrl].map(([url, label]) => ({ url, label }));
 }
 
-/**
- * A page's own name: its first `<h1>`, else its `<title>` before the site name ("… – FGM Cultura").
- * `null` when it has neither.
- */
-export function pageTitleOfHtml(html: string): string | null {
-  const page = withoutCode(html);
-  const heading = plainLabel(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(page)?.[1] ?? '');
-  if (heading) return heading;
-  // Only a dash or a bar parts off the site name: a hyphen is part of "Edital 01/2026 - Dança".
-  const title = plainLabel(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(page)?.[1] ?? '');
-  return title.replace(/\s+[–—|]\s+[^–—|]+$/, '') || null;
-}
+/** A page's first `<h1>` as plain text; empty when it has none. */
+export const headingOfHtml = (html: string) =>
+  plainLabel(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(withoutCode(html))?.[1] ?? '');
