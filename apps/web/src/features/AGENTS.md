@@ -8,14 +8,34 @@ this, where does its data come from".
 features/
   common/                      used by several features, or by app/
     components/                layout/ (SiteDocument, PageShell, SiteHeader, SiteFooter,
-                               LanguageSwitch), share-art/ (OG card, icons), InlineScript,
+                               LanguageSwitch), app/ (SignedInArea, AppNav: the frame of the
+                               signed-in pages), share-art/ (OG card, icons), InlineScript,
                                NewTabHint, PageIntro (logo + h1 + lead + actions)
     config/                    site.ts (URL, title, description, tagline, team),
-                               site-metadata.ts
+                               site-metadata.ts, routes.ts (every path, once),
+                               portfolio-section-ids.ts
+    content/                   names several features show: profile types, cultural areas,
+                               document kinds, states
+    data/                      demoStore.ts: the creator, portfolio and saved calls kept in the
+                               browser until Convex has them (see below)
+    hooks/                     useContractForm: a form's draft parsed by its contract
     styles/                    globals.css
-    utils/                     locale paths and params, load-google-font
+    utils/                     locale paths and params, load-google-font, form-text (masks,
+                               text → contract value), format (dates, amounts)
   landing/  not-found/  styleguide/
+  account/                     sign-up and sign-in
+  portfolio/                   the cultural portfolio: profile, experiences, projects, documents
+  call-notices/                the calls matched to the portfolio and every call, over the same
+                               cards, filters and details (`sections/common/`)
 ```
+
+⚠️ **Until the backend has creators, the signed-in area is a demo in the browser.** Every read
+and write of the creator, the portfolio and the saved calls goes through
+`common/data/demoStore.ts` (localStorage, parsed by the contract; no password is kept), the calls
+are fictional samples (`call-notices/data/sampleCallNotices.ts`) and their fit is computed by
+`call-notices/data/standInMatching.ts`. These three files are the swap points for Convex: the
+screens read contract-shaped data and do not change. The stand-in breaks "the backend computes"
+on purpose and is deleted when `matching` exists.
 
 ## The anatomy of a feature
 
@@ -63,7 +83,7 @@ and its result list over 4; this layout is the fix they measured.
    the UI (a dialog open, a filter's draft) lives in the section that uses it, or in a
    `common/hooks/` when several do. Hooks receive data already parsed: the boundary parses.
 5. **Kind folders (`components/`, `config/`, `styles/`, `utils/`, `hooks/`, `data/`) are born with
-   their first file**, at the level that needs them. `common/` has no `hooks/` or `data/` yet.
+   their first file**, at the level that needs them.
 6. **`features/common` never imports a feature.** The tagline is in `config/site.ts` because both
    the landing and the share card show it; the card cannot reach into `landing/`.
 

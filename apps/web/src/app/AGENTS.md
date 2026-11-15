@@ -10,6 +10,9 @@ app/
     layout.tsx               <SiteDocument>, site metadata, static params, viewport
     page.tsx                 → features/landing
     design/page.tsx          → features/styleguide (pt-BR only; /en/design is a 404)
+    cadastro/  entrar/       → features/account (sign-up, sign-in)
+    portfolio/               → features/portfolio (signed-in, noindex)
+    compatibilidade/  editais/   → features/call-notices (signed-in, noindex)
     opengraph-image.tsx      → share-art/share-card (one card per locale)
     not-found.tsx            → features/not-found, locale from next/root-params
     [...missing]/page.tsx    any unknown path under a locale: calls notFound()
@@ -17,6 +20,9 @@ app/
   icon.tsx  apple-icon.tsx   → share-art/brand-icon (one drawing, two sizes)
   manifest.ts  robots.ts  sitemap.ts
 ```
+
+A path is written once, in `features/common/config/routes.ts` (`ROUTES`); the folder names here
+match it. Paths are in Portuguese in both locales (`/en/editais`).
 
 ## A file here is a few lines
 
