@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { linksOfHtml } from './html';
+import { linksOfHtml, pageTitleOfHtml } from './html';
 
 describe('linksOfHtml', () => {
   const page = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
@@ -35,5 +35,17 @@ describe('linksOfHtml', () => {
     expect(linksOfHtml(html, page)).toEqual([
       { url: 'https://www.ba.gov.br/download?a=1&b=2', label: 'Seleção PÚBLICA Nº 03' },
     ]);
+  });
+});
+
+describe('pageTitleOfHtml', () => {
+  test('the first heading, else the title without the site name; a hyphen stays', () => {
+    expect(pageTitleOfHtml('<title>X – FGM</title><h1 class="t">Edital <b>09</b></h1>')).toBe(
+      'Edital 09',
+    );
+    expect(pageTitleOfHtml('<title>Edital 01/2026 - Dança &#8211; FGM Cultura</title>')).toBe(
+      'Edital 01/2026 - Dança',
+    );
+    expect(pageTitleOfHtml('<h1> </h1><p>sem título</p>')).toBeNull();
   });
 });

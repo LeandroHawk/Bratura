@@ -90,6 +90,25 @@ describe('callNoticeDocumentRole', () => {
     expect(roleOf('lista_de_selecionados.pdf')).toBeNull();
   });
 
+  test('a call for a profession ending in "lista" is still a call', () => {
+    expect(roleOf('edital-instrumentalistas-2026.pdf')).toBe('callNotice');
+    expect(roleOf('chamada-especialistas-em-patrimonio.pdf')).toBe('callNotice');
+  });
+
+  test('a notice named after the instrument it signs is still the notice', () => {
+    expect(roleOf('edital-04-2026-projetos-termo-de-execucao-cultural.pdf')).toBe('callNotice');
+    expect(roleOf('edital-06-2026-anexo-ii-formulario-de-inscricao.docx')).toBeNull();
+    expect(roleOf('termo-de-execucao-cultural.pdf')).toBeNull();
+  });
+
+  test('skips the forms an applicant fills in and what it cannot name', () => {
+    expect(roleOf('anexo-3-formulario-de-inscricao.docx')).toBeNull();
+    expect(roleOf('anexo-vi-declaracao-de-residencia.docx')).toBeNull();
+    expect(roleOf('anexo-1.pdf')).toBeNull();
+  });
+});
+
+describe('postsResult', () => {
   test('a preliminary or final list posts a result (Duque de Caxias), a "lista de documentos" does not', () => {
     expect(
       postsResult('https://x.rj.gov.br/files/a.pdf', 'LISTA PRELIMINAR DE SELEÇÃO Nº 06/2026'),
@@ -111,21 +130,14 @@ describe('callNoticeDocumentRole', () => {
     expect(postsResult(`${files}/a.pdf`, 'Resultado da interposição de recursos')).toBe(true);
   });
 
-  test('a call for a profession ending in "lista" is still a call', () => {
-    expect(roleOf('edital-instrumentalistas-2026.pdf')).toBe('callNotice');
-    expect(roleOf('chamada-especialistas-em-patrimonio.pdf')).toBe('callNotice');
-  });
-
-  test('a notice named after the instrument it signs is still the notice', () => {
-    expect(roleOf('edital-04-2026-projetos-termo-de-execucao-cultural.pdf')).toBe('callNotice');
-    expect(roleOf('edital-06-2026-anexo-ii-formulario-de-inscricao.docx')).toBeNull();
-    expect(roleOf('termo-de-execucao-cultural.pdf')).toBeNull();
-  });
-
-  test('skips the forms an applicant fills in and what it cannot name', () => {
-    expect(roleOf('anexo-3-formulario-de-inscricao.docx')).toBeNull();
-    expect(roleOf('anexo-vi-declaracao-de-residencia.docx')).toBeNull();
-    expect(roleOf('anexo-1.pdf')).toBeNull();
+  test("other applicant forms' words still post a result: they name results too (Paraná, Maranhão)", () => {
+    const pr = 'https://www.cultura.pr.gov.br/sites/default/arquivos_restritos/files/documento';
+    expect(postsResult(`${pr}/004-a_2026_merito.xlsx`, 'Planilha de classificados (.xls)')).toBe(
+      true,
+    );
+    expect(
+      postsResult('https://cultura.ma.gov.br/uploads/secma/docs/TERMO_DE_HOMOLOGAÇÃO.pdf'),
+    ).toBe(true);
   });
 });
 

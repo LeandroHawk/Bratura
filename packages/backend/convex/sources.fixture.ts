@@ -113,8 +113,8 @@ export const novaIguacuSemcultSource = {
 } satisfies Source;
 
 /**
- * Salvador's FGM: its "editais abertos" page lists only open calls, each linked as an image card or
- * "Clique aqui!", so the call page's own title names it (measured 2026-11-15).
+ * Salvador's FGM: its "editais abertos" page lists only open calls, each linked as "Clique aqui!",
+ * so the call page's own title names it (measured 2026-11-15).
  */
 export const salvadorFgmSource = {
   kind: 'officialPage',

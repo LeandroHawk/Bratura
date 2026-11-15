@@ -123,7 +123,8 @@ export function callNoticeDocumentRole(url: string, label?: string): CallNoticeD
 
 /**
  * A form an applicant fills to appeal a result, shipped with the open call (Salvador's "Anexo XII -
- * Modelo de interposição de recurso quanto ao resultado"): no result is posted yet.
+ * Modelo de interposição de recurso quanto ao resultado"): no result is posted yet. Narrower than
+ * the forms `documentRoleByName` skips: a "planilha" or a "termo de" can be the result itself.
  */
 const resultFormName = /modelo|formulario/;
 

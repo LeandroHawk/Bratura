@@ -26,7 +26,7 @@ const a = (href: string, text: string) => `<a href="${href}">${text}</a>`;
 const files = '/fundacaocultural/sites/site-funceb/files';
 const prFiles = '/sites/default/arquivos_restritos/files/documento/2026-11';
 
-describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
+describe('callsOfCallPages', () => {
   const pages: Record<string, string> = {
     'https://www.ba.gov.br/fundacaocultural/editais-2026': [
       a('/fundacaocultural/convocatoria-sala-do-coro', 'EDITAL 027/2026 - SALA DO CORO'),
@@ -165,13 +165,13 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     ]);
   });
 
-  test('a card or "Clique aqui!" links the call: the call page\'s own heading names it (Salvador)', async () => {
+  test('a "Clique aqui!" link names no call: the call page\'s own heading does (Salvador)', async () => {
     const site = 'https://fgm.salvador.ba.gov.br';
     const plan = a(`${site}/wp-content/uploads/2023/10/PLANO-MUNICIPAL-DE-CULTURA.pdf`, 'PLANO');
     const pages: Record<string, string> = {
       [salvadorFgmSource.listingUrl]: [
         plan,
-        a(`${site}/edital-atelie-itinerante/`, '<img src="card.jpg">'),
+        a(`${site}/edital-atelie-itinerante/`, 'Clique aqui!'),
         a(`${site}/edital-sem-titulo/`, 'Clique aqui!'),
       ].join(''),
       [`${site}/edital-atelie-itinerante/`]: [
@@ -329,7 +329,7 @@ describe('fileNameAsLabel', () => {
   });
 });
 
-describe('callsOfDocumentsOnListing (Minas Gerais, Maranhão)', () => {
+describe('callsOfDocumentsOnListing', () => {
   const mg = '/download/category/15-fundo-estadual-de-cultura-fec';
   const source = {
     ...maranhaoSecmaSource,

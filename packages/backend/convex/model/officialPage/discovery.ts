@@ -41,6 +41,9 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < new Date().getUTCFullYear() - 1;
 
+/** A link text, file name or page title that names such a call. */
+const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
+
 /**
  * `lpg-edital-012-2023.pdf` as `lpg edital 012/2023`, a label `callNumberOf` reads. A chain stays
  * one (`06-11-008-2026` → `06/11/008/2026`), which `callNumberOf` refuses: no "06/11" as 2011.
@@ -61,18 +64,16 @@ function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
   );
   return (
     notices.length > 0 &&
-    notices.every(({ url, label }) =>
-      [label, fileNameAsLabel(url)].some((name) => isNumberedBeforeLastYear(callNumberOf(name))),
-    )
+    notices.every(({ url, label }) => [label, fileNameAsLabel(url)].some(namesACallBeforeLastYear))
   );
 }
 
 /**
- * A listing link that names no call: an image card (empty) or a button. Salvador, 2026-11-15:
- * every link to a call page is a card or "Clique aqui!"; the call page's own title names it.
+ * A listing link that names no call, only an action (Salvador, 2026-11-15: every call page is
+ * linked as "Clique aqui!"). The call page's own title names the call instead.
  */
 const genericLinkLabel =
-  /^(clique aqui|acesse|acessar|baixar|download|saiba mais|leia mais|veja mais|ver mais|confira|aqui|inscreva-se|inscricoes)?[\s!.:>»]*$/;
+  /^(clique aqui|acesse|acessar|baixar|download|saiba mais|leia mais|veja mais|ver mais|confira|aqui|inscreva-se|inscricoes)[\s!.:>»]*$/;
 
 const namesNoCall = (label: string) => genericLinkLabel.test(plainText(label));
 
@@ -89,7 +90,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   );
   const callPages = listing.filter(
     ({ url, label }) =>
-      !isNumberedBeforeLastYear(callNumberOf(label)) &&
+      label &&
+      !namesACallBeforeLastYear(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
@@ -109,7 +111,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     try {
       const fetched = await fetchPageHtml(url);
       page = linksOfHtml(fetched.html, fetched.url);
-      if (namesNoCall(label)) title = pageTitleOfHtml(fetched.html) ?? '';
+      if (namesNoCall(label)) {
+        const pageTitle = pageTitleOfHtml(fetched.html);
+        if (!pageTitle || namesNoCall(pageTitle) || namesACallBeforeLastYear(pageTitle)) continue;
+        title = pageTitle;
+      }
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
@@ -118,8 +124,6 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       ({ url }) => !frameDocumentUrls.has(url),
     );
     if (
-      namesNoCall(title) ||
-      isNumberedBeforeLastYear(callNumberOf(title)) ||
       documents.length === 0 ||
       hasPublishedResult(documents) ||
       noticesAreNumberedBeforeLastYear(documents)

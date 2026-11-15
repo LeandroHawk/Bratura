@@ -55,15 +55,18 @@ const plainLabel = (inner: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
+/** A page without its scripts, styles and comments, whose text and links are not the page's. */
+const withoutCode = (html: string) =>
+  html.replace(/<(script|style)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi, '');
+
 /**
  * The http(s) links of a server-rendered page, in page order, each URL once (its first label that
  * is not empty wins). A regex over `<a href>` is enough: the sites read are plain HTML, and a link
  * a script would add is not read anyway.
  */
 export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
-  const withoutCode = html.replace(/<(script|style)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi, '');
   const labelByUrl = new Map<string, string>();
-  for (const [, double, single, bare, inner] of withoutCode.matchAll(
+  for (const [, double, single, bare, inner] of withoutCode(html).matchAll(
     /<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']+))[^>]*>([\s\S]*?)<\/a>/gi,
   )) {
     const href = double ?? single ?? bare ?? '';
@@ -86,10 +89,10 @@ export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
  * `null` when it has neither.
  */
 export function pageTitleOfHtml(html: string): string | null {
-  const withoutCode = html.replace(/<(script|style)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi, '');
-  const heading = /<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(withoutCode)?.[1];
-  if (heading && plainLabel(heading)) return plainLabel(heading);
-  const title = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(withoutCode)?.[1];
-  const name = title ? plainLabel(title).replace(/\s+[–—|-]\s+[^–—|-]+$/, '') : '';
-  return name || null;
+  const page = withoutCode(html);
+  const heading = plainLabel(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(page)?.[1] ?? '');
+  if (heading) return heading;
+  // Only a dash or a bar parts off the site name: a hyphen is part of "Edital 01/2026 - Dança".
+  const title = plainLabel(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(page)?.[1] ?? '');
+  return title.replace(/\s+[–—|]\s+[^–—|]+$/, '') || null;
 }
