@@ -119,7 +119,7 @@ describe('postsResult', () => {
     );
   });
 
-  test('an appeal form shipped with the call posts no result (Salvador)', () => {
+  test('an appeal template shipped with the call posts no result (Salvador)', () => {
     const files = 'https://fgm.salvador.ba.gov.br/wp-content/uploads/2026/10';
     expect(
       postsResult(`${files}/ANEXO-XII-MODELO-DE-INTERPOSICAO-DE-RECURSO-QUANTO-AO-RESULTADO.docx`),
