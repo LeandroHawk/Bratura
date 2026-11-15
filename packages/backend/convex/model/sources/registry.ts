@@ -188,6 +188,17 @@ export const petrolinaMapasSource = {
   baseUrl: 'https://mapacultural.petrolina.pe.gov.br',
 } satisfies Source;
 
+/** Arapiraca's Mapas, not on the GitHub list: 11 calls in 2026, none open on 2026-11-15. */
+export const arapiracaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-arapiraca',
+  name: 'Mapas Culturais — Arapiraca',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  baseUrl: 'https://mapacultural.arapiraca.al.gov.br',
+} satisfies Source;
+
 /**
  * Bahia's FUNCEB: one page per call, linked from its 2026 listing (measured 2026-11-15). The
  * training centre's calls are `/fundacaocultural/centro-de-formacao-em-artes-convocatoria-…`.
@@ -294,6 +305,23 @@ export const funarteMemoryOfTheArtsSource = {
 } satisfies Source;
 
 /**
+ * The Ministry of Culture's open calls: one page per call under the listing's path, the only list
+ * of the Rouanet program calls (measured 2026-11-15). A call moves to another folder once closed.
+ */
+export const cultureMinistryOpenCallsSource = {
+  kind: 'officialPage',
+  slug: 'minc-inscricoes-abertas',
+  name: 'Ministério da Cultura — editais com inscrições abertas',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://www.gov.br/cultura/pt-br/assuntos/editais/inscricoes-abertas',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/assuntos/editais/inscricoes-abertas/'] },
+  documentUrlParts: ['.pdf', '.docx'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
  * Nova Iguaçu's Semcult: its PNAB page links every call's documents, numbered in the link text,
  * many as `http://` (measured 2026-11-15).
  */
@@ -395,6 +423,7 @@ export const registeredSources: readonly Source[] = [
   anapolisMapasSource,
   paulistaMapasSource,
   petrolinaMapasSource,
+  arapiracaMapasSource,
   bahiaFuncebSource,
   maranhaoSecmaSource,
   minasGeraisSecultPnabSource,
@@ -402,6 +431,7 @@ export const registeredSources: readonly Source[] = [
   paranaSeecSource,
   funarteCallsSource,
   funarteMemoryOfTheArtsSource,
+  cultureMinistryOpenCallsSource,
   novaIguacuSemcultSource,
   salvadorFgmSource,
   jundiaiCultureSource,
