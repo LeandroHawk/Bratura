@@ -10,11 +10,11 @@ to delete them.
 
 ## Three folders, split by who controls the concept
 
-| folder                | who controls it                                          | Bratura examples                                                   |
-| --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
-| `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `hash/`, `time/instant/`, `time/zoned-instant/`, `calendar/` |
-| `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL, **exists**) |
-| `external/<subject>/` | neither: law, an agency, an outside standard             | `locale/` (BCP 47, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/` |
+| folder                | who controls it                                           | Bratura examples                                                                                 |
+| --------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `code/<subject>/`     | the code: data structures, parsing, formatting            | `string/`, `url/`, `id/`, `error/`, `hash/`, `time/instant/`, `time/zoned-instant/`, `calendar/` |
+| `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL, **exists**)                                                          |
+| `external/<subject>/` | neither: law, an agency, an outside standard              | `locale/` (BCP 47, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/`                      |
 
 `Math.round` does not mean money; composed with the BRL rules it becomes `money/` and gets a
 business name. We do not decide what a CNPJ is or which states exist: that puts them in
