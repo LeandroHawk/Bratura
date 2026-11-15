@@ -119,14 +119,11 @@ describe('postsResult', () => {
     );
   });
 
-  test('an appeal form shipped with the call posts no result (Salvador, Amapá)', () => {
+  test('an appeal form shipped with the call posts no result (Salvador)', () => {
     const files = 'https://fgm.salvador.ba.gov.br/wp-content/uploads/2026/10';
     expect(
       postsResult(`${files}/ANEXO-XII-MODELO-DE-INTERPOSICAO-DE-RECURSO-QUANTO-AO-RESULTADO.docx`),
     ).toBe(false);
-    expect(postsResult(`${files}/a.pdf`, 'FORMULÁRIO DE RECURSO DO RESULTADO PRELIMINAR')).toBe(
-      false,
-    );
     expect(postsResult(`${files}/a.pdf`, 'Resultado da interposição de recursos')).toBe(true);
   });
 

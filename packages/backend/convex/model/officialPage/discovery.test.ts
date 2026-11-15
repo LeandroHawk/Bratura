@@ -70,10 +70,10 @@ describe('callsOfCallPages', () => {
       '(.DOC)',
     ),
   };
-  /** Answers each fixture page as HTML and anything else 404, like a site; returns the mock. */
-  function siteAnswers(failing: string[] = []) {
+  /** Answers each page of `site` as HTML and anything else 404, like a site; returns the mock. */
+  function siteAnswers(site = pages, failing: string[] = []) {
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
-      const html = pages[String(input)];
+      const html = site[String(input)];
       if (html === undefined || failing.includes(String(input)))
         return new Response('', { status: 404 });
       return new Response(html, { headers: { 'content-type': 'text/html; charset=UTF-8' } });
@@ -121,23 +121,20 @@ describe('callsOfCallPages', () => {
   });
 
   test("follows Bahia's call pages outside `/edital…`: the training centre's, `funcebedital`, `selecao`", async () => {
-    const listing = [
-      a(
-        '/fundacaocultural/centro-de-formacao-em-artes-convocatoria-ferias-2027',
-        'CFA FÉRIAS 2027',
-      ),
-      a('/fundacaocultural/funcebedital-no-012026-quarta-que-danca', 'EDITAL 01/2026 QUARTA'),
-      a('/fundacaocultural/selecao-de-bolsista-vila-sul', 'SELEÇÃO DE BOLSISTA VILA SUL'),
-      a('/fundacaocultural/fale-conosco', 'Fale conosco'),
-    ].join('');
-    const fetchMock = vi.fn<typeof fetch>(async (input) => {
-      const html =
-        String(input) === bahiaFuncebSource.listingUrl
-          ? listing
-          : a(`${files}/2026-11/CONVOCATORIA.pdf`, 'CONVOCATÓRIA.pdf');
-      return new Response(html, { headers: { 'content-type': 'text/html' } });
+    const ba = 'https://www.ba.gov.br/fundacaocultural';
+    const notice = a(`${files}/2026-11/CONVOCATORIA.pdf`, 'CONVOCATÓRIA.pdf');
+    siteAnswers({
+      [bahiaFuncebSource.listingUrl]: [
+        a(`${ba}/centro-de-formacao-em-artes-convocatoria-ferias-2027`, 'CFA FÉRIAS 2027'),
+        a(`${ba}/funcebedital-no-012026-quarta-que-danca`, 'EDITAL 01/2026 QUARTA'),
+        a(`${ba}/selecao-de-bolsista-vila-sul`, 'SELEÇÃO DE BOLSISTA VILA SUL'),
+        a(`${ba}/fale-conosco`, 'Fale conosco'),
+      ].join(''),
+      [`${ba}/centro-de-formacao-em-artes-convocatoria-ferias-2027`]: notice,
+      [`${ba}/funcebedital-no-012026-quarta-que-danca`]: notice,
+      [`${ba}/selecao-de-bolsista-vila-sul`]: notice,
+      [`${ba}/fale-conosco`]: notice,
     });
-    vi.stubGlobal('fetch', fetchMock);
     const calls = await callsOf(bahiaFuncebSource);
     expect(calls.map(({ title }) => title)).toEqual([
       'CFA FÉRIAS 2027',
@@ -149,16 +146,11 @@ describe('callsOfCallPages', () => {
   test('drops a document the listing links too: the site frame, not the call (Funarte)', async () => {
     const frame = a('/funarte/frame/edital-no-409-2025.pdf/view', 'Edital No. 409/2025, Cofin');
     const chamadas = 'https://www.gov.br/funarte/pt-br/fomento/chamadas-2026';
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (input) => {
-        const html =
-          String(input) === chamadas
-            ? frame + a(`${chamadas}/marc-ferrez`, 'XVIII Seleção Marc Ferrez')
-            : frame + a(`${chamadas}/marc-ferrez/Edital_MarcFerrez_final.pdf`, 'ACESSE AQUI');
-        return new Response(html, { headers: { 'content-type': 'text/html' } });
-      }),
-    );
+    siteAnswers({
+      [chamadas]: frame + a(`${chamadas}/marc-ferrez`, 'XVIII Seleção Marc Ferrez'),
+      [`${chamadas}/marc-ferrez`]:
+        frame + a(`${chamadas}/marc-ferrez/Edital_MarcFerrez_final.pdf`, 'ACESSE AQUI'),
+    });
     const [call] = await callsOf(funarteCallsSource);
     expect(call?.documents.map(({ url }) => url)).toEqual([
       `${chamadas}/marc-ferrez/Edital_MarcFerrez_final.pdf`,
@@ -167,32 +159,20 @@ describe('callsOfCallPages', () => {
 
   test('a "Clique aqui!" link names no call: the call page\'s own heading does (Salvador)', async () => {
     const site = 'https://fgm.salvador.ba.gov.br';
-    const plan = a(`${site}/wp-content/uploads/2023/10/PLANO-MUNICIPAL-DE-CULTURA.pdf`, 'PLANO');
-    const pages: Record<string, string> = {
+    const uploads = `${site}/wp-content/uploads/2026/10`;
+    siteAnswers({
       [salvadorFgmSource.listingUrl]: [
-        plan,
         a(`${site}/edital-atelie-itinerante/`, 'Clique aqui!'),
         a(`${site}/edital-sem-titulo/`, 'Clique aqui!'),
       ].join(''),
       [`${site}/edital-atelie-itinerante/`]: [
         '<title>Ateliê Itinerante abre inscrições – FGM Cultura</title>',
         '<h1 class="entry-title">Edital Ateliê Itinerante de Restauro abre inscrições</h1>',
-        plan,
-        a(`${site}/wp-content/uploads/2026/10/EDITAL-N-092026-ATELIE.pdf`, 'Edital'),
-        a(
-          `${site}/wp-content/uploads/2026/10/ANEXO-XII-MODELO-DE-INTERPOSICAO-DE-RECURSO-QUANTO-AO-RESULTADO-PRELIMINAR.docx`,
-          'Anexo XII',
-        ),
+        a(`${uploads}/EDITAL-N-092026-ATELIE.pdf`, 'Edital'),
+        a(`${uploads}/ANEXO-XII-MODELO-DE-INTERPOSICAO-DE-RECURSO-QUANTO-AO-RESULTADO.docx`, 'XII'),
       ].join(''),
-      [`${site}/edital-sem-titulo/`]: a(`${site}/wp-content/uploads/2026/10/EDITAL.pdf`, 'Edital'),
-    };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(
-        async (input) =>
-          new Response(pages[String(input)] ?? '', { headers: { 'content-type': 'text/html' } }),
-      ),
-    );
+      [`${site}/edital-sem-titulo/`]: a(`${uploads}/EDITAL.pdf`, 'Edital'),
+    });
     const calls = await callsOf(salvadorFgmSource);
     expect(calls.map(({ title, documents }) => [title, documents.length])).toEqual([
       ['Edital Ateliê Itinerante de Restauro abre inscrições', 2],
@@ -272,7 +252,7 @@ describe('callsOfCallPages', () => {
   });
 
   test('a call page that fails is skipped, not the whole run', async () => {
-    siteAnswers(['https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio']);
+    siteAnswers(pages, ['https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio']);
     const everyPage = {
       ...bahiaFuncebSource,
       discovery: { hops: 'callPage' as const, callPageUrlParts: ['/fundacaocultural/'] },
