@@ -62,6 +62,10 @@ export const CONTRAST_PAIRS = [
   { fg: 'status-missing-foreground', bg: 'status-missing', min: 4.5 },
   // "Falta" is also written as plain colored text on a card.
   { fg: 'status-missing', bg: 'card', min: 4.5 },
+  // A refused field's border and the mark before its message, on the page as well as on a card.
+  { fg: 'status-missing', bg: 'background', min: 3 },
+  // A field's border: what tells an input from the surface around it.
+  { fg: 'muted-foreground', bg: 'card', min: 3 },
   { fg: 'ring', bg: 'background', min: 3 },
   { fg: 'primary', bg: 'background', min: 3 },
   // The language sign: painted text on oak, and the board's edge against the wall.

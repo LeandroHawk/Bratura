@@ -1,0 +1,28 @@
+@layer components {
+  .bt-checkbox-input {
+    transition:
+      background-color 0.15s ease-out,
+      border-color 0.15s ease-out;
+  }
+  .bt-checkbox-input:checked {
+    border-color: var(--bt-primary);
+    background-color: var(--bt-primary);
+  }
+
+  /* The tick is one stroke, hidden by its dash offset and drawn when the box is checked. */
+  .bt-checkbox-mark path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    transition: stroke-dashoffset 0.25s ease-out 0.05s;
+  }
+  .bt-checkbox-input:checked + .bt-checkbox-mark path {
+    stroke-dashoffset: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bt-checkbox-input,
+    .bt-checkbox-mark path {
+      transition: none;
+    }
+  }
+}

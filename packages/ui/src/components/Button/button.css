@@ -28,7 +28,20 @@
     opacity: 1;
     transform: scale(1);
   }
+  /* A toggle switched on (a call saved): the button pops once, like a pin pushed in. */
+  .bt-button[aria-pressed='true'] {
+    animation: bt-button-pressed 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  @keyframes bt-button-pressed {
+    40% {
+      scale: 1.08;
+      rotate: -2deg;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
+    .bt-button[aria-pressed='true'] {
+      animation: none;
+    }
     .bt-splash {
       transform: none;
       transition: opacity 0.15s;

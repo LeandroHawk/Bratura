@@ -1,0 +1,83 @@
+@layer components {
+  /* A sheet of paper put down on the page: it lands slightly turned and settles. */
+  .bt-dialog {
+    margin: auto;
+    width: min(100% - 1.5rem, 46rem);
+    max-height: min(100dvh - 1.5rem, 56rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0;
+    border: 2px solid var(--bt-foreground);
+    border-radius: 1.5rem;
+    background: var(--bt-background);
+    color: var(--bt-foreground);
+    box-shadow: 6px 8px 0 var(--bt-foreground);
+    opacity: 0;
+    translate: 0 28px;
+    rotate: -1.2deg;
+    transition:
+      opacity 0.2s ease-out,
+      translate 0.3s cubic-bezier(0.3, 1.4, 0.5, 1),
+      rotate 0.3s cubic-bezier(0.3, 1.4, 0.5, 1),
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
+  }
+  .bt-dialog[open] {
+    opacity: 1;
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  @starting-style {
+    .bt-dialog[open] {
+      opacity: 0;
+      translate: 0 28px;
+      rotate: -1.2deg;
+    }
+  }
+
+  /* The room's light goes down behind the sheet. */
+  .bt-dialog::backdrop {
+    background: color-mix(in srgb, var(--bt-curtain-shadow) 62%, transparent);
+    opacity: 0;
+    transition:
+      opacity 0.3s ease-out,
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
+  }
+  .bt-dialog[open]::backdrop {
+    opacity: 1;
+  }
+  @starting-style {
+    .bt-dialog[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  /* The page behind a modal does not scroll. */
+  :root:has(.bt-dialog[open]) {
+    overflow: hidden;
+  }
+
+  .bt-dialog-close {
+    transition: rotate 0.2s ease-out;
+  }
+  .bt-dialog-close:hover {
+    rotate: 90deg;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bt-dialog,
+    .bt-dialog::backdrop,
+    .bt-dialog-close {
+      transition: none;
+    }
+    .bt-dialog,
+    .bt-dialog[open] {
+      translate: 0 0;
+      rotate: 0deg;
+    }
+    .bt-dialog-close:hover {
+      rotate: 0deg;
+    }
+  }
+}
