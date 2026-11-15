@@ -4,6 +4,7 @@ import {
   openEndedRegistrationAfterMs,
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import type { CallNoticeDocumentRole } from '@bratura/shared/entities/call-notice-document/fragments/identity/fields';
+import { plainText } from '../../lib/text';
 
 // Which calls and which of their files are worth Firecrawl credits, decided before any read, from
 // the listing alone. Measured on 254 real files (2026-11-14): `docs/integrations/firecrawl.md`.
@@ -19,8 +20,6 @@ export const readableRegistrationCloses = (now: number) => ({
 
 /** Mapas titles of drafts and tests, compared without accents or case. */
 const draftTitlePattern = /\b(teste|em construcao)\b/;
-
-const plainText = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 type CallNoticeToScreen = Pick<CallNotice, 'title' | 'documentUrls' | 'registrationCloses'>;
 
@@ -38,47 +37,101 @@ export function reasonToSkipReadingDocuments(
   return null;
 }
 
+/** A result posted about a call: it names who was picked, and says registration is over. */
+const resultName = /resultado|homologa|classificad|selecionad|suplente/;
+
 /**
- * File-name rules, first match wins. `null` is never read: results and lists of applicants carry
- * personal data (`docs/security.md` §4), and forms are what an applicant fills in, not the rules.
- * `lista` only as a word: inside one it is a profession (instrumentalista), still a call.
+ * Never read, whatever else the name says: results, rankings and lists of applicants carry personal
+ * data (`docs/security.md` §4). `lista` only as a word: inside one it is a profession
+ * (instrumentalista), still a call.
  */
-const documentRoleByFileName: [CallNoticeDocumentRole | null, RegExp][] = [
-  [
-    null,
-    /resultado|ranking|(^|[-_.])lista|inscritos|convocacao|homologacao|curriculo|lattes|candidatos|habilitacao/,
-  ],
+const personalDataName = new RegExp(
+  `${resultName.source}|ranking|(^|[-_.])lista|inscritos|convocacao|curriculo|lattes|candidatos|habilitacao|aprovad`,
+);
+
+/** The words a call notice's own name starts with. */
+const noticeWords = 'edital|chamada|chamamento|convocatoria';
+
+/**
+ * Name rules, first match wins; `null` is never read: forms are what an applicant fills in, not the
+ * rules, and procurement or notices about a call are not the call.
+ */
+const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ['callNotice', /consolidacao/],
-  ['amendment', /errata|aditivo|adendo|prorrogacao|reabertura|retifica/],
+  // A notice republished whole with its changes (Minas Gerais: "Edital FEC 02/2026 - Retificado").
+  ['callNotice', new RegExp(`^(${noticeWords})(?!.*anexo).*(retificad|consolidad)`)],
+  [
+    'amendment',
+    /errata|aditivo|adendo|prorrogacao|reabertura|retifica|cronograma-(atualizado|alterado|retificado)/,
+  ],
   // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
-  ['callNotice', /^(\d+-?|i+-)?(edital|chamada|chamamento|convocatoria)(?!.*anexo)/],
+  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo)`)],
   [
     null,
-    /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao/,
+    /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao/,
   ],
   ['criteria', /criterio|pontuacao|avaliacao/],
   ['categories', /categoria|vaga/],
-  ['callNotice', /^(\d+-?|i+-)?(edital|chamada|chamamento|convocatoria)/],
+  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)`)],
 ];
 
-/** What a document is to its call, from its file name; `null` when it is not worth reading. */
-export function callNoticeDocumentRoleFromUrl(url: string): CallNoticeDocumentRole | null {
-  let fileName: string;
+/**
+ * A link's text only, last: a notice word later in it ("Centro de Formação em Artes - Convocatória
+ * ..."). File names keep their measured rules: there it also matches extracts and FAQs.
+ */
+const labelRoles: [CallNoticeDocumentRole | null, RegExp][] = [
+  ...documentRoleByName,
+  ['callNotice', new RegExp(`^(?!.*anexo)(.*-)?(${noticeWords}|processo-seletivo)-`)],
+];
+
+/** A file name or a link's text in the rules' terms: no accents, lower case, words joined by -. */
+function nameOf(text: string) {
+  return plainText(text)
+    .replace(/[^a-z0-9.]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function fileNameOf(url: string) {
   try {
-    fileName = plainText(decodeURIComponent(new URL(url).pathname.split('/').pop() ?? ''));
+    return decodeURIComponent(new URL(url).pathname.split('/').pop() ?? '');
   } catch {
-    return null;
+    return '';
   }
-  return documentRoleByFileName.find(([, pattern]) => pattern.test(fileName))?.[0] ?? null;
 }
 
 /**
- * The documents of a call worth reading, with their role. None when no file name identifies the
- * call notice itself: annexes alone are not read, and the call waits for the admin review.
+ * What a document is to its call, from its link's text when the source gives one, else its file
+ * name; `null` when it is not worth reading. Personal data in either one rules it out.
  */
-export function documentsWorthReading(documentUrls: string[]) {
+export function callNoticeDocumentRole(url: string, label?: string): CallNoticeDocumentRole | null {
+  const named = [
+    { name: label ? nameOf(label) : '', rules: labelRoles },
+    { name: nameOf(fileNameOf(url)), rules: documentRoleByName },
+  ].filter(({ name }) => name);
+  if (named.length === 0 || named.some(({ name }) => personalDataName.test(name))) return null;
+  for (const { name, rules } of named) {
+    const rule = rules.find(([, pattern]) => pattern.test(name));
+    if (rule) return rule[0];
+  }
+  return null;
+}
+
+/** Whether a document's link text or file name says a result was posted (`resultName`). */
+export function postsResult(url: string, label?: string) {
+  return [label ?? '', fileNameOf(url)].some((name) => resultName.test(nameOf(name)));
+}
+
+/**
+ * The documents of a call worth reading, with their role. None when nothing identifies the call
+ * notice itself: annexes alone are not read, and the call waits for the admin review.
+ */
+export function documentsWorthReading(
+  documentUrls: string[],
+  documentLabels: { url: string; label: string }[] = [],
+) {
+  const labelOf = new Map(documentLabels.map(({ url, label }) => [url, label]));
   const withRoles = documentUrls.flatMap((url) => {
-    const role = callNoticeDocumentRoleFromUrl(url);
+    const role = callNoticeDocumentRole(url, labelOf.get(url));
     return role ? [{ url, role }] : [];
   });
   return withRoles.some(({ role }) => role === 'callNotice') ? withRoles : [];

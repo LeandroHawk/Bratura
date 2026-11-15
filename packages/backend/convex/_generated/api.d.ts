@@ -19,6 +19,7 @@ import type * as lib_builders from "../lib/builders.js";
 import type * as lib_env from "../lib/env.js";
 import type * as lib_httpError from "../lib/httpError.js";
 import type * as lib_sha256 from "../lib/sha256.js";
+import type * as lib_text from "../lib/text.js";
 import type * as model_callNoticeDocuments_selection from "../model/callNoticeDocuments/selection.js";
 import type * as model_callNoticeExtraction_prompt from "../model/callNoticeExtraction/prompt.js";
 import type * as model_callNoticeExtraction_verify from "../model/callNoticeExtraction/verify.js";
@@ -35,6 +36,11 @@ import type * as model_mapasCulturais_listing from "../model/mapasCulturais/list
 import type * as model_mapasCulturais_payload from "../model/mapasCulturais/payload.js";
 import type * as model_nvoip_client from "../model/nvoip/client.js";
 import type * as model_nvoip_payload from "../model/nvoip/payload.js";
+import type * as model_officialPage_client from "../model/officialPage/client.js";
+import type * as model_officialPage_discovery from "../model/officialPage/discovery.js";
+import type * as model_officialPage_html from "../model/officialPage/html.js";
+import type * as model_officialPage_listing from "../model/officialPage/listing.js";
+import type * as model_officialPage_payload from "../model/officialPage/payload.js";
 import type * as sources from "../sources.js";
 import type * as whatsapp from "../whatsapp.js";
 
@@ -56,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   "lib/env": typeof lib_env;
   "lib/httpError": typeof lib_httpError;
   "lib/sha256": typeof lib_sha256;
+  "lib/text": typeof lib_text;
   "model/callNoticeDocuments/selection": typeof model_callNoticeDocuments_selection;
   "model/callNoticeExtraction/prompt": typeof model_callNoticeExtraction_prompt;
   "model/callNoticeExtraction/verify": typeof model_callNoticeExtraction_verify;
@@ -72,6 +79,11 @@ declare const fullApi: ApiFromModules<{
   "model/mapasCulturais/payload": typeof model_mapasCulturais_payload;
   "model/nvoip/client": typeof model_nvoip_client;
   "model/nvoip/payload": typeof model_nvoip_payload;
+  "model/officialPage/client": typeof model_officialPage_client;
+  "model/officialPage/discovery": typeof model_officialPage_discovery;
+  "model/officialPage/html": typeof model_officialPage_html;
+  "model/officialPage/listing": typeof model_officialPage_listing;
+  "model/officialPage/payload": typeof model_officialPage_payload;
   sources: typeof sources;
   whatsapp: typeof whatsapp;
 }>;

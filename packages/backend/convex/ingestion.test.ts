@@ -5,7 +5,7 @@ import { internal } from './_generated/api';
 import { ingestionRunLeaseMs } from './ingestion';
 import { mapasOpportunity } from './model/mapasCulturais/mapasOpportunity.fixture';
 import schema from './schema';
-import { federalMapasSource } from './sources.fixture';
+import { federalMapasSource, maranhaoSecmaSource } from './sources.fixture';
 import { modules } from './test.setup';
 
 const newsSite: Source = {
@@ -170,5 +170,53 @@ describe('the run lease', () => {
     await expect(
       t.mutation(internal.ingestion.finishIngestionRun, { runId: runId!, ...counts }),
     ).rejects.toThrow(/conflict/);
+  });
+});
+
+describe('ingestOfficialPage', () => {
+  const docs = 'https://cultura.ma.gov.br/uploads/secma/docs';
+
+  test('records each call the listing names, with its documents and their link text', async () => {
+    vi.useFakeTimers({ now: Date.UTC(2026, 10, 15) });
+    const html = [
+      `<a href="${docs}/EDITAL_CHAMAMENTO_04_2026.pdf">EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA</a>`,
+      `<a href="${docs}/AVISO_RESULTADO_03_2026.pdf">AVISO DE RESULTADO SELEÇÃO PÚBLICA Nº 03/2026</a>`,
+      `<a href="${docs}/EDITAL_SELECAO_03_2026.pdf">EDITAL DE SELEÇÃO PÚBLICA Nº 03/2026</a>`,
+    ].join('');
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(html, { headers: { 'content-type': 'text/html; charset=UTF-8' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const { t, sourceId } = await withSource(maranhaoSecmaSource);
+
+    expect(await t.action(internal.ingestion.ingestOfficialPage, { sourceId })).toBe('succeeded');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const notices = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(notices).toMatchObject([
+      {
+        externalId: 'chamamento 4/2026',
+        title: 'EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA',
+        officialUrl: maranhaoSecmaSource.listingUrl,
+        documentUrls: [`${docs}/EDITAL_CHAMAMENTO_04_2026.pdf`],
+        documentLabels: [
+          {
+            url: `${docs}/EDITAL_CHAMAMENTO_04_2026.pdf`,
+            label: 'EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA',
+          },
+        ],
+        registrationCloses: null,
+      },
+    ]);
+  });
+
+  test('a listing that answers an error fails the run and says why', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('', { status: 503 })),
+    );
+    const { t, sourceId } = await withSource(maranhaoSecmaSource);
+    expect(await t.action(internal.ingestion.ingestOfficialPage, { sourceId })).toBe('failed');
+    const [run] = await runsOf(t);
+    expect(run).toMatchObject({ status: 'failed', failureReason: expect.stringContaining('503') });
   });
 });

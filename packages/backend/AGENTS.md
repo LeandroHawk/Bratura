@@ -9,7 +9,8 @@ convex/
   schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
   crons.ts        the daily ingestion (09:00 UTC); deadline alerts later        } entry files:
   http.ts         routes only (Nvoip inbound, Firecrawl webhooks: not yet)      } fixed names
-  lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts: no functions
+  lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts,
+                  sha256.ts, text.ts (plain text, cut to a ceiling): no functions
 
   sources.ts      the sources the team registers and ingestion reads
   callNotices.ts  the call notice's only writer
@@ -22,8 +23,9 @@ convex/
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
+    officialPage/    client.ts (plain fetch), html.ts (links), discovery.ts, payload.ts, listing.ts
     firecrawl/       client.ts, payload.ts
-    callNoticeDocuments/  selection.ts: which calls and files are worth credits (rules, no I/O)
+    callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
     nvoip/           client.ts, payload.ts
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts

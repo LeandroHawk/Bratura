@@ -1,11 +1,10 @@
 import { convexTest } from 'convex-test';
 import { describe, expect, test } from 'vitest';
 import type { Source } from '@bratura/shared/entities/source/entity';
-import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { internal } from './_generated/api';
 import schema from './schema';
 import { modules } from './test.setup';
-import { federalMapasSource } from './sources.fixture';
+import { bahiaFuncebSource, federalMapasSource } from './sources.fixture';
 
 const addSource = internal.sources.addSource;
 
@@ -21,21 +20,9 @@ describe('addSource', () => {
 
   test('stores each kind with its own fields', async () => {
     const t = convexTest(schema, modules);
-    const bahiaFuncebPage: Source = {
-      kind: 'officialPage',
-      slug: 'ba-funceb',
-      name: 'Fundação Cultural do Estado da Bahia — editais 2026',
-      isActive: true,
-      robotsCheckedOn: '2026-11-15',
-      termsCheckedOn: '2026-11-15',
-      listingUrl: 'https://www.ba.gov.br/fundacaocultural/editais-2026',
-      discovery: { hops: 'callPage', callPageUrlParts: ['/fundacaocultural/'] },
-      documentUrlParts: ['/sites/site-funceb/files/'],
-      timeZone: ianaTimeZone.parse('America/Bahia'),
-    };
-    await t.mutation(addSource, { source: bahiaFuncebPage });
+    await t.mutation(addSource, { source: bahiaFuncebSource });
     const [stored] = await t.run((ctx) => ctx.db.query('sources').collect());
-    expect(stored).toMatchObject(bahiaFuncebPage);
+    expect(stored).toMatchObject(bahiaFuncebSource);
   });
 
   test('rejects a slug the Convex validator alone would let through', async () => {

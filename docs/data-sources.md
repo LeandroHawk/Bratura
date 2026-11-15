@@ -96,10 +96,19 @@ GET https://{host}/api/opportunity/find
   opportunities created by individuals. Classification drops them from creator-facing lists.
 - SP capital (`spcultura.prefeitura.sp.gov.br`) did not answer in 90 s: keep as inactive, retry.
 
-## Official pages (Firecrawl)
+## Official pages (plain fetch; Firecrawl reads only the documents)
+
+Read by `ingestion:ingestOfficialPage` (`model/officialPage/`): the listing and call pages are
+fetched as HTML on the listing's own host, so finding calls costs no credits. Registering one means
+choosing its `discovery` and `documentUrlParts` from the site's real links (measured 2026-11-15 on
+the rows marked so below).
 
 | Source | URL | robots |
 | --- | --- | --- |
+| Bahia FUNCEB (measured 2026-11-15) | `https://www.ba.gov.br/fundacaocultural/editais-2026`: one page per call | allows (only `serverinfo.json` disallowed) |
+| Rio de Janeiro city SMC (measured 2026-11-15) | `https://cultura.prefeitura.rio/`: one page per call, the notice named "REGULAMENTO" | allows except wp-admin |
+| Minas Gerais Secult (measured 2026-11-15) | `https://www.secult.mg.gov.br/editais/editais-pnab/editais-pnab` and `/editais/fundo-estadual-de-cultura-fec/editais-fec`: the listing links the documents (`?download=`) | 404: nothing declared |
+| Maranhão Secma (measured 2026-11-15) | `https://cultura.ma.gov.br/programas-ou-campanhas/editais-secma`: the listing links the PDFs | allows (Semrush, Petal disallowed) |
 | São Paulo city culture calls | `https://prefeitura.sp.gov.br/web/cultura/editais/` | allows all |
 | Amigos da Arte (SP state calls) | `https://amigosdaarte.org.br/editais_/` (with the underscore; RSS at `/editais_/feed/`); the 4 calls of 2026 are closed | allows except wp-admin |
 | Santos (SECULT: PNAB 2026, FACULT) | official pages with the PDFs; all 2026 calls closed (2026-11-14) | 404: nothing declared |

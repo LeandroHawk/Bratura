@@ -2,20 +2,16 @@ import {
   CallNoticeDocumentUrlSchema,
   callNoticeDocumentUrlsMax,
 } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
-import { textLengths } from '@bratura/shared/primitives/code/string/fields';
 import type { Id } from '../../_generated/dataModel';
 import type { CallNoticeListingToRecord } from '../../callNotices';
+import { cutToTextLength } from '../../lib/text';
 import { zonedInstantFromMapasDate } from './date';
 import type { MapasOpportunity } from './payload';
 
-/**
- * A summary past the contract's ceiling is cut there and marked "…", instead of losing the call
- * notice: the full text stays on the official page, whose link is stored.
- */
+/** No summary rather than an empty one; past the contract's ceiling it is cut, not lost. */
 function summaryFromShortDescription(text: string | null | undefined) {
   const summary = text?.trim();
-  if (!summary) return null;
-  return summary.length > textLengths.max ? `${summary.slice(0, textLengths.max - 1)}…` : summary;
+  return summary ? cutToTextLength(summary, 'max') : null;
 }
 
 /** A Mapas opportunity in the call notice's terms: what `recordCallNotice` takes. */
