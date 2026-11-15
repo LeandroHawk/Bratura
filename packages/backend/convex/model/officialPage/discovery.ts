@@ -32,21 +32,16 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
  * A call numbered in a past year ("Edital 03/2024") is closed by now: listings keep years of them
  * (Minas Gerais PNAB, Maranhão), and each would cost a read.
  */
-const isNumberedInPastYear = (callNumber: CallNumber | null, now: number) =>
-  callNumber !== null && callNumber.year < new Date(now).getUTCFullYear();
+const isNumberedInPastYear = (callNumber: CallNumber | null) =>
+  callNumber !== null && callNumber.year < new Date().getUTCFullYear();
 
 /** Two hops: the listing's call pages, each read for its own documents. */
-export async function callsOfCallPages(
-  source: CallPageSource,
-  fetchHtml: (url: string) => Promise<string> = fetchPageHtml,
-  pause: () => Promise<void> = () => new Promise((done) => setTimeout(done, callPageSpacingMs)),
-  now = Date.now(),
-): Promise<OfficialPageCall[]> {
-  const listing = linksOfHtml(await fetchHtml(source.listingUrl), source.listingUrl);
+export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
+  const listing = linksOfHtml(await fetchPageHtml(source.listingUrl), source.listingUrl);
   const callPages = listing.filter(
     ({ url, label }) =>
       label &&
-      !isNumberedInPastYear(callNumberOf(label), now) &&
+      !isNumberedInPastYear(callNumberOf(label)) &&
       url !== source.listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
       isFetchableFromListing(url, source.listingUrl) &&
@@ -54,10 +49,10 @@ export async function callsOfCallPages(
   );
   const calls: OfficialPageCall[] = [];
   for (const [index, { url, label }] of callPages.entries()) {
-    if (index > 0) await pause();
+    if (index > 0) await new Promise((done) => setTimeout(done, callPageSpacingMs));
     let page: PageLink[];
     try {
-      page = linksOfHtml(await fetchHtml(url), url);
+      page = linksOfHtml(await fetchPageHtml(url), url);
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
@@ -127,7 +122,6 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 export function callsOfDocumentsOnListing(
   source: OfficialPageSource,
   html: string,
-  now = Date.now(),
 ): OfficialPageCall[] {
   const documents = documentLinksOf(linksOfHtml(html, source.listingUrl), source.documentUrlParts);
   const byCall = new Map<string, { callNumber: CallNumber; documents: PageLink[] }>();
@@ -142,7 +136,7 @@ export function callsOfDocumentsOnListing(
     });
   }
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
-    if (callNumber.kind === 'pregao' || isNumberedInPastYear(callNumber, now)) return [];
+    if (callNumber.kind === 'pregao' || isNumberedInPastYear(callNumber)) return [];
     if (hasPublishedResult(callDocuments)) return [];
     const kept = withNewestNoticeOnly(callDocuments);
     const notice = kept.find(

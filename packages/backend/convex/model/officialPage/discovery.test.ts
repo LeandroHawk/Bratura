@@ -1,8 +1,16 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { bahiaFuncebSource, maranhaoSecmaSource } from '../../sources.fixture';
 import { callNumberOf, callsOfCallPages, callsOfDocumentsOnListing } from './discovery';
 
-const now = Date.UTC(2026, 10, 15);
+beforeEach(() => {
+  vi.useFakeTimers({ now: Date.UTC(2026, 10, 15) });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
 const a = (href: string, text: string) => `<a href="${href}">${text}</a>`;
 const files = '/fundacaocultural/sites/site-funceb/files';
 
@@ -25,18 +33,28 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       a(`${files}/2026-10/PORTARIA%20269.pdf`, 'PORTARIA 269_2026 - RESULTADO FINAL.pdf'),
     ].join(''),
   };
-  const fetched: string[] = [];
-  const fetchHtml = async (url: string) => {
-    fetched.push(url);
-    const html = pages[url];
-    if (html === undefined) throw new Error(`not in the fixture: ${url}`);
-    return html;
-  };
-  const source = bahiaFuncebSource;
-  const run = () => callsOfCallPages(source, fetchHtml, async () => {}, now);
+  /** Answers each fixture page as HTML and anything else 404, like a site; returns the mock. */
+  function siteAnswers(failing: string[] = []) {
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      const html = pages[String(input)];
+      if (html === undefined || failing.includes(String(input)))
+        return new Response('', { status: 404 });
+      return new Response(html, { headers: { 'content-type': 'text/html; charset=UTF-8' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  /** Runs the reader with the 1 s spacing between call pages played out by the fake clock. */
+  async function callsOf(source: Parameters<typeof callsOfCallPages>[0]) {
+    const calls = callsOfCallPages(source);
+    await vi.runAllTimersAsync();
+    return await calls;
+  }
 
   test('keeps a call page with its documents, the page as its id and official link', async () => {
-    expect(await run()).toEqual([
+    siteAnswers();
+    expect(await callsOf(bahiaFuncebSource)).toEqual([
       {
         externalId: 'https://www.ba.gov.br/fundacaocultural/convocatoria-sala-do-coro',
         title: 'EDITAL 027/2026 - SALA DO CORO',
@@ -56,9 +74,9 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
   });
 
   test('skips a call that posts results, one numbered in a past year, and other hosts unfetched', async () => {
-    fetched.length = 0;
-    await run();
-    expect(fetched).toEqual([
+    const fetchMock = siteAnswers();
+    await callsOf(bahiaFuncebSource);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
       'https://www.ba.gov.br/fundacaocultural/editais-2026',
       'https://www.ba.gov.br/fundacaocultural/convocatoria-sala-do-coro',
       'https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio',
@@ -66,15 +84,12 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
   });
 
   test('a call page that fails is skipped, not the whole run', async () => {
-    const failing = async (url: string) => {
-      if (url.endsWith('apoio')) throw new Error('HTTP 500');
-      return await fetchHtml(url);
-    };
+    siteAnswers(['https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio']);
     const everyPage = {
-      ...source,
+      ...bahiaFuncebSource,
       discovery: { hops: 'callPage' as const, callPageUrlParts: ['/fundacaocultural/'] },
     };
-    const calls = await callsOfCallPages(everyPage, failing, async () => {}, now);
+    const calls = await callsOf(everyPage);
     expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
   });
 });
@@ -128,7 +143,7 @@ describe('callsOfDocumentsOnListing (Minas Gerais, Maranhão)', () => {
   const url = (id: number) => `https://www.secult.mg.gov.br${mg}?download=${id}`;
 
   test('one call per number: its newest notice and its annexes, the listing as its link', () => {
-    expect(callsOfDocumentsOnListing(source, html, now)).toEqual([
+    expect(callsOfDocumentsOnListing(source, html)).toEqual([
       {
         externalId: 'fec 6/2026',
         title: 'Edital FEC 06/2026 - Coreto - Retificado em 10/11/26',
