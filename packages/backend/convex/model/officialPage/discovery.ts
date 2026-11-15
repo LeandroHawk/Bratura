@@ -178,16 +178,24 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 }
 
 /**
- * A call's documents worth recording, whatever shape the page has: no result posted, a notice
- * among them and not every one from before last year; its newest notice only. `null` otherwise:
- * a call without a notice is never read.
+ * A call's documents worth recording, whatever shape the page has: some, no result posted, not
+ * every notice from before last year; its newest notice only, `null` when none is identified.
  */
 function callDocumentsWorthRecording(documents: PageLink[]) {
-  if (hasPublishedResult(documents) || noticesAreNumberedBeforeLastYear(documents)) return null;
+  if (documents.length === 0 || hasPublishedResult(documents)) return null;
+  if (noticesAreNumberedBeforeLastYear(documents)) return null;
   const kept = withNewestNoticeOnly(documents);
-  const notice = kept.find(isNotice);
-  return notice ? { kept, notice } : null;
+  return { kept, notice: kept.find(isNotice) ?? null };
 }
+
+/**
+ * On a listing a notice is what makes documents a call (Ponta Grossa, 2026-11-15: two decrees
+ * under "Legislação"); a call page is one by its URL, recorded without one for the admin review.
+ */
+const listedCallDocuments = (documents: PageLink[]) => {
+  const recorded = callDocumentsWorthRecording(documents);
+  return recorded?.notice ? { kept: recorded.kept, notice: recorded.notice } : null;
+};
 
 /**
  * One hop: the listing's documents, grouped by the call their link names, an unnumbered one going
@@ -211,7 +219,7 @@ export function callsOfDocumentsOnListing(
   }
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
     if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
-    const recorded = callDocumentsWorthRecording(callDocuments);
+    const recorded = listedCallDocuments(callDocuments);
     if (!recorded) return [];
     return [
       {
@@ -234,7 +242,7 @@ export function callsOfDocumentsUnderHeadings(
 ): OfficialPageCall[] {
   return sectionsOfHtml(html, url).flatMap(({ heading, links }) => {
     if (!heading || namesACallBeforeLastYear(heading)) return [];
-    const recorded = callDocumentsWorthRecording(documentLinksOf(links, source.documentUrlParts));
+    const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
     if (!recorded) return [];
     return [
       {

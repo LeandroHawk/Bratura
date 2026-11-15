@@ -180,7 +180,7 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
-  test('a notice in two formats is kept once; a page with no notice is no call (Salvador, Paraná)', async () => {
+  test('a notice in two formats is kept once; a call page with no notice still is a call (Salvador, Paraná)', async () => {
     const ba = 'https://www.ba.gov.br/fundacaocultural';
     siteAnswers({
       [bahiaFuncebSource.listingUrl]: [
@@ -197,6 +197,7 @@ describe('callsOfCallPages', () => {
     const calls = await callsOf(bahiaFuncebSource);
     expect(calls.map(({ documents }) => documents.map(({ url }) => url.split('/').pop()))).toEqual([
       ['EDITAL-N-092026-ATELIE.pdf', 'ANEXO-I-CRONOGRAMA.docx'],
+      ['ANEXO-I-PLANO.pdf'],
     ]);
   });
 
