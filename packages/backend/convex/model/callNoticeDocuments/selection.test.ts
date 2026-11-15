@@ -96,6 +96,12 @@ describe('callNoticeDocumentRoleFromUrl', () => {
     expect(roleOf('chamada-especialistas-em-patrimonio.pdf')).toBe('callNotice');
   });
 
+  test('a notice named after the instrument it signs is still the notice', () => {
+    expect(roleOf('edital-04-2026-projetos-termo-de-execucao-cultural.pdf')).toBe('callNotice');
+    expect(roleOf('edital-06-2026-anexo-ii-formulario-de-inscricao.docx')).toBeNull();
+    expect(roleOf('termo-de-execucao-cultural.pdf')).toBeNull();
+  });
+
   test('skips the forms an applicant fills in and what it cannot name', () => {
     expect(roleOf('anexo-3-formulario-de-inscricao.docx')).toBeNull();
     expect(roleOf('anexo-vi-declaracao-de-residencia.docx')).toBeNull();

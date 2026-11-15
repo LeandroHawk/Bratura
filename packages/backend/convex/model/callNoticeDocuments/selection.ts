@@ -50,6 +50,8 @@ const documentRoleByFileName: [CallNoticeDocumentRole | null, RegExp][] = [
   ],
   ['callNotice', /consolidacao/],
   ['amendment', /errata|aditivo|adendo|prorrogacao|reabertura|retifica/],
+  // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
+  ['callNotice', /^(\d+-?|i+-)?(edital|chamada|chamamento|convocatoria)(?!.*anexo)/],
   [
     null,
     /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao/,
