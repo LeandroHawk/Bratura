@@ -2,6 +2,8 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
   lead: 'Quem vive de artesanato, música ou arte não precisa mais caçar edital em site de governo. O Bratura lê as chamadas, explica os requisitos em português claro, mostra o que falta no seu portfólio e prepara a inscrição.',
+  createPortfolio: 'Criar meu portfólio',
+  signIn: 'Entrar',
   howItWorks: 'Como funciona',
   seeCode: 'Ver o código',
   exampleCall: {
@@ -24,6 +26,8 @@ export const HERO_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     lead: 'People who make a living from crafts, music or art no longer have to hunt for public calls on government websites. Bratura reads the calls, explains the requirements in plain language, shows what your portfolio is missing and gets the application ready.',
+    createPortfolio: 'Create my portfolio',
+    signIn: 'Sign in',
     howItWorks: 'How it works',
     seeCode: 'See the code',
     exampleCall: {

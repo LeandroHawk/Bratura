@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import {
   languageAlternatesFromPath,
   localizedPathFromLocale,
+  type SitePath,
 } from '@/features/common/utils/locale-path';
 import { SITE_DESCRIPTION, SITE_TITLE, SITE_URL } from './site';
 
@@ -31,5 +32,23 @@ export function siteMetadataFromLocale(locale: Locale): Metadata {
       description,
     },
     twitter: { card: 'summary_large_image', title, description },
+  };
+}
+
+/**
+ * Metadata of one page under the locale layout: its name in the tab and its address in each
+ * language. A page behind the sign-in (`isPersonal`) stays out of search results.
+ */
+export function pageMetadataFromLocale(
+  locale: Locale,
+  { path, title, isPersonal = false }: { path: SitePath; title: string; isPersonal?: boolean },
+): Metadata {
+  return {
+    title,
+    alternates: {
+      canonical: localizedPathFromLocale(locale, path),
+      languages: languageAlternatesFromPath(path),
+    },
+    ...(isPersonal && { robots: { index: false } }),
   };
 }
