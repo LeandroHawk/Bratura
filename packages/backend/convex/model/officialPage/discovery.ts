@@ -54,14 +54,15 @@ export const fileNameAsLabel = (url: string) =>
     .replace(/(?<=\d)[\s_-]+(?=\d)/g, '/')
     .replace(/[_-]+/g, ' ');
 
+/** Whether a document is a call's notice, by its link text and file name. */
+const isNotice = ({ url, label }: PageLink) => callNoticeDocumentRole(url, label) === 'callNotice';
+
 /**
  * A call page whose title names no year can still hold only old notices (Paraná, 2026-11-15:
  * "Edital Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the page.
  */
 function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
-  const notices = documents.filter(
-    ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
-  );
+  const notices = documents.filter(isNotice);
   return (
     notices.length > 0 &&
     notices.every(({ url, label }) => [label, fileNameAsLabel(url)].some(namesACallBeforeLastYear))
@@ -119,14 +120,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     const documents = documentLinksOf(page, source.documentUrlParts).filter(
       ({ url }) => !frameDocumentUrls.has(url),
     );
-    if (
-      documents.length === 0 ||
-      hasPublishedResult(documents) ||
-      noticesAreNumberedBeforeLastYear(documents)
-    ) {
-      continue;
-    }
-    calls.push({ externalId: url, title, officialUrl: url, documents });
+    const recorded = callDocumentsWorthRecording(documents);
+    if (!recorded) continue;
+    calls.push({ externalId: url, title, officialUrl: url, documents: recorded.kept });
   }
   return calls;
 }
@@ -169,12 +165,11 @@ function versionDateOf(label: string) {
 
 /**
  * One call's documents with only its newest notice: Minas Gerais lists the original and every
- * rectified version side by side, and each is the whole notice (one read instead of five).
+ * rectified version side by side, Salvador one notice as PDF and `.docx`, and each is the whole
+ * notice (one read instead of five). Without a version date, the first listed stays.
  */
 function withNewestNoticeOnly(documents: PageLink[]) {
-  const notices = documents.filter(
-    ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
-  );
+  const notices = documents.filter(isNotice);
   if (notices.length < 2) return documents;
   const newest = notices.reduce((best, notice) =>
     versionDateOf(notice.label) > versionDateOf(best.label) ? notice : best,
@@ -183,13 +178,14 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 }
 
 /**
- * A call's documents as a listing links them, worth recording: no result posted, a notice among
- * them, its newest version only. `null` otherwise.
+ * A call's documents worth recording, whatever shape the page has: no result posted, a notice
+ * among them and not every one from before last year; its newest notice only. `null` otherwise:
+ * a call without a notice is never read.
  */
-function listedCallDocuments(documents: PageLink[]) {
-  if (hasPublishedResult(documents)) return null;
+function callDocumentsWorthRecording(documents: PageLink[]) {
+  if (hasPublishedResult(documents) || noticesAreNumberedBeforeLastYear(documents)) return null;
   const kept = withNewestNoticeOnly(documents);
-  const notice = kept.find(({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice');
+  const notice = kept.find(isNotice);
   return notice ? { kept, notice } : null;
 }
 
@@ -215,14 +211,14 @@ export function callsOfDocumentsOnListing(
   }
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
     if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
-    const listed = listedCallDocuments(callDocuments);
-    if (!listed) return [];
+    const recorded = callDocumentsWorthRecording(callDocuments);
+    if (!recorded) return [];
     return [
       {
         externalId: key,
-        title: listed.notice.label,
+        title: recorded.notice.label,
         officialUrl: source.listingUrl,
-        documents: listed.kept,
+        documents: recorded.kept,
       },
     ];
   });
@@ -238,14 +234,14 @@ export function callsOfDocumentsUnderHeadings(
 ): OfficialPageCall[] {
   return sectionsOfHtml(html, url).flatMap(({ heading, links }) => {
     if (!heading || namesACallBeforeLastYear(heading)) return [];
-    const listed = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
-    if (!listed) return [];
+    const recorded = callDocumentsWorthRecording(documentLinksOf(links, source.documentUrlParts));
+    if (!recorded) return [];
     return [
       {
         externalId: heading,
         title: heading,
         officialUrl: source.listingUrl,
-        documents: listed.kept,
+        documents: recorded.kept,
       },
     ];
   });

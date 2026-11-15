@@ -180,6 +180,26 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
+  test('a notice in two formats is kept once; a page with no notice is no call (Salvador, Paraná)', async () => {
+    const ba = 'https://www.ba.gov.br/fundacaocultural';
+    siteAnswers({
+      [bahiaFuncebSource.listingUrl]: [
+        a(`${ba}/edital-0092026-atelie`, 'EDITAL 09/2026 - ATELIÊ'),
+        a(`${ba}/edital-gestao-mon`, 'EDITAL DE GESTÃO MON'),
+      ].join(''),
+      [`${ba}/edital-0092026-atelie`]: [
+        a(`${files}/2026-10/EDITAL-N-092026-ATELIE.pdf`, 'Edital'),
+        a(`${files}/2026-10/FGM-EDITAL-09-2026-ATELIE.docx`, 'Edital'),
+        a(`${files}/2026-10/ANEXO-I-CRONOGRAMA.docx`, 'Anexo I'),
+      ].join(''),
+      [`${ba}/edital-gestao-mon`]: a(`${files}/2026-10/ANEXO-I-PLANO.pdf`, 'Anexo I'),
+    });
+    const calls = await callsOf(bahiaFuncebSource);
+    expect(calls.map(({ documents }) => documents.map(({ url }) => url.split('/').pop()))).toEqual([
+      ['EDITAL-N-092026-ATELIE.pdf', 'ANEXO-I-CRONOGRAMA.docx'],
+    ]);
+  });
+
   test('skips a page whose notices are all numbered before last year by text or file name', async () => {
     siteAnswers();
     const calls = await callsOf(paranaSeecSource);
