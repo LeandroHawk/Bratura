@@ -1,7 +1,7 @@
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { describe, expect, test } from 'vitest';
 import {
-  callNoticeDocumentRoleFromUrl,
+  callNoticeDocumentRole,
   documentsWorthReading,
   reasonToSkipReadingDocuments,
 } from './selection';
@@ -58,11 +58,9 @@ describe('reasonToSkipReadingDocuments', () => {
   });
 });
 
-describe('callNoticeDocumentRoleFromUrl', () => {
+describe('callNoticeDocumentRole', () => {
   const roleOf = (fileName: string) =>
-    callNoticeDocumentRoleFromUrl(
-      `https://mapacultural.secult.ce.gov.br/files/opportunity/1/${fileName}`,
-    );
+    callNoticeDocumentRole(`https://mapacultural.secult.ce.gov.br/files/opportunity/1/${fileName}`);
 
   test('finds the call notice wherever it sits in the list, and its consolidated text', () => {
     expect(roleOf('edital-das-artes-e-cultura-de-reriutaba-2026-aldir-blanc.pdf')).toBe(
@@ -109,6 +107,47 @@ describe('callNoticeDocumentRoleFromUrl', () => {
   });
 });
 
+describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () => {
+  test("reads the link's text when the file name says nothing", () => {
+    const rio = 'https://cultura.prefeitura.rio/wp-content/uploads/sites/38/2026/05';
+    expect(
+      callNoticeDocumentRole(`${rio}/0.-REGULAMENTO-SMC-No-04-DE-28-DE-MAIO-DE-2026.pdf`),
+    ).toBe('callNotice');
+    const mg = 'https://www.secult.mg.gov.br/download/category/15-fundo-estadual-de-cultura-fec';
+    expect(callNoticeDocumentRole(`${mg}?download=5062`, 'Edital FEC 02/2026 - Rainha Conga')).toBe(
+      'callNotice',
+    );
+    expect(callNoticeDocumentRole(`${mg}?download=5062`)).toBeNull();
+  });
+
+  test('a notice republished with its changes is the notice; a new schedule is an amendment', () => {
+    const mg = 'https://www.secult.mg.gov.br/download/category/15?download=5063';
+    expect(
+      callNoticeDocumentRole(mg, 'Edital FEC 01/2026 - Afromineiridades - Retificado em 10/11/26'),
+    ).toBe('callNotice');
+    expect(callNoticeDocumentRole(mg, 'CRONOGRAMA ATUALIZADO.pdf')).toBe('amendment');
+  });
+
+  test("accepts Paraná's underscores and skips what a page posts around the notice", () => {
+    const pr =
+      'https://www.cultura.pr.gov.br/sites/default/arquivos_restritos/files/documento/2026-11';
+    expect(callNoticeDocumentRole(`${pr}/0_edital_017_2026.pdf`)).toBe('callNotice');
+    const ba = 'https://www.ba.gov.br/fundacaocultural/sites/site-funceb/files/2026-09';
+    expect(
+      callNoticeDocumentRole(`${ba}/x.pdf`, 'PORTARIA 220_2026 - Resultado Preliminar'),
+    ).toBeNull();
+    expect(callNoticeDocumentRole(`${ba}/x.pdf`, 'FAQ - Edital de Apoio a Espetaculos')).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${ba}/x.pdf`, 'Portaria 270 - Convocação de suplentes'),
+    ).toBeNull();
+  });
+
+  test('personal data in the file name rules out a link whose text looks like a notice', () => {
+    const rio = 'https://cultura.prefeitura.rio/wp-content/uploads/sites/38/2026/11';
+    expect(callNoticeDocumentRole(`${rio}/Resultado-Final-Teatro.pdf`, 'Edital Teatro')).toBeNull();
+  });
+});
+
 describe('documentsWorthReading', () => {
   const base = 'https://mapacultural.secult.ce.gov.br/files/opportunity/1';
 
@@ -129,5 +168,22 @@ describe('documentsWorthReading', () => {
     expect(
       documentsWorthReading([`${base}/anexo-i-categorias.pdf`, `${base}/anexo-2-criterios.pdf`]),
     ).toEqual([]);
+  });
+
+  test("uses each document's link text when the listing carries one", () => {
+    const mg = 'https://www.secult.mg.gov.br/download/category/15';
+    expect(
+      documentsWorthReading(
+        [`${mg}?download=1`, `${mg}?download=2`, `${mg}?download=3`],
+        [
+          { url: `${mg}?download=1`, label: 'Edital FEC 06/2026 - Coreto' },
+          { url: `${mg}?download=2`, label: 'Anexo III - Critérios de avaliação' },
+          { url: `${mg}?download=3`, label: 'Anexo I - Modelo de currículo do proponente' },
+        ],
+      ),
+    ).toEqual([
+      { url: `${mg}?download=1`, role: 'callNotice' },
+      { url: `${mg}?download=2`, role: 'criteria' },
+    ]);
   });
 });

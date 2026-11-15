@@ -90,7 +90,10 @@ export const listDocumentsToRead = internalZodQuery({
     const toRead: DocumentToRead[] = [];
     for (const callNotice of [...closingSoonestFirst, ...withoutCloseDate]) {
       if (reasonToSkipReadingDocuments(callNotice, now) !== null) continue;
-      for (const { url, role } of documentsWorthReading(callNotice.documentUrls)) {
+      for (const { url, role } of documentsWorthReading(
+        callNotice.documentUrls,
+        callNotice.documentLabels,
+      )) {
         const document = { callNoticeId: callNotice._id, url, role };
         if (needsRead(await knownDocument(ctx, document), now)) toRead.push(document);
       }

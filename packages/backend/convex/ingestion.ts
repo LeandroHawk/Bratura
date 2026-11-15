@@ -23,6 +23,9 @@ import {
 import { fetchOpenMapasOpportunities } from './model/mapasCulturais/client';
 import { callNoticeListingFromMapasOpportunity } from './model/mapasCulturais/listing';
 import { MapasOpportunitySchema } from './model/mapasCulturais/payload';
+import { fetchOfficialPageCalls } from './model/officialPage/discovery';
+import { callNoticeListingFromOfficialPageCall } from './model/officialPage/listing';
+import { OfficialPageCallSchema } from './model/officialPage/payload';
 
 // Return types are written out in this module: it calls its own functions through `internal`, and
 // without them TypeScript gives up on the whole generated API (`any` everywhere).
@@ -37,7 +40,7 @@ type IngestSourceAction = FunctionReference<'action', 'internal', { sourceId: Id
  */
 const ingestActionByKind: Record<SourceKind, IngestSourceAction | null> = {
   mapasCulturaisInstance: internal.ingestion.ingestMapasCulturaisInstance,
-  officialPage: null,
+  officialPage: internal.ingestion.ingestOfficialPage,
   newsSite: null,
 };
 
@@ -81,6 +84,21 @@ export const ingestMapasCulturaisInstance = internalZodAction({
       fetchEntries: async (source) => await fetchOpenMapasOpportunities(source.baseUrl, Date.now()),
       EntrySchema: MapasOpportunitySchema,
       listingFromEntry: callNoticeListingFromMapasOpportunity,
+    }),
+});
+
+const IngestOfficialPageActionArgsSchema = z.object({ sourceId: documentId('sources') });
+const IngestOfficialPageActionReturnsSchema = IngestionOutcomeEnum;
+
+/** Reads one official page: its listing (and call pages) as plain HTML, never Firecrawl. */
+export const ingestOfficialPage = internalZodAction({
+  args: IngestOfficialPageActionArgsSchema,
+  returns: IngestOfficialPageActionReturnsSchema,
+  handler: async (ctx, { sourceId }): Promise<IngestionOutcome> =>
+    await runSourceIngestion(ctx, sourceId, 'officialPage', {
+      fetchEntries: fetchOfficialPageCalls,
+      EntrySchema: OfficialPageCallSchema,
+      listingFromEntry: callNoticeListingFromOfficialPageCall,
     }),
 });
 
