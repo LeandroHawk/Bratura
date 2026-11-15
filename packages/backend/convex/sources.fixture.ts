@@ -94,3 +94,20 @@ export const funarteMemoryOfTheArtsSource = {
     callPageUrlParts: ['/chamadas-2026/programa-funarte-memoria-das-artes/'],
   },
 } satisfies Source;
+
+/**
+ * Nova Iguaçu's Semcult: its PNAB page links every call's documents, numbered in the link text,
+ * many as `http://` (measured 2026-11-15).
+ */
+export const novaIguacuSemcultSource = {
+  kind: 'officialPage',
+  slug: 'nova-iguacu-semcult',
+  name: 'Semcult Nova Iguaçu — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://www.novaiguacu.rj.gov.br/semcult/pnab/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;

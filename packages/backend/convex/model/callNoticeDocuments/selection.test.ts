@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest';
 import {
   callNoticeDocumentRole,
   documentsWorthReading,
+  postsResult,
   reasonToSkipReadingDocuments,
 } from './selection';
 
@@ -87,6 +88,16 @@ describe('callNoticeDocumentRole', () => {
     expect(roleOf('lista-geral-de-inscritos-1-edital.pdf')).toBeNull();
     expect(roleOf('curriculo-lattes-2025.pdf')).toBeNull();
     expect(roleOf('lista_de_selecionados.pdf')).toBeNull();
+  });
+
+  test('a preliminary or final list posts a result (Duque de Caxias), a "lista de documentos" does not', () => {
+    expect(
+      postsResult('https://x.rj.gov.br/files/a.pdf', 'LISTA PRELIMINAR DE SELEÇÃO Nº 06/2026'),
+    ).toBe(true);
+    expect(postsResult('https://x.rj.gov.br/files/lista-final-de-habilitacao.pdf')).toBe(true);
+    expect(postsResult('https://x.rj.gov.br/files/a.pdf', 'Lista de documentos exigidos')).toBe(
+      false,
+    );
   });
 
   test('a call for a profession ending in "lista" is still a call', () => {

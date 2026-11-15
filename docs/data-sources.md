@@ -65,8 +65,22 @@ ingestion fails ("error sending request" after ~30 s), as Pernambuco and Maring�
 blocked; registered, reading it needs a route from Brazil. **Aracaju**
 (`mapacultural.aracaju.se.gov.br`, 1 open) is not added: its `robots.txt` answers HTTP 500, so its
 rules cannot be read; recheck before adding. Instances of the list with nothing open on 2026-11-14
-(Pará, Santa Luzia-MG, Petrolina-PE, Lagoa Santa-MG, Cianorte-PR, Anápolis-GO) are not added yet;
-Lagoa Santa sends Cloudflare content signals, a team call as for Mongaguá.
+(Pará, Santa Luzia-MG, Lagoa Santa-MG, Cianorte-PR) are not added yet; Lagoa Santa sends Cloudflare
+content signals, a team call as for Mongaguá.
+
+**Added on 2026-11-15** (municipalities over 300k inhabitants that run an instance; none has a call
+open that day, so the first ingestion recorded 0 and they wait for PNAB Ciclo 3):
+
+| Instance | Host | Opportunities closing in 2026 | Zone it sends |
+| --- | --- | --- | --- |
+| Petrolina-PE | `mapacultural.petrolina.pe.gov.br` | 13 | `Etc/GMT+3` |
+| Paulista-PE (not on the GitHub list) | `mapacultural.paulista.pe.gov.br` | 6 | `America/Recife` |
+| Anápolis-GO | `culturaemrede.anapolis.go.gov.br` | 5 | `Etc/GMT+3` |
+
+`robots.txt` answers the app's HTML page on all three (2026-11-15): nothing declared. Terms:
+Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas template, not read in
+full); Anápolis publishes none found. Unlike the Pernambuco state instance, both Pernambuco cities
+answer the cloud ingestion (under 1 s).
 
 ```
 GET https://{host}/api/opportunity/find
@@ -110,6 +124,7 @@ the rows marked so below).
 | Minas Gerais Secult (measured 2026-11-15) | `https://www.secult.mg.gov.br/editais/editais-pnab/editais-pnab` and `/editais/fundo-estadual-de-cultura-fec/editais-fec`: the listing links the documents (`?download=`) | 404: nothing declared | only a privacy policy, about its visitors' data, 2026-11-15 |
 | Maranhão Secma (measured 2026-11-15) | `https://cultura.ma.gov.br/programas-ou-campanhas/editais-secma`: the listing links the PDFs | allows (Semrush, Petal disallowed) | content under CC BY 4.0, 2026-11-15 |
 | Funarte (measured 2026-11-15) | `https://www.gov.br/funarte/pt-br/fomento/chamadas-2026`: one page per call, the year in the path; Memória das Artes is a folder one level down, its own source. Not `/fomento/chamadas-abertas` (302 to paths that 404) | allows (gov.br disallows only other organs' paths and form views) | gov.br portal: CC BY-ND 3.0 (`gov.br/pt-br/termos-de-uso`), 2026-11-15 |
+| Nova Iguaçu Semcult (measured 2026-11-15) | `https://www.novaiguacu.rj.gov.br/semcult/pnab/`: the listing links the documents, numbered in the link text, many as `http://` | allows (WordPress default: `/wp-admin/` disallowed) | none published, 2026-11-15 |
 | Paraná Seec (measured 2026-11-15) | `https://www.cultura.pr.gov.br/`: one page per call under `/Pagina/Edital-`, some renamed behind a same-host 301 | allows (Drupal default: `/core/`, `/user/`, `/search/` disallowed) | none published, 2026-11-15 |
 | São Paulo city culture calls | `https://prefeitura.sp.gov.br/web/cultura/editais/` | allows all | not recorded here |
 | Amigos da Arte (SP state calls) | `https://amigosdaarte.org.br/editais_/` (with the underscore; RSS at `/editais_/feed/`); the 4 calls of 2026 are closed | allows except wp-admin | not recorded here |
