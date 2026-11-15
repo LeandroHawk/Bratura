@@ -95,6 +95,14 @@ export function useDemoState(): DemoState | null {
   return useSyncExternalStore(subscribe, currentState, () => null);
 }
 
+/**
+ * The e-mail of the account this browser keeps, or `null`: `loadExample` replaces that account,
+ * so the screen asks before calling it over one.
+ */
+export function storedAccountEmail(): string | null {
+  return currentState().creator?.email ?? null;
+}
+
 export function signUp(registration: CreatorRegistration) {
   setState({
     ...EMPTY_STATE,

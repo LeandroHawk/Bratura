@@ -15,6 +15,10 @@ const ptBR = {
   exampleLead:
     'Entre com o portfólio da Dona Maria, rendeira de Juazeiro do Norte. Ela é um exemplo: não é uma pessoa real.',
   useExample: 'Entrar com o exemplo',
+  replacesAccount: (email: string) =>
+    `Este navegador guarda o cadastro de ${email}. Entrar com o exemplo apaga esse cadastro, o portfólio e os editais salvos.`,
+  confirmUseExample: 'Apagar e entrar com o exemplo',
+  cancel: 'Cancelar',
 };
 
 export const SIGN_IN_FORM_CONTENT: Record<Locale, typeof ptBR> = {
@@ -34,5 +38,9 @@ export const SIGN_IN_FORM_CONTENT: Record<Locale, typeof ptBR> = {
     exampleLead:
       'Sign in with the portfolio of Dona Maria, a lace maker from Juazeiro do Norte. She is an example, not a real person.',
     useExample: 'Sign in with the example',
+    replacesAccount: (email) =>
+      `This browser keeps the account of ${email}. Signing in with the example erases that account, its portfolio and its saved calls.`,
+    confirmUseExample: 'Erase and sign in with the example',
+    cancel: 'Cancel',
   },
 };

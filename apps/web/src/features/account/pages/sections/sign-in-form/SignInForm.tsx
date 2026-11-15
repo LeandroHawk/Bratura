@@ -6,8 +6,9 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Card, Heading, TextField } from '@bratura/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ROUTES } from '@/features/common/config/routes';
-import { loadExample, signIn } from '@/features/common/data/demoStore';
+import { loadExample, signIn, storedAccountEmail } from '@/features/common/data/demoStore';
 import { EXAMPLE_CREATOR, EXAMPLE_PORTFOLIO_ITEMS } from '@/features/common/data/exampleCreator';
 import { useContractForm } from '@/features/common/hooks/useContractForm';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
@@ -17,6 +18,12 @@ export function SignInForm({ locale }: { locale: Locale }) {
   const content = SIGN_IN_FORM_CONTENT[locale];
   const router = useRouter();
   const openPortfolio = () => router.push(localizedPathFromLocale(locale, ROUTES.portfolio));
+  // The example takes the place of the account this browser keeps: asked before, never silent.
+  const [replacedEmail, setReplacedEmail] = useState<string | null>(null);
+  const signInWithExample = () => {
+    loadExample({ creator: EXAMPLE_CREATOR, portfolioItems: EXAMPLE_PORTFOLIO_ITEMS });
+    openPortfolio();
+  };
   const { draft, setField, messageByPath, setMessageByPath, formRef, submit } = useContractForm({
     initialDraft: { email: '', password: '' },
     parse: (typed) => parseWithMessages(SignInMutationFromBraturaPortalArgsSchema, typed, locale),
@@ -71,15 +78,30 @@ export function SignInForm({ locale }: { locale: Locale }) {
           {content.exampleTitle}
         </Heading>
         <p className="text-small text-muted-foreground">{content.exampleLead}</p>
-        <Button
-          variant="ghost"
-          onClick={() => {
-            loadExample({ creator: EXAMPLE_CREATOR, portfolioItems: EXAMPLE_PORTFOLIO_ITEMS });
-            openPortfolio();
-          }}
-        >
-          {content.useExample}
-        </Button>
+        {replacedEmail === null ? (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              const stored = storedAccountEmail();
+              if (stored === null || stored === EXAMPLE_CREATOR.email) signInWithExample();
+              else setReplacedEmail(stored);
+            }}
+          >
+            {content.useExample}
+          </Button>
+        ) : (
+          <div className="grid justify-items-start gap-3" role="alert">
+            <p className="text-small">{content.replacesAccount(replacedEmail)}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={signInWithExample}>
+                {content.confirmUseExample}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setReplacedEmail(null)}>
+                {content.cancel}
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
