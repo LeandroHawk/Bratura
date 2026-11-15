@@ -52,15 +52,20 @@ export const fileNameAsLabel = (url: string) =>
     .replace(/[_-]+/g, ' ');
 
 /**
- * A call page whose title names no year can still hold an old notice (Paraná, 2026-11-15: "Edital
- * Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`).
+ * A call page whose title names no year can still hold only old notices (Paraná, 2026-11-15:
+ * "Edital Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the page.
  */
-const noticeIsNumberedBeforeLastYear = (documents: PageLink[]) =>
-  documents.some(
-    ({ url, label }) =>
-      callNoticeDocumentRole(url, label) === 'callNotice' &&
-      [label, fileNameAsLabel(url)].some((name) => isNumberedBeforeLastYear(callNumberOf(name))),
+function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
+  const notices = documents.filter(
+    ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
   );
+  return (
+    notices.length > 0 &&
+    notices.every(({ url, label }) =>
+      [label, fileNameAsLabel(url)].some((name) => isNumberedBeforeLastYear(callNumberOf(name))),
+    )
+  );
+}
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
@@ -71,6 +76,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       label &&
       !isNumberedBeforeLastYear(callNumberOf(label)) &&
       url !== source.listingUrl &&
+      url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
       isFetchableFromListing(url, source.listingUrl) &&
       !source.documentUrlParts.some((part) => url.includes(part)),
@@ -95,7 +101,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     if (
       documents.length === 0 ||
       hasPublishedResult(documents) ||
-      noticeIsNumberedBeforeLastYear(documents)
+      noticesAreNumberedBeforeLastYear(documents)
     ) {
       continue;
     }

@@ -91,6 +91,7 @@ function nameOf(text: string) {
     .replace(/^-+|-+$/g, '');
 }
 
+/** A URL's last path segment, decoded (`EDITAL 027.pdf`); empty when it does not decode. */
 export function fileNameOf(url: string) {
   try {
     return decodeURIComponent(new URL(url).pathname.split('/').pop() ?? '');

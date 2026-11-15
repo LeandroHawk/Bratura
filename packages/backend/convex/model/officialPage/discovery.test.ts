@@ -43,10 +43,13 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
       a('/Pagina/Edital-Bandas-e-Fanfarras', 'Edital Bandas e Fanfarras'),
       a('/Pagina/Edital-de-Parcerias-MON', 'Edital de Parcerias com Organizações Sociais – MON'),
     ].join(''),
-    'https://www.cultura.pr.gov.br/Pagina/Edital-MOVCEU-Parana': a(
-      `${prFiles}/0.edital_movceu_parana_-_2026.docx_0.pdf`,
-      'EDITAL MOVCEU PARANÁ - CHAMAMENTO PÚBLICO Nº 015/2026',
-    ),
+    'https://www.cultura.pr.gov.br/Pagina/Edital-MOVCEU-Parana': [
+      a(
+        `${prFiles}/0.edital_movceu_parana_-_2026.docx_0.pdf`,
+        'EDITAL MOVCEU PARANÁ - CHAMAMENTO PÚBLICO Nº 015/2026',
+      ),
+      a(`${prFiles}/0._edital_009_2024_movceu.pdf`, 'EDITAL Nº 009/2024 - EDIÇÃO ANTERIOR'),
+    ].join(''),
     'https://www.cultura.pr.gov.br/Pagina/Edital-Bandas-e-Fanfarras': a(
       `${prFiles}/lpg-edital-012-2023.pdf`,
       'EDITAL INTERATIVO',
@@ -106,7 +109,7 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     ]);
   });
 
-  test("skips a page whose notice's name numbers it before last year; last year's stays", async () => {
+  test('skips a page whose notices are all numbered before last year by text or file name', async () => {
     siteAnswers();
     const calls = await callsOf(paranaSeecSource);
     expect(calls.map(({ title }) => title)).toEqual([
@@ -154,6 +157,28 @@ describe('callsOfCallPages (Bahia, Paraná, Rio)', () => {
     expect(call?.documents.map(({ url }) => url)).toEqual([
       `https://www.ba.gov.br${files}/2026-11/EDITAL%20027.pdf`,
     ]);
+  });
+
+  test('a listing that redirects is not read again as one of its own call pages', async () => {
+    const landed = 'https://www.ba.gov.br/fundacaocultural/editais-2026/';
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      if (String(input) === bahiaFuncebSource.listingUrl) {
+        return new Response(null, { status: 301, headers: { location: landed } });
+      }
+      const html =
+        String(input) === landed
+          ? a(landed, 'EDITAIS 2026') + pages[bahiaFuncebSource.listingUrl]
+          : pages[String(input)];
+      return new Response(html ?? '', { headers: { 'content-type': 'text/html' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const everyPage = {
+      ...bahiaFuncebSource,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['/fundacaocultural/'] },
+    };
+    await callsOf(everyPage);
+    const fetched = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(fetched.filter((url) => url === landed)).toHaveLength(1);
   });
 
   test('a call page that fails is skipped, not the whole run', async () => {
