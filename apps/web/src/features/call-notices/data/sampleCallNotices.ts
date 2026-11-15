@@ -2,6 +2,7 @@ import {
   CallNoticeOverviewQueryFromBraturaPortalReturnsSchema,
   type CallNoticeOverviewItem,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-overview/query';
+import { ZonedInstantSchema } from '@bratura/shared/primitives/code/time/zoned-instant/fields';
 import { callNoticeDeadline } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -229,7 +230,11 @@ const SAMPLE_CALL_NOTICES: SampleCallNotice[] = [
 function dayFromToday(now: number, days: number | null) {
   return days === null
     ? null
-    : { at: now + days * DAY_IN_MS, timeZone: 'America/Sao_Paulo', precision: 'day' };
+    : ZonedInstantSchema.parse({
+        at: now + days * DAY_IN_MS,
+        timeZone: 'America/Sao_Paulo',
+        precision: 'day',
+      });
 }
 
 /**
