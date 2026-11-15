@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { nullableString, requiredString } from '../../../../primitives/code/string/fields';
 import { PortfolioDocumentKindEnum } from '../../enums/document-kind/enum';
-import { PortfolioAttachmentSchema } from '../../fragments/attachment/fields';
+import { AttachedFileSchema } from '../../../../primitives/domain/attached-file/fields';
 import { PortfolioItemIdentityFields } from '../../fragments/identity/fields';
 
 /**
@@ -20,7 +20,7 @@ export const DocumentPortfolioItemSchema = z.object({
   /** `null` for a paper that does not expire. */
   validUntil: z.iso.date().nullable(),
   /** The scanned file; `null` while the creator only listed the paper. */
-  file: PortfolioAttachmentSchema.nullable(),
+  file: AttachedFileSchema.nullable(),
 });
 
 export type DocumentPortfolioItem = z.infer<typeof DocumentPortfolioItemSchema>;

@@ -1,9 +1,8 @@
 import { z } from 'zod';
 import { nullableString, requiredString } from '../../../../primitives/code/string/fields';
-import { requiredHttpUrl } from '../../../../primitives/code/url/fields';
 import { UfEnum } from '../../../../primitives/external/uf/enum';
 import { CulturalActivityKindEnum } from '../../enums/activity-kind/enum';
-import { PortfolioAttachmentSchema, portfolioItemListMax } from '../../fragments/attachment/fields';
+import { PortfolioItemMediaFields } from '../../fragments/media/fields';
 import { PortfolioItemIdentityFields } from '../../fragments/identity/fields';
 import { PortfolioItemPeriodFields } from '../../fragments/period/fields';
 
@@ -15,6 +14,7 @@ export const CulturalExperiencePortfolioItemSchema = z.object({
   kind: z.literal('culturalExperience'),
   ...PortfolioItemIdentityFields.shape,
   ...PortfolioItemPeriodFields.shape,
+  ...PortfolioItemMediaFields.shape,
   title: requiredString(),
   activityKind: CulturalActivityKindEnum,
   description: nullableString(),
@@ -23,10 +23,6 @@ export const CulturalExperiencePortfolioItemSchema = z.object({
   state: UfEnum.nullable(),
   /** The institution or organization that ran it. */
   organizer: nullableString('medium'),
-  /** Videos and pages about it. */
-  links: z.array(requiredHttpUrl).max(portfolioItemListMax),
-  /** Photos, audios and proofs (a certificate, a contract, a press clipping). */
-  attachments: z.array(PortfolioAttachmentSchema).max(portfolioItemListMax),
 });
 
 export type CulturalExperiencePortfolioItem = z.infer<typeof CulturalExperiencePortfolioItemSchema>;

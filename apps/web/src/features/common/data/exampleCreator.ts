@@ -15,6 +15,7 @@ export const EXAMPLE_CREATOR: Creator = {
   cep: '63010010',
   state: 'CE',
   city: 'Juazeiro do Norte',
+  profileImage: null,
   artisticName: 'Dona Maria Rendeira',
   biography:
     'Rendeira de bilro desde menina, aprendi o ofício com minha mãe e minha avó. Hoje ensino a renda para as jovens do bairro e vendo minhas peças nas feiras do Cariri.',

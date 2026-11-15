@@ -17,6 +17,7 @@ export type CreatorCulturalProfile = z.infer<typeof CreatorCulturalProfileFields
 
 /** The cultural profile right after sign-up: nothing typed yet. */
 export const emptyCulturalProfile: CreatorCulturalProfile = {
+  profileImage: null,
   artisticName: null,
   biography: null,
   mainCulturalArea: null,
