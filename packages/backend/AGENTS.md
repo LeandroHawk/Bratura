@@ -17,7 +17,9 @@ convex/
   documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments`
   whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
   extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
-  portfolio.ts  matching.ts  alerts.ts  orgs.ts                                 (not yet)
+  userNotifications.ts        what to tell a user: the only writer of `userNotifications`
+  notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
+  portfolio.ts  matching.ts  orgs.ts                                            (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
@@ -25,7 +27,7 @@ convex/
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits (rules, no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
-    nvoip/           client.ts, payload.ts
+    whatsapp/        sendTemplate.ts (the only import), templates.ts, nvoip/ (the provider inside)
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
 ```
@@ -33,11 +35,12 @@ convex/
 **A root file is a door; `model/` is what the doors share** (Convex's "Best Practices": thin
 functions over plain helpers). A subject's functions and its table's `ctx.db` live in one root file,
 its tests beside it (`ingestion.ts` is the only writer of `ingestionRuns`). `model/` is named by
-what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `nvoip/`) or a loop several doors
+what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `whatsapp/`) or a loop several doors
 run (`ingestion/`). **A provider we may swap is named by what it does** (`llm/`): doors import one
 neutral function (`llm/generateJson.ts`), which alone picks the client and reads its key; a fixed
-one is named by itself (`mapasCulturais/` is the source). `nvoip/` gets its channel adapter with the
-first alert. A root file past ~6 functions becomes a folder of the same name, one file per door.
+one is named by itself (`mapasCulturais/` is the source). A channel is named by what it does and
+keeps its provider inside (`whatsapp/` holds `nvoip/`). A root file past ~6 functions becomes a
+folder of the same name, one file per door.
 
 ## Running it
 
@@ -68,7 +71,8 @@ pnpm exec convex run documents:readPendingDocuments '{"creditCeiling":200}'
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10}'
 ```
 
-Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `LLM_API_KEY`) live
+Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `NVOIP_WA_INSTANCE`,
+`LLM_API_KEY`) live
 **only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
 it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).
 The LLM is configuration, not code: `LLM_BASE_URL` (any provider in the OpenAI chat format;

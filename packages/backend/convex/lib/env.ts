@@ -8,3 +8,8 @@ export function requiredEnv(name: string): string {
   if (!value) throw new Error(`${name} is not set in this deployment (convex env set ${name})`);
   return value;
 }
+
+/** A deployment variable that may be absent: `null`, so the caller decides what missing means. */
+export function optionalEnv(name: string): string | null {
+  return process.env[name] ?? null;
+}

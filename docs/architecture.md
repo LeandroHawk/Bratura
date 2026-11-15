@@ -102,7 +102,7 @@ holds across folders:
 - **The backend computes, the web displays.** Eligibility, gaps and deadlines are computed in
   Convex and stored (`matches`); the web and the WhatsApp bot never re-derive them.
 - **Adapters for what may change**: the LLM behind `model/llm/`, any provider in the OpenAI chat format
-  chosen by the deployment's env (Gemini's API free tier today: a queue and retries in ingestion), message channels behind one adapter in `model/` (Resend, Nvoip).
+  chosen by the deployment's env (Gemini's API free tier today: a queue and retries in ingestion), a message channel behind `model/<channel>/` (`whatsapp/`, with Nvoip inside; e-mail later).
 - **Ownership, abuse limits and secrets**: `docs/security.md`.
 
 ### Call notice lifecycle
@@ -118,18 +118,18 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 | document read | not on the call notice: a `callNoticeDocuments` row per file read (the notice, its amendments, categories and criteria, picked by file name), its Markdown, hash and cost | `documents.ts`, run by hand | Firecrawl `/scrape` | **now** |
 | extracted and classified | not on the call notice: a `callNoticeExtractions` row per call (whether it is a call for creators or noise, amounts per project and total, applicant types, residence, art forms, required documents, evaluation criteria, the close as written), each value with the source passage that proves it or dropped | `extraction.ts`, run by hand, through `model/llm/`; each value checked by `model/callNoticeExtraction/verify.ts` | the read documents' Markdown | **now** |
 | matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
-| alerted | not on the call notice: an `alerts` row per message sent (creator, call notice, template, channel, status), so a reminder never goes twice | `alerts.ts` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
+| notified | not on the call notice: a `userNotifications` row (the web inbox) plus a `notificationDeliveries` row per opted-in send, so a reminder never goes twice | `userNotifications.ts` and `notificationDeliveries.ts` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
 
 - **A source kind decides only how a call notice is listed.** From "document read" on, every call
   notice follows the same path, whichever kind listed it. A `newsSite` lists nothing: it is a
   signal that sends the team to an official source.
 - **A changed document reruns the stages after it**: a new hash means a new extraction, and an
-  amended deadline means new matches and an alert ("o prazo mudou"). For that, `recordCallNotice`
-  will report a changed window once `alerts.ts` exists to consume it.
+  amended deadline means new matches and a notification ("o prazo mudou"). For that, `recordCallNotice`
+  will report a changed window once the triggers exist to consume it.
 - **A structured date beats an extracted one**: when the Mapas API gives the registration window,
   it stays; a different date in the PDF is kept as a flagged divergence, not a replacement (user,
   2026-11-14).
-- **WhatsApp and e-mail are channels of "alerted"**, behind the channel adapter in `model/`; they read
+- **WhatsApp and e-mail are channels of "notified"**, each behind `model/<channel>/`; they read
   what the stages stored and never compute (`docs/integrations/whatsapp.md`). Who writes and reads
   each part, folder by folder: `docs/contracts.md` §4.
 - **Creator-facing lists show only call notices classified as calls for creators**; the noise stays
@@ -182,7 +182,7 @@ flow.
 | --- | --- | --- | --- |
 | 1. Natural-key upsert | one mutation looks the key up in its index, then patches or inserts | a call notice from its source (`recordCallNotice`) | `sourceId` + `externalId` |
 | 2. Content-addressed work | the same input is never processed twice | reading a document (Firecrawl credits), extracting it (Gemini quota) | the document's hash |
-| 3. Outbox: reserve → act → confirm | a mutation reserves the row (`sending`), the action calls the outside, a mutation marks `sent` or `failed`; nothing is sent without a reserved row | WhatsApp and e-mail alerts | creator + call notice + template + occurrence (the D-7 of a given deadline) |
+| 3. Outbox: reserve → act → confirm | a mutation reserves the row (`sending`), the action calls the outside, a mutation marks `sent` or `failed`; nothing is sent without a reserved row | WhatsApp deliveries | the notification's dedupe key (user + the trigger's key) |
 | 4. Inbox | the provider's event id is stored first; a repeated id answers 200 and stops | Nvoip webhooks, a payment webhook if it comes | the provider's event id |
 | 5. Lease | at most one `running` row per job; a stale one (past its time limit) may be taken over | ingestion of a source, which a cron may fire while a run is still going | `sourceId` with status `running` |
 | 6. Client intent | a front's mutation sets a state (`setX`) rather than adding one more; a create carries a natural key or one made by the client | the creator's forms (a double click) | the natural key, or a client-generated id |

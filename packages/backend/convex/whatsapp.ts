@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { internalZodAction } from './lib/builders';
 import { requiredEnv } from './lib/env';
-import { fetchNvoipAccessToken } from './model/nvoip/client';
+import { fetchNvoipAccessToken } from './model/whatsapp/nvoip/client';
 
-// WhatsApp through Nvoip (`docs/integrations/whatsapp.md`): template alerts, later "Meus editais".
-// Sends go through an outbox row (`docs/architecture.md`, Idempotency). Only the credentials check
-// exists yet.
+// The WhatsApp port (`docs/integrations/whatsapp.md`): sends go through the
+// `notificationDeliveries` outbox; inbound ("Meus editais") lands here later. Only the
+// credentials check exists yet.
 
 const CheckNvoipCredentialsActionArgsSchema = z.object({});
 const CheckNvoipCredentialsActionReturnsSchema = z.literal(true);

@@ -33,9 +33,13 @@ import type * as model_mapasCulturais_client from "../model/mapasCulturais/clien
 import type * as model_mapasCulturais_date from "../model/mapasCulturais/date.js";
 import type * as model_mapasCulturais_listing from "../model/mapasCulturais/listing.js";
 import type * as model_mapasCulturais_payload from "../model/mapasCulturais/payload.js";
-import type * as model_nvoip_client from "../model/nvoip/client.js";
-import type * as model_nvoip_payload from "../model/nvoip/payload.js";
+import type * as model_whatsapp_nvoip_client from "../model/whatsapp/nvoip/client.js";
+import type * as model_whatsapp_nvoip_payload from "../model/whatsapp/nvoip/payload.js";
+import type * as model_whatsapp_sendTemplate from "../model/whatsapp/sendTemplate.js";
+import type * as model_whatsapp_templates from "../model/whatsapp/templates.js";
+import type * as notificationDeliveries from "../notificationDeliveries.js";
 import type * as sources from "../sources.js";
+import type * as userNotifications from "../userNotifications.js";
 import type * as whatsapp from "../whatsapp.js";
 
 import type {
@@ -70,9 +74,13 @@ declare const fullApi: ApiFromModules<{
   "model/mapasCulturais/date": typeof model_mapasCulturais_date;
   "model/mapasCulturais/listing": typeof model_mapasCulturais_listing;
   "model/mapasCulturais/payload": typeof model_mapasCulturais_payload;
-  "model/nvoip/client": typeof model_nvoip_client;
-  "model/nvoip/payload": typeof model_nvoip_payload;
+  "model/whatsapp/nvoip/client": typeof model_whatsapp_nvoip_client;
+  "model/whatsapp/nvoip/payload": typeof model_whatsapp_nvoip_payload;
+  "model/whatsapp/sendTemplate": typeof model_whatsapp_sendTemplate;
+  "model/whatsapp/templates": typeof model_whatsapp_templates;
+  notificationDeliveries: typeof notificationDeliveries;
   sources: typeof sources;
+  userNotifications: typeof userNotifications;
   whatsapp: typeof whatsapp;
 }>;
 

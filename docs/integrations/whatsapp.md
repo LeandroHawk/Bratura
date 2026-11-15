@@ -22,11 +22,21 @@ From Nvoip's official SDKs and n8n node (`github.com/Nvoip`), checked 2026-11-12
 
 - Base URL `https://api.nvoip.com.br/v3`. Token from `POST https://api.nvoip.com.br/auth/oauth2/token`
   with `grant_type=client_credentials` and the Client ID and Secret as `Authorization: Basic`; sent
-  as `Authorization: Bearer`. **The old v2 user token and `napikey` do not authenticate v3**, so
-  the v2 endpoints in older notes (`/oauth/token`, `/wa/sendTemplates`) need checking against v3,
-  and the v2 credentials (`user-token`, `numbersip`, `napikey`) give way to the Client ID and
-  Secret, in Convex environment variables only. Whether v3 still needs the WhatsApp `instance` id
-  per send: to check.
+  as `Authorization: Bearer`. **The old v2 user token and `napikey` do not authenticate v3**, and
+  the v2 credentials (`user-token`, `numbersip`, `napikey`) give way to the Client ID and
+  Secret, in Convex environment variables only.
+- Send a template: `POST /v3/wa/sendTemplates` with `idTemplate`, `destination` (a phone, or a
+  typed `recipient` object for BSUID), `instance`, `language` and optional positional
+  `bodyVariables` — confirmed in the official support article and the v3 SDK
+  (`suporte.nvoip.com.br/portal/pt/kb/articles/enviar-mensagem-whatsapp-api`, checked 2026-11-14;
+  `github.com/Nvoip/nvoip-node`). The `instance` id is required **per send**, so `NVOIP_WA_INSTANCE`
+  stays an env var, not part of the credentials. A 2xx answer may carry the Meta `message_id`
+  (a `wamid`); the delivery stores it when present and counts any other 2xx as sent.
+- **Still to verify with a real call** (no credentials in the dev environment yet): the exact
+  non-2xx body shape — until then any 4xx but 429 is treated as a refusal that must not retry.
+  When the team runs `whatsapp:checkNvoipCredentials` and a real `sendPendingDeliveries` against
+  the test number, record the date, request shape and answer shape here (no secrets, no real
+  phone).
 - WhatsApp: **list templates** and **send a template**. A recipient is a phone number (or a
   BSUID), never an @username.
 - No webhook for **inbound** messages appears in the SDKs.
@@ -54,19 +64,22 @@ each one in v3:
 ## How it fits the backend
 
 ```
-crons.ts ──► alerts.ts ──► channel adapter ──► e-mail: Resend
-                                           └─► WhatsApp: Nvoip (fetch, token in Convex env)
+a trigger (matching, a cron, an admin)
+   └─► userNotifications.notify ──► userNotifications row (the web inbox shows it)
+                                   └─► notificationDeliveries row (opt-in only)
+                                          └─► sendPendingDeliveries ──► model/whatsapp/ ──► Nvoip
 http.ts ◄── Nvoip (if it forwards inbound messages) ──► local Zod parse ──► same queries as the site
 ```
 
 - **The bot reads, never computes**: it answers from `matches` and `applicationKits`, like the site,
   so both channels say the same thing.
-- **A channel adapter in `model/`**, like the LLM adapter in `model/llm/`: Nvoip can be swapped for the
-  WhatsApp Cloud API without touching the rest.
+- **Everything WhatsApp lives in `model/whatsapp/`**: `sendTemplate.ts` is the only function the
+  doors import, `templates.ts` maps a notification kind to its approved template, and `nvoip/` is
+  the provider, swappable for the WhatsApp Cloud API inside the folder.
 - **Nvoip's payload is parsed at the edge** with a local Zod schema in the module that reads it; it
   is not a DTO and not in `shared`.
-- **Language**: the creator's `LocaleEnum` (`pt-BR`, `en`) becomes Nvoip's template language
-  (`pt_BR`, `en_US`) through `templateLanguageFromLocale`.
+- **Language**: a template's approved language decides what is sent (`pt_BR` while only pt-BR
+  templates are approved), never the user's locale.
 - **Creator fields** this needs: `phone`, `phoneVerifiedAt`, `whatsappOptInAt`, the preferred
   alert channel (and the locale, which exists).
 - **Phone verification** by Nvoip's OTP is an option; the login stays WorkOS unless the team
