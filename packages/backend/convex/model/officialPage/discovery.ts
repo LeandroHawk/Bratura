@@ -70,10 +70,11 @@ function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
 }
 
 /**
- * A listing link that names no call, only an action (Salvador, 2026-11-15: every call page is
- * linked as "Clique aqui!"). The call page's own heading names the call instead.
+ * A listing link that names no call, only an action (2026-11-15: Salvador links every call page as
+ * "Clique aqui!", Estância as "Acessar"). The call page's own heading names the call instead, or,
+ * with no `<h1>` (Estância), a notice whose name carries a call number ("EDITAL 022/2026 – …").
  */
-const namesNoCall = (label: string) => /^clique aqui[\s!.]*$/.test(plainText(label));
+const namesNoCall = (label: string) => /^(clique aqui|acessar)[\s!.]*$/.test(plainText(label));
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
@@ -105,14 +106,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     }
     if (index > 0) await new Promise((done) => setTimeout(done, callPageSpacingMs));
     let page: PageLink[];
-    let title = label;
+    let heading: string;
     try {
       const fetched = await fetchPageHtml(url);
       page = linksOfHtml(fetched.html, fetched.url);
-      if (namesNoCall(label)) {
-        title = headingOfHtml(fetched.html);
-        if (!title) continue;
-      }
+      heading = headingOfHtml(fetched.html);
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
@@ -122,6 +120,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     );
     const kept = callDocumentsWorthRecording(documents);
     if (!kept) continue;
+    const numberedNotice = kept.find(
+      (document) => isNotice(document) && callNumberOf(document.label),
+    );
+    const title = namesNoCall(label) ? heading || numberedNotice?.label : label;
+    if (!title) continue;
     calls.push({ externalId: url, title, officialUrl: url, documents: kept });
   }
   return calls;

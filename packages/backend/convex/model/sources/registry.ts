@@ -463,6 +463,23 @@ export const delmiroGouveiaPnabSource = {
   timeZone: ianaTimeZone.parse('America/Maceio'),
 } satisfies Source;
 
+/**
+ * Estância's culture-call site: one page per call, linked as "Acessar"; each file is a download
+ * handler (`?id=N`) named only by the bold text above it (measured 2026-11-15).
+ */
+export const estanciaCultureCallsSource = {
+  kind: 'officialPage',
+  slug: 'estancia-edital-cultural',
+  name: 'Prefeitura de Estância — Edital Cultural',
+  isActive: true,
+  robotsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-15',
+  listingUrl: 'https://editalcultural.estancia.se.gov.br/Editais',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/Editais/Details/'] },
+  documentUrlParts: ['/Arquivos/DownloadArquivos/'],
+  timeZone: ianaTimeZone.parse('America/Maceio'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -501,4 +518,5 @@ export const registeredSources: readonly Source[] = [
   pontaGrossaPnabSource,
   cambePnabCycle2Source,
   delmiroGouveiaPnabSource,
+  estanciaCultureCallsSource,
 ];
