@@ -5,8 +5,11 @@ import { fetchOnSourceHost } from '../sourceHost/fetchOnSourceHost';
  * A Mapas instance that has not answered in this long is `unavailable` (SP Cultura took over 90 s).
  */
 const mapasTimeoutMs = 60_000;
-/** Past this, no list of open calls: the largest measured, Pernambuco's, is 108 KB (2026-11-15). */
-const mapasMaxBytes = 5_000_000;
+/**
+ * Past this, no list of open calls (the largest measured, Pernambuco's, is 108 KB, 2026-11-15).
+ * Low on purpose: the body, its text and its parsed objects share the runtime's 64 MiB.
+ */
+const mapasMaxBytes = 2_000_000;
 
 /**
  * The opportunities whose registration is open on `now` (a São Paulo day), as raw JSON: each is
