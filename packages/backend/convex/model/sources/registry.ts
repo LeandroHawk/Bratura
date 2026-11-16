@@ -480,6 +480,58 @@ export const estanciaCultureCallsSource = {
   timeZone: ianaTimeZone.parse('America/Maceio'),
 } satisfies Source;
 
+/** Cianorte's Mapas: 7 opportunities in 2026, Chamamento 11/2026 open to 18/11 (2026-11-16). */
+export const cianorteMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-cianorte',
+  name: 'Mapas Culturais — Cianorte',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  baseUrl: 'https://cultura.cianorte.pr.gov.br',
+} satisfies Source;
+
+/**
+ * Teixeira de Freitas' culture secretariat, PNAB Ciclo 2: one page per call. The parts leave out
+ * the reviewers' credenciamento and the public profile pages (measured 2026-11-16).
+ */
+export const teixeiraDeFreitasPnabSource = {
+  kind: 'officialPage',
+  slug: 'teixeira-de-freitas-pnab',
+  name: 'Prefeitura de Teixeira de Freitas — editais PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://smic.teixeiradefreitas.ba.gov.br/grupo/pnab/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/editais/edital-de-chamamento', '/editais/credenciamento-'],
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Bahia'),
+} satisfies Source;
+
+/**
+ * The Chamber of Deputies' cultural selection: one page per yearly call, the notice linked as a
+ * clean PDF there (the listing's own anchor ends in `.pdf/view`). Measured 2026-11-16.
+ */
+export const chamberOfDeputiesCultureSource = {
+  kind: 'officialPage',
+  slug: 'camara-editais-de-selecao-cultural',
+  name: 'Câmara dos Deputados — editais de seleção cultural',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl:
+    'https://www2.camara.leg.br/a-camara/visiteacamara/cultura-na-camara/editais-de-selecao',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/editais-de-selecao/edital-20', '/editais-de-selecao/copy_of_edital-'],
+  },
+  documentUrlParts: ['.pdf'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -519,4 +571,7 @@ export const registeredSources: readonly Source[] = [
   cambePnabCycle2Source,
   delmiroGouveiaPnabSource,
   estanciaCultureCallsSource,
+  cianorteMapasSource,
+  teixeiraDeFreitasPnabSource,
+  chamberOfDeputiesCultureSource,
 ];
