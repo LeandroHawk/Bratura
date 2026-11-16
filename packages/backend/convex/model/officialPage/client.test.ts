@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { fetchPageHtml, isFetchableFromListing } from './client';
+import { fetchPageHtml } from './client';
 
 function siteAnswers(body: BodyInit, headers: Record<string, string>, status = 200) {
   const fetchMock = vi.fn<typeof fetch>(async () => new Response(body, { status, headers }));
@@ -9,21 +9,6 @@ function siteAnswers(body: BodyInit, headers: Record<string, string>, status = 2
 
 afterEach(() => {
   vi.unstubAllGlobals();
-});
-
-describe('isFetchableFromListing', () => {
-  const listing = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
-
-  test("only https on the listing's own host", () => {
-    expect(isFetchableFromListing('https://www.ba.gov.br/fundacaocultural/edital-x', listing)).toBe(
-      true,
-    );
-    expect(isFetchableFromListing('http://www.ba.gov.br/fundacaocultural/edital-x', listing)).toBe(
-      false,
-    );
-    expect(isFetchableFromListing('https://ba.gov.br.example.com/edital-x', listing)).toBe(false);
-    expect(isFetchableFromListing('https://forms.cloud.microsoft/x', listing)).toBe(false);
-  });
 });
 
 describe('fetchPageHtml', () => {

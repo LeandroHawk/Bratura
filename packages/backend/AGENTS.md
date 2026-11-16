@@ -16,6 +16,7 @@ convex/
   callNotices.ts  the call notice's only writer
   ingestion.ts    the daily schedule, one action per source kind, the run lease (`ingestionRuns`)
   documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments`
+  pdfText.ts      "use node": a PDF's text layer read on its source's host (the parser needs Node)
   whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
   extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
   portfolio.ts  matching.ts  alerts.ts  orgs.ts                                 (not yet)
@@ -24,6 +25,8 @@ convex/
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
     officialPage/    client.ts (plain fetch), html.ts (links, headings), discovery.ts, payload.ts, listing.ts
+    sourceHost/      fetchOnSourceHost.ts: the only fetch whose URL a source's data chooses (its own host)
+    pdfText/         a PDF's text layer (unpdf), for a read Firecrawl answered nearly empty
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)

@@ -2,7 +2,8 @@ import { CallNoticeDocumentUrlSchema } from '@bratura/shared/entities/call-notic
 import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
 import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
-import { fetchPageHtml, isFetchableFromListing, type FetchedPage } from './client';
+import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
+import { fetchPageHtml, type FetchedPage } from './client';
 import { headingOfHtml, linksOfHtml, sectionsOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
@@ -94,7 +95,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       url !== source.listingUrl &&
       url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
-      isFetchableFromListing(url, source.listingUrl) &&
+      isOnSourceHost(url, source.listingUrl) &&
       !source.documentUrlParts.some((part) => url.includes(part)),
   );
   const calls: OfficialPageCall[] = [];

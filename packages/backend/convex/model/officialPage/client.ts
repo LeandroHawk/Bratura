@@ -1,16 +1,9 @@
+import { fetchOnSourceHost } from '../sourceHost/fetchOnSourceHost';
+
 /** A government page slower than this is down for today's run (Minas Gerais took 10 s). */
 const pageTimeoutMs = 30_000;
 /** A listing past this is not a listing: the largest measured, Minas Gerais FEC, is 441 KB. */
 const pageMaxBytes = 3_000_000;
-
-/**
- * Whether our backend may fetch `url` for a source listed at `listingUrl`: https on the listing's
- * own host only (`docs/security.md` §4). Any other link the page holds is read through Firecrawl.
- */
-export function isFetchableFromListing(url: string, listingUrl: string) {
-  const target = new URL(url);
-  return target.protocol === 'https:' && target.host === new URL(listingUrl).host;
-}
 
 function decoderFor(contentType: string) {
   try {
@@ -20,57 +13,20 @@ function decoderFor(contentType: string) {
   }
 }
 
-/** Paraná renames pages and answers the old slug with a 301 (2026-11-15: 6 call pages). */
-const maxRedirects = 3;
-
-/**
- * The answer at `url`, following a redirect only to https on the same host: one elsewhere could
- * lead anywhere, an internal address included. A call page asks for HTML, a document for a PDF.
- */
-export async function fetchOnSameHost(
-  url: string,
-  accept: string,
-  timeoutMs = pageTimeoutMs,
-): Promise<{ response: Response; finalUrl: string }> {
-  let current = url;
-  for (let hop = 0; hop <= maxRedirects; hop++) {
-    const response = await fetch(current, {
-      headers: { Accept: accept, 'User-Agent': 'Bratura (+https://bratura.vercel.app)' },
-      redirect: 'manual',
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    const location = response.headers.get('location');
-    if (response.status < 300 || response.status >= 400 || !location) {
-      return { response, finalUrl: current };
-    }
-    await response.body?.cancel();
-    const next = new URL(location, current).href;
-    if (!isFetchableFromListing(next, url)) {
-      throw new Error(`${new URL(url).host} redirected off its host`);
-    }
-    current = next;
-  }
-  throw new Error(`${new URL(url).host} redirected over ${maxRedirects} times`);
-}
-
 /** A page's HTML and the URL it came from after redirects: its relative links resolve there. */
 export type FetchedPage = { html: string; url: string };
 
 /**
- * One page's HTML, fetched plainly (no Firecrawl credits). Throws when the site does not answer,
- * redirects off its own host, answers an error or something other than HTML, or sends more than
- * `pageMaxBytes`.
+ * One page's HTML, on its own host only (`fetchOnSourceHost`). Throws when the site does not
+ * answer, redirects off its own host, answers an error or something other than HTML, or sends more
+ * than `pageMaxBytes`.
  */
 export async function fetchPageHtml(url: string): Promise<FetchedPage> {
-  const { response, finalUrl } = await fetchOnSameHost(url, 'text/html');
-  const host = new URL(url).host;
-  if (!response.ok) throw new Error(`${host} answered HTTP ${response.status}`);
-  const type = response.headers.get('content-type') ?? '';
-  if (!type.includes('html')) throw new Error(`${host} answered ${type || 'no content type'}`);
-  const tooLarge = new Error(`${host} answered over ${pageMaxBytes} bytes`);
-  // Before the download when the site says its size; after it, for one that does not.
-  if (Number(response.headers.get('content-length')) > pageMaxBytes) throw tooLarge;
-  const body = await response.arrayBuffer();
-  if (body.byteLength > pageMaxBytes) throw tooLarge;
-  return { html: decoderFor(type).decode(body), url: finalUrl };
+  const { body, contentType, finalUrl } = await fetchOnSourceHost(url, {
+    accept: 'text/html',
+    isExpectedType: (type) => type.includes('html'),
+    timeoutMs: pageTimeoutMs,
+    maxBytes: pageMaxBytes,
+  });
+  return { html: decoderFor(contentType).decode(body), url: finalUrl };
 }
