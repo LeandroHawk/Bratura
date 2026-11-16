@@ -9,7 +9,7 @@ import { CallNoticeDocumentIdentityFields } from '@bratura/shared/entities/call-
 import { z } from 'zod';
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
-import type { MutationCtx, QueryCtx } from './_generated/server';
+import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server';
 import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
 import { requiredEnv } from './lib/env';
 import { sha256Hex } from './lib/sha256';
@@ -160,7 +160,33 @@ export const recordDocumentFailure = internalZodMutation({
   },
 });
 
+const GetDocumentSourceUrlQueryArgsSchema = CallNoticeDocumentIdentityFields.pick({
+  callNoticeId: true,
+});
+const GetDocumentSourceUrlQueryReturnsSchema = z.string().nullable();
+
+/** The registered URL of the source a call notice came from: the only host our backend fetches. */
+export const getDocumentSourceUrl = internalZodQuery({
+  args: GetDocumentSourceUrlQueryArgsSchema,
+  returns: GetDocumentSourceUrlQueryReturnsSchema,
+  handler: async (ctx, { callNoticeId }): Promise<string | null> => {
+    const callNotice = await ctx.db.get(callNoticeId);
+    const source = callNotice && (await ctx.db.get(callNotice.sourceId));
+    if (!source) return null;
+    if (source.kind === 'mapasCulturaisInstance') return source.baseUrl;
+    if (source.kind === 'officialPage') return source.listingUrl;
+    return source.siteUrl;
+  },
+});
+
 // The read loop, by hand -------------------------------------------------------------------------
+
+/**
+ * A read this thin lost its body text (2026-11-15, 120 reads: Estância's gazettes gave 65 and 119
+ * characters per page, page headers only; every other read at least 423, median 1,869). A one- or
+ * two-page annex can be that short and be whole.
+ */
+const isThinRead = (text: string, pages: number) => pages >= 3 && text.length / pages < 300;
 
 /** Firecrawl allows about 10 scrapes a minute: one every 6.5 s stays under it. */
 export const documentReadSpacingMs = 6_500;
@@ -182,6 +208,30 @@ async function scrapeOnceMoreIfRateLimited(url: string, apiKey: string): Promise
     if (!(error instanceof FirecrawlRateLimitedError)) throw error;
     await sleep(rateLimitWaitMs);
     return await scrapeMarkdown(url, apiKey);
+  }
+}
+
+/**
+ * The PDF's own text layer when Firecrawl's read came back thin (`isThinRead`): its parser drops
+ * the body of some gazette PDFs that pdf.js reads whole (firecrawl/firecrawl#5759). `null` when
+ * the source is gone or the file cannot be read on its host.
+ */
+async function pdfTextOfThinRead(ctx: ActionCtx, document: DocumentToRead) {
+  const sourceUrl: string | null = await ctx.runQuery(internal.documents.getDocumentSourceUrl, {
+    callNoticeId: document.callNoticeId,
+  });
+  if (!sourceUrl) return null;
+  // A file that crashes the parser (out of memory) is no text, not a provider error: that one is
+  // retried every run, and each retry pays Firecrawl again.
+  try {
+    const { text }: { text: string | null } = await ctx.runAction(
+      internal.pdfText.readPdfTextOnSourceHost,
+      { url: document.url, sourceUrl },
+    );
+    return text;
+  } catch (error) {
+    console.warn('PDF text action failed', document.url, String(error));
+    return null;
   }
 }
 
@@ -246,10 +296,15 @@ export const readPendingDocuments = internalZodAction({
       let creditsUsed: number | null = null;
       let answeredWithoutCost = false;
       try {
-        const { markdown, ...answer } = await scrapeOnceMoreIfRateLimited(document.url, apiKey);
+        const answer = await scrapeOnceMoreIfRateLimited(document.url, apiKey);
         creditsUsed = answer.creditsUsed;
         answeredWithoutCost = creditsUsed === null;
         result.creditsUsed += creditsUsed ?? 0;
+        let markdown = answer.markdown;
+        if (creditsUsed !== null && isThinRead(markdown, creditsUsed)) {
+          const local = await pdfTextOfThinRead(ctx, document);
+          markdown = local !== null && !isThinRead(local, creditsUsed) ? local : '';
+        }
         if (markdown.trim() === '') failure = 'noText';
         else if (markdown.length > callNoticeDocumentMarkdownMax) failure = 'tooLarge';
         else

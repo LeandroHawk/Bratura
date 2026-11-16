@@ -41,7 +41,9 @@ import type * as model_officialPage_discovery from "../model/officialPage/discov
 import type * as model_officialPage_html from "../model/officialPage/html.js";
 import type * as model_officialPage_listing from "../model/officialPage/listing.js";
 import type * as model_officialPage_payload from "../model/officialPage/payload.js";
+import type * as model_pdfText_pdfTextOnSourceHost from "../model/pdfText/pdfTextOnSourceHost.js";
 import type * as model_sources_registry from "../model/sources/registry.js";
+import type * as pdfText from "../pdfText.js";
 import type * as sources from "../sources.js";
 import type * as whatsapp from "../whatsapp.js";
 
@@ -85,7 +87,9 @@ declare const fullApi: ApiFromModules<{
   "model/officialPage/html": typeof model_officialPage_html;
   "model/officialPage/listing": typeof model_officialPage_listing;
   "model/officialPage/payload": typeof model_officialPage_payload;
+  "model/pdfText/pdfTextOnSourceHost": typeof model_pdfText_pdfTextOnSourceHost;
   "model/sources/registry": typeof model_sources_registry;
+  pdfText: typeof pdfText;
   sources: typeof sources;
   whatsapp: typeof whatsapp;
 }>;

@@ -24,16 +24,20 @@ function decoderFor(contentType: string) {
 const maxRedirects = 3;
 
 /**
- * The page's answer, following a redirect only to https on the same host: one elsewhere could
- * lead anywhere, an internal address included.
+ * The answer at `url`, following a redirect only to https on the same host: one elsewhere could
+ * lead anywhere, an internal address included. A call page asks for HTML, a document for a PDF.
  */
-async function fetchOnSameHost(url: string): Promise<{ response: Response; finalUrl: string }> {
+export async function fetchOnSameHost(
+  url: string,
+  accept: string,
+  timeoutMs = pageTimeoutMs,
+): Promise<{ response: Response; finalUrl: string }> {
   let current = url;
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const response = await fetch(current, {
-      headers: { Accept: 'text/html', 'User-Agent': 'Bratura (+https://bratura.vercel.app)' },
+      headers: { Accept: accept, 'User-Agent': 'Bratura (+https://bratura.vercel.app)' },
       redirect: 'manual',
-      signal: AbortSignal.timeout(pageTimeoutMs),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const location = response.headers.get('location');
     if (response.status < 300 || response.status >= 400 || !location) {
@@ -58,7 +62,7 @@ export type FetchedPage = { html: string; url: string };
  * `pageMaxBytes`.
  */
 export async function fetchPageHtml(url: string): Promise<FetchedPage> {
-  const { response, finalUrl } = await fetchOnSameHost(url);
+  const { response, finalUrl } = await fetchOnSameHost(url, 'text/html');
   const host = new URL(url).host;
   if (!response.ok) throw new Error(`${host} answered HTTP ${response.status}`);
   const type = response.headers.get('content-type') ?? '';
