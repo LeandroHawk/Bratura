@@ -1,3 +1,5 @@
+import { plainText } from '../../lib/text';
+
 /** A link on a page: where it goes, absolute, and the text a person reads on it. */
 export type PageLink = { url: string; label: string };
 
@@ -60,21 +62,45 @@ const withoutCode = (html: string) =>
   html.replace(/<(script|style)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi, '');
 
 /**
+ * A link whose text is only an action (Estância, 2026-11-15: every file is "Visualizar" then
+ * "Baixar" under its name in bold). Without a name, no rule can tell its notice from a result.
+ */
+const namesOnlyAnAction = (label: string) => /^(baixar|visualizar)$/.test(plainText(label));
+
+/** The first text in `html`: "<p><strong>Edital 022</strong></p>" → "Edital 022". */
+const firstTextOf = (html: string) =>
+  html
+    .split(/<[^>]*>/)
+    .map(plainLabel)
+    .find((text) => text) ?? '';
+
+/**
  * A page's headings and http(s) links in page order. A link's URL is absolute, without its `#`.
- * Only a heading's opening tag is matched, so a link inside a heading is still read.
+ * Only a heading's opening tag is matched, so a link inside a heading is still read. A link that
+ * names only an action takes the first text between it and the item before, else that link's label.
  */
 function* headingsAndLinksOf(html: string, pageUrl: string) {
   const page = withoutCode(html);
   const headingText = /([\s\S]*?)<\/h[1-6]>/iy;
+  let previousEnd = 0;
+  let previousLinkLabel = '';
   for (const match of page.matchAll(
     /<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']+))[^>]*>([\s\S]*?)<\/a>|<h[1-6]\b[^>]*>/gi,
   )) {
     const [tag, double, single, bare, inner] = match;
+    const textBefore = page.slice(previousEnd, match.index);
     if (/^<h/i.test(tag)) {
       headingText.lastIndex = match.index + tag.length;
-      yield { heading: plainLabel(headingText.exec(page)?.[1] ?? '') };
+      const heading = headingText.exec(page);
+      previousEnd = heading ? headingText.lastIndex : match.index + tag.length;
+      previousLinkLabel = '';
+      yield { heading: plainLabel(heading?.[1] ?? '') };
       continue;
     }
+    previousEnd = match.index + tag.length;
+    let label = plainLabel(inner ?? '');
+    if (namesOnlyAnAction(label)) label = firstTextOf(textBefore) || previousLinkLabel || label;
+    previousLinkLabel = label;
     let url: URL;
     try {
       url = new URL(decodeEntities((double ?? single ?? bare ?? '').trim()), pageUrl);
@@ -83,7 +109,7 @@ function* headingsAndLinksOf(html: string, pageUrl: string) {
     }
     if (url.protocol !== 'https:' && url.protocol !== 'http:') continue;
     url.hash = '';
-    yield { link: { url: url.href, label: plainLabel(inner ?? '') } };
+    yield { link: { url: url.href, label } };
   }
 }
 

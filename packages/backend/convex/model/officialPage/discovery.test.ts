@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   bahiaFuncebSource,
+  estanciaCultureCallsSource,
   funarteCallsSource,
   maranhaoSecmaSource,
   jundiaiCultureSource,
@@ -198,6 +199,27 @@ describe('callsOfCallPages', () => {
     expect(calls.map(({ documents }) => documents.map(({ url }) => url.split('/').pop()))).toEqual([
       ['EDITAL-N-092026-ATELIE.pdf', 'ANEXO-I-CRONOGRAMA.docx'],
       ['ANEXO-I-PLANO.pdf'],
+    ]);
+  });
+
+  test('an "Acessar" link on a page with no <h1>: its numbered notice names the call (Estância)', async () => {
+    const site = 'https://editalcultural.estancia.se.gov.br';
+    const download = (id: number, name: string) =>
+      `<p><strong>${name}</strong></p>${a(`/Arquivos/DownloadArquivos/?id=${id}`, 'Baixar')}`;
+    siteAnswers({
+      [estanciaCultureCallsSource.listingUrl]: [
+        a('/Editais/Details/53', 'Acessar'),
+        a('/Editais/Details/45', 'Acessar'),
+        a('/Editais/Details/51', 'Acessar'),
+      ].join(''),
+      [`${site}/Editais/Details/53`]:
+        '<h3>Publicação do Edital</h3>' + download(70, 'EDITAL 022/2026 – CULTURAS DA MINHA TERRA'),
+      [`${site}/Editais/Details/45`]: download(55, 'Plano de Aplicação dos Recursos (PAR)'),
+      [`${site}/Editais/Details/51`]: download(61, 'Resultado Final da Seleção do Edital 004-2026'),
+    });
+    const calls = await callsOf(estanciaCultureCallsSource);
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      ['EDITAL 022/2026 – CULTURAS DA MINHA TERRA', [`${site}/Arquivos/DownloadArquivos/?id=70`]],
     ]);
   });
 

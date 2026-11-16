@@ -46,6 +46,32 @@ describe('linksOfHtml', () => {
   });
 });
 
+describe('linksOfHtml: a link that names only an action (Estância)', () => {
+  const page = 'https://editalcultural.estancia.se.gov.br/Editais/Details/52';
+  const file = (id: number, name: string) =>
+    `<div><p><strong>${name}</strong></p><p>Descrição: anexos</p>` +
+    `<a href="/Arquivos/ViewArquivos/?id=${id}"><i class="fas fa-eye"></i> Visualizar</a>` +
+    `<a href="/Arquivos/DownloadArquivos/?id=${id}" download><i></i> Baixar</a></div>`;
+
+  test('takes the first text above it, or the action link just before it', () => {
+    const html =
+      file(62, 'EDITAL 005/2026 &#x2013; CULTURAS') +
+      file(69, 'RESULTADO FINAL DO EDITAL 005/2026');
+    expect(linksOfHtml(html, page).map(({ label }) => label)).toEqual([
+      'EDITAL 005/2026 – CULTURAS',
+      'EDITAL 005/2026 – CULTURAS',
+      'RESULTADO FINAL DO EDITAL 005/2026',
+      'RESULTADO FINAL DO EDITAL 005/2026',
+    ]);
+  });
+
+  test('a heading in between is not borrowed, and a link that names something keeps its text', () => {
+    const html =
+      '<p>Edital 01/2026</p><h3>Documentos</h3><a href="/a">Baixar</a><a href="/b">Edital</a>';
+    expect(linksOfHtml(html, page).map(({ label }) => label)).toEqual(['Baixar', 'Edital']);
+  });
+});
+
 describe('headingOfHtml', () => {
   test("the first heading's text, empty when the page has none (Salvador)", () => {
     const page = '<title>X – FGM</title><h1 class="t">Edital <b>09</b></h1><h1>FALE CONOSCO</h1>';
