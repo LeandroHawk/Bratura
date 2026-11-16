@@ -213,8 +213,8 @@ async function scrapeOnceMoreIfRateLimited(url: string, apiKey: string): Promise
 
 /**
  * The PDF's own text layer when Firecrawl's read came back thin (`isThinRead`): its parser drops
- * the body of some gazette PDFs that pdf.js reads whole (firecrawl/firecrawl#5759). `null` when
- * the source is gone or the file cannot be read on its host.
+ * the body of some gazette PDFs that pdf.js reads whole (Estância, 2026-11-15; reported to
+ * Firecrawl). `null` when the source is gone or the file cannot be read on its host.
  */
 async function pdfTextOfThinRead(ctx: ActionCtx, document: DocumentToRead) {
   const sourceUrl: string | null = await ctx.runQuery(internal.documents.getDocumentSourceUrl, {
