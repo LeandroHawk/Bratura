@@ -47,6 +47,26 @@ describe('callNoticeListingFromMapasOpportunity', () => {
     expect(listingOf({ '@files:downloads': undefined }).documentUrls).toEqual([]);
   });
 
+  test('puts the notice Mapas names "Regulamento" first, even with no downloads', () => {
+    const rules = { url: 'https://cultura.cianorte.pr.gov.br/files/opportunity/106/edital-11.pdf' };
+    expect(
+      listingOf({ '@files:rules': rules, '@files:downloads': undefined }).documentUrls,
+    ).toEqual([rules.url]);
+    expect(listingOf({ '@files:rules': rules }).documentUrls).toEqual([
+      rules.url,
+      'https://mapa.cultura.gov.br/files/opportunity/4321/edital.pdf',
+      'https://mapa.cultura.gov.br/files/opportunity/4321/anexo-i.DOCX',
+    ]);
+  });
+
+  test('keeps a file sent both as the notice and as a download once', () => {
+    const rules = { url: 'https://mapa.cultura.gov.br/files/opportunity/4321/edital.pdf' };
+    expect(listingOf({ '@files:rules': rules }).documentUrls).toEqual([
+      rules.url,
+      'https://mapa.cultura.gov.br/files/opportunity/4321/anexo-i.DOCX',
+    ]);
+  });
+
   test('cuts a summary past the ceiling and marks the cut', () => {
     const summary = listingOf({ shortDescription: 'a'.repeat(textLengths.max + 753) }).summary;
     expect(summary).toHaveLength(textLengths.max);
