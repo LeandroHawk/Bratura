@@ -32,6 +32,7 @@ export const ReadingCallNoticeDocumentSchema = z.object({
 export const ReadCallNoticeDocumentSchema = z.object({
   ...CallNoticeDocumentIdentityFields.shape,
   status: z.literal('read'),
+  /** Firecrawl's Markdown, or plain text when the PDF's own text layer replaced it. */
   markdown: z.string().min(1).max(callNoticeDocumentMarkdownMax),
   /** SHA-256 of `markdown`: extraction runs again only when it changes. */
   markdownHash: requiredSha256Hex,
@@ -49,7 +50,8 @@ export const FailedCallNoticeDocumentSchema = z.object({
 
 /**
  * Writes: `documents.ts`, when documents are read by hand (`readPendingDocuments`). Comes from:
- * Firecrawl `/scrape` of one `documentUrls` link. Reads: extraction (16–18/11).
+ * Firecrawl `/scrape` of one `documentUrls` link, or, when its text comes back nearly empty, the
+ * PDF's own text layer read by the backend (`pdfText.ts`). Reads: extraction (16–18/11).
  */
 export const CallNoticeDocumentSchema = z.discriminatedUnion('status', [
   ReadingCallNoticeDocumentSchema,

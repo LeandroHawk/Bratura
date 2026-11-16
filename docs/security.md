@@ -83,12 +83,15 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
   Classification drops such documents before their text is stored (competition rule 6.8, LGPD).
 - **Our code fetches only what the team registered.** A Convex action calls `fetch` only on a
   registered source's `https` base URL, or, for an official page, an `https` page on its listing's
-  own host, following a redirect only to `https` on that same host (`model/officialPage/client.ts`:
+  own host, following a redirect only to `https` on that same host (`model/sourceHost/fetchOnSourceHost.ts`:
   one elsewhere could lead anywhere).
   A link from a source's data (`documentUrls`, written by anyone who can publish on Mapas) is read
-  only through Firecrawl, outside our infrastructure, so a crafted link cannot make our backend call
+  through Firecrawl, outside our infrastructure, so a crafted link cannot make our backend call
   an internal address. `requiredHttpUrl` also refuses IPs and `localhost`, but not a domain that
-  points inside.
+  points inside. **One exception, held to the official-page rule:** when Firecrawl's text of a PDF
+  comes back nearly empty, our backend downloads that PDF itself to read its text layer
+  (`pdfText.ts`), only from `https` on the registered source's own host, redirects too, at most
+  30 MB, parsed by a pdf.js (6.x) that compiles no code from a file (CVE-2024-4367's path is gone). A file that crashes the parser is "no text".
 - **Errors never leak.** A function throws a code (`appError`), not an internal message; Zod's
   issues carry the path, the rule and its numbers, never the value sent; Convex redacts any other
   error to "Server Error" in production. Keep it so: returning `error.message` from a caught
