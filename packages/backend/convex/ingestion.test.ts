@@ -24,7 +24,13 @@ const newsSite: Source = {
 };
 
 function mapasAnswers(body: unknown, status = 200) {
-  const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body), { status }));
+  const fetchMock = vi.fn<typeof fetch>(
+    async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json' },
+      }),
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
