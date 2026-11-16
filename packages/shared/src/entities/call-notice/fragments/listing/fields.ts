@@ -48,8 +48,9 @@ export const CallNoticeListingFields = z.object({
   summary: nullableString(),
   /** The page a creator opens to read and apply [`singleUrl`]. */
   officialUrl: requiredHttpUrl,
-  /** The text files the source attaches, in its order [`@files:downloads`]: the call notice and its
-   * annexes, media left out. Which one is the call notice is decided when documents are read. */
+  /** The text files the source attaches, in its order [`@files:rules` first, then
+   * `@files:downloads`]: the call notice and its annexes, media left out. Which one is the call
+   * notice is decided when documents are read. */
   documentUrls: z.array(CallNoticeDocumentUrlSchema).max(callNoticeDocumentUrlsMax),
   /** The text of each document's link, where the source gives one apart from the file name (an
    * official page: "Edital FEC 02/2026 - Retificado em 10/11/26"). Absent for Mapas Culturais. */

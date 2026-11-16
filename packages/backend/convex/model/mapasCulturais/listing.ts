@@ -25,8 +25,9 @@ export function callNoticeListingFromMapasOpportunity(
     title: opportunity.name,
     summary: summaryFromShortDescription(opportunity.shortDescription),
     officialUrl: opportunity.singleUrl,
-    documentUrls: (opportunity['@files:downloads'] ?? [])
-      .map((file) => file.url)
+    documentUrls: [opportunity['@files:rules'], ...(opportunity['@files:downloads'] ?? [])]
+      .flatMap((file) => (file ? [file.url] : []))
+      .filter((url, index, urls) => urls.indexOf(url) === index)
       .filter((url) => CallNoticeDocumentUrlSchema.safeParse(url).success)
       .slice(0, callNoticeDocumentUrlsMax),
     registrationOpens: zonedInstantFromMapasDate(opportunity.registrationFrom),

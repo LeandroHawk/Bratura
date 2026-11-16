@@ -27,7 +27,7 @@ export async function fetchOpenMapasOpportunities(
     '@select',
     'id,name,shortDescription,registrationFrom,registrationTo,singleUrl',
   );
-  url.searchParams.set('@files', '(downloads):url');
+  url.searchParams.set('@files', '(rules,downloads):url');
   url.searchParams.set('registrationFrom', `LTE(${today})`);
   url.searchParams.set('registrationTo', `GTE(${today})`);
   url.searchParams.set('@order', 'registrationTo ASC');

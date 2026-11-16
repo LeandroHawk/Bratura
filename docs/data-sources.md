@@ -108,7 +108,7 @@ is the Mapas template's view, rendered by script (not read in full, as Petrolina
 ```
 GET https://{host}/api/opportunity/find
   ?@select=id,name,shortDescription,registrationFrom,registrationTo,singleUrl
-  &@files=(downloads):url
+  &@files=(rules,downloads):url
   &registrationFrom=LTE({today})
   &registrationTo=GTE({today})
   &@order=registrationTo ASC
@@ -123,10 +123,14 @@ GET https://{host}/api/opportunity/find
   2050, 2052, 2076, 2100), a sentinel for an open-ended form, not a date. **Real midnight closings
   are rare but exist** (first ingestion: 2 CE, 1 federal): Mapas closes the form at that minute, so
   "15/11 00:00" means "until the end of the 14th", and a screen must show the previous day.
-- `"@files:downloads": [{ "url": … }]` is every attachment, absent when there is none (41 of 59
-  federal calls): the call notice and its annexes (up to 37 on one call), plus `.docx` forms and
-  media (`.mp4`, `.mp3`, `.jpg`). A call notice stores the text files in order (`documentUrls`),
-  media left out; which one is the call notice is decided when documents are read.
+- `"@files:rules": { "url": … }` is the one file Mapas names "Regulamento", usually the notice
+  itself; `"@files:downloads": [{ "url": … }]` is every other attachment, absent when there is none
+  (41 of 59 federal calls): annexes (up to 37 on one call), `.docx` forms and media (`.mp4`, `.mp3`,
+  `.jpg`). **Read both**: on 2026-11-16, 101 of the 2026 opportunities on the registered instances
+  had their notice only in `rules` (culteditais 49, agentecultural 15, CE 13, ES 10), and asking
+  for `rules` raised the calls with a notice worth reading from 332 to 656 of 800. A call notice
+  stores the text files in order, `rules` first (`documentUrls`), media left out; which one is the
+  call notice is still decided by name when documents are read.
 - One federal summary had 5,753 characters: past the contract's 5,000, it is cut and marked "…".
 - Filters: `EQ`, `LIKE` (with `*`), `BET(a,b)`, `GTE`, `LTE`, `AND(...)`, `OR(...)`, `!`.
 - **Dirty data**: payment forms ("habilitação de pagamento"), council elections, Mapas

@@ -26,6 +26,8 @@ export const MapasOpportunitySchema = z.object({
   registrationFrom: MapasDateSchema.nullish(),
   registrationTo: MapasDateSchema.nullish(),
   singleUrl: z.string(),
+  /** The notice Mapas names "Regulamento": one file, often the only one an opportunity has. */
+  '@files:rules': z.object({ url: z.string() }).optional(),
   '@files:downloads': z.array(z.object({ url: z.string() })).optional(),
 });
 
