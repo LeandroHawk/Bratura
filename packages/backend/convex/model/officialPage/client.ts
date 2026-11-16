@@ -17,12 +17,12 @@ function decoderFor(contentType: string) {
 export type FetchedPage = { html: string; url: string };
 
 /**
- * One page's HTML, on its own host only (`fetchOnSourceHost`). Throws when the site does not
- * answer, redirects off its own host, answers an error or something other than HTML, or sends more
- * than `pageMaxBytes`.
+ * One page's HTML, on the host of `listingUrl` only (`fetchOnSourceHost`). Throws when it is
+ * elsewhere, the site does not answer, redirects off its own host, answers an error or something
+ * other than HTML, or sends more than `pageMaxBytes`.
  */
-export async function fetchPageHtml(url: string): Promise<FetchedPage> {
-  const { body, contentType, finalUrl } = await fetchOnSourceHost(url, {
+export async function fetchPageHtml(url: string, listingUrl: string): Promise<FetchedPage> {
+  const { body, contentType, finalUrl } = await fetchOnSourceHost(url, listingUrl, {
     accept: 'text/html',
     isExpectedType: (type) => type.includes('html'),
     timeoutMs: pageTimeoutMs,

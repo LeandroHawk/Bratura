@@ -14,9 +14,10 @@ const pdfTimeoutMs = 60_000;
  * CVE-2024-4367's font path is gone) and fetches nothing.
  */
 export async function pdfTextOnSourceHost(url: string, sourceUrl: string): Promise<string | null> {
+  // Off the source's host is the common case (federal Mapas files): no fetch, no warning.
   if (!isOnSourceHost(url, sourceUrl)) return null;
   try {
-    const { body } = await fetchOnSourceHost(url, {
+    const { body } = await fetchOnSourceHost(url, sourceUrl, {
       accept: 'application/pdf',
       isExpectedType: (type) => type.includes('pdf'),
       timeoutMs: pdfTimeoutMs,

@@ -43,7 +43,7 @@ describe('fetchOnSourceHost', () => {
       'fetch',
       vi.fn(async () => new Response(stream, { headers: { 'content-type': 'application/pdf' } })),
     );
-    await expect(fetchOnSourceHost(file, pdf)).rejects.toThrow('answered over 10 bytes');
+    await expect(fetchOnSourceHost(file, file, pdf)).rejects.toThrow('answered over 10 bytes');
     expect(sent).toBeLessThan(3);
   });
 
@@ -52,7 +52,7 @@ describe('fetchOnSourceHost', () => {
       'fetch',
       vi.fn(async () => new Response('%PDF-1', { headers: { 'content-type': 'application/pdf' } })),
     );
-    const { body, contentType, finalUrl } = await fetchOnSourceHost(file, pdf);
+    const { body, contentType, finalUrl } = await fetchOnSourceHost(file, file, pdf);
     expect(new TextDecoder().decode(body)).toBe('%PDF-1');
     expect([contentType, finalUrl]).toEqual(['application/pdf', file]);
   });

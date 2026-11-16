@@ -70,21 +70,27 @@ async function bodyUpTo(response: Response, maxBytes: number, tooLarge: Error) {
     chunks.push(chunk.value);
   }
   const body = new Uint8Array(size);
-  chunks.reduce((offset, chunk) => (body.set(chunk, offset), offset + chunk.byteLength), 0);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
   return body;
 }
 
 /**
- * One file from `url`'s own host, fetched plainly (no Firecrawl credits); the caller checks that
- * `url` is on its source's host (`isOnSourceHost`). Throws, naming the host, when the site does not
- * answer, redirects off its host, answers an error or an unexpected type, or sends over `maxBytes`.
+ * One file from a registered source's own host, fetched plainly (no Firecrawl credits). Throws,
+ * naming the host, when `url` is not on `sourceUrl`'s host, the site does not answer, redirects off
+ * its host, answers an error or an unexpected type, or sends over `maxBytes`.
  */
 export async function fetchOnSourceHost(
   url: string,
+  sourceUrl: string,
   request: SourceHostRequest,
 ): Promise<SourceHostAnswer> {
-  const { response, finalUrl } = await answerOnSameHost(url, request);
   const host = new URL(url).host;
+  if (!isOnSourceHost(url, sourceUrl)) throw new Error(`${host} is not its source's own host`);
+  const { response, finalUrl } = await answerOnSameHost(url, request);
   const contentType = response.headers.get('content-type') ?? '';
   if (!response.ok || !request.isExpectedType(contentType)) await response.body?.cancel();
   if (!response.ok) throw new Error(`${host} answered HTTP ${response.status}`);

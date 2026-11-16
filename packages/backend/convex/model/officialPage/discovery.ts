@@ -79,7 +79,7 @@ const namesNoCall = (label: string) => /^(clique aqui|acessar)[\s!.]*$/.test(pla
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
-  const { html, url: listingUrl } = await fetchPageHtml(source.listingUrl);
+  const { html, url: listingUrl } = await fetchPageHtml(source.listingUrl, source.listingUrl);
   const listing = linksOfHtml(html, listingUrl);
   /**
    * A document the listing links too is the site's frame, not the call's (Funarte, 2026-11-15:
@@ -109,7 +109,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     let page: PageLink[];
     let heading: string;
     try {
-      const fetched = await fetchPageHtml(url);
+      const fetched = await fetchPageHtml(url, source.listingUrl);
       page = linksOfHtml(fetched.html, fetched.url);
       heading = headingOfHtml(fetched.html);
     } catch (error) {
@@ -263,7 +263,7 @@ export function callsOfDocumentsUnderHeadings(
 export async function fetchOfficialPageCalls(source: OfficialPageSource): Promise<unknown[]> {
   const { discovery } = source;
   if (discovery.hops === 'callPage') return await callsOfCallPages({ ...source, discovery });
-  const listing = await fetchPageHtml(source.listingUrl);
+  const listing = await fetchPageHtml(source.listingUrl, source.listingUrl);
   if (discovery.hops === 'documentsUnderHeadings') {
     return callsOfDocumentsUnderHeadings(source, listing);
   }
