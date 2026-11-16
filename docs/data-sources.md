@@ -80,11 +80,13 @@ ingestion recorded 0 and they wait for PNAB Ciclo 3):
 | Paulista-PE (not on the GitHub list) | `mapacultural.paulista.pe.gov.br` | 6 | `America/Recife` |
 | Anápolis-GO | `culturaemrede.anapolis.go.gov.br` | 5 | `Etc/GMT+3` |
 | Arapiraca-AL (not on the GitHub list) | `mapacultural.arapiraca.al.gov.br` | 11 | `Etc/GMT+3` |
+| Cianorte-PR (added 2026-11-16) | `cultura.cianorte.pr.gov.br` | 7 (Chamamento 11/2026 open to 18/11) | `Etc/GMT+3` |
 
 `robots.txt` answers the app's HTML page on all four (2026-11-15): nothing declared. Terms:
 Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas template, not read in
-full); Anápolis and Arapiraca publish none found (Arapiraca's `/termos-de-uso` is a 404). Unlike
-the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
+full); Anápolis and Arapiraca publish none found (Arapiraca's `/termos-de-uso` is a 404). Cianorte
+(2026-11-16): `robots.txt` 404; no terms at `/termos-de-uso`, `/politica-de-privacidade` or `/lgpd`.
+Unlike the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
 
 **CultBR Editais** (`culteditais.cultura.gov.br`, added on 2026-11-15): the Ministry of Culture's
 Mapas for municipalities with no instance of their own, mostly PNAB. 261 opportunities closing in
@@ -153,6 +155,8 @@ the rows marked so below).
 | Cambé Secretaria de Cultura PNAB Ciclo II (measured 2026-11-15) | `https://www.cambe.pr.gov.br/index.php/secretarias/secretarias/cultura/lei-aldir-blanc/pnab-ciclo-ii/`: one page per call (`/pnab-ciclo-ii/edital-0…`), documents under `/index.php/download/`; a page for one cycle. 2 calls in 2026 (Editais 001 and 005/2026), both closed that day | allows (WordPress default: `/wp-admin/` disallowed) | only an LGPD privacy page (`/lgpd-2/`), no clause on automated access or reuse, 2026-11-15 |
 | Delmiro Gouveia PNAB (measured 2026-11-15) | `https://delmirogouveia.al.gov.br/editais-pnab/`: the listing links every notice PDF itself, the call number in the link text ("EDITAL DE CHAMAMENTO PÚBLICO Nº 02-2026 …"); not tied to one cycle. 2 calls in 2026, both closed on 13/11 | allows (WordPress default, plus `/wp-content/uploads/wpforms/` disallowed) | only a privacy page, no clause on automated access or reuse, 2026-11-15 |
 | Estância Edital Cultural (measured 2026-11-15) | `https://editalcultural.estancia.se.gov.br/Editais`: one page per call (`/Editais/Details/N`), linked as "Acessar"; each file is a download handler (`/Arquivos/DownloadArquivos/?id=N`) named only by the bold text above its "Baixar" link. Apart from the city's `www.` host, which disallows everything. 12 items, Edital 022/2026 open until 23/11 | 404: nothing declared | none published, 2026-11-15 |
+| Teixeira de Freitas SMIC PNAB (measured 2026-11-16) | `https://smic.teixeiradefreitas.ba.gov.br/grupo/pnab/`: one page per call (`/editais/edital-de-chamamento…`, `/editais/credenciamento-…`), documents under `/wp-content/uploads/`; the reviewers' credenciamento (to 2028) and the public `/perfis` pages are left out by the parts. 3 calls open that day (to 19/11, 27/11, 31/12) | allows (`/wp-admin/` disallowed) | only a privacy page (an LGPD consent for applicants' data), no clause on automated access, 2026-11-16 |
+| Câmara dos Deputados, editais de seleção cultural (measured 2026-11-16) | `https://www2.camara.leg.br/a-camara/visiteacamara/cultura-na-camara/editais-de-selecao`: one page per yearly call (the 2026/27 one at `copy_of_edital-2025-2026`), which links the notice as a clean PDF; past editions are not linked. Edital 01/2026 (exhibitions for 2027) open to 30/11 | allows (form, search and legacy suffixes disallowed; no AI-named group) | §29: "Todas as informações publicadas no Portal da Câmara são de domínio público, gratuitas e podem ser reproduzidas desde que citada a fonte “Câmara dos Deputados”" (each call keeps its source link); §22 lets it block "sistemas automatizados ou robôs … que tentem imitar pessoas", and our user agent names itself, 2026-11-16 |
 | Ponta Grossa SMC PNAB (measured 2026-11-15) | `https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/`: one heading per call, every document linked as "clique aqui"; **off**: it times out from Convex (US East) and answers from Brazil, as Pernambuco | allows (WordPress default, plus `/wp-content/uploads/wpforms/` disallowed) | none published, 2026-11-15 |
 | Paraná Seec (measured 2026-11-15) | `https://www.cultura.pr.gov.br/`: one page per call under `/Pagina/Edital-`, some renamed behind a same-host 301 | allows (Drupal default: `/core/`, `/user/`, `/search/` disallowed) | none published, 2026-11-15 |
 | São Paulo city culture calls | `https://prefeitura.sp.gov.br/web/cultura/editais/` | allows all | not recorded here |
