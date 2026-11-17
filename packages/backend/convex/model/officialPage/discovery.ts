@@ -8,6 +8,7 @@ import { fetchPageHtml, type FetchedPage } from './client';
 import {
   headingOfHtml,
   linksOfHtml,
+  onePerUrl,
   sectionsOfHtml,
   textOfClass,
   titleOfHtml,
@@ -126,6 +127,17 @@ function publishedOverAYearAgo(html: string, publishedAtClass: string) {
   return Date.now() - publishedAt > yearMs;
 }
 
+/**
+ * An `http:` link to the source's own host, as `https:`: Sesi SP (2026-11-17) links every call page
+ * as `http://www.sesisp.org.br/…` and redirects it. Only `https:` is fetched, so without it no call.
+ */
+function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
+  const url = new URL(link.url);
+  if (url.protocol !== 'http:' || url.host !== new URL(sourceUrl).host) return link;
+  url.protocol = 'https:';
+  return { ...link, url: url.href };
+}
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
@@ -137,7 +149,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     source.listingUrl,
     source,
   );
-  const listing = linksOfHtml(html, listingUrl);
+  const listing = onePerUrl(
+    linksOfHtml(html, listingUrl).map((link) => withHttpsOnHost(link, source.listingUrl)),
+  );
   /**
    * A document the listing links too is the site's frame, not the call's (Funarte, 2026-11-15:
    * every page links an internal "Edital No. 409/2025"). Without this, it is each call's notice.
