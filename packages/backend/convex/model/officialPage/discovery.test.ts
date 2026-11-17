@@ -7,8 +7,10 @@ import {
   maranhaoSecmaSource,
   jundiaiCultureSource,
   paranaSeecSource,
+  portoAlegreCultureSource,
   recifeCultureSource,
   salvadorFgmSource,
+  sesiSpCultureSource,
 } from '../sources/registry';
 import {
   callNumberOf,
@@ -350,6 +352,83 @@ describe('callsOfCallPages', () => {
         [`${site}/wp-content/uploads/2026/11/Edital-Musical-2027.pdf`],
       ],
     ]);
+  });
+
+  test('news as calls (Porto Alegre): a post over a year old is skipped, one with no date kept; a prize or open registration in the title names the call', async () => {
+    const news = 'https://prefeitura.poa.br/smc/noticias';
+    const published = (date: string) =>
+      `<div class="field field--name-field-noticia-data-no-calendario field--item">${date}</div>`;
+    siteAnswers({
+      [portoAlegreCultureSource.listingUrl]: [
+        a(`${news}/premio-musica-2026`, 'Leia Mais'),
+        a(`${news}/teatros-2026`, 'Leia Mais'),
+        a(`${news}/premio-literatura-30`, 'Leia Mais'),
+        a(`${news}/sem-data`, 'Leia Mais'),
+      ].join(''),
+      [`${news}/premio-musica-2026`]: [
+        '<title>Abertas as inscrições para o Prêmio Açorianos de Música 2026 | Prefeitura</title>',
+        published('17/10/2026 04:42'),
+        a('https://forms.gle/x', 'link'),
+      ].join(''),
+      [`${news}/teatros-2026`]: [
+        '<title>Começam nesta segunda-feira as inscrições para ocupação dos teatros | Prefeitura</title>',
+        published('05/01/2026 06:10'),
+      ].join(''),
+      [`${news}/premio-literatura-30`]: [
+        '<title>Abertas inscrições para 30ª edição do Prêmio Açorianos de Literatura | Prefeitura</title>',
+        published('11/12/2024 08:43'),
+      ].join(''),
+      [`${news}/sem-data`]: '<title>Prêmio Açorianos de Dança | Prefeitura</title>',
+    });
+    const calls = await callsOf(portoAlegreCultureSource);
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      [
+        'Abertas as inscrições para o Prêmio Açorianos de Música 2026',
+        [`${news}/premio-musica-2026`],
+      ],
+      [
+        'Começam nesta segunda-feira as inscrições para ocupação dos teatros',
+        [`${news}/teatros-2026`],
+      ],
+      ['Prêmio Açorianos de Dança', [`${news}/sem-data`]],
+    ]);
+  });
+
+  test("an http link to the source's own host is fetched as https, once; another host's is not (Sesi SP)", async () => {
+    const page = 'www.sesisp.org.br/cultura/sesi-sp-abre-inscricoes-bachiana';
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    const fetchMock = siteAnswers({
+      [sesiSpCultureSource.listingUrl]: [
+        a(`http://${page}`, 'Processo Seletivo Bachiana Jovem'),
+        a(`https://${page}`, 'Processo Seletivo Bachiana Jovem'),
+        a('http://outro.org.br/cultura/sesi-sp-x', 'Outro'),
+      ].join(''),
+      [`https://${page}`]: a(media, 'Confira o regulamento aqui'),
+    });
+    const calls = await callsOf(sesiSpCultureSource);
+    expect(calls.map(({ externalId, documents }) => [externalId, documents])).toEqual([
+      [`https://${page}`, [{ url: media, label: 'Confira o regulamento aqui' }]],
+    ]);
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      sesiSpCultureSource.listingUrl,
+      `https://${page}`,
+    ]);
+  });
+
+  test('a frame document linked as http on the listing and on a call page is still the frame', async () => {
+    const page = 'www.sesisp.org.br/cultura/sesi-sp-abre-inscricoes-bachiana';
+    const frame = a('http://www.sesisp.org.br/cultura/edital-geral.pdf', 'Edital geral');
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    siteAnswers({
+      [sesiSpCultureSource.listingUrl]: frame + a(`http://${page}`, 'Bachiana Jovem'),
+      [`https://${page}`]: frame + a(media, 'Confira o regulamento aqui'),
+    });
+    const frameAsDocument = {
+      ...sesiSpCultureSource,
+      documentUrlParts: [...sesiSpCultureSource.documentUrlParts, '/cultura/edital-geral'],
+    };
+    const [call] = await callsOf(frameAsDocument);
+    expect(call?.documents.map(({ url }) => url)).toEqual([media]);
   });
 });
 

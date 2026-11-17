@@ -864,6 +864,47 @@ export const badescCultureSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Porto Alegre's culture office lists calls as news posts, newest first, back to 2023; the rules
+ * and dates are in the post (Açorianos: applications on Google Forms), notice files rarely on the
+ * site itself (others on Drive or the gazette, whose host answers no robots file).
+ */
+export const portoAlegreCultureSource = {
+  kind: 'officialPage',
+  slug: 'porto-alegre-smc-editais',
+  name: 'Porto Alegre — Secretaria Municipal da Cultura, editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://prefeitura.poa.br/smc/editais',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/smc/noticias/'],
+    callPageIsTheNotice: true,
+    callPagePublishedAtClass: 'field--name-field-noticia-data-no-calendario',
+  },
+  documentUrlParts: ['/sites/default/files/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Sesi SP's culture calls: the listing shows only open ones (closed ones move to
+ * `/cultura/editais-encerrados`), each a news page whose rules are a PDF on Sesi's media host,
+ * named only in the query (`files?file=arq_….pdf`). ~12–15 calls a year, mostly Nov–Feb.
+ */
+export const sesiSpCultureSource = {
+  kind: 'officialPage',
+  slug: 'sesi-sp-cultura-editais',
+  name: 'Sesi SP — editais de cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.sesisp.org.br/cultura/editais',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/cultura/sesi-sp-', '/cultura/edital-de-'] },
+  documentUrlParts: ['cronos-media.sesisenaisp.org.br/api/media/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -927,4 +968,6 @@ export const registeredSources: readonly Source[] = [
   spcinePnabSource,
   spcineFsaSource,
   badescCultureSource,
+  portoAlegreCultureSource,
+  sesiSpCultureSource,
 ];

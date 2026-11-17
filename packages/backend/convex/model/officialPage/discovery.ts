@@ -1,3 +1,4 @@
+import { instantFromPlainDateTimeInZone } from '@bratura/shared/primitives/code/calendar/calendar';
 import { CallNoticeDocumentUrlSchema } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
 import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
 import { plainText } from '../../lib/text';
@@ -5,7 +6,15 @@ import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDo
 import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 import { fetchPageHtml, type FetchedPage } from './client';
-import { headingOfHtml, linksOfHtml, sectionsOfHtml, titleOfHtml, type PageLink } from './html';
+import {
+  headingOfHtml,
+  linksOfHtml,
+  onePerUrl,
+  sectionsOfHtml,
+  textOfClass,
+  titleOfHtml,
+  type PageLink,
+} from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -105,11 +114,49 @@ function withPageAsNotice(documents: PageLink[], page: PageLink) {
   return [page, ...documents];
 }
 
+/** "10/11/26", "17/10/2026": the first day/month/year a text writes, or `null`. */
+function plainDateOf(text: string) {
+  const match = /(?<![\d/])(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})(?![\d/])/.exec(text);
+  if (!match) return null;
+  const year = match[3]!.length === 2 ? 2000 + Number(match[3]) : Number(match[3]);
+  return { year, month: Number(match[2]), day: Number(match[1]) };
+}
+
+const yearMs = 365 * 24 * 60 * 60_000;
+
+/**
+ * Whether a call page's publication date ("17/10/2026 04:42") is over a year old: Porto Alegre
+ * (2026-11-17) lists 16 news back to 2023, 11 of them past calls with no year in the title, each a
+ * read. A rolling year, not the calendar's: a call posted in December stays in January. A page
+ * with no readable date is kept: a changed layout must not drop them all.
+ */
+function publishedOverAYearAgo(html: string, source: CallPageSource, publishedAtClass: string) {
+  const date = plainDateOf(textOfClass(html, publishedAtClass));
+  if (!date) return false;
+  const publishedAt = instantFromPlainDateTimeInZone(
+    { ...date, hour: 0, minute: 0, second: 0 },
+    source.timeZone,
+  );
+  return Date.now() - publishedAt > yearMs;
+}
+
+/**
+ * An `http:` link to the source's own host, as `https:`: Sesi SP (2026-11-17) links every call page
+ * as `http://www.sesisp.org.br/…` and redirects it. Only `https:` is fetched, so without it no call.
+ */
+function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
+  const url = new URL(link.url);
+  if (url.protocol !== 'http:') return link;
+  url.protocol = 'https:';
+  return isOnSourceHost(url.href, sourceUrl) ? { ...link, url: url.href } : link;
+}
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
+  const { callPagePublishedAtClass } = source.discovery;
   const { html, url: listingUrl } = await fetchPageHtml(
     source.listingUrl,
     source.listingUrl,
@@ -123,7 +170,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   const frameDocumentUrls = new Set(
     documentLinksOf(listing, source.documentUrlParts).map(({ url }) => url),
   );
-  const callPages = listing.filter(
+  const callPages = onePerUrl(
+    listing.map((link) => withHttpsOnHost(link, source.listingUrl)),
+  ).filter(
     ({ url, label }) =>
       label &&
       !namesACallBeforeLastYear(label) &&
@@ -146,6 +195,12 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     let pageTitle: string;
     try {
       const fetched = await fetchPageHtml(url, source.listingUrl, source);
+      if (
+        callPagePublishedAtClass &&
+        publishedOverAYearAgo(fetched.html, source, callPagePublishedAtClass)
+      ) {
+        continue;
+      }
       page = linksOfHtml(fetched.html, fetched.url);
       heading = headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);
@@ -204,12 +259,9 @@ export function callNumberOf(label: string): CallNumber | null {
 
 /** "Retificado em 10/11/26" → a sortable number; 0 when the link gives no version date. */
 function versionDateOf(label: string) {
-  const match = /(retificad|alterad|atualizad)\w*\D{0,6}(\d{1,2})\/(\d{1,2})\/(\d{2,4})/.exec(
-    plainText(label),
-  );
-  if (!match) return 0;
-  const year = match[4]!.length === 2 ? 2000 + Number(match[4]) : Number(match[4]);
-  return year * 10_000 + Number(match[3]) * 100 + Number(match[2]);
+  const versioned = /(retificad|alterad|atualizad)\w*\D{0,6}(\d[\d/]*)/.exec(plainText(label));
+  const date = versioned && plainDateOf(versioned[2]!);
+  return date ? date.year * 10_000 + date.month * 100 + date.day : 0;
 }
 
 /**

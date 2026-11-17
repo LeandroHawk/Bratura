@@ -74,6 +74,35 @@ const firstTextOf = (html: string) =>
     .map(plainLabel)
     .find((text) => text) ?? '';
 
+/** An element's opening tag whose `class` holds `className` as a whole word; group 1 is its tag. */
+const openingTagOfClass = (className: string) =>
+  `<([a-z][a-z0-9]*)\\b[^>]*?\\bclass\\s*=\\s*["'][^"']*?(?<![\\w-])${className.replace(/[^\w-]/g, '\\$&')}(?![\\w-])[^>]*>`;
+
+/**
+ * An element's inner HTML from `start` (just past its opening tag) to its closing `</tag>`, and
+ * where that closing tag ends; `null` when the page never closes it.
+ */
+function elementInnerFrom(page: string, start: number, closing: RegExp) {
+  closing.lastIndex = start;
+  const inner = closing.exec(page);
+  return inner ? { inner: inner[1] ?? '', end: closing.lastIndex } : null;
+}
+
+const closingTagOf = (tag: string) => new RegExp(`([\\s\\S]*?)</${tag}>`, 'iy');
+
+/** The text of a page's first element of `className`, up to its closing tag; empty with none. */
+export function textOfClass(html: string, className: string) {
+  const page = withoutCode(html);
+  const opening = new RegExp(openingTagOfClass(className), 'i').exec(page);
+  if (!opening) return '';
+  const element = elementInnerFrom(
+    page,
+    opening.index + opening[0].length,
+    closingTagOf(opening[1]!),
+  );
+  return plainLabel(element?.inner ?? '');
+}
+
 /**
  * A page's headings and http(s) links in page order. A link's URL is absolute, without its `#`.
  * Only a heading's opening tag is matched, so a link inside a heading is still read. A link that
@@ -84,9 +113,7 @@ const firstTextOf = (html: string) =>
 function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: string) {
   const page = withoutCode(html);
   // Without a class, `(?!)` never matches and its group stays empty.
-  const classHeading = headingClass
-    ? `<([a-z][a-z0-9]*)\\b[^>]*?\\bclass\\s*=\\s*["'][^"']*?(?<![\\w-])${headingClass.replace(/[^\w-]/g, '\\$&')}(?![\\w-])[^>]*>`
-    : '(?!)()';
+  const classHeading = headingClass ? openingTagOfClass(headingClass) : '(?!)()';
   // Any `</h1-6>` ends an `<h1-6>`: pages close an `<h2>` with `</h3>`.
   const standardHeadingText = /([\s\S]*?)<\/h[1-6]>/iy;
   let previousEnd = 0;
@@ -100,14 +127,14 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
     const [tag, classTag, double, single, bare, inner, headingTag] = match;
     const textBefore = page.slice(previousEnd, match.index);
     if (classTag || headingTag) {
-      const headingText = classTag
-        ? new RegExp(`([\\s\\S]*?)</${classTag}>`, 'iy')
-        : standardHeadingText;
-      headingText.lastIndex = match.index + tag.length;
-      const heading = headingText.exec(page);
-      previousEnd = heading ? headingText.lastIndex : match.index + tag.length;
+      const heading = elementInnerFrom(
+        page,
+        match.index + tag.length,
+        classTag ? closingTagOf(classTag) : standardHeadingText,
+      );
+      previousEnd = heading?.end ?? match.index + tag.length;
       previousLinkLabel = '';
-      yield { heading: plainLabel(heading?.[1] ?? '') };
+      yield { heading: plainLabel(heading?.inner ?? '') };
       continue;
     }
     previousEnd = match.index + tag.length;
@@ -127,7 +154,7 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
 }
 
 /** Links in page order, each URL once: its first label that is not empty wins. */
-function onePerUrl(links: PageLink[]): PageLink[] {
+export function onePerUrl(links: PageLink[]): PageLink[] {
   const labelByUrl = new Map<string, string>();
   for (const { url, label } of links) if (!labelByUrl.get(url)) labelByUrl.set(url, label);
   return [...labelByUrl].map(([url, label]) => ({ url, label }));
