@@ -154,7 +154,7 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
 }
 
 /** Links in page order, each URL once: its first label that is not empty wins. */
-function onePerUrl(links: PageLink[]): PageLink[] {
+export function onePerUrl(links: PageLink[]): PageLink[] {
   const labelByUrl = new Map<string, string>();
   for (const { url, label } of links) if (!labelByUrl.get(url)) labelByUrl.set(url, label);
   return [...labelByUrl].map(([url, label]) => ({ url, label }));

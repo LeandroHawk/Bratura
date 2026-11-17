@@ -10,6 +10,7 @@ import {
   portoAlegreCultureSource,
   recifeCultureSource,
   salvadorFgmSource,
+  sesiSpCultureSource,
 } from '../sources/registry';
 import {
   callNumberOf,
@@ -391,6 +392,43 @@ describe('callsOfCallPages', () => {
       ],
       ['Prêmio Açorianos de Dança', [`${news}/sem-data`]],
     ]);
+  });
+
+  test("an http link to the source's own host is fetched as https, once; another host's is not (Sesi SP)", async () => {
+    const page = 'www.sesisp.org.br/cultura/sesi-sp-abre-inscricoes-bachiana';
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    const fetchMock = siteAnswers({
+      [sesiSpCultureSource.listingUrl]: [
+        a(`http://${page}`, 'Processo Seletivo Bachiana Jovem'),
+        a(`https://${page}`, 'Processo Seletivo Bachiana Jovem'),
+        a('http://outro.org.br/cultura/sesi-sp-x', 'Outro'),
+      ].join(''),
+      [`https://${page}`]: a(media, 'Confira o regulamento aqui'),
+    });
+    const calls = await callsOf(sesiSpCultureSource);
+    expect(calls.map(({ externalId, documents }) => [externalId, documents])).toEqual([
+      [`https://${page}`, [{ url: media, label: 'Confira o regulamento aqui' }]],
+    ]);
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      sesiSpCultureSource.listingUrl,
+      `https://${page}`,
+    ]);
+  });
+
+  test('a frame document linked as http on the listing and on a call page is still the frame', async () => {
+    const page = 'www.sesisp.org.br/cultura/sesi-sp-abre-inscricoes-bachiana';
+    const frame = a('http://www.sesisp.org.br/cultura/edital-geral.pdf', 'Edital geral');
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    siteAnswers({
+      [sesiSpCultureSource.listingUrl]: frame + a(`http://${page}`, 'Bachiana Jovem'),
+      [`https://${page}`]: frame + a(media, 'Confira o regulamento aqui'),
+    });
+    const frameAsDocument = {
+      ...sesiSpCultureSource,
+      documentUrlParts: [...sesiSpCultureSource.documentUrlParts, '/cultura/edital-geral'],
+    };
+    const [call] = await callsOf(frameAsDocument);
+    expect(call?.documents.map(({ url }) => url)).toEqual([media]);
   });
 });
 
