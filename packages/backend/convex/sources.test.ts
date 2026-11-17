@@ -3,7 +3,11 @@ import { describe, expect, test } from 'vitest';
 import { SourceSchema, type Source } from '@bratura/shared/entities/source/entity';
 import { internal } from './_generated/api';
 import * as registry from './model/sources/registry';
-import { federalMapasSource, registeredSources } from './model/sources/registry';
+import {
+  federalMapasSource,
+  pernambucoMapasSource,
+  registeredSources,
+} from './model/sources/registry';
 import schema from './schema';
 import { modules } from './test.setup';
 
@@ -81,7 +85,7 @@ describe('listActiveSources', () => {
   test('lists only active sources, with their kind', async () => {
     const t = convexTest(schema, modules);
     const mapasId = await t.mutation(registerSource, { slug: 'mapas-federal' });
-    await t.mutation(registerSource, { slug: 'mapas-pe' });
+    await t.run((ctx) => ctx.db.insert('sources', { ...pernambucoMapasSource, isActive: false }));
     const newsId = await t.run((ctx) => ctx.db.insert('sources', newsSite));
     expect(await t.query(internal.sources.listActiveSources, {})).toEqual([
       { sourceId: mapasId, kind: 'mapasCulturaisInstance' },

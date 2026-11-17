@@ -24,8 +24,9 @@ convex/
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
-    officialPage/    client.ts (plain fetch), html.ts (links, headings), discovery.ts, payload.ts, listing.ts
-    sourceHost/      fetchOnSourceHost.ts: the only fetch whose URL a source's data chooses (its own host)
+    officialPage/    client.ts (the page, via sourceHost/), html.ts (links, headings), discovery.ts, payload.ts, listing.ts
+    sourceHost/      fetchOnSourceHost.ts: the only fetch whose URL a source's data chooses (its own host;
+                     through Firecrawl from Brazil for a source that answers only from there)
     pdfText/         a PDF's text layer (unpdf), for a read Firecrawl answered nearly empty
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)

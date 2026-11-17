@@ -1,3 +1,4 @@
+import type { SourceAccess } from '@bratura/shared/entities/source/fragments/access/fields';
 import { plainDateInSaoPaulo } from '@bratura/shared/primitives/code/calendar/calendar';
 import { fetchOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 
@@ -20,6 +21,7 @@ const mapasMaxBytes = 2_000_000;
 export async function fetchOpenMapasOpportunities(
   baseUrl: string,
   now: number,
+  access: SourceAccess = {},
 ): Promise<unknown[]> {
   const today = plainDateInSaoPaulo(now);
   const url = new URL('/api/opportunity/find', baseUrl);
@@ -32,12 +34,17 @@ export async function fetchOpenMapasOpportunities(
   url.searchParams.set('registrationTo', `GTE(${today})`);
   url.searchParams.set('@order', 'registrationTo ASC');
 
-  const answer = await fetchOnSourceHost(url.href, baseUrl, {
-    accept: 'application/json',
-    isExpectedType: (type) => type.includes('json'),
-    timeoutMs: mapasTimeoutMs,
-    maxBytes: mapasMaxBytes,
-  });
+  const answer = await fetchOnSourceHost(
+    url.href,
+    baseUrl,
+    {
+      accept: 'application/json',
+      isExpectedType: (type) => type.includes('json'),
+      timeoutMs: mapasTimeoutMs,
+      maxBytes: mapasMaxBytes,
+    },
+    access,
+  );
   const body: unknown = JSON.parse(new TextDecoder().decode(answer.body));
   if (!Array.isArray(body)) throw new Error(`${url.host} did not answer a list`);
   return body;

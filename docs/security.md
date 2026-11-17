@@ -92,6 +92,10 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
   comes back nearly empty, our backend downloads that PDF itself to read its text layer
   (`pdfText.ts`), only from `https` on the registered source's own host, redirects too, at most
   30 MB, parsed by a pdf.js (6.x) that compiles no code from a file (CVE-2024-4367's path is gone). A file that crashes the parser is "no text".
+  **A source that answers only from Brazil** (`answersOnlyFromBrazil`, set by the team in the
+  registry) is never fetched by our backend: `fetchOnSourceHost` asks Firecrawl for it from Brazil
+  instead, under the same rules (an `https` URL on the source's own host before the request, the
+  final URL on that host, a 2xx, the type asked, the byte ceiling), and the PDF rescue is skipped.
 - **Errors never leak.** A function throws a code (`appError`), not an internal message; Zod's
   issues carry the path, the rule and its numbers, never the value sent; Convex redacts any other
   error to "Server Error" in production. Keep it so: returning `error.message` from a caught

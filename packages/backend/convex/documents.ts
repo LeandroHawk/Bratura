@@ -6,6 +6,7 @@ import {
   type CallNoticeDocumentFailure,
 } from '@bratura/shared/entities/call-notice-document/entity';
 import { CallNoticeDocumentIdentityFields } from '@bratura/shared/entities/call-notice-document/fragments/identity/fields';
+import { SourceAccessFields } from '@bratura/shared/entities/source/fragments/access/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
@@ -21,8 +22,9 @@ import {
 import {
   FirecrawlOutOfCreditsError,
   FirecrawlRateLimitedError,
+  firecrawlRequestSpacingMs,
+  onceMoreIfRateLimited,
   scrapeMarkdown,
-  type ScrapedMarkdown,
 } from './model/firecrawl/client';
 
 // Reading call notices' documents as Markdown, by hand: what is left to read, the reservation and
@@ -160,22 +162,32 @@ export const recordDocumentFailure = internalZodMutation({
   },
 });
 
-const GetDocumentSourceUrlQueryArgsSchema = CallNoticeDocumentIdentityFields.pick({
+const GetDocumentSourceQueryArgsSchema = CallNoticeDocumentIdentityFields.pick({
   callNoticeId: true,
 });
-const GetDocumentSourceUrlQueryReturnsSchema = z.string().nullable();
+const DocumentSourceSchema = SourceAccessFields.extend({ sourceUrl: z.string() });
+const GetDocumentSourceQueryReturnsSchema = DocumentSourceSchema.nullable();
+type DocumentSource = z.infer<typeof DocumentSourceSchema>;
 
-/** The registered URL of the source a call notice came from: the only host our backend fetches. */
-export const getDocumentSourceUrl = internalZodQuery({
-  args: GetDocumentSourceUrlQueryArgsSchema,
-  returns: GetDocumentSourceUrlQueryReturnsSchema,
-  handler: async (ctx, { callNoticeId }): Promise<string | null> => {
+/**
+ * The registered URL of the source a call notice came from (the only host our backend fetches)
+ * and whether it answers only from Brazil.
+ */
+export const getDocumentSource = internalZodQuery({
+  args: GetDocumentSourceQueryArgsSchema,
+  returns: GetDocumentSourceQueryReturnsSchema,
+  handler: async (ctx, { callNoticeId }): Promise<DocumentSource | null> => {
     const callNotice = await ctx.db.get(callNoticeId);
     const source = callNotice && (await ctx.db.get(callNotice.sourceId));
     if (!source) return null;
-    if (source.kind === 'mapasCulturaisInstance') return source.baseUrl;
-    if (source.kind === 'officialPage') return source.listingUrl;
-    return source.siteUrl;
+    const { answersOnlyFromBrazil } = source;
+    if (source.kind === 'mapasCulturaisInstance') {
+      return { sourceUrl: source.baseUrl, answersOnlyFromBrazil };
+    }
+    if (source.kind === 'officialPage') {
+      return { sourceUrl: source.listingUrl, answersOnlyFromBrazil };
+    }
+    return { sourceUrl: source.siteUrl, answersOnlyFromBrazil };
   },
 });
 
@@ -188,10 +200,6 @@ export const getDocumentSourceUrl = internalZodQuery({
  */
 const isThinRead = (text: string, pages: number) => pages >= 3 && text.length / pages < 300;
 
-/** Firecrawl allows about 10 scrapes a minute: one every 6.5 s stays under it. */
-export const documentReadSpacingMs = 6_500;
-/** A 429 waits this long before the one retry. */
-const rateLimitWaitMs = 60_000;
 /**
  * Stops starting reads here. An action lives 10 min, and one read may take 5: two Firecrawl
  * timeouts (2 min each) around one rate-limit wait (1 min).
@@ -201,26 +209,19 @@ const readLoopBudgetMs = 4 * 60 * 1000;
 const sleep = (milliseconds: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
 
-async function scrapeOnceMoreIfRateLimited(url: string, apiKey: string): Promise<ScrapedMarkdown> {
-  try {
-    return await scrapeMarkdown(url, apiKey);
-  } catch (error) {
-    if (!(error instanceof FirecrawlRateLimitedError)) throw error;
-    await sleep(rateLimitWaitMs);
-    return await scrapeMarkdown(url, apiKey);
-  }
-}
-
 /**
  * The PDF's own text layer when Firecrawl's read came back thin (`isThinRead`): its parser drops
  * the body of some gazette PDFs that pdf.js reads whole (Estância, 2026-11-15; reported to
- * Firecrawl). `null` when the source is gone or the file cannot be read on its host.
+ * Firecrawl). `null` when the source is gone, answers only from Brazil (our backend's own fetch
+ * times out there), or the file cannot be read on its host.
  */
-async function pdfTextOfThinRead(ctx: ActionCtx, document: DocumentToRead) {
-  const sourceUrl: string | null = await ctx.runQuery(internal.documents.getDocumentSourceUrl, {
-    callNoticeId: document.callNoticeId,
-  });
-  if (!sourceUrl) return null;
+async function pdfTextOfThinRead(
+  ctx: ActionCtx,
+  document: DocumentToRead,
+  source: DocumentSource | null,
+) {
+  if (!source || source.answersOnlyFromBrazil) return null;
+  const { sourceUrl } = source;
   // A file that crashes the parser (out of memory) is no text, not a provider error: that one is
   // retried every run, and each retry pays Firecrawl again.
   try {
@@ -289,20 +290,26 @@ export const readPendingDocuments = internalZodAction({
         result.left -= 1;
         continue;
       }
-      if (readsStarted > 0) await sleep(documentReadSpacingMs);
+      if (readsStarted > 0) await sleep(firecrawlRequestSpacingMs);
       readsStarted += 1;
 
       let failure: CallNoticeDocumentFailure | null = null;
       let creditsUsed: number | null = null;
       let answeredWithoutCost = false;
       try {
-        const answer = await scrapeOnceMoreIfRateLimited(document.url, apiKey);
+        const source: DocumentSource | null = await ctx.runQuery(
+          internal.documents.getDocumentSource,
+          { callNoticeId: document.callNoticeId },
+        );
+        const answer = await onceMoreIfRateLimited(() =>
+          scrapeMarkdown(document.url, apiKey, source ?? {}),
+        );
         creditsUsed = answer.creditsUsed;
         answeredWithoutCost = creditsUsed === null;
         result.creditsUsed += creditsUsed ?? 0;
         let markdown = answer.markdown;
         if (creditsUsed !== null && isThinRead(markdown, creditsUsed)) {
-          const local = await pdfTextOfThinRead(ctx, document);
+          const local = await pdfTextOfThinRead(ctx, document, source);
           markdown = local !== null && !isThinRead(local, creditsUsed) ? local : '';
         }
         if (markdown.trim() === '') failure = 'noText';

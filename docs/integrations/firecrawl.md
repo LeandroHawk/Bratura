@@ -25,6 +25,9 @@ crons.ts (daily)
                       matching (rules) → `matches`
 ```
 
+A source that answers only from Brazil (`answersOnlyFromBrazil`) takes neither free route: its
+Mapas API or listing and call pages go through Firecrawl from Brazil, 1 credit a page (Decisions).
+
 The team's draft of this flow also stored an embedding per call; matching is rules only
 (`docs/plan.md`, What to build), so embeddings wait for a consumer (`docs/architecture.md` §6).
 
@@ -74,7 +77,18 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   instance, a city's own site, a scanned PDF) is measured on a sample before it is trusted; its
   `valuesRefused` in the extractions is the first sign it needs its own rules.
 - **Reading is run by hand for now** (`convex run`, with a credit ceiling per run), not by the
-  daily cron, so no read spends credits nobody planned.
+  daily cron, so no read spends credits nobody planned. **One exception: sources that answer only
+  from Brazil** (`answersOnlyFromBrazil` in `model/sources/registry.ts`). Some government sites time
+  out from Convex (US East) and answer from Brazil; measured 2026-11-16, `/v2/scrape` with
+  `formats: ['rawHtml']` and `location: { country: 'BR' }` returned Pernambuco's and Sergipe's Mapas
+  API JSON intact in 2–3 s and Ponta Grossa's listing in 6 s, while without the location Firecrawl
+  failed like Convex. For those sources the daily ingestion fetches the listing (and each call page)
+  through Firecrawl, 1 credit per page per day: 5 sources on 2026-11-16, about 7 credits a day.
+  Those reads ask `maxAge: 0` (the default cache would answer a listing up to two days old), keep
+  the caller's timeout (30 s a page, 60 s for Mapas; Firecrawl's own `timeout` is 10 s shorter so
+  its error arrives first), are spaced 6.5 s apart and retried once after a 429, as document reads
+  are (`model/firecrawl/client.ts`). Their documents are read with the same location; the
+  local PDF rescue is skipped for them.
 - **robots.txt is respected** (Firecrawl's default; never turn it off). Blocked URLs show up as
   `robotsBlocked` in the crawl errors: record them in `ingestionRuns`.
 - **The response is parsed at the edge** by a Zod schema in `model/firecrawl/payload.ts`; it is not a DTO and

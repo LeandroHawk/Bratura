@@ -2,6 +2,7 @@ import { CallNoticeDocumentUrlSchema } from '@bratura/shared/entities/call-notic
 import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
 import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
+import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 import { fetchPageHtml, type FetchedPage } from './client';
 import { headingOfHtml, linksOfHtml, sectionsOfHtml, type PageLink } from './html';
@@ -79,7 +80,13 @@ const namesNoCall = (label: string) => /^(clique aqui|acessar)[\s!.]*$/.test(pla
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
-  const { html, url: listingUrl } = await fetchPageHtml(source.listingUrl, source.listingUrl);
+  // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
+  const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
+  const { html, url: listingUrl } = await fetchPageHtml(
+    source.listingUrl,
+    source.listingUrl,
+    source,
+  );
   const listing = linksOfHtml(html, listingUrl);
   /**
    * A document the listing links too is the site's frame, not the call's (Funarte, 2026-11-15:
@@ -105,11 +112,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       console.warn('Call pages left unread for lack of time', callPages.length - index);
       break;
     }
-    if (index > 0) await new Promise((done) => setTimeout(done, callPageSpacingMs));
+    if (index > 0) await new Promise((done) => setTimeout(done, spacingMs));
     let page: PageLink[];
     let heading: string;
     try {
-      const fetched = await fetchPageHtml(url, source.listingUrl);
+      const fetched = await fetchPageHtml(url, source.listingUrl, source);
       page = linksOfHtml(fetched.html, fetched.url);
       heading = headingOfHtml(fetched.html);
     } catch (error) {
@@ -263,7 +270,7 @@ export function callsOfDocumentsUnderHeadings(
 export async function fetchOfficialPageCalls(source: OfficialPageSource): Promise<unknown[]> {
   const { discovery } = source;
   if (discovery.hops === 'callPage') return await callsOfCallPages({ ...source, discovery });
-  const listing = await fetchPageHtml(source.listingUrl, source.listingUrl);
+  const listing = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
   if (discovery.hops === 'documentsUnderHeadings') {
     return callsOfDocumentsUnderHeadings(source, listing);
   }

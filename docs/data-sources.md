@@ -33,6 +33,13 @@ Public JSON, no auth. Instances confirmed working:
 | Santo André-SP | `culturaz.santoandre.sp.gov.br` | 1 | 3 | `Etc/GMT+3` |
 | Canindé-CE | `mapacultural.caninde.ce.gov.br` | 0 (monitor) | 0 | — |
 
+**Sources that answer only from Brazil** (`answersOnlyFromBrazil` in the registry; 2026-11-16):
+Pernambuco and Sergipe Mapas, Ponta Grossa, Secult Alagoas 2026 and Secec DF. They time out from
+Convex (US East) in 30 s and answer from Brazil, so their listing, call pages and documents are
+fetched by Firecrawl with a Brazilian location (1 credit per page;
+`docs/integrations/firecrawl.md`, Decisions). Pernambuco and Ponta Grossa, off until then, are on
+again.
+
 **The list of instances** is the `mapasculturais` README on GitHub
 (`https://github.com/mapasculturais/mapasculturais`, branch `develop`, sections "Instalações em
 nível federal ou internacional", "estaduais", "municipais", "outras"). Every listed host was probed
@@ -64,7 +71,7 @@ PDF (`termo_de_uso_-_mapa_cultural_do_ceara_v1.0.pdf`), the others publish none 
 template (account, password, personal data, liability), with no clause on automated access or reuse
 of call data; Parauapebas publishes none found. **Sergipe** answers from Brazil but the cloud
 ingestion fails ("error sending request" after ~30 s), as Pernambuco and Maringá do: likely non-BR IPs
-blocked; registered, reading it needs a route from Brazil. **Aracaju**
+blocked. Since 2026-11-16 it is read through Firecrawl from Brazil (below). **Aracaju**
 (`mapacultural.aracaju.se.gov.br`, 1 open) is not added: its `robots.txt` answers HTTP 500, so its
 rules cannot be read; recheck before adding. Instances of the list with nothing open on 2026-11-14
 (Santa Luzia-MG, Lagoa Santa-MG; Pará and Cianorte-PR were added on 2026-11-16) are not added yet; Lagoa Santa sends Cloudflare
@@ -149,7 +156,7 @@ GET https://{host}/api/opportunity/find
 ## Official pages (plain fetch; Firecrawl reads only the documents)
 
 Read by `ingestion:ingestOfficialPage` (`model/officialPage/`): the listing and call pages are
-fetched as HTML on the listing's own host, so finding calls costs no credits. Registering one means
+fetched as HTML on the listing's own host, so finding calls costs no credits (except a source that answers only from Brazil, above). Registering one means
 choosing its `discovery` and `documentUrlParts` from the site's real links (measured 2026-11-15 on
 the rows marked so below).
 
@@ -181,7 +188,7 @@ the rows marked so below).
 | Sesc Sergipe (measured 2026-11-16) | `https://sesc-se.com.br/chamamento-publico/`: one page per call; the parts keep the artists' calls (convocatória, Aldeia Sesc, Sescanção, gallery) and leave out races, vendors and the service providers' credenciamento. 1 call (Sescanção 2026) | allows all | only a privacy page, no clause on automated access, 2026-11-16 |
 | Rio de Janeiro SMC (measured 2026-11-16) | `https://cultura.prefeitura.rio/`: one page per call linked from the home (`/edital-…`, `/pnab-…`, `/circuito-…`, `/pesquisa-e-residencia`); applications on `editaisculturario.com.br` (login, link only). 2 calls (Ações Locais ×2, closed 08/09) | allows (an export-plugin folder disallowed) | none published (the footer links only `lgpd.prefeitura.rio`), 2026-11-16 |
 | Concultura Manaus PNAB Ciclo 2 (measured 2026-11-16) | `https://concultura.manaus.am.gov.br/pnab-ciclo-2`: one page per call (`/edital-0…`; Edital 001 is a `?page_id=…&preview=true` link and is missed). Editais 002–013/2026 all post results: nothing recorded that day | allows all | none published, 2026-11-16 |
-| Ponta Grossa SMC PNAB (measured 2026-11-15) | `https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/`: one heading per call, every document linked as "clique aqui"; **off**: it times out from Convex (US East) and answers from Brazil, as Pernambuco | allows (WordPress default, plus `/wp-content/uploads/wpforms/` disallowed) | none published, 2026-11-15 |
+| Ponta Grossa SMC PNAB (measured 2026-11-15) | `https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/`: one heading per call, every document linked as "clique aqui"; it times out from Convex (US East) and answers from Brazil, as Pernambuco: read through Firecrawl from Brazil since 2026-11-16 | allows (WordPress default, plus `/wp-content/uploads/wpforms/` disallowed) | none published, 2026-11-15 |
 | Paraná Seec (measured 2026-11-15) | `https://www.cultura.pr.gov.br/`: one page per call under `/Pagina/Edital-`, some renamed behind a same-host 301 | allows (Drupal default: `/core/`, `/user/`, `/search/` disallowed) | none published, 2026-11-15 |
 | São Paulo city culture calls | `https://prefeitura.sp.gov.br/web/cultura/editais/` | allows all | not recorded here |
 | Amigos da Arte (SP state calls) | `https://amigosdaarte.org.br/editais_/` (with the underscore; RSS at `/editais_/feed/`); the 4 calls of 2026 are closed | allows except wp-admin | not recorded here |

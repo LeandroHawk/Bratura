@@ -1,3 +1,7 @@
+import type { SourceAccess } from '@bratura/shared/entities/source/fragments/access/fields';
+import { requiredEnv } from '../../lib/env';
+import { onceMoreIfRateLimited, scrapeRawBody } from '../firecrawl/client';
+
 // Our backend fetches only a registered source's own host (`docs/security.md` §4): every request
 // whose URL a source's data can choose goes through here. Any other link is read by Firecrawl.
 
@@ -79,17 +83,20 @@ async function bodyUpTo(response: Response, maxBytes: number, tooLarge: Error) {
 }
 
 /**
- * One file from a registered source's own host, fetched plainly (no Firecrawl credits). Throws,
- * naming the host, when `url` is not on `sourceUrl`'s host, the site does not answer, redirects off
- * its host, answers an error or an unexpected type, or sends over `maxBytes`.
+ * One file from a registered source's own host, fetched plainly (no Firecrawl credits), or through
+ * Firecrawl from Brazil for a source that answers only from there. Throws, naming the host, when
+ * `url` is not on `sourceUrl`'s host, the site does not answer, redirects off its host, answers an
+ * error or an unexpected type, or sends over `maxBytes`.
  */
 export async function fetchOnSourceHost(
   url: string,
   sourceUrl: string,
   request: SourceHostRequest,
+  access: SourceAccess = {},
 ): Promise<SourceHostAnswer> {
   const host = new URL(url).host;
   if (!isOnSourceHost(url, sourceUrl)) throw new Error(`${host} is not its source's own host`);
+  if (access.answersOnlyFromBrazil) return await answerFromBrazil(url, request, access);
   const { response, finalUrl } = await answerOnSameHost(url, request);
   const contentType = response.headers.get('content-type') ?? '';
   if (!response.ok || !request.isExpectedType(contentType)) await response.body?.cancel();
@@ -99,4 +106,36 @@ export async function fetchOnSourceHost(
   }
   const tooLarge = new Error(`${host} answered over ${request.maxBytes} bytes`);
   return { body: await bodyUpTo(response, request.maxBytes, tooLarge), contentType, finalUrl };
+}
+
+/**
+ * The same answer, fetched by Firecrawl from Brazil for a source that times out from abroad (one
+ * credit), held to the same rules: its final URL on the same host, a 2xx, the type asked, under
+ * `maxBytes`. Firecrawl hands the body back decoded, so the type loses its charset.
+ */
+async function answerFromBrazil(
+  url: string,
+  request: SourceHostRequest,
+  access: SourceAccess,
+): Promise<SourceHostAnswer> {
+  const host = new URL(url).host;
+  const apiKey = requiredEnv('FIRECRAWL_API_KEY');
+  const answer = await onceMoreIfRateLimited(() =>
+    scrapeRawBody(url, apiKey, { access, timeoutMs: request.timeoutMs }),
+  );
+  const finalUrl = answer.finalUrl ?? url;
+  if (!isOnSourceHost(finalUrl, url)) throw new Error(`${host} redirected off its host`);
+  const { statusCode } = answer;
+  if (statusCode !== null && (statusCode < 200 || statusCode >= 300)) {
+    throw new Error(`${host} answered HTTP ${statusCode}`);
+  }
+  const contentType = (answer.contentType ?? '').replace(/;\s*charset=[^;]*/i, '');
+  if (answer.contentType !== null && !request.isExpectedType(contentType)) {
+    throw new Error(`${host} answered ${contentType || 'no content type'}`);
+  }
+  const body = new TextEncoder().encode(answer.body);
+  if (body.byteLength > request.maxBytes) {
+    throw new Error(`${host} answered over ${request.maxBytes} bytes`);
+  }
+  return { body, contentType, finalUrl };
 }
