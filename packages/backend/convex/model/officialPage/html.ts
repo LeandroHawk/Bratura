@@ -87,6 +87,8 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
   const classHeading = headingClass
     ? `<([a-z][a-z0-9]*)\\b[^>]*?\\bclass\\s*=\\s*["'][^"']*?(?<![\\w-])${headingClass.replace(/[^\w-]/g, '\\$&')}(?![\\w-])[^>]*>`
     : '(?!)()';
+  // Any `</h1-6>` ends an `<h1-6>`: pages close an `<h2>` with `</h3>`.
+  const standardHeadingText = /([\s\S]*?)<\/h[1-6]>/iy;
   let previousEnd = 0;
   let previousLinkLabel = '';
   for (const match of page.matchAll(
@@ -97,9 +99,10 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
   )) {
     const [tag, classTag, double, single, bare, inner, headingTag] = match;
     const textBefore = page.slice(previousEnd, match.index);
-    const headingName = classTag ?? headingTag;
-    if (headingName) {
-      const headingText = new RegExp(`([\\s\\S]*?)</${headingName}>`, 'iy');
+    if (classTag || headingTag) {
+      const headingText = classTag
+        ? new RegExp(`([\\s\\S]*?)</${classTag}>`, 'iy')
+        : standardHeadingText;
       headingText.lastIndex = match.index + tag.length;
       const heading = headingText.exec(page);
       previousEnd = heading ? headingText.lastIndex : match.index + tag.length;

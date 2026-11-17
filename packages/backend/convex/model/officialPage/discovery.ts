@@ -11,6 +11,11 @@ import type { OfficialPageCall } from './payload';
 /** An official page whose listing links one page per call. */
 type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
 
+/** An official page whose listing links each call's documents under a heading naming it. */
+type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderHeadings' } };
+
+const currentYear = () => new Date().getUTCFullYear();
+
 /** Between two call pages of one site: a public office's server, not a crawl. */
 const callPageSpacingMs = 1_000;
 
@@ -41,7 +46,7 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
  * them, each a read. Not last year's: 4 of 28 numbered calls in the dev DB close in a later year.
  */
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
-  callNumber !== null && callNumber.year < new Date().getUTCFullYear() - 1;
+  callNumber !== null && callNumber.year < currentYear() - 1;
 
 /** A link text or file name that names such a call. */
 const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
@@ -59,15 +64,26 @@ export const fileNameAsLabel = (url: string) =>
 /** Whether a document is a call's notice, by its link text and file name. */
 const isNotice = ({ url, label }: PageLink) => callNoticeDocumentRole(url, label) === 'callNotice';
 
+/** Whether every year a text names (`2025`, `05/2019`, `2015_Edital`) is before `year`. */
+function namesOnlyYearsBefore(text: string, year: number) {
+  const years = [...text.matchAll(/(?<!\d)20\d{2}(?!\d)/g)].map(([named]) => Number(named));
+  return years.length > 0 && Math.max(...years) < year;
+}
+
 /**
  * A call whose title names no year can still hold only old notices (Paraná, 2026-11-15: "Edital
- * Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`). One current notice keeps the call.
+ * Bandas e Fanfarras" is `lpg-edital-012-2023.pdf`; Spcine, 2026-11-17: `2015_Edital_Linha_1.pdf`
+ * under "LINHA 1"). Every notice naming, by text and file name, only years before last year drops
+ * it; one current notice keeps it. Last year's stay, as numbered calls do.
  */
-function noticesAreNumberedBeforeLastYear(documents: PageLink[]) {
+function noticesNameOnlyYearsBeforeLastYear(documents: PageLink[]) {
   const notices = documents.filter(isNotice);
+  const lastYear = currentYear() - 1;
   return (
     notices.length > 0 &&
-    notices.every(({ url, label }) => [label, fileNameAsLabel(url)].some(namesACallBeforeLastYear))
+    notices.every(({ url, label }) =>
+      namesOnlyYearsBefore(`${label} ${fileNameAsLabel(url)}`, lastYear),
+    )
   );
 }
 
@@ -194,7 +210,7 @@ function withNewestNoticeOnly(documents: PageLink[]) {
  */
 function callDocumentsWorthRecording(documents: PageLink[]) {
   if (documents.length === 0 || hasPublishedResult(documents)) return null;
-  if (noticesAreNumberedBeforeLastYear(documents)) return null;
+  if (noticesNameOnlyYearsBeforeLastYear(documents)) return null;
   return withNewestNoticeOnly(documents);
 }
 
@@ -243,31 +259,17 @@ export function callsOfDocumentsOnListing(
   });
 }
 
-/** Whether every year a text names (`2025`, `05/2019`, `2015_Edital`) is before `year`. */
-function namesOnlyYearsBefore(text: string, year: number) {
-  const years = [...text.matchAll(/(?<!\d)20\d{2}(?!\d)/g)].map(([named]) => Number(named));
-  return years.length > 0 && Math.max(...years) < year;
+/**
+ * Whether a heading titles a past call. Numbered, by the numbered rule (last year's stay: a
+ * credenciamento 08/2025 is open to 2049). Unnumbered, it names an edition, past when every year
+ * it names is ("CICLO NATALINO 2025", Spcine's "05/2019 | EDITAL…"): Recife (2026-11-17) lists 196
+ * calls since 2019 and Spcine 57 since 2015, with no date on the page, each kept one a read.
+ */
+function headingNamesAPastCall(heading: string) {
+  const callNumber = callNumberOf(heading);
+  if (callNumber) return isNumberedBeforeLastYear(callNumber);
+  return namesOnlyYearsBefore(heading, currentYear());
 }
-
-/**
- * A heading naming only past years titles a past edition ("CICLO NATALINO 2025", "05/2019 |
- * EDITAL…"): Recife (2026-11-17) lists 196 calls since 2019 and Spcine 57 since 2015, with no date
- * on the page, and each one kept is a notice read.
- */
-const headingNamesAPastEdition = (heading: string) =>
-  namesOnlyYearsBefore(heading, new Date().getUTCFullYear());
-
-/**
- * Every notice of a call names only years before last year, by link text and file name (Spcine's
- * `2015_Edital_Linha_1.pdf` under a heading with no year). Last year's stay: Jundiaí's
- * credenciamento 05/2025 is still listed in 2026.
- */
-const noticesNameOnlyYearsBeforeLastYear = (documents: PageLink[]) =>
-  documents
-    .filter(isNotice)
-    .every(({ url, label }) =>
-      namesOnlyYearsBefore(`${label} ${fileNameAsLabel(url)}`, new Date().getUTCFullYear() - 1),
-    );
 
 /** An accordion's indicator glyph before the title ("▸ 07/2026 | …"). */
 const withoutLeadingSymbols = (heading: string) => heading.replace(/^[^\p{L}\p{N}]+/u, '');
@@ -277,17 +279,15 @@ const withoutLeadingSymbols = (heading: string) => heading.replace(/^[^\p{L}\p{N
  * its id at the source. A heading with no notice under it (the page's own title) is no call.
  */
 export function callsOfDocumentsUnderHeadings(
-  source: OfficialPageSource & { discovery: { hops: 'documentsUnderHeadings' } },
+  source: HeadingsSource,
   { html, url }: FetchedPage,
 ): OfficialPageCall[] {
   const { headingClass } = source.discovery;
   return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links }) => {
     const heading = withoutLeadingSymbols(rawHeading);
-    if (!heading || namesACallBeforeLastYear(heading) || headingNamesAPastEdition(heading)) {
-      return [];
-    }
+    if (!heading || headingNamesAPastCall(heading)) return [];
     const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
-    if (!recorded || noticesNameOnlyYearsBeforeLastYear(recorded.kept)) return [];
+    if (!recorded) return [];
     return [
       {
         externalId: heading,
