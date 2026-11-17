@@ -5,7 +5,7 @@ import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDo
 import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 import { fetchPageHtml, type FetchedPage } from './client';
-import { headingOfHtml, linksOfHtml, sectionsOfHtml, type PageLink } from './html';
+import { headingOfHtml, linksOfHtml, sectionsOfHtml, titleOfHtml, type PageLink } from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -94,10 +94,22 @@ function noticesNameOnlyYearsBeforeLastYear(documents: PageLink[]) {
  */
 const namesNoCall = (label: string) => /^(clique aqui|acessar)[\s!.]*$/.test(plainText(label));
 
+/**
+ * A call page whose own text is the notice (Badesc, 2026-11-17: the rules in the post, applications
+ * on Google Forms, no file). The page goes first as its notice when no linked file is one and its
+ * title names a call; a menu page under the same path ("AGENDAMENTO") does not.
+ */
+function withPageAsNotice(documents: PageLink[], page: PageLink) {
+  if (documents.some(isNotice) || !isNotice(page)) return documents;
+  if (!CallNoticeDocumentUrlSchema.safeParse(page.url).success) return documents;
+  return [page, ...documents];
+}
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
+  const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
   const { html, url: listingUrl } = await fetchPageHtml(
     source.listingUrl,
     source.listingUrl,
@@ -131,23 +143,33 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     if (index > 0) await new Promise((done) => setTimeout(done, spacingMs));
     let page: PageLink[];
     let heading: string;
+    let pageTitle: string;
     try {
       const fetched = await fetchPageHtml(url, source.listingUrl, source);
       page = linksOfHtml(fetched.html, fetched.url);
       heading = headingOfHtml(fetched.html);
+      pageTitle = heading || titleOfHtml(fetched.html);
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
     }
-    const documents = documentLinksOf(page, source.documentUrlParts).filter(
+    const linked = documentLinksOf(page, source.documentUrlParts).filter(
       ({ url }) => !frameDocumentUrls.has(url),
     );
+    const documents = pageIsTheNotice
+      ? withPageAsNotice(linked, { url, label: pageTitle })
+      : linked;
     const kept = callDocumentsWorthRecording(documents);
-    if (!kept) continue;
+    // Where the page is the notice, a page with none is no call ("MATERIAIS EDUCATIVOS").
+    if (!kept || (pageIsTheNotice && !kept.some(isNotice))) continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),
     );
-    const title = namesNoCall(label) ? heading || numberedNotice?.label : label;
+    const title = pageIsTheNotice
+      ? pageTitle || label
+      : namesNoCall(label)
+        ? heading || numberedNotice?.label
+        : label;
     if (!title) continue;
     calls.push({ externalId: url, title, officialUrl: url, documents: kept });
   }

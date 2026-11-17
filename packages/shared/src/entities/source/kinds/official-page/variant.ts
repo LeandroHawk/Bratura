@@ -20,6 +20,11 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
     hops: z.literal('callPage'),
     /** What a call page's URL contains; other links on the listing are skipped. */
     callPageUrlParts: urlParts,
+    /**
+     * The call page's own text is its notice when it links none (Badesc: rules in the post,
+     * applications on a form). Without it, such a call is recorded with no document to read.
+     */
+    callPageIsTheNotice: z.boolean().optional(),
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
   z.object({

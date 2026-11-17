@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { headingOfHtml, linksOfHtml, sectionsOfHtml } from './html';
+import { headingOfHtml, linksOfHtml, sectionsOfHtml, titleOfHtml } from './html';
 
 describe('linksOfHtml', () => {
   const page = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
@@ -69,6 +69,16 @@ describe('linksOfHtml: a link that names only an action (Estância)', () => {
     const html =
       '<p>Edital 01/2026</p><h3>Documentos</h3><a href="/a">Baixar</a><a href="/b">Edital</a>';
     expect(linksOfHtml(html, page).map(({ label }) => label)).toEqual(['Baixar', 'Edital']);
+  });
+});
+
+describe('titleOfHtml', () => {
+  test("the page's <title> without the site's name after its last separator", () => {
+    expect(titleOfHtml('<title>EDITAL DE EXPOSIÇÕES 2027 - Fundação Cultural Badesc</title>')).toBe(
+      'EDITAL DE EXPOSIÇÕES 2027',
+    );
+    expect(titleOfHtml('<title>Chamada 01/2026 | Sesc</title>')).toBe('Chamada 01/2026');
+    expect(titleOfHtml('<p>no title</p>')).toBe('');
   });
 });
 
