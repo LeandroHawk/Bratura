@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { FirecrawlOutOfCreditsError, FirecrawlRateLimitedError, scrapeMarkdown } from './client';
+import {
+  FirecrawlOutOfCreditsError,
+  FirecrawlRateLimitedError,
+  scrapeMarkdown,
+  scrapeRawBodyFromBrazil,
+} from './client';
 
 function firecrawlAnswers(body: unknown, status = 200) {
   const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body), { status }));
@@ -44,6 +49,49 @@ describe('scrapeMarkdown', () => {
     expect(await scrapeMarkdown('https://example.gov.br/a.pdf', 'fc-key')).toEqual({
       markdown: '# Edital',
       creditsUsed: null,
+    });
+  });
+});
+
+describe('fetching from Brazil', () => {
+  test('a Markdown read from Brazil asks Firecrawl for a Brazilian location', async () => {
+    const fetchMock = firecrawlAnswers({ success: true, data: { markdown: '# Edital' } });
+    await scrapeMarkdown('https://mapacultural.pe.gov.br/files/a.pdf', 'fc-key', {
+      fromBrazil: true,
+    });
+    const body: unknown = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).toEqual({
+      url: 'https://mapacultural.pe.gov.br/files/a.pdf',
+      formats: ['markdown'],
+      location: { country: 'BR' },
+    });
+  });
+
+  test('a raw body comes back unconverted, with where and how the site answered', async () => {
+    const fetchMock = firecrawlAnswers({
+      success: true,
+      data: {
+        rawHtml: '[{"id":1}]',
+        metadata: {
+          url: 'https://mapacultural.se.gov.br/api/opportunity/find',
+          statusCode: 200,
+          contentType: 'application/json',
+        },
+      },
+    });
+    expect(
+      await scrapeRawBodyFromBrazil('https://mapacultural.se.gov.br/api/opportunity/find', 'k'),
+    ).toEqual({
+      body: '[{"id":1}]',
+      finalUrl: 'https://mapacultural.se.gov.br/api/opportunity/find',
+      statusCode: 200,
+      contentType: 'application/json',
+    });
+    const body: unknown = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body).toEqual({
+      url: 'https://mapacultural.se.gov.br/api/opportunity/find',
+      formats: ['rawHtml'],
+      location: { country: 'BR' },
     });
   });
 });

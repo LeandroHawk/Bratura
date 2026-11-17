@@ -58,7 +58,7 @@ describe('scheduleDailyIngestion', () => {
       for (const source of [
         federalMapasSource,
         cearaMapasSource,
-        pernambucoMapasSource,
+        { ...pernambucoMapasSource, isActive: false },
         newsSite,
       ]) {
         await ctx.db.insert('sources', source);

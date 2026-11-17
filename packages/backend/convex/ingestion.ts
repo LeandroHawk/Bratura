@@ -81,7 +81,8 @@ export const ingestMapasCulturaisInstance = internalZodAction({
   returns: IngestMapasCulturaisInstanceActionReturnsSchema,
   handler: async (ctx, { sourceId }): Promise<IngestionOutcome> =>
     await runSourceIngestion(ctx, sourceId, 'mapasCulturaisInstance', {
-      fetchEntries: async (source) => await fetchOpenMapasOpportunities(source.baseUrl, Date.now()),
+      fetchEntries: async (source) =>
+        await fetchOpenMapasOpportunities(source.baseUrl, Date.now(), source),
       EntrySchema: MapasOpportunitySchema,
       listingFromEntry: callNoticeListingFromMapasOpportunity,
     }),
@@ -90,7 +91,10 @@ export const ingestMapasCulturaisInstance = internalZodAction({
 const IngestOfficialPageActionArgsSchema = z.object({ sourceId: documentId('sources') });
 const IngestOfficialPageActionReturnsSchema = IngestionOutcomeEnum;
 
-/** Reads one official page: its listing (and call pages) as plain HTML, never Firecrawl. */
+/**
+ * Reads one official page: its listing (and call pages) as plain HTML, through Firecrawl only for
+ * a source that answers only from Brazil.
+ */
 export const ingestOfficialPage = internalZodAction({
   args: IngestOfficialPageActionArgsSchema,
   returns: IngestOfficialPageActionReturnsSchema,

@@ -36,12 +36,13 @@ export const cearaMapasSource = {
   baseUrl: 'https://mapacultural.secult.ce.gov.br',
 } satisfies Source;
 
-/** Off: it times out from Convex (US East) and answers from Brazil (`docs/data-sources.md`). */
+/** Times out from Convex (US East) and answers from Brazil: read through Firecrawl from Brazil. */
 export const pernambucoMapasSource = {
   kind: 'mapasCulturaisInstance',
   slug: 'mapas-pe',
   name: 'Mapas Culturais — Pernambuco',
-  isActive: false,
+  isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-13',
   termsCheckedOn: '2026-11-13',
   baseUrl: 'https://mapacultural.pe.gov.br',
@@ -147,12 +148,13 @@ export const paraibaMapasSource = {
   baseUrl: 'https://mapacultural.pb.gov.br',
 } satisfies Source;
 
-/** Times out from Convex (US East), as Pernambuco, but still on (`docs/data-sources.md`). */
+/** Times out from Convex (US East), as Pernambuco: read through Firecrawl from Brazil. */
 export const sergipeMapasSource = {
   kind: 'mapasCulturaisInstance',
   slug: 'mapas-se',
   name: 'Mapas Culturais — Sergipe',
   isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-14',
   termsCheckedOn: '2026-11-14',
   baseUrl: 'https://mapacultural.se.gov.br',
@@ -415,14 +417,15 @@ export const jaboataoPnabCycle2Source = {
 } satisfies Source;
 
 /**
- * Ponta Grossa's culture office: its PNAB page, one heading per call (measured 2026-11-15). Off:
- * it times out from Convex (US East) and answers from Brazil, as Pernambuco.
+ * Ponta Grossa's culture office: its PNAB page, one heading per call (measured 2026-11-15). It
+ * times out from Convex (US East) and answers from Brazil, as Pernambuco: read from Brazil.
  */
 export const pontaGrossaPnabSource = {
   kind: 'officialPage',
   slug: 'ponta-grossa-pnab',
   name: 'Secretaria Municipal de Cultura de Ponta Grossa — PNAB',
-  isActive: false,
+  isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-15',
   termsCheckedOn: '2026-11-15',
   listingUrl: 'https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/',
@@ -670,6 +673,7 @@ export const alagoasSecult2026Source = {
   slug: 'al-secult-editais-2026',
   name: 'Secult Alagoas — editais e concursos 2026',
   isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-16',
   termsCheckedOn: '2026-11-16',
   listingUrl: 'https://secult.al.gov.br/editais-e-concursos/editais-e-concursos-2026',
@@ -687,6 +691,7 @@ export const federalDistrictSececSource = {
   slug: 'df-secec-editais',
   name: 'Secec DF — editais',
   isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-16',
   termsCheckedOn: '2026-11-16',
   listingUrl: 'https://www.cultura.df.gov.br/editais-abertos-1',

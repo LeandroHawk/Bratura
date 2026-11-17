@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { requiredString } from '../../../../primitives/code/string/fields';
 import { ianaTimeZone } from '../../../../primitives/code/time/time-zone/fields';
 import { requiredHttpsUrl } from '../../../../primitives/code/url/fields';
+import { SourceAccessFields } from '../../fragments/access/fields';
 import { SourceComplianceFields } from '../../fragments/compliance/fields';
 import { SourceIdentityFields } from '../../fragments/identity/fields';
 
@@ -32,6 +33,7 @@ export const OfficialPageSourceSchema = z.object({
   kind: z.literal('officialPage'),
   ...SourceIdentityFields.shape,
   ...SourceComplianceFields.shape,
+  ...SourceAccessFields.shape,
   /** The page where the site lists its calls. */
   listingUrl: requiredHttpsUrl,
   discovery: OfficialPageDiscoverySchema,
