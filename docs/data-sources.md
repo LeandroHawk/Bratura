@@ -38,7 +38,8 @@ Pernambuco and Sergipe Mapas, Ponta Grossa, Secult Alagoas 2026 and Secec DF. Th
 Convex (US East) in 30 s and answer from Brazil, so their listing, call pages and documents are
 fetched by Firecrawl with a Brazilian location (1 credit per page;
 `docs/integrations/firecrawl.md`, Decisions). Pernambuco and Ponta Grossa, off until then, are on
-again.
+again. Secult Alagoas is off since 2026-11-17: Firecrawl cannot read it either (official pages
+table).
 
 **The list of instances** is the `mapasculturais` README on GitHub
 (`https://github.com/mapasculturais/mapasculturais`, branch `develop`, sections "Instalações em
@@ -181,7 +182,7 @@ the rows marked so below).
 | Buíque PNAB 2026 (measured 2026-11-16) | `https://buique.pe.gov.br/pnab-2026/`: one heading per call over its notice (`/downloads/pnab/`), results under their own headings; a page per year. 3 calls (Editais 001–003/2026), all closed | allows (`/wp-admin/` disallowed) | only a privacy page, no clause on automated access, 2026-11-16 |
 | Tijucas Lei Aldir Blanc (measured 2026-11-16) | `https://www.tijucas.sc.gov.br/especiais/lei-aldir-blanc`: every notice, rectification and result linked on one page, results on the SC gazette's `s3cache.dom.sc.gov.br`. Chamamentos 001 and 002/2026 post results: nothing recorded that day | allows (`/controle` disallowed) | none published, 2026-11-16 |
 | Secult Goiás PNAB 2026 (measured 2026-11-16) | `https://goias.gov.br/cultura/pnab/edital-2026-pnab/`: one heading per call over its notice and annexes (`/cultura/wp-content/uploads/sites/25/`); a page per year. 2 calls (Ocupa Goiás Brasilidades & Futuros and MITsp 2027), closed 29/10 and 14/11 by their cronogramas | allows (`/wp-includes/`, a panel path disallowed) | only a privacy page, no clause on automated access, 2026-11-16 |
-| Secult Alagoas 2026 (measured 2026-11-16) | `https://secult.al.gov.br/editais-e-concursos/editais-e-concursos-2026`: one download category per call (`chamamento-publico-n-…`, `-mostra-`), files as `task=download.send`; the incentive-law category left out; a listing per year. 2 calls recorded (Chamamentos 07 and 08/2026); the other 2026 calls post results | allows (Joomla default) | none published, 2026-11-16 |
+| Secult Alagoas 2026 (measured 2026-11-16) | `https://secult.al.gov.br/editais-e-concursos/editais-e-concursos-2026`: one download category per call (`chamamento-publico-n-…`, `-mostra-`), files as `task=download.send`; the incentive-law category left out; a listing per year. 2 calls recorded (Chamamentos 07 and 08/2026); the other 2026 calls post results. **Off** since 2026-11-17: it times out from Convex, and Firecrawl fails on it with every engine (`SCRAPE_ALL_ENGINES_FAILED`), even from Brazil with a 90 s timeout, while a plain request from Brazil answers in 3 s | allows (Joomla default) | none published, 2026-11-16 |
 | Secec DF (measured 2026-11-16) | `https://www.cultura.df.gov.br/editais-abertos-1`: every notice on one page, extensionless files under `/documents/d/secec/`. 4 calls (Editais 14 and 15/2026, 21 and 27/2025) | allows all | none published (the footer links only the DF LGPD portal), 2026-11-16 |
 | PNAB DF with Instituto OMNI (measured 2026-11-16) | `https://novosite.pnabdf.org.br/`: one page per call (`/editais/edital-…`), notice first. 3 calls (Editais 19, 20, 21/2026) | allows all | none published, 2026-11-16 |
 | Casa das Rosas (Poiesis; measured 2026-11-16) | `https://casadasrosas.org.br/editais/`: one page per call (`/edital/…`). 1 call (Bolsas Ramos de Azevedo and Haroldo de Campos 2026, closed in May); the page prints winners' names, which are never stored | allows all | only a privacy page about personal data, 2026-11-16 |
