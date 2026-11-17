@@ -67,6 +67,30 @@ describe('callNoticeListingFromMapasOpportunity', () => {
     ]);
   });
 
+  test("drops a file uploaded again under its name (`-2`, `-3`), never a `-1`, a `-05` or another folder's", () => {
+    const folder = 'https://mapacultural.parauapebas.pa.gov.br/files/opportunity/161';
+    const downloads = [
+      `${folder}/edital-ass.pdf`,
+      `${folder}/edital-ass-2.pdf`,
+      `${folder}/edital-ass-3.pdf`,
+      `${folder}/anexo.pdf`,
+      `${folder}/anexo-1.pdf`,
+      `${folder}/anexo-05.pdf`,
+      `${folder}/categorias-2.pdf`,
+      `${folder}/edital-ass-2.docx`,
+      'https://mapacultural.parauapebas.pa.gov.br/files/opportunity/162/edital-ass-2.pdf',
+    ].map((url) => ({ url }));
+    expect(listingOf({ '@files:downloads': downloads }).documentUrls).toEqual([
+      `${folder}/edital-ass.pdf`,
+      `${folder}/anexo.pdf`,
+      `${folder}/anexo-1.pdf`,
+      `${folder}/anexo-05.pdf`,
+      `${folder}/categorias-2.pdf`,
+      `${folder}/edital-ass-2.docx`,
+      'https://mapacultural.parauapebas.pa.gov.br/files/opportunity/162/edital-ass-2.pdf',
+    ]);
+  });
+
   test('cuts a summary past the ceiling and marks the cut', () => {
     const summary = listingOf({ shortDescription: 'a'.repeat(textLengths.max + 753) }).summary;
     expect(summary).toHaveLength(textLengths.max);
