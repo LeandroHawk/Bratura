@@ -22,7 +22,16 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
     callPageUrlParts: urlParts,
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
-  z.object({ hops: z.literal('documentsUnderHeadings') }),
+  z.object({
+    hops: z.literal('documentsUnderHeadings'),
+    /**
+     * The class of the element that titles each call when the page uses no `<h1-6>` for it
+     * (accordions: Recife `accordion-toggle`, Spcine `x-acc-header`). `<h1-6>` still count.
+     */
+    headingClass: requiredString('short')
+      .regex(/^[A-Za-z_][\w-]*$/)
+      .optional(),
+  }),
 ]);
 
 /**

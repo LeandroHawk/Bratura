@@ -243,18 +243,51 @@ export function callsOfDocumentsOnListing(
   });
 }
 
+/** Whether every year a text names (`2025`, `05/2019`, `2015_Edital`) is before `year`. */
+function namesOnlyYearsBefore(text: string, year: number) {
+  const years = [...text.matchAll(/(?<!\d)20\d{2}(?!\d)/g)].map(([named]) => Number(named));
+  return years.length > 0 && Math.max(...years) < year;
+}
+
+/**
+ * A heading naming only past years titles a past edition ("CICLO NATALINO 2025", "05/2019 |
+ * EDITAL…"): Recife (2026-11-17) lists 196 calls since 2019 and Spcine 57 since 2015, with no date
+ * on the page, and each one kept is a notice read.
+ */
+const headingNamesAPastEdition = (heading: string) =>
+  namesOnlyYearsBefore(heading, new Date().getUTCFullYear());
+
+/**
+ * Every notice of a call names only years before last year, by link text and file name (Spcine's
+ * `2015_Edital_Linha_1.pdf` under a heading with no year). Last year's stay: Jundiaí's
+ * credenciamento 05/2025 is still listed in 2026.
+ */
+const noticesNameOnlyYearsBeforeLastYear = (documents: PageLink[]) =>
+  documents
+    .filter(isNotice)
+    .every(({ url, label }) =>
+      namesOnlyYearsBefore(`${label} ${fileNameAsLabel(url)}`, new Date().getUTCFullYear() - 1),
+    );
+
+/** An accordion's indicator glyph before the title ("▸ 07/2026 | …"). */
+const withoutLeadingSymbols = (heading: string) => heading.replace(/^[^\p{L}\p{N}]+/u, '');
+
 /**
  * One hop: the listing's documents, each with the heading above it, which names its call and is
  * its id at the source. A heading with no notice under it (the page's own title) is no call.
  */
 export function callsOfDocumentsUnderHeadings(
-  source: OfficialPageSource,
+  source: OfficialPageSource & { discovery: { hops: 'documentsUnderHeadings' } },
   { html, url }: FetchedPage,
 ): OfficialPageCall[] {
-  return sectionsOfHtml(html, url).flatMap(({ heading, links }) => {
-    if (!heading || namesACallBeforeLastYear(heading)) return [];
+  const { headingClass } = source.discovery;
+  return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links }) => {
+    const heading = withoutLeadingSymbols(rawHeading);
+    if (!heading || namesACallBeforeLastYear(heading) || headingNamesAPastEdition(heading)) {
+      return [];
+    }
     const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
-    if (!recorded) return [];
+    if (!recorded || noticesNameOnlyYearsBeforeLastYear(recorded.kept)) return [];
     return [
       {
         externalId: heading,
@@ -272,7 +305,7 @@ export async function fetchOfficialPageCalls(source: OfficialPageSource): Promis
   if (discovery.hops === 'callPage') return await callsOfCallPages({ ...source, discovery });
   const listing = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
   if (discovery.hops === 'documentsUnderHeadings') {
-    return callsOfDocumentsUnderHeadings(source, listing);
+    return callsOfDocumentsUnderHeadings({ ...source, discovery }, listing);
   }
   return callsOfDocumentsOnListing(source, listing);
 }

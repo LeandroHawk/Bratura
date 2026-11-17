@@ -101,4 +101,39 @@ describe('sectionsOfHtml', () => {
       },
     ]);
   });
+
+  test("an element of the heading class titles a section too: Recife's in-page link, Spcine's button", () => {
+    const page = 'https://www.culturarecife.com.br/public/home.php';
+    const html = [
+      '<h5>2026</h5>',
+      '<a class="accordion-toggle" data-toggle="collapse" href="#edital_home_138"><b>RECIFE É DE CINEMA</b></a>',
+      '<a href="./documentos/edital_home_138/Edital.pdf">EDITAL</a>',
+      '<button class="x-acc-header" type="button"><span>▸</span><span>01/2026 | Games</span></button>',
+      '<a href="./documentos/games.pdf">EDITAL</a>',
+      '<a class="accordion-toggle-icon" href="#x">não é título</a>',
+    ].join('');
+    expect(sectionsOfHtml(html, page, 'accordion-toggle').map(({ heading }) => heading)).toEqual([
+      '2026',
+      'RECIFE É DE CINEMA',
+    ]);
+    expect(sectionsOfHtml(html, page, 'x-acc-header')).toEqual([
+      {
+        heading: '2026',
+        links: [
+          { url: page, label: 'RECIFE É DE CINEMA' },
+          {
+            url: 'https://www.culturarecife.com.br/public/documentos/edital_home_138/Edital.pdf',
+            label: 'EDITAL',
+          },
+        ],
+      },
+      {
+        heading: '▸ 01/2026 | Games',
+        links: [
+          { url: 'https://www.culturarecife.com.br/public/documentos/games.pdf', label: 'EDITAL' },
+          { url: page, label: 'não é título' },
+        ],
+      },
+    ]);
+  });
 });
