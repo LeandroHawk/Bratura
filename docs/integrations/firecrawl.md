@@ -25,6 +25,9 @@ crons.ts (daily)
                       matching (rules) → `matches`
 ```
 
+A source that answers only from Brazil (`answersOnlyFromBrazil`) takes neither free route: its
+Mapas API or listing and call pages go through Firecrawl from Brazil, 1 credit a page (Decisions).
+
 The team's draft of this flow also stored an embedding per call; matching is rules only
 (`docs/plan.md`, What to build), so embeddings wait for a consumer (`docs/architecture.md` §6).
 

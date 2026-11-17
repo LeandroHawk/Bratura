@@ -156,7 +156,7 @@ GET https://{host}/api/opportunity/find
 ## Official pages (plain fetch; Firecrawl reads only the documents)
 
 Read by `ingestion:ingestOfficialPage` (`model/officialPage/`): the listing and call pages are
-fetched as HTML on the listing's own host, so finding calls costs no credits. Registering one means
+fetched as HTML on the listing's own host, so finding calls costs no credits (except a source that answers only from Brazil, above). Registering one means
 choosing its `discovery` and `documentUrlParts` from the site's real links (measured 2026-11-15 on
 the rows marked so below).
 

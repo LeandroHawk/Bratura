@@ -83,9 +83,10 @@ async function bodyUpTo(response: Response, maxBytes: number, tooLarge: Error) {
 }
 
 /**
- * One file from a registered source's own host, fetched plainly (no Firecrawl credits). Throws,
- * naming the host, when `url` is not on `sourceUrl`'s host, the site does not answer, redirects off
- * its host, answers an error or an unexpected type, or sends over `maxBytes`.
+ * One file from a registered source's own host, fetched plainly (no Firecrawl credits), or through
+ * Firecrawl from Brazil for a source that answers only from there. Throws, naming the host, when
+ * `url` is not on `sourceUrl`'s host, the site does not answer, redirects off its host, answers an
+ * error or an unexpected type, or sends over `maxBytes`.
  */
 export async function fetchOnSourceHost(
   url: string,

@@ -271,6 +271,23 @@ describe('readPendingDocuments', () => {
       expect(await documentsOf(t)).toMatchObject([{ status: 'failed', failure: 'noText' }]);
     });
 
+    test('a source that answers only from Brazil is read from there, never fetched by us', async () => {
+      const t = convexTest(schema, modules);
+      await t.run((ctx) =>
+        ctx.db.insert('sources', { ...cearaMapasSource, answersOnlyFromBrazil: true }),
+      );
+      await addCallNotice(t, { documentUrls: [mainNotice] });
+      const fetchMock = firecrawlAndSourceAnswer(headersOnly, pdfWithText(Array(4).fill(body)));
+
+      expect(await readPending(t)).toMatchObject({ read: 0, failed: 1 });
+      expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+        'https://api.firecrawl.dev/v2/scrape',
+      ]);
+      expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+        location: { country: 'BR' },
+      });
+    });
+
     test("never fetches a file off the source's own host", async () => {
       const { t } = await withCallNotice([mainNotice]);
       const fetchMock = firecrawlAndSourceAnswer(headersOnly, pdfWithText(Array(4).fill(body)));

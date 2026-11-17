@@ -74,6 +74,42 @@ describe('scheduleDailyIngestion', () => {
 });
 
 describe('ingestMapasCulturaisInstance', () => {
+  test('an instance that answers only from Brazil is read through Firecrawl, never directly', async () => {
+    vi.stubEnv('FIRECRAWL_API_KEY', 'fc-key');
+    const { t, sourceId } = await withSource({
+      ...federalMapasSource,
+      answersOnlyFromBrazil: true,
+    });
+    const fetchMock = vi.fn<typeof fetch>(
+      async (_input, init) =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              rawHtml: JSON.stringify([mapasOpportunity()]),
+              metadata: {
+                url: String(JSON.parse(String(init?.body)).url),
+                statusCode: 200,
+                contentType: 'application/json',
+              },
+            },
+          }),
+        ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
+      'succeeded',
+    );
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      'https://api.firecrawl.dev/v2/scrape',
+    ]);
+    const asked = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { url: string };
+    expect(new URL(asked.url).origin).toBe('https://mapa.cultura.gov.br');
+    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
+    vi.unstubAllEnvs();
+  });
+
   test('records every open call notice and closes the run with its counts', async () => {
     const { t, sourceId } = await withSource();
     const fetchMock = mapasAnswers([mapasOpportunity(), mapasOpportunity({ id: 99 })]);
