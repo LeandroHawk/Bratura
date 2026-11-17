@@ -32,8 +32,8 @@ export const firecrawlRequestSpacingMs = 6_500;
 /** A 429 waits this long before the one retry. */
 const rateLimitWaitMs = 60_000;
 /**
- * Firecrawl's own `timeout` is this much shorter than our wait: its time in queue does not count
- * there, and cutting first would lose the error it sends.
+ * Firecrawl's own `timeout` is this much shorter than our wait, so it can still send its error
+ * (which we would lose by cutting the connection first) before we stop waiting.
  */
 const firecrawlAnswerMarginMs = 10_000;
 
