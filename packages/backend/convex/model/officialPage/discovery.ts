@@ -146,9 +146,9 @@ function publishedOverAYearAgo(html: string, source: CallPageSource, publishedAt
  */
 function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
   const url = new URL(link.url);
-  if (url.protocol !== 'http:' || url.host !== new URL(sourceUrl).host) return link;
+  if (url.protocol !== 'http:') return link;
   url.protocol = 'https:';
-  return { ...link, url: url.href };
+  return isOnSourceHost(url.href, sourceUrl) ? { ...link, url: url.href } : link;
 }
 
 /** Two hops: the listing's call pages, each read for its own documents. */
