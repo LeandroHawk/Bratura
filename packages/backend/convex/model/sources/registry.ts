@@ -593,6 +593,201 @@ export const chamberOfDeputiesCultureSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Sapé's PNAB page: one page per call under `/lei-aldir-blanc/`, the notice PDF on it. Measured
+ * 2026-11-16: Edital 008/2026 (Fomento Cultural, to 16/11); the older calls post results.
+ */
+export const sapePnabSource = {
+  kind: 'officialPage',
+  slug: 'sape-pnab',
+  name: 'Prefeitura de Sapé — editais PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://sape.pb.gov.br/politica-nacional-aldir-blanc-pnab/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/lei-aldir-blanc/edital-', '/lei-aldir-blanc/chamamento-publico-'],
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Recife'),
+} satisfies Source;
+
+/** Buíque's PNAB 2026 page: one heading per call over its notice. 3 calls, closed (2026-11-16). */
+export const buiquePnab2026Source = {
+  kind: 'officialPage',
+  slug: 'buique-pnab-2026',
+  name: 'Prefeitura de Buíque — PNAB 2026',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://buique.pe.gov.br/pnab-2026/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/downloads/pnab/'],
+  timeZone: ianaTimeZone.parse('America/Recife'),
+} satisfies Source;
+
+/**
+ * Tijucas' Aldir Blanc page: every notice, rectification and result linked on it, results on the
+ * state gazette's host. Chamamentos 001 and 002/2026 post results, so nothing is recorded today.
+ */
+export const tijucasPnabSource = {
+  kind: 'officialPage',
+  slug: 'tijucas-pnab',
+  name: 'Prefeitura de Tijucas — Lei Aldir Blanc',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.tijucas.sc.gov.br/especiais/lei-aldir-blanc',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/conteudo/paginas/108/', 's3cache.dom.sc.gov.br/atos/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Goiás' Secult, PNAB 2026: one heading per call over its notice and annexes (a new page each
+ * year). Measured 2026-11-16: Ocupa Goiás Brasilidades & Futuros and MITsp 2027, both closed.
+ */
+export const goiasSecultPnab2026Source = {
+  kind: 'officialPage',
+  slug: 'go-secult-pnab-2026',
+  name: 'Secult Goiás — editais PNAB 2026',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://goias.gov.br/cultura/pnab/edital-2026-pnab/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/cultura/wp-content/uploads/sites/25/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Alagoas' Secult, 2026 calls: one download category per call (a new listing each year). The
+ * parts leave out the incentive-law category. Measured 2026-11-16: Chamamentos 07 and 08/2026.
+ */
+export const alagoasSecult2026Source = {
+  kind: 'officialPage',
+  slug: 'al-secult-editais-2026',
+  name: 'Secult Alagoas — editais e concursos 2026',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://secult.al.gov.br/editais-e-concursos/editais-e-concursos-2026',
+  discovery: { hops: 'callPage', callPageUrlParts: ['chamamento-publico-n-', '-mostra-'] },
+  documentUrlParts: ['task=download.send'],
+  timeZone: ianaTimeZone.parse('America/Maceio'),
+} satisfies Source;
+
+/**
+ * The Federal District's Secec: every notice linked on one page, extensionless files under
+ * `/documents/d/secec/`. Measured 2026-11-16: Editais 14 and 15/2026, 21 and 27/2025.
+ */
+export const federalDistrictSececSource = {
+  kind: 'officialPage',
+  slug: 'df-secec-editais',
+  name: 'Secec DF — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.cultura.df.gov.br/editais-abertos-1',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/documents/d/secec/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/** The Federal District PNAB site (with Instituto OMNI): one page per call; Editais 19–21/2026. */
+export const federalDistrictPnabSource = {
+  kind: 'officialPage',
+  slug: 'df-pnab-omni',
+  name: 'PNAB DF — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://novosite.pnabdf.org.br/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/editais/edital-'] },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Casa das Rosas (Poiesis, a São Paulo state cultural organisation): one page per call. Measured
+ * 2026-11-16: Bolsas Ramos de Azevedo and Haroldo de Campos 2026, closed in May.
+ */
+export const casaDasRosasSource = {
+  kind: 'officialPage',
+  slug: 'casa-das-rosas-editais',
+  name: 'Casa das Rosas — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://casadasrosas.org.br/editais/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/edital/'] },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Sesc Sergipe's public calls: the parts keep the artists' calls and leave out races, vendors and
+ * the service providers' credenciamento. Measured 2026-11-16: Sescanção 2026.
+ */
+export const sescSergipeSource = {
+  kind: 'officialPage',
+  slug: 'sesc-se-chamamentos',
+  name: 'Sesc Sergipe — chamamentos públicos',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://sesc-se.com.br/chamamento-publico/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: [
+      '/chamamento-publico/convocatoria',
+      '/chamamento-publico/aldeia-sesc',
+      '/chamamento-publico/sescancao',
+      'galeria-de-arte',
+    ],
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Maceio'),
+} satisfies Source;
+
+/**
+ * Rio de Janeiro's culture office: one page per call, linked from its home. Measured 2026-11-16:
+ * Prêmio Ações Locais and Ações Locais Projetos Continuados, closed in September.
+ */
+export const rioCultureOfficeSource = {
+  kind: 'officialPage',
+  slug: 'rio-smc',
+  name: 'Secretaria Municipal de Cultura do Rio de Janeiro — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://cultura.prefeitura.rio/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/edital-', '/pesquisa-e-residencia', '/pnab-', '/circuito-'],
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Manaus' Concultura, PNAB Ciclo 2: one page per call (Editais 002–013/2026; 001 is a preview link
+ * the parts miss). All post results on 2026-11-16, so nothing is recorded until the next cycle.
+ */
+export const manausConculturaPnabSource = {
+  kind: 'officialPage',
+  slug: 'manaus-concultura-pnab-ciclo-2',
+  name: 'Concultura Manaus — PNAB Ciclo 2',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://concultura.manaus.am.gov.br/pnab-ciclo-2',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/edital-0'] },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Manaus'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -640,4 +835,15 @@ export const registeredSources: readonly Source[] = [
   tocantinsMapasSource,
   teixeiraDeFreitasPnabSource,
   chamberOfDeputiesCultureSource,
+  sapePnabSource,
+  buiquePnab2026Source,
+  tijucasPnabSource,
+  goiasSecultPnab2026Source,
+  alagoasSecult2026Source,
+  federalDistrictSececSource,
+  federalDistrictPnabSource,
+  casaDasRosasSource,
+  sescSergipeSource,
+  rioCultureOfficeSource,
+  manausConculturaPnabSource,
 ];
