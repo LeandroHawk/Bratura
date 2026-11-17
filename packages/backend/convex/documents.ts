@@ -49,6 +49,20 @@ function needsRead(known: CallNoticeDocument | null, now: number) {
   return now - known.readingSince >= documentReadingLeaseMs;
 }
 
+/**
+ * Query keys a site changes per visit: Paulo Afonso's file links carry a WordPress `_wpnonce` that
+ * changes daily (2026-11-17), so with it the same file would be a new document, read again, daily.
+ */
+const perVisitQueryKeys = ['_wpnonce'];
+
+/** The URL a document is stored and known by: the listed one without its per-visit keys. */
+function documentKeyUrl(url: string) {
+  const parsed = new URL(url);
+  if (!perVisitQueryKeys.some((key) => parsed.searchParams.has(key))) return url;
+  for (const key of perVisitQueryKeys) parsed.searchParams.delete(key);
+  return parsed.href;
+}
+
 const knownDocument = (
   ctx: QueryCtx,
   { callNoticeId, url }: Pick<CallNoticeDocument, 'callNoticeId' | 'url'>,
@@ -56,7 +70,7 @@ const knownDocument = (
   ctx.db
     .query('callNoticeDocuments')
     .withIndex('by_call_notice_and_url', (index) =>
-      index.eq('callNoticeId', callNoticeId).eq('url', url),
+      index.eq('callNoticeId', callNoticeId).eq('url', documentKeyUrl(url)),
     )
     .unique();
 
@@ -106,7 +120,9 @@ export const listDocumentsToRead = internalZodQuery({
 
 // The only writer of `callNoticeDocuments` --------------------------------------------------------
 
-async function replaceDocument(ctx: MutationCtx, document: CallNoticeDocument) {
+/** The read itself goes to the URL as listed today: only that one carries a valid nonce. */
+async function replaceDocument(ctx: MutationCtx, listed: CallNoticeDocument) {
+  const document = { ...listed, url: documentKeyUrl(listed.url) };
   const known: Doc<'callNoticeDocuments'> | null = await knownDocument(ctx, document);
   if (known) await ctx.db.replace(known._id, document);
   else await ctx.db.insert('callNoticeDocuments', document);
