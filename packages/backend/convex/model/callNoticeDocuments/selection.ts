@@ -87,19 +87,23 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
 ];
 
 /**
+ * Words that name the call anywhere in a link's text, ending it or not: "Acesse o edital",
+ * "Confira o regulamento aqui" (Sesi SP), a news title naming its prize or open registration
+ * ("Abertas as inscrições para o Prêmio Açorianos…", Porto Alegre). Never an annex or the
+ * gazette's extract of the notice ("Extrato do edital").
+ */
+const labelNoticeWords = `${noticeWords}|processo-seletivo|regulamento|premio|inscricoes-(abertas|para)`;
+
+/**
  * A link's text only, last: a notice word later in it ("Centro de Formação em Artes - Convocatória
  * ..."). File names keep their measured rules: there it also matches extracts and FAQs.
  */
 const labelRoles: [CallNoticeDocumentRole | null, RegExp][] = [
   ...documentRoleByName,
-  // The word may end the text: "Acesse o edital", "Confira o regulamento aqui" (Sesi SP).
   [
     'callNotice',
-    new RegExp(`^(?!.*anexo)(.*-)?(${noticeWords}|processo-seletivo|regulamento)(-|$)`),
+    new RegExp(`^(?!.*(anexo|extrato))(.*-)?(${labelNoticeWords})(-|$)`),
   ],
-  // A news title naming the call by its prize or its open registration (Porto Alegre, 2026-11-17:
-  // "Abertas as inscrições para o Prêmio Açorianos de Música 2026", the rules in the post).
-  ['callNotice', /^(?!.*anexo)(.*-)?(premio|inscricoes-(abertas|para))-/],
 ];
 
 /** A file name or a link's text in the rules' terms: no accents, lower case, words joined by -. */

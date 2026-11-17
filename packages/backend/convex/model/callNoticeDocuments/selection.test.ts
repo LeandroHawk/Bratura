@@ -172,6 +172,8 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     expect(callNoticeDocumentRole(media, 'Confira o regulamento aqui')).toBe('callNotice');
     expect(callNoticeDocumentRole(media, 'Editais encerrados')).toBeNull();
     expect(callNoticeDocumentRole(media, 'Confira o resultado do edital')).toBeNull();
+    expect(callNoticeDocumentRole(media, 'Extrato do edital')).toBeNull();
+    expect(callNoticeDocumentRole(media, 'Extrato do Edital nº 01/2026')).toBeNull();
   });
 
   test("a link's text naming a prize or open registration is a notice; a form, extension or result about one is not", () => {

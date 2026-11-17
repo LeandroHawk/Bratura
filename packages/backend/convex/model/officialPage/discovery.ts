@@ -162,9 +162,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     source.listingUrl,
     source,
   );
-  const listing = onePerUrl(
-    linksOfHtml(html, listingUrl).map((link) => withHttpsOnHost(link, source.listingUrl)),
-  );
+  const listing = linksOfHtml(html, listingUrl);
   /**
    * A document the listing links too is the site's frame, not the call's (Funarte, 2026-11-15:
    * every page links an internal "Edital No. 409/2025"). Without this, it is each call's notice.
@@ -172,7 +170,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   const frameDocumentUrls = new Set(
     documentLinksOf(listing, source.documentUrlParts).map(({ url }) => url),
   );
-  const callPages = listing.filter(
+  const callPages = onePerUrl(
+    listing.map((link) => withHttpsOnHost(link, source.listingUrl)),
+  ).filter(
     ({ url, label }) =>
       label &&
       !namesACallBeforeLastYear(label) &&
