@@ -78,18 +78,31 @@ const firstTextOf = (html: string) =>
  * A page's headings and http(s) links in page order. A link's URL is absolute, without its `#`.
  * Only a heading's opening tag is matched, so a link inside a heading is still read. A link that
  * names only an action takes the first text between it and the item before, else that link's label.
+ * An element of `headingClass` is a heading too: accordions title their items with a button or
+ * an in-page link (Recife `accordion-toggle`, Spcine `x-acc-header`), never an `<h1-6>`.
  */
-function* headingsAndLinksOf(html: string, pageUrl: string) {
+function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: string) {
   const page = withoutCode(html);
-  const headingText = /([\s\S]*?)<\/h[1-6]>/iy;
+  // Without a class, `(?!)` never matches and its group stays empty.
+  const classHeading = headingClass
+    ? `<([a-z][a-z0-9]*)\\b[^>]*?\\bclass\\s*=\\s*["'][^"']*?(?<![\\w-])${headingClass.replace(/[^\w-]/g, '\\$&')}(?![\\w-])[^>]*>`
+    : '(?!)()';
+  // Any `</h1-6>` ends an `<h1-6>`: pages close an `<h2>` with `</h3>`.
+  const standardHeadingText = /([\s\S]*?)<\/h[1-6]>/iy;
   let previousEnd = 0;
   let previousLinkLabel = '';
   for (const match of page.matchAll(
-    /<a\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']+))[^>]*>([\s\S]*?)<\/a>|<h[1-6]\b[^>]*>/gi,
+    new RegExp(
+      `${classHeading}|<a\\b[^>]*?\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+))[^>]*>([\\s\\S]*?)</a>|<(h[1-6])\\b[^>]*>`,
+      'gi',
+    ),
   )) {
-    const [tag, double, single, bare, inner] = match;
+    const [tag, classTag, double, single, bare, inner, headingTag] = match;
     const textBefore = page.slice(previousEnd, match.index);
-    if (/^<h/i.test(tag)) {
+    if (classTag || headingTag) {
+      const headingText = classTag
+        ? new RegExp(`([\\s\\S]*?)</${classTag}>`, 'iy')
+        : standardHeadingText;
       headingText.lastIndex = match.index + tag.length;
       const heading = headingText.exec(page);
       previousEnd = heading ? headingText.lastIndex : match.index + tag.length;
@@ -129,9 +142,9 @@ export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
 }
 
 /** One section per heading: its text and the links under it, up to the next heading. */
-export function sectionsOfHtml(html: string, pageUrl: string) {
+export function sectionsOfHtml(html: string, pageUrl: string, headingClass?: string) {
   const sections: { heading: string; links: PageLink[] }[] = [];
-  for (const item of headingsAndLinksOf(html, pageUrl)) {
+  for (const item of headingsAndLinksOf(html, pageUrl, headingClass)) {
     if (item.heading !== undefined) sections.push({ heading: item.heading, links: [] });
     else sections.at(-1)?.links.push(item.link);
   }

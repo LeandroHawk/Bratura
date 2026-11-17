@@ -795,6 +795,53 @@ export const manausConculturaPnabSource = {
   timeZone: ianaTimeZone.parse('America/Manaus'),
 } satisfies Source;
 
+/**
+ * Recife's culture secretariat and foundation: one accordion of 196 calls since 2019, each titled
+ * by an in-page link and its files under it (2026-11-17: 30 kept after the past-year cuts).
+ */
+export const recifeCultureSource = {
+  kind: 'officialPage',
+  slug: 'recife-cultura-editais',
+  name: 'Secretaria de Cultura e Fundação de Cultura Cidade do Recife — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.culturarecife.com.br/public/home.php',
+  discovery: { hops: 'documentsUnderHeadings', headingClass: 'accordion-toggle' },
+  documentUrlParts: ['/documentos/'],
+  timeZone: ianaTimeZone.parse('America/Recife'),
+} satisfies Source;
+
+/** Spcine's own calls: one accordion button per call, since 2015 (2026-11-17: none kept). */
+export const spcineCallsSource = {
+  kind: 'officialPage',
+  slug: 'spcine-editais',
+  name: 'Spcine — editais Spcine',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://spcine.com.br/editais-spcine/',
+  discovery: { hops: 'documentsUnderHeadings', headingClass: 'x-acc-header' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/** Spcine's PNAB calls, same accordion (2026-11-17: Edital 07/2026, videocast and podcast). */
+export const spcinePnabSource = {
+  ...spcineCallsSource,
+  slug: 'spcine-pnab',
+  name: 'Spcine — Política Nacional Aldir Blanc',
+  listingUrl: 'https://spcine.com.br/politica-nacional-aldir-blanc/',
+} satisfies Source;
+
+/** Spcine's FSA calls, same accordion (2026-11-17: Edital 02/2026, finishing of features). */
+export const spcineFsaSource = {
+  ...spcineCallsSource,
+  slug: 'spcine-fsa',
+  name: 'Spcine — editais FSA',
+  listingUrl: 'https://spcine.com.br/editais-fsa/',
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -853,4 +900,8 @@ export const registeredSources: readonly Source[] = [
   sescSergipeSource,
   rioCultureOfficeSource,
   manausConculturaPnabSource,
+  recifeCultureSource,
+  spcineCallsSource,
+  spcinePnabSource,
+  spcineFsaSource,
 ];

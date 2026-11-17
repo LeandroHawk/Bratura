@@ -6,6 +6,7 @@ import {
   maranhaoSecmaSource,
   jundiaiCultureSource,
   paranaSeecSource,
+  recifeCultureSource,
   salvadorFgmSource,
 } from '../sources/registry';
 import {
@@ -424,6 +425,35 @@ describe('callsOfDocumentsUnderHeadings', () => {
           { url: `${files}/ANEXO-I_-EDITAL-No-25_2026_Blocos.pdf`, label: 'Anexo I' },
         ],
       },
+    ]);
+  });
+});
+
+describe('callsOfDocumentsUnderHeadings: an accordion with years of past calls (Recife)', () => {
+  const page = recifeCultureSource.listingUrl;
+  const files = 'https://www.culturarecife.com.br/public/documentos';
+  const item = (title: string, ...links: string[]) =>
+    `<a class="accordion-toggle" href="#x"><b>${title}</b></a>${links.join('')}`;
+  const html = [
+    item('▸ RECIFE É DE CINEMA', a('./documentos/138/Edital_Recife_e_de_Cinema.pdf', 'EDITAL')),
+    item('CICLO NATALINO 2026', a('./documentos/134/CONVOCATORIA.pdf', 'CONVOCATORIA')),
+    item('CICLO NATALINO 2025', a('./documentos/23/CONVOCATORIA.pdf', 'CONVOCATORIA')),
+    item(
+      'MULTILINGUAGENS - LEI PAULO GUSTAVO',
+      a('./documentos/67/EDITAL_LPG_2023.pdf', 'EDITAL MULTILINGUAGENS 2023'),
+    ),
+    item('CAPTADORES', a('./documentos/56/EDITAL-CAPTADORES-2025.pdf', 'Edital')),
+    item('EDITAL Nº 08/2025 - PARECERISTAS', a('./documentos/57/Edital.pdf', 'Edital')),
+    item('EDITAL Nº 03/2024 - BOLSAS', a('./documentos/58/Edital.pdf', 'Edital')),
+  ].join('');
+
+  test('drops a past edition, a numbered call before last year and a call whose notices name only years before last', () => {
+    const calls = callsOfDocumentsUnderHeadings(recifeCultureSource, { html, url: page });
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      ['RECIFE É DE CINEMA', [`${files}/138/Edital_Recife_e_de_Cinema.pdf`]],
+      ['CICLO NATALINO 2026', [`${files}/134/CONVOCATORIA.pdf`]],
+      ['CAPTADORES', [`${files}/56/EDITAL-CAPTADORES-2025.pdf`]],
+      ['EDITAL Nº 08/2025 - PARECERISTAS', [`${files}/57/Edital.pdf`]],
     ]);
   });
 });
