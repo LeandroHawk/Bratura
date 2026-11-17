@@ -2,8 +2,8 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
   FirecrawlOutOfCreditsError,
   FirecrawlRateLimitedError,
-  scrapeMarkdown,
   onceMoreIfRateLimited,
+  scrapeMarkdown,
   scrapeRawBody,
 } from './client';
 
@@ -96,7 +96,7 @@ describe('fetching from Brazil', () => {
       url: 'https://mapacultural.se.gov.br/api/opportunity/find',
       formats: ['rawHtml'],
       maxAge: 0,
-      timeout: 30_000,
+      timeout: 20_000,
       location: { country: 'BR' },
     });
   });

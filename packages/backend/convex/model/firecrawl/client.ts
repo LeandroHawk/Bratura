@@ -31,6 +31,11 @@ export type ScrapedMarkdown = { markdown: string; creditsUsed: number | null };
 export const firecrawlRequestSpacingMs = 6_500;
 /** A 429 waits this long before the one retry. */
 const rateLimitWaitMs = 60_000;
+/**
+ * Firecrawl's own `timeout` is this much shorter than our wait: its time in queue does not count
+ * there, and cutting first would lose the error it sends.
+ */
+const firecrawlAnswerMarginMs = 10_000;
 
 /** `read` again once after a minute when Firecrawl answered 429 (it costs nothing). */
 export async function onceMoreIfRateLimited<T>(read: () => Promise<T>): Promise<T> {
@@ -93,7 +98,13 @@ export async function scrapeRawBody(
   { access, timeoutMs }: { access: SourceAccess; timeoutMs: number },
 ): Promise<ScrapedRawBody> {
   const answer = await postScrape(
-    { url, formats: ['rawHtml'], maxAge: 0, timeout: timeoutMs, ...locationOf(access) },
+    {
+      url,
+      formats: ['rawHtml'],
+      maxAge: 0,
+      timeout: Math.max(timeoutMs - firecrawlAnswerMarginMs, timeoutMs / 2),
+      ...locationOf(access),
+    },
     apiKey,
     timeoutMs,
   );

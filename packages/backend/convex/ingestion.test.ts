@@ -47,6 +47,7 @@ const runsOf = (t: ReturnType<typeof convexTest>) =>
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('scheduleDailyIngestion', () => {
@@ -107,7 +108,6 @@ describe('ingestMapasCulturaisInstance', () => {
     const asked = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { url: string };
     expect(new URL(asked.url).origin).toBe('https://mapa.cultura.gov.br');
     expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
-    vi.unstubAllEnvs();
   });
 
   test('records every open call notice and closes the run with its counts', async () => {
