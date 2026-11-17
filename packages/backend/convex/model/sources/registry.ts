@@ -905,6 +905,38 @@ export const sesiSpCultureSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Mapa Cultura Goiás, a privately run Mapas (operator not named, no terms page) carrying 14
+ * municipalities' calls: Professor Jamil's Chamamento 06/2026 open to 19/11 on 2026-11-16.
+ */
+export const goiasMunicipalitiesMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-cultura-goias',
+  name: 'Mapas Culturais — Mapa Cultura Goiás (municípios)',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-17',
+  baseUrl: 'https://mapa.culturagoias.com.br',
+} satisfies Source;
+
+/**
+ * Paulo Afonso's Seculte: the listing titles each call with an `<h3>` and links its files under
+ * it, served by a WordPress plugin at the site root (`?smti_edital_download=1&…`), named only in
+ * the link text.
+ */
+export const pauloAfonsoSeculteSource = {
+  kind: 'officialPage',
+  slug: 'paulo-afonso-seculte-editais',
+  name: 'Paulo Afonso — Seculte, editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-17',
+  listingUrl: 'https://cultura.pauloafonso.ba.gov.br/editais/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['smti_edital_download=1'],
+  timeZone: ianaTimeZone.parse('America/Bahia'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -970,4 +1002,6 @@ export const registeredSources: readonly Source[] = [
   badescCultureSource,
   portoAlegreCultureSource,
   sesiSpCultureSource,
+  goiasMunicipalitiesMapasSource,
+  pauloAfonsoSeculteSource,
 ];
