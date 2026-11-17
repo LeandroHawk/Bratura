@@ -22,9 +22,9 @@ import {
 import {
   FirecrawlOutOfCreditsError,
   FirecrawlRateLimitedError,
+  firecrawlRequestSpacingMs,
+  onceMoreIfRateLimited,
   scrapeMarkdown,
-  type FirecrawlFetchOrigin,
-  type ScrapedMarkdown,
 } from './model/firecrawl/client';
 
 // Reading call notices' documents as Markdown, by hand: what is left to read, the reservation and
@@ -200,10 +200,6 @@ export const getDocumentSource = internalZodQuery({
  */
 const isThinRead = (text: string, pages: number) => pages >= 3 && text.length / pages < 300;
 
-/** Firecrawl allows about 10 scrapes a minute: one every 6.5 s stays under it. */
-export const documentReadSpacingMs = 6_500;
-/** A 429 waits this long before the one retry. */
-const rateLimitWaitMs = 60_000;
 /**
  * Stops starting reads here. An action lives 10 min, and one read may take 5: two Firecrawl
  * timeouts (2 min each) around one rate-limit wait (1 min).
@@ -212,20 +208,6 @@ const readLoopBudgetMs = 4 * 60 * 1000;
 
 const sleep = (milliseconds: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
-
-async function scrapeOnceMoreIfRateLimited(
-  url: string,
-  apiKey: string,
-  origin: FirecrawlFetchOrigin,
-): Promise<ScrapedMarkdown> {
-  try {
-    return await scrapeMarkdown(url, apiKey, origin);
-  } catch (error) {
-    if (!(error instanceof FirecrawlRateLimitedError)) throw error;
-    await sleep(rateLimitWaitMs);
-    return await scrapeMarkdown(url, apiKey, origin);
-  }
-}
 
 /**
  * The PDF's own text layer when Firecrawl's read came back thin (`isThinRead`): its parser drops
@@ -308,7 +290,7 @@ export const readPendingDocuments = internalZodAction({
         result.left -= 1;
         continue;
       }
-      if (readsStarted > 0) await sleep(documentReadSpacingMs);
+      if (readsStarted > 0) await sleep(firecrawlRequestSpacingMs);
       readsStarted += 1;
 
       let failure: CallNoticeDocumentFailure | null = null;
@@ -319,9 +301,9 @@ export const readPendingDocuments = internalZodAction({
           internal.documents.getDocumentSource,
           { callNoticeId: document.callNoticeId },
         );
-        const answer = await scrapeOnceMoreIfRateLimited(document.url, apiKey, {
-          fromBrazil: source?.answersOnlyFromBrazil === true,
-        });
+        const answer = await onceMoreIfRateLimited(() =>
+          scrapeMarkdown(document.url, apiKey, source ?? {}),
+        );
         creditsUsed = answer.creditsUsed;
         answeredWithoutCost = creditsUsed === null;
         result.creditsUsed += creditsUsed ?? 0;

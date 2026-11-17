@@ -1,5 +1,4 @@
-import type { SourceAccessFields } from '@bratura/shared/entities/source/fragments/access/fields';
-import type { z } from 'zod';
+import type { SourceAccess } from '@bratura/shared/entities/source/fragments/access/fields';
 import { fetchOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 
 /** A government page slower than this is down for today's run (Minas Gerais took 10 s). */
@@ -26,7 +25,7 @@ export type FetchedPage = { html: string; url: string };
 export async function fetchPageHtml(
   url: string,
   listingUrl: string,
-  access: z.infer<typeof SourceAccessFields> = {},
+  access: SourceAccess = {},
 ): Promise<FetchedPage> {
   const { body, contentType, finalUrl } = await fetchOnSourceHost(
     url,

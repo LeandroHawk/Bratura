@@ -11,3 +11,5 @@ export const SourceAccessFields = z.object({
    */
   answersOnlyFromBrazil: z.boolean().optional(),
 });
+
+export type SourceAccess = z.infer<typeof SourceAccessFields>;

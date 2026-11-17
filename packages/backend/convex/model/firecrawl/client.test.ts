@@ -3,7 +3,8 @@ import {
   FirecrawlOutOfCreditsError,
   FirecrawlRateLimitedError,
   scrapeMarkdown,
-  scrapeRawBodyFromBrazil,
+  onceMoreIfRateLimited,
+  scrapeRawBody,
 } from './client';
 
 function firecrawlAnswers(body: unknown, status = 200) {
@@ -57,7 +58,7 @@ describe('fetching from Brazil', () => {
   test('a Markdown read from Brazil asks Firecrawl for a Brazilian location', async () => {
     const fetchMock = firecrawlAnswers({ success: true, data: { markdown: '# Edital' } });
     await scrapeMarkdown('https://mapacultural.pe.gov.br/files/a.pdf', 'fc-key', {
-      fromBrazil: true,
+      answersOnlyFromBrazil: true,
     });
     const body: unknown = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
     expect(body).toEqual({
@@ -67,7 +68,7 @@ describe('fetching from Brazil', () => {
     });
   });
 
-  test('a raw body comes back unconverted, with where and how the site answered', async () => {
+  test('a raw body is fresh (no cache), unconverted, with where and how the site answered', async () => {
     const fetchMock = firecrawlAnswers({
       success: true,
       data: {
@@ -80,7 +81,10 @@ describe('fetching from Brazil', () => {
       },
     });
     expect(
-      await scrapeRawBodyFromBrazil('https://mapacultural.se.gov.br/api/opportunity/find', 'k'),
+      await scrapeRawBody('https://mapacultural.se.gov.br/api/opportunity/find', 'k', {
+        access: { answersOnlyFromBrazil: true },
+        timeoutMs: 30_000,
+      }),
     ).toEqual({
       body: '[{"id":1}]',
       finalUrl: 'https://mapacultural.se.gov.br/api/opportunity/find',
@@ -91,7 +95,28 @@ describe('fetching from Brazil', () => {
     expect(body).toEqual({
       url: 'https://mapacultural.se.gov.br/api/opportunity/find',
       formats: ['rawHtml'],
+      maxAge: 0,
+      timeout: 30_000,
       location: { country: 'BR' },
     });
+  });
+});
+
+describe('onceMoreIfRateLimited', () => {
+  test('a 429 waits a minute and reads once more; another error is not retried', async () => {
+    vi.useFakeTimers();
+    const read = vi
+      .fn<() => Promise<string>>()
+      .mockRejectedValueOnce(new FirecrawlRateLimitedError())
+      .mockResolvedValueOnce('read');
+    const answer = onceMoreIfRateLimited(read);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(await answer).toBe('read');
+    expect(read).toHaveBeenCalledTimes(2);
+
+    const failing = vi.fn<() => Promise<string>>().mockRejectedValue(new Error('HTTP 500'));
+    await expect(onceMoreIfRateLimited(failing)).rejects.toThrow('HTTP 500');
+    expect(failing).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 });

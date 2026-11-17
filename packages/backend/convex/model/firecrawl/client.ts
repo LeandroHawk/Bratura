@@ -1,3 +1,4 @@
+import type { SourceAccess } from '@bratura/shared/entities/source/fragments/access/fields';
 import { httpAnswerError } from '../../lib/httpError';
 import { FirecrawlRawHtmlResponseSchema, FirecrawlScrapeResponseSchema } from './payload';
 
@@ -26,21 +27,35 @@ export class FirecrawlRateLimitedError extends Error {
 
 export type ScrapedMarkdown = { markdown: string; creditsUsed: number | null };
 
+/** Firecrawl allows about 10 scrapes a minute: one every 6.5 s stays under it. */
+export const firecrawlRequestSpacingMs = 6_500;
+/** A 429 waits this long before the one retry. */
+const rateLimitWaitMs = 60_000;
+
+/** `read` again once after a minute when Firecrawl answered 429 (it costs nothing). */
+export async function onceMoreIfRateLimited<T>(read: () => Promise<T>): Promise<T> {
+  try {
+    return await read();
+  } catch (error) {
+    if (!(error instanceof FirecrawlRateLimitedError)) throw error;
+    await new Promise<void>((resolve) => setTimeout(resolve, rateLimitWaitMs));
+    return await read();
+  }
+}
+
 /**
- * Where Firecrawl fetches from. Some government sites time out from abroad and answer from Brazil
- * (measured 2026-11-16: Pernambuco's and Sergipe's Mapas, Ponta Grossa's listing).
+ * Some government sites time out from abroad and answer from Brazil (measured 2026-11-16:
+ * Pernambuco's and Sergipe's Mapas, Ponta Grossa's listing): Firecrawl fetches them from there.
  */
-export type FirecrawlFetchOrigin = { fromBrazil: boolean };
+const locationOf = ({ answersOnlyFromBrazil }: SourceAccess) =>
+  answersOnlyFromBrazil ? { location: { country: 'BR' } } : {};
 
-const locationOf = ({ fromBrazil }: FirecrawlFetchOrigin) =>
-  fromBrazil ? { location: { country: 'BR' } } : {};
-
-async function postScrape(body: object, apiKey: string) {
+async function postScrape(body: object, apiKey: string, timeoutMs = firecrawlTimeoutMs) {
   const response = await fetch('https://api.firecrawl.dev/v2/scrape', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(firecrawlTimeoutMs),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (response.status === 402) throw new FirecrawlOutOfCreditsError();
   if (response.status === 429) throw new FirecrawlRateLimitedError();
@@ -52,9 +67,9 @@ async function postScrape(body: object, apiKey: string) {
 export async function scrapeMarkdown(
   url: string,
   apiKey: string,
-  origin: FirecrawlFetchOrigin = { fromBrazil: false },
+  access: SourceAccess = {},
 ): Promise<ScrapedMarkdown> {
-  const answer = await postScrape({ url, formats: ['markdown'], ...locationOf(origin) }, apiKey);
+  const answer = await postScrape({ url, formats: ['markdown'], ...locationOf(access) }, apiKey);
   const { data } = FirecrawlScrapeResponseSchema.parse(answer);
   return { markdown: data.markdown, creditsUsed: data.metadata?.creditsUsed ?? null };
 }
@@ -68,16 +83,19 @@ export type ScrapedRawBody = {
 };
 
 /**
- * The body at `url` as the site sent it, fetched by Firecrawl from Brazil (one credit). Throws when
- * Firecrawl does not answer or answers an error.
+ * The body at `url` as the site sends it now (one credit), within `timeoutMs` (the caller's own
+ * budget per page, not a PDF's two minutes). `maxAge: 0`: Firecrawl's cache would otherwise answer
+ * a listing up to two days old. Throws when Firecrawl does not answer or answers an error.
  */
-export async function scrapeRawBodyFromBrazil(
+export async function scrapeRawBody(
   url: string,
   apiKey: string,
+  { access, timeoutMs }: { access: SourceAccess; timeoutMs: number },
 ): Promise<ScrapedRawBody> {
   const answer = await postScrape(
-    { url, formats: ['rawHtml'], ...locationOf({ fromBrazil: true }) },
+    { url, formats: ['rawHtml'], maxAge: 0, timeout: timeoutMs, ...locationOf(access) },
     apiKey,
+    timeoutMs,
   );
   const { data } = FirecrawlRawHtmlResponseSchema.parse(answer);
   return {

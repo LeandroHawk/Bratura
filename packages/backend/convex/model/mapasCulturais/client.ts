@@ -1,5 +1,4 @@
-import type { SourceAccessFields } from '@bratura/shared/entities/source/fragments/access/fields';
-import type { z } from 'zod';
+import type { SourceAccess } from '@bratura/shared/entities/source/fragments/access/fields';
 import { plainDateInSaoPaulo } from '@bratura/shared/primitives/code/calendar/calendar';
 import { fetchOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 
@@ -22,7 +21,7 @@ const mapasMaxBytes = 2_000_000;
 export async function fetchOpenMapasOpportunities(
   baseUrl: string,
   now: number,
-  access: z.infer<typeof SourceAccessFields> = {},
+  access: SourceAccess = {},
 ): Promise<unknown[]> {
   const today = plainDateInSaoPaulo(now);
   const url = new URL('/api/opportunity/find', baseUrl);
