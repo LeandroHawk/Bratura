@@ -667,12 +667,14 @@ export const goiasSecultPnab2026Source = {
 /**
  * Alagoas' Secult, 2026 calls: one download category per call (a new listing each year). The
  * parts leave out the incentive-law category. Measured 2026-11-16: Chamamentos 07 and 08/2026.
+ * Off: it times out from Convex, and Firecrawl fails on it with every engine, even from Brazil
+ * with 90 s (2026-11-17), while it answers a plain request from Brazil in 3 s.
  */
 export const alagoasSecult2026Source = {
   kind: 'officialPage',
   slug: 'al-secult-editais-2026',
   name: 'Secult Alagoas — editais e concursos 2026',
-  isActive: true,
+  isActive: false,
   answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-16',
   termsCheckedOn: '2026-11-16',
