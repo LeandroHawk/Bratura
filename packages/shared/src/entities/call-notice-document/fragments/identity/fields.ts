@@ -20,7 +20,10 @@ export type CallNoticeDocumentRole = z.infer<typeof CallNoticeDocumentRoleEnum>;
  */
 export const CallNoticeDocumentIdentityFields = z.object({
   callNoticeId: documentId('callNotices'),
-  /** One of the call's `documentUrls`; with `callNoticeId`, the natural key: never read twice. */
+  /**
+   * One of the call's `documentUrls`, stored without the keys a site changes per visit
+   * (`documentKeyUrl`); with `callNoticeId`, the natural key: never read twice.
+   */
   url: CallNoticeDocumentUrlSchema,
   role: CallNoticeDocumentRoleEnum,
 });

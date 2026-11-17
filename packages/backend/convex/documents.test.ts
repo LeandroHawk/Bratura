@@ -142,6 +142,22 @@ describe('readPendingDocuments', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  test("reads a file through the day's nonce and knows it by its URL without one", async () => {
+    const withNonce = (nonce: string) => `${mainNotice}?id=9&_wpnonce=${nonce}`;
+    const { t } = await withCallNotice([withNonce('6c41a9b411')]);
+    const fetchMock = firecrawlAnswersPerUrl((url) => scraped(`# ${url}`, 1));
+
+    expect(await readPending(t)).toMatchObject({ read: 1, left: 0 });
+    expect(fetchMock.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).url)).toEqual([
+      withNonce('6c41a9b411'),
+    ]);
+    expect((await documentsOf(t)).map(({ url }) => url)).toEqual([`${mainNotice}?id=9`]);
+
+    await addCallNotice(t, { documentUrls: [withNonce('0b2e7f9c13')] });
+    expect(await readPending(t)).toMatchObject({ read: 0, left: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   test('reads nothing of a call whose notice no file name identifies', async () => {
     const { t } = await withCallNotice([categories, `${documentBase}/anexo-2-criterios.pdf`]);
     const fetchMock = firecrawlAnswersPerUrl(() => scraped('# Anexo', 2));
