@@ -842,6 +842,28 @@ export const spcineFsaSource = {
   listingUrl: 'https://spcine.com.br/editais-fsa/',
 } satisfies Source;
 
+/**
+ * Fundação Cultural Badesc (SC): each call is a post whose text is the notice (applications on a
+ * form). The category lists the posts; the yearly exhibitions call is the fixed `/edital` page,
+ * linked from the menu. Measured 2026-11-17: Paulo Gaiad 2027, Fernando Beck 2027 (to 24/01/2027).
+ */
+export const badescCultureSource = {
+  kind: 'officialPage',
+  slug: 'badesc-chamadas',
+  name: 'Fundação Cultural Badesc — chamadas públicas e edital de exposições',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://fundacaoculturalbadesc.com/chamada-publica-2/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['badesc.com/chamada-publica-2/', 'badesc.com/edital'],
+    callPageIsTheNotice: true,
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -904,4 +926,5 @@ export const registeredSources: readonly Source[] = [
   spcineCallsSource,
   spcinePnabSource,
   spcineFsaSource,
+  badescCultureSource,
 ];

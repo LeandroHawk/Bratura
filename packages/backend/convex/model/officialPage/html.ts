@@ -154,3 +154,13 @@ export function sectionsOfHtml(html: string, pageUrl: string, headingClass?: str
 /** A page's first `<h1>` as plain text; empty when it has none. */
 export const headingOfHtml = (html: string) =>
   plainLabel(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(withoutCode(html))?.[1] ?? '');
+
+/**
+ * A page's `<title>` without the site's name after its last " - " or " | " (Badesc, 2026-11-17:
+ * "EDITAL DE EXPOSIÇÕES ESPAÇO FERNANDO BECK 2027 - Fundação Cultural Badesc", no `<h1>`).
+ */
+export const titleOfHtml = (html: string) =>
+  plainLabel(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '').replace(
+    /\s[-|–]\s[^-|–]*$/,
+    '',
+  );

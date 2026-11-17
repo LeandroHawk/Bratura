@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
+  badescCultureSource,
   bahiaFuncebSource,
   estanciaCultureCallsSource,
   funarteCallsSource,
@@ -304,6 +305,41 @@ describe('callsOfCallPages', () => {
     };
     const calls = await callsOf(everyPage);
     expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
+  });
+
+  test('where the page is the notice (Badesc): the page goes first, titled by its h1 or <title>; a page with no notice is no call', async () => {
+    const site = 'https://fundacaoculturalbadesc.com';
+    const post = `${site}/chamada-publica-2/chamada-publica-1a-exposicao-individual-espaco-paulo-gaiad/`;
+    siteAnswers({
+      [badescCultureSource.listingUrl]: [
+        a(post, 'Chamada Pública 1ª Exposição Individual … Leia [+]'),
+        a(
+          `${site}/chamada-publica-2/confira-os-selecionados-da-chamada-publica/`,
+          'Confira os selecionados',
+        ),
+        a(`${site}/chamada-publica-2/materiais-educativos`, 'MATERIAIS EDUCATIVOS'),
+        a(`${site}/edital`, 'EDITAL'),
+      ].join(''),
+      [post]:
+        '<h1>Chamada Pública Espaço Paulo Gaiad 2027</h1><a href="https://forms.gle/x">inscrição</a>',
+      [`${site}/chamada-publica-2/confira-os-selecionados-da-chamada-publica/`]: '<h1>Confira</h1>',
+      [`${site}/chamada-publica-2/materiais-educativos`]: a(
+        `${site}/wp-content/uploads/jogo.pdf`,
+        'Jogo',
+      ),
+      [`${site}/edital`]: [
+        '<title>EDITAL DE EXPOSIÇÕES FERNANDO BECK 2027 - Fundação Cultural Badesc</title>',
+        a(`${site}/wp-content/uploads/2025/10/Inventario.pdf`, 'clique aqui'),
+      ].join(''),
+    });
+    const calls = await callsOf(badescCultureSource);
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      ['Chamada Pública Espaço Paulo Gaiad 2027', [post]],
+      [
+        'EDITAL DE EXPOSIÇÕES FERNANDO BECK 2027',
+        [`${site}/edital`, `${site}/wp-content/uploads/2025/10/Inventario.pdf`],
+      ],
+    ]);
   });
 });
 
