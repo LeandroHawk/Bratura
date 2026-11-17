@@ -7,6 +7,7 @@ import {
   maranhaoSecmaSource,
   jundiaiCultureSource,
   paranaSeecSource,
+  portoAlegreCultureSource,
   recifeCultureSource,
   salvadorFgmSource,
 } from '../sources/registry';
@@ -349,6 +350,46 @@ describe('callsOfCallPages', () => {
         'Chamada Pública Badesc Musical 2027',
         [`${site}/wp-content/uploads/2026/11/Edital-Musical-2027.pdf`],
       ],
+    ]);
+  });
+
+  test('news as calls (Porto Alegre): a post over a year old is skipped, one with no date kept; a prize or open registration in the title names the call', async () => {
+    const news = 'https://prefeitura.poa.br/smc/noticias';
+    const published = (date: string) =>
+      `<div class="field field--name-field-noticia-data-no-calendario field--item">${date}</div>`;
+    siteAnswers({
+      [portoAlegreCultureSource.listingUrl]: [
+        a(`${news}/premio-musica-2026`, 'Leia Mais'),
+        a(`${news}/teatros-2026`, 'Leia Mais'),
+        a(`${news}/premio-literatura-30`, 'Leia Mais'),
+        a(`${news}/sem-data`, 'Leia Mais'),
+      ].join(''),
+      [`${news}/premio-musica-2026`]: [
+        '<title>Abertas as inscrições para o Prêmio Açorianos de Música 2026 | Prefeitura</title>',
+        published('17/10/2026 04:42'),
+        a('https://forms.gle/x', 'link'),
+      ].join(''),
+      [`${news}/teatros-2026`]: [
+        '<title>Começam nesta segunda-feira as inscrições para ocupação dos teatros | Prefeitura</title>',
+        published('05/01/2026 06:10'),
+      ].join(''),
+      [`${news}/premio-literatura-30`]: [
+        '<title>Abertas inscrições para 30ª edição do Prêmio Açorianos de Literatura | Prefeitura</title>',
+        published('11/12/2024 08:43'),
+      ].join(''),
+      [`${news}/sem-data`]: '<title>Prêmio Açorianos de Dança | Prefeitura</title>',
+    });
+    const calls = await callsOf(portoAlegreCultureSource);
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      [
+        'Abertas as inscrições para o Prêmio Açorianos de Música 2026',
+        [`${news}/premio-musica-2026`],
+      ],
+      [
+        'Começam nesta segunda-feira as inscrições para ocupação dos teatros',
+        [`${news}/teatros-2026`],
+      ],
+      ['Prêmio Açorianos de Dança', [`${news}/sem-data`]],
     ]);
   });
 });

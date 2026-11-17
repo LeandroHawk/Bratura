@@ -166,6 +166,19 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     expect(callNoticeDocumentRole(`${mg}?download=5062`)).toBeNull();
   });
 
+  test("a link's text naming a prize or open registration is a notice; a form, extension or result about one is not", () => {
+    const poa = 'https://prefeitura.poa.br/smc/noticias/x';
+    expect(
+      callNoticeDocumentRole(poa, 'Abertas as inscrições para o Prêmio Açorianos de Música 2026'),
+    ).toBe('callNotice');
+    expect(callNoticeDocumentRole(poa, 'Ficha de inscrição do Prêmio Açorianos')).toBeNull();
+    expect(callNoticeDocumentRole(poa, 'Prorrogação das inscrições para o Prêmio')).toBe(
+      'amendment',
+    );
+    expect(callNoticeDocumentRole(poa, 'Resultado do Prêmio Açorianos de Dança')).toBeNull();
+    expect(callNoticeDocumentRole(poa, 'Anexo I - Prêmio Açorianos')).toBeNull();
+  });
+
   test('a notice republished with its changes is the notice; a new schedule is an amendment', () => {
     const mg = 'https://www.secult.mg.gov.br/download/category/15?download=5063';
     expect(

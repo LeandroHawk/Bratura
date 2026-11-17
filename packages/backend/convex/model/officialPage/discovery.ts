@@ -5,7 +5,14 @@ import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDo
 import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 import { fetchPageHtml, type FetchedPage } from './client';
-import { headingOfHtml, linksOfHtml, sectionsOfHtml, titleOfHtml, type PageLink } from './html';
+import {
+  headingOfHtml,
+  linksOfHtml,
+  sectionsOfHtml,
+  textOfClass,
+  titleOfHtml,
+  type PageLink,
+} from './html';
 import type { OfficialPageCall } from './payload';
 
 /** An official page whose listing links one page per call. */
@@ -105,11 +112,26 @@ function withPageAsNotice(documents: PageLink[], page: PageLink) {
   return [page, ...documents];
 }
 
+const yearMs = 365 * 24 * 60 * 60_000;
+
+/**
+ * Whether a call page's publication date ("17/10/2026 04:42") is over a year old: Porto Alegre
+ * (2026-11-17) lists 16 news back to 2023, 11 of them past calls with no year in the title, each a
+ * read. A page with no readable date is kept: a changed layout must not drop them all.
+ */
+function publishedOverAYearAgo(html: string, publishedAtClass: string) {
+  const date = /(\d{1,2})\/(\d{1,2})\/(20\d{2})/.exec(textOfClass(html, publishedAtClass));
+  if (!date) return false;
+  const publishedAt = Date.UTC(Number(date[3]), Number(date[2]) - 1, Number(date[1]));
+  return Date.now() - publishedAt > yearMs;
+}
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
+  const { callPagePublishedAtClass } = source.discovery;
   const { html, url: listingUrl } = await fetchPageHtml(
     source.listingUrl,
     source.listingUrl,
@@ -146,6 +168,12 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     let pageTitle: string;
     try {
       const fetched = await fetchPageHtml(url, source.listingUrl, source);
+      if (
+        callPagePublishedAtClass &&
+        publishedOverAYearAgo(fetched.html, callPagePublishedAtClass)
+      ) {
+        continue;
+      }
       page = linksOfHtml(fetched.html, fetched.url);
       heading = headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);

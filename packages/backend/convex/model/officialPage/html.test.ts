@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { headingOfHtml, linksOfHtml, sectionsOfHtml, titleOfHtml } from './html';
+import { headingOfHtml, linksOfHtml, sectionsOfHtml, textOfClass, titleOfHtml } from './html';
 
 describe('linksOfHtml', () => {
   const page = 'https://www.ba.gov.br/fundacaocultural/editais-2026';
@@ -79,6 +79,20 @@ describe('titleOfHtml', () => {
     );
     expect(titleOfHtml('<title>Chamada 01/2026 | Sesc</title>')).toBe('Chamada 01/2026');
     expect(titleOfHtml('<p>no title</p>')).toBe('');
+  });
+});
+
+describe('textOfClass', () => {
+  test('the first element holding the class as a whole word, its tags stripped; empty with none', () => {
+    const html = [
+      '<div class="field--name-field-noticia-data-no-calendario-x">01/01/2020</div>',
+      '<div class="field field--name-field-noticia-data-no-calendario"><span>17/10/2026</span> 04:42</div>',
+      '<div class="field--name-field-noticia-data-no-calendario">05/01/2026</div>',
+    ].join('');
+    expect(textOfClass(html, 'field--name-field-noticia-data-no-calendario')).toBe(
+      '17/10/2026 04:42',
+    );
+    expect(textOfClass('<p>none</p>', 'field--name-field-noticia-data-no-calendario')).toBe('');
   });
 });
 

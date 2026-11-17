@@ -864,6 +864,29 @@ export const badescCultureSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Porto Alegre's culture office lists calls as news posts, newest first, back to 2023; the rules
+ * and dates are in the post (Açorianos: applications on Google Forms), notice files rarely on the
+ * site itself (others on Drive or the gazette, whose host answers no robots file).
+ */
+export const portoAlegreCultureSource = {
+  kind: 'officialPage',
+  slug: 'porto-alegre-smc-editais',
+  name: 'Porto Alegre — Secretaria Municipal da Cultura, editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://prefeitura.poa.br/smc/editais',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/smc/noticias/'],
+    callPageIsTheNotice: true,
+    callPagePublishedAtClass: 'field--name-field-noticia-data-no-calendario',
+  },
+  documentUrlParts: ['/sites/default/files/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -927,4 +950,5 @@ export const registeredSources: readonly Source[] = [
   spcinePnabSource,
   spcineFsaSource,
   badescCultureSource,
+  portoAlegreCultureSource,
 ];

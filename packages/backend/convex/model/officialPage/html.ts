@@ -74,6 +74,20 @@ const firstTextOf = (html: string) =>
     .map(plainLabel)
     .find((text) => text) ?? '';
 
+/** An element's opening tag whose `class` holds `className` as a whole word; group 1 is its tag. */
+const openingTagOfClass = (className: string) =>
+  `<([a-z][a-z0-9]*)\\b[^>]*?\\bclass\\s*=\\s*["'][^"']*?(?<![\\w-])${className.replace(/[^\w-]/g, '\\$&')}(?![\\w-])[^>]*>`;
+
+/** The text of a page's first element of `className`, up to its closing tag; empty with none. */
+export function textOfClass(html: string, className: string) {
+  const page = withoutCode(html);
+  const opening = new RegExp(openingTagOfClass(className), 'i').exec(page);
+  if (!opening) return '';
+  const inner = new RegExp(`([\\s\\S]*?)</${opening[1]}>`, 'iy');
+  inner.lastIndex = opening.index + opening[0].length;
+  return plainLabel(inner.exec(page)?.[1] ?? '');
+}
+
 /**
  * A page's headings and http(s) links in page order. A link's URL is absolute, without its `#`.
  * Only a heading's opening tag is matched, so a link inside a heading is still read. A link that
@@ -84,9 +98,7 @@ const firstTextOf = (html: string) =>
 function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: string) {
   const page = withoutCode(html);
   // Without a class, `(?!)` never matches and its group stays empty.
-  const classHeading = headingClass
-    ? `<([a-z][a-z0-9]*)\\b[^>]*?\\bclass\\s*=\\s*["'][^"']*?(?<![\\w-])${headingClass.replace(/[^\w-]/g, '\\$&')}(?![\\w-])[^>]*>`
-    : '(?!)()';
+  const classHeading = headingClass ? openingTagOfClass(headingClass) : '(?!)()';
   // Any `</h1-6>` ends an `<h1-6>`: pages close an `<h2>` with `</h3>`.
   const standardHeadingText = /([\s\S]*?)<\/h[1-6]>/iy;
   let previousEnd = 0;

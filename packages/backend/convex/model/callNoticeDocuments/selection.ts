@@ -93,6 +93,9 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
 const labelRoles: [CallNoticeDocumentRole | null, RegExp][] = [
   ...documentRoleByName,
   ['callNotice', new RegExp(`^(?!.*anexo)(.*-)?(${noticeWords}|processo-seletivo)-`)],
+  // A news title naming the call by its prize or its open registration (Porto Alegre, 2026-11-17:
+  // "Abertas as inscrições para o Prêmio Açorianos de Música 2026", the rules in the post).
+  ['callNotice', /^(?!.*anexo)(.*-)?(premio|inscricoes-(abertas|para))-/],
 ];
 
 /** A file name or a link's text in the rules' terms: no accents, lower case, words joined by -. */

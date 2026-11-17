@@ -9,6 +9,9 @@ import { SourceIdentityFields } from '../../fragments/identity/fields';
 /** Parts of a URL (`/fundacaocultural/`, `.pdf`, `?download=`): plain text, never a regex. */
 const urlParts = z.array(requiredString('short')).min(1).max(20);
 
+/** One HTML class name (`accordion-toggle`): the reader matches it as a whole word. */
+const cssClassName = requiredString('short').regex(/^[A-Za-z_][\w-]*$/);
+
 /**
  * How the site reaches a call's documents. `callPage` (PR, BA, Rio): listing → one page per call →
  * its documents. `documentsOnListing` (MG, MA): the listing links every version and annex itself,
@@ -25,6 +28,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      * applications on a form). Without it, such a call is recorded with no document to read.
      */
     callPageIsTheNotice: z.boolean().optional(),
+    /**
+     * The class of the element holding a call page's publication date ("17/10/2026 04:42"), where
+     * the listing keeps years of news with no year in the title (Porto Alegre
+     * `field--name-field-noticia-data-no-calendario`): a page published over a year ago is skipped.
+     */
+    callPagePublishedAtClass: cssClassName.optional(),
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
   z.object({
@@ -33,9 +42,7 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      * The class of the element that titles each call when the page uses no `<h1-6>` for it
      * (accordions: Recife `accordion-toggle`, Spcine `x-acc-header`). `<h1-6>` still count.
      */
-    headingClass: requiredString('short')
-      .regex(/^[A-Za-z_][\w-]*$/)
-      .optional(),
+    headingClass: cssClassName.optional(),
   }),
 ]);
 
