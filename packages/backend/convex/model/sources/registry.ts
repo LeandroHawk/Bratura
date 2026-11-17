@@ -491,6 +491,67 @@ export const cianorteMapasSource = {
   baseUrl: 'https://cultura.cianorte.pr.gov.br',
 } satisfies Source;
 
+/** Itupiranga's Mapas: 4 calls in 2026, all closed by 25/05 (2026-11-16). */
+export const itupirangaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-itupiranga',
+  name: 'Mapas Culturais — Itupiranga',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  baseUrl: 'https://cultura.itupiranga.pa.gov.br',
+} satisfies Source;
+
+/** Itatiba's Mapas: 12 calls in 2026, none open on 2026-11-16. */
+export const itatibaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-itatiba',
+  name: 'Mapas Culturais — Itatiba',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  baseUrl: 'https://mapacultural.itatiba.sp.gov.br',
+} satisfies Source;
+
+/**
+ * Pará's state Mapas, which also carries Belém's, Santarém's and Ananindeua's calls: 64 closing in
+ * 2026, none really open on 2026-11-16 (one user item "open" to 2111 reads as open-ended).
+ */
+export const paraMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-pa',
+  name: 'Mapas Culturais — Pará',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  baseUrl: 'https://mapacultural.pa.gov.br',
+} satisfies Source;
+
+/**
+ * Goiás' state Mapas (Mapa Goiano): 3 calls in 2026, none open on 2026-11-16, plus an agent's
+ * "Agenda aberta" item to 2034 (open-ended).
+ */
+export const goiasMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-go',
+  name: 'Mapas Culturais — Mapa Goiano',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  baseUrl: 'https://mapagoiano.cultura.go.gov.br',
+} satisfies Source;
+
+/** Tocantins' state Mapas, the Fundo Cultural's only application channel: 3 calls in 2026. */
+export const tocantinsMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-to',
+  name: 'Mapas Culturais — Tocantins',
+  isActive: true,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  baseUrl: 'https://mapa-cultural.to.gov.br',
+} satisfies Source;
+
 /**
  * Teixeira de Freitas' culture secretariat, PNAB Ciclo 2: one page per call. The parts leave out
  * the reviewers' credenciamento and the public profile pages (measured 2026-11-16).
@@ -572,6 +633,11 @@ export const registeredSources: readonly Source[] = [
   delmiroGouveiaPnabSource,
   estanciaCultureCallsSource,
   cianorteMapasSource,
+  itupirangaMapasSource,
+  itatibaMapasSource,
+  paraMapasSource,
+  goiasMapasSource,
+  tocantinsMapasSource,
   teixeiraDeFreitasPnabSource,
   chamberOfDeputiesCultureSource,
 ];

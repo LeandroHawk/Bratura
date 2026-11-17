@@ -67,7 +67,7 @@ ingestion fails ("error sending request" after ~30 s), as Pernambuco and Maring�
 blocked; registered, reading it needs a route from Brazil. **Aracaju**
 (`mapacultural.aracaju.se.gov.br`, 1 open) is not added: its `robots.txt` answers HTTP 500, so its
 rules cannot be read; recheck before adding. Instances of the list with nothing open on 2026-11-14
-(Pará, Santa Luzia-MG, Lagoa Santa-MG, Cianorte-PR) are not added yet; Lagoa Santa sends Cloudflare
+(Santa Luzia-MG, Lagoa Santa-MG; Pará and Cianorte-PR were added on 2026-11-16) are not added yet; Lagoa Santa sends Cloudflare
 content signals, a team call as for Mongaguá.
 
 **Added on 2026-11-15** (municipalities that run an instance: the first three over 300k
@@ -81,11 +81,20 @@ ingestion recorded 0 and they wait for PNAB Ciclo 3):
 | Anápolis-GO | `culturaemrede.anapolis.go.gov.br` | 5 | `Etc/GMT+3` |
 | Arapiraca-AL (not on the GitHub list) | `mapacultural.arapiraca.al.gov.br` | 11 | `Etc/GMT+3` |
 | Cianorte-PR (added 2026-11-16) | `cultura.cianorte.pr.gov.br` | 7 (Chamamento 11/2026 open to 18/11) | `Etc/GMT+3` |
+| Itupiranga-PA (added 2026-11-16) | `cultura.itupiranga.pa.gov.br` | 4 | `America/Belem` |
+| Itatiba-SP (added 2026-11-16) | `mapacultural.itatiba.sp.gov.br` | 12 | `Etc/GMT+3` |
+| Pará (state; carries Belém, Santarém, Ananindeua; added 2026-11-16) | `mapacultural.pa.gov.br` | 64 (1 user item "open" to 2111) | `America/Belem` |
+| Goiás (state, Mapa Goiano; added 2026-11-16) | `mapagoiano.cultura.go.gov.br` | 4 (1 agent's "Agenda aberta" to 2034) | `Etc/GMT+3` |
+| Tocantins (state; added 2026-11-16) | `mapa-cultural.to.gov.br` | 3 | `Etc/GMT+3` |
 
 `robots.txt` answers the app's HTML page on all four (2026-11-15): nothing declared. Terms:
 Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas template, not read in
 full); Anápolis and Arapiraca publish none found (Arapiraca's `/termos-de-uso` is a 404). Cianorte
 (2026-11-16): `robots.txt` 404; no terms at `/termos-de-uso`, `/politica-de-privacidade` or `/lgpd`.
+The five added later that day: `robots.txt` 404 on all; Itupiranga, Pará and Goiás serve the Mapas
+`/termos-de-uso` ("Não copiar … conteúdo com dados pessoais de outros usuários": personal data only,
+no clause on automated access or reuse of call data); Itatiba and Tocantins publish none found.
+Their far-future items (2111, 2034) are open-ended, so no credits go to them.
 Unlike the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
 
 **CultBR Editais** (`culteditais.cultura.gov.br`, added on 2026-11-15): the Ministry of Culture's
