@@ -307,7 +307,7 @@ describe('callsOfCallPages', () => {
     expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
   });
 
-  test('where the page is the notice (Badesc): the page goes first, titled by its h1 or <title>; a page with no notice is no call', async () => {
+  test('where the page is the notice (Badesc): the page goes first, titled by its h1 or <title>; a page with no notice, or whose title names none, is no call; a linked notice keeps the page out', async () => {
     const site = 'https://fundacaoculturalbadesc.com';
     const post = `${site}/chamada-publica-2/chamada-publica-1a-exposicao-individual-espaco-paulo-gaiad/`;
     siteAnswers({
@@ -319,6 +319,11 @@ describe('callsOfCallPages', () => {
         ),
         a(`${site}/chamada-publica-2/materiais-educativos`, 'MATERIAIS EDUCATIVOS'),
         a(`${site}/edital`, 'EDITAL'),
+        a(`${site}/chamada-publica-2/chamada-musical/`, 'Chamada Musical'),
+      ].join(''),
+      [`${site}/chamada-publica-2/chamada-musical/`]: [
+        '<h1>Chamada Pública Badesc Musical 2027</h1>',
+        a(`${site}/wp-content/uploads/2026/11/Edital-Musical-2027.pdf`, 'Edital'),
       ].join(''),
       [post]:
         '<h1>Chamada Pública Espaço Paulo Gaiad 2027</h1><a href="https://forms.gle/x">inscrição</a>',
@@ -338,6 +343,11 @@ describe('callsOfCallPages', () => {
       [
         'EDITAL DE EXPOSIÇÕES FERNANDO BECK 2027',
         [`${site}/edital`, `${site}/wp-content/uploads/2025/10/Inventario.pdf`],
+      ],
+      // A page that links its notice keeps the file, not itself.
+      [
+        'Chamada Pública Badesc Musical 2027',
+        [`${site}/wp-content/uploads/2026/11/Edital-Musical-2027.pdf`],
       ],
     ]);
   });

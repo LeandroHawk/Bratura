@@ -160,7 +160,7 @@ export const headingOfHtml = (html: string) =>
  * "EDITAL DE EXPOSIÇÕES ESPAÇO FERNANDO BECK 2027 - Fundação Cultural Badesc", no `<h1>`).
  */
 export const titleOfHtml = (html: string) =>
-  plainLabel(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '').replace(
+  plainLabel(/<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(withoutCode(html))?.[1] ?? '').replace(
     /\s[-|–]\s[^-|–]*$/,
     '',
   );

@@ -109,6 +109,7 @@ function withPageAsNotice(documents: PageLink[], page: PageLink) {
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
+  const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
   const { html, url: listingUrl } = await fetchPageHtml(
     source.listingUrl,
     source.listingUrl,
@@ -155,16 +156,16 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     const linked = documentLinksOf(page, source.documentUrlParts).filter(
       ({ url }) => !frameDocumentUrls.has(url),
     );
-    const documents = source.discovery.callPageIsTheNotice
+    const documents = pageIsTheNotice
       ? withPageAsNotice(linked, { url, label: pageTitle })
       : linked;
     const kept = callDocumentsWorthRecording(documents);
     // Where the page is the notice, a page with none is no call ("MATERIAIS EDUCATIVOS").
-    if (!kept || (source.discovery.callPageIsTheNotice && !kept.some(isNotice))) continue;
+    if (!kept || (pageIsTheNotice && !kept.some(isNotice))) continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),
     );
-    const title = source.discovery.callPageIsTheNotice
+    const title = pageIsTheNotice
       ? pageTitle || label
       : namesNoCall(label)
         ? heading || numberedNotice?.label
