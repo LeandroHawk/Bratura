@@ -25,13 +25,14 @@ function fileParts(url: string) {
 }
 
 /**
- * Mapas saves a file uploaded again under a name its opportunity already holds as `name-2.pdf`,
+ * Each file once, in the source's order: the notice Mapas also lists as a download, and a file
+ * uploaded again under a name its opportunity already holds, which Mapas saves as `name-2.pdf`,
  * `name-3.pdf`: byte for byte the same file (28 of 28 such pairs in the dev DB, 2026-11-17), each
  * paid again (433 credits, 8% of all reads). A `-N` name whose `name` sits in the same folder goes.
  */
-function withoutRepeatedUploads(urls: string[]) {
+function eachFileOnce(urls: string[]) {
   const known = new Set(urls);
-  return urls.filter((url) => {
+  return [...known].filter((url) => {
     const { folder, stem, extension } = fileParts(url);
     const repeated = /^(.+)-([2-9]|[1-9]\d+)$/.exec(stem);
     return !repeated || !known.has(`${folder}${repeated[1]}${extension}`);
@@ -49,10 +50,9 @@ export function callNoticeListingFromMapasOpportunity(
     title: opportunity.name,
     summary: summaryFromShortDescription(opportunity.shortDescription),
     officialUrl: opportunity.singleUrl,
-    documentUrls: withoutRepeatedUploads(
+    documentUrls: eachFileOnce(
       [opportunity['@files:rules'], ...(opportunity['@files:downloads'] ?? [])]
         .flatMap((file) => (file ? [file.url] : []))
-        .filter((url, index, urls) => urls.indexOf(url) === index)
         .filter((url) => CallNoticeDocumentUrlSchema.safeParse(url).success),
     ).slice(0, callNoticeDocumentUrlsMax),
     registrationOpens: zonedInstantFromMapasDate(opportunity.registrationFrom),
