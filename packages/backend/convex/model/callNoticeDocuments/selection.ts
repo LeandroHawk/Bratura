@@ -100,10 +100,7 @@ const labelNoticeWords = `${noticeWords}|processo-seletivo|regulamento|premio|in
  */
 const labelRoles: [CallNoticeDocumentRole | null, RegExp][] = [
   ...documentRoleByName,
-  [
-    'callNotice',
-    new RegExp(`^(?!.*(anexo|extrato))(.*-)?(${labelNoticeWords})(-|$)`),
-  ],
+  ['callNotice', new RegExp(`^(?!.*(anexo|extrato))(.*-)?(${labelNoticeWords})(-|$)`)],
 ];
 
 /** A file name or a link's text in the rules' terms: no accents, lower case, words joined by -. */

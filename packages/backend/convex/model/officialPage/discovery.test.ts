@@ -414,6 +414,22 @@ describe('callsOfCallPages', () => {
       `https://${page}`,
     ]);
   });
+
+  test('a frame document linked as http on the listing and on a call page is still the frame', async () => {
+    const page = 'www.sesisp.org.br/cultura/sesi-sp-abre-inscricoes-bachiana';
+    const frame = a('http://www.sesisp.org.br/cultura/edital-geral.pdf', 'Edital geral');
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    siteAnswers({
+      [sesiSpCultureSource.listingUrl]: frame + a(`http://${page}`, 'Bachiana Jovem'),
+      [`https://${page}`]: frame + a(media, 'Confira o regulamento aqui'),
+    });
+    const frameAsDocument = {
+      ...sesiSpCultureSource,
+      documentUrlParts: [...sesiSpCultureSource.documentUrlParts, '/cultura/edital-geral'],
+    };
+    const [call] = await callsOf(frameAsDocument);
+    expect(call?.documents.map(({ url }) => url)).toEqual([media]);
+  });
 });
 
 describe('callNumberOf', () => {

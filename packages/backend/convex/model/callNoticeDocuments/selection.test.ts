@@ -176,6 +176,13 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     expect(callNoticeDocumentRole(media, 'Extrato do Edital nº 01/2026')).toBeNull();
   });
 
+  test('a rectified notice whose link names it is the notice, though its file name says "retificacao" (Spcine)', () => {
+    const file =
+      'https://spcine.com.br/wp-content/uploads/2026/10/EDITAL_01.2026_FSA_Producao_2aRetificacao.pdf';
+    expect(callNoticeDocumentRole(file, 'CLIQUE AQUI PARA BAIXAR O EDITAL')).toBe('callNotice');
+    expect(callNoticeDocumentRole(file)).toBe('amendment');
+  });
+
   test("a link's text naming a prize or open registration is a notice; a form, extension or result about one is not", () => {
     const poa = 'https://prefeitura.poa.br/smc/noticias/x';
     expect(
