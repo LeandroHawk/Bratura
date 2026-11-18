@@ -13,10 +13,11 @@ const urlParts = z.array(requiredString('short')).min(1).max(20);
 const cssClassName = requiredString('short').regex(/^[A-Za-z_][\w-]*$/);
 
 /**
- * How the site reaches a call's documents. `callPage` (PR, BA, Rio): listing → one page per call →
- * its documents. `documentsOnListing` (MG, MA): the listing links every version and annex itself,
- * and only the link text says which call each belongs to. `documentsUnderHeadings` (Jundiaí,
- * Jaboatão): the listing links them under one heading per call, which names the call.
+ * How the site reaches a call's documents. `callPage` (PR, BA, Rio; Rio Branco from a JSON
+ * listing): listing → one page per call → its documents. `documentsOnListing` (MG, MA): the
+ * listing links every version and annex itself, and only the link text says which call each
+ * belongs to. `documentsUnderHeadings` (Jundiaí, Jaboatão): the listing links them under one
+ * heading per call, which names the call.
  */
 export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
   z.object({
@@ -60,7 +61,8 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
 
 /**
  * A government or agency site with no API (Bahia's FUNCEB, Rio's culture office): its listing
- * page is fetched as plain HTML, and Firecrawl reads only the documents.
+ * page is fetched as plain HTML (or the JSON a page fills itself from, `callPagesListedAsJson`),
+ * and Firecrawl reads only the documents.
  */
 export const OfficialPageSourceSchema = z.object({
   kind: z.literal('officialPage'),

@@ -92,8 +92,8 @@ const IngestOfficialPageActionArgsSchema = z.object({ sourceId: documentId('sour
 const IngestOfficialPageActionReturnsSchema = IngestionOutcomeEnum;
 
 /**
- * Reads one official page: its listing (and call pages) as plain HTML, through Firecrawl only for
- * a source that answers only from Brazil.
+ * Reads one official page: its listing (HTML, or JSON) and call pages as plain fetches, through
+ * Firecrawl only for a source that answers only from Brazil.
  */
 export const ingestOfficialPage = internalZodAction({
   args: IngestOfficialPageActionArgsSchema,
