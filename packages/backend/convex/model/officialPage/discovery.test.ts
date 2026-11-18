@@ -18,6 +18,7 @@ import {
   rioBrancoCulturaSource,
   salvadorFgmSource,
   sesiSpCultureSource,
+  ufuProexcCultureSource,
 } from '../sources/registry';
 import {
   callNumberOf,
@@ -772,6 +773,49 @@ describe('callsOfCallPages', () => {
         documents.length,
       ]),
     ).toEqual([['Credenciamento Associações Culturais', 2]]);
+  });
+
+  test("a title filter and the site's crawl delay (UFU): only the calls open to anyone opened, each page 10 s after the last", async () => {
+    const site = 'https://editais.ufu.br';
+    const notice = (name: string) =>
+      a(`${site}/sites/editais.ufu.br/files/${name}.pdf`, `${name}.pdf`);
+    const fetchMock = siteAnswers({
+      [ufuProexcCultureSource.listingUrl]: [
+        a('/node/2', 'Apresentação'),
+        a(
+          '/node/6742',
+          'EDITAL PROEXC 18_UFU_PROEXC_2026_Processo Seletivo de Profissionais_ APEC_Práxis',
+        ),
+        a(
+          '/node/6739',
+          'EDITAL PROEXC 14_UFU_PROEXC_2026_Bolsistas de Extensão_Projeto Salve Elas',
+        ),
+        a(
+          '/node/6741',
+          'EDITAL PROEXC 17_UFU_PROEXC_2026_PROCESSO SELETIVO DE PROFISSIONAIS_Saberes',
+        ),
+      ].join(''),
+      [`${site}/node/6742`]: notice('EDITAL PROEXC 18_Processo Seletivo de Profissionais'),
+      [`${site}/node/6741`]: [
+        notice('EDITAL PROEXC 17_Processo Seletivo de Profissionais'),
+        notice('Resultado Final_EDITAL PROEXC 17'),
+      ].join(''),
+    });
+
+    const calls = callsOfCallPages(ufuProexcCultureSource);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the listing; its first call page waits 10 s
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.runAllTimersAsync();
+    expect((await calls).map(({ externalId }) => externalId)).toEqual([`${site}/node/6742`]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      ufuProexcCultureSource.listingUrl,
+      `${site}/node/6742`,
+      `${site}/node/6741`,
+    ]);
   });
 
   test('a call folder whose subfolders run past the 5 min is skipped, not recorded without them (Porto Velho)', async () => {

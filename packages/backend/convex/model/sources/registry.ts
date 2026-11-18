@@ -1373,6 +1373,30 @@ export const museuDoIndioCallsSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * UFU's culture and extension calls (Uberlândia, MG; Drupal): one node per call, files in
+ * `/sites/editais.ufu.br/files/`. Most nodes are for its students (grants, courses); only
+ * "Processo Seletivo de Profissionais" is open to anyone: artists and technicians paid per project.
+ * `robots.txt` asks `Crawl-delay: 10`; no terms page, footer "Todos os direitos reservados".
+ */
+export const ufuProexcCultureSource = {
+  kind: 'officialPage',
+  slug: 'ufu-proexc-extensao-cultura',
+  name: 'UFU — PROEXC, editais de extensão e cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://editais.ufu.br/extensao-cultura',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/node/'],
+    callPageTitleParts: ['processo seletivo de profissionais'],
+    crawlDelaySeconds: 10,
+  },
+  documentUrlParts: ['/sites/editais.ufu.br/files/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1465,4 +1489,5 @@ export const registeredSources: readonly Source[] = [
   araxaCalmonBarretoSource,
   iphanOpenCallsSource,
   museuDoIndioCallsSource,
+  ufuProexcCultureSource,
 ];
