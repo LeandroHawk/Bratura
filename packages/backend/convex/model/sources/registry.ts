@@ -1070,6 +1070,20 @@ export const maringaMapasSource = {
   baseUrl: 'https://maringacultura.maringa.pr.gov.br',
 } satisfies Source;
 
+/**
+ * Santa Luzia's Mapas (MG): 48 items closing in 2026, none open on 2026-11-18. About half are no
+ * call (council meetings, elections, appeal steps): `reasonToSkipReadingDocuments` skips them.
+ */
+export const santaLuziaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-santa-luzia',
+  name: 'Mapas Culturais — Santa Luzia',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  baseUrl: 'https://mapacultural.santaluzia.mg.gov.br',
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1147,4 +1161,5 @@ export const registeredSources: readonly Source[] = [
   tocantinsPnabPlatformSource,
   macapaPnabPlatformSource,
   maringaMapasSource,
+  santaLuziaMapasSource,
 ];

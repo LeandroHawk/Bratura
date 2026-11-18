@@ -21,11 +21,20 @@ export const readableRegistrationCloses = (now: number) => ({
 /**
  * Titles that are no call, compared without accents or case: drafts and tests, the accountability
  * a call's winners file (Maringá, 2026-11-17: "Prestação de Contas - FOMENTO…", open to 01/12 with
- * the old notice attached), a staff election (Spcine: "Edital de Eleição de Representantes dos
- * Funcionários").
+ * the old notice attached), an election (Spcine: "Edital de Eleição de Representantes dos
+ * Funcionários"; Santa Luzia: "ELEIÇÃO DOS MEMBROS REPRESENTANTES…", "…DOS CONSELHEIROS…"), a
+ * council meeting's sign-up (Santa Luzia, monthly: "INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO…").
  */
 const notACallTitlePattern =
-  /\b(teste|em construcao|prestacao de contas|eleicao de representantes)\b/;
+  /\b(teste|em construcao|prestacao de contas|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao)\b/;
+
+/**
+ * A later step of a call, opened as an item of its own with the call's documents attached: its
+ * appeal (Mapas federal, 2026-11-18: "Recurso - Edital Intercâmbio…", 18 credits read; Pernambuco:
+ * "Formulário de Recurso…"; Santa Luzia: "CONTRARRAZÕES…", "Fase Avaliação Preliminar…"). Only at
+ * the start: "captação de recursos" names a call.
+ */
+const laterStepTitlePattern = /^\s*((formulario de )?recurso|contrarrazoes|fase (de )?avaliacao)\b/;
 
 type CallNoticeToScreen = Pick<CallNotice, 'title' | 'documentUrls' | 'registrationCloses'>;
 
@@ -38,7 +47,10 @@ export function reasonToSkipReadingDocuments(
 ): ReasonToSkipReadingDocuments | null {
   const deadline = callNoticeDeadline({ registrationCloses }, now);
   if (deadline === 'closed' || deadline === 'openEnded') return deadline;
-  if (notACallTitlePattern.test(plainText(title))) return 'notACallTitle';
+  const plainTitle = plainText(title);
+  if (notACallTitlePattern.test(plainTitle) || laterStepTitlePattern.test(plainTitle)) {
+    return 'notACallTitle';
+  }
   if (documentUrls.length === 0) return 'noDocuments';
   return null;
 }
