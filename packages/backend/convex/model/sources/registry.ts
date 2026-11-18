@@ -939,13 +939,16 @@ export const pauloAfonsoSeculteSource = {
 
 /**
  * Funesc, Paraíba's state culture foundation: one Plone page per call under `/editais/`, its files
- * linked through their `/view` pages. ~20 calls in 2026 among ~80 back to 2024.
+ * linked through their `/view` pages. ~20 calls in 2026 among ~80 back to 2024. Off: it times out
+ * from Convex (2026-11-17), and through Firecrawl its ~67 call pages cost ~68 credits a day. Its
+ * Plone REST API lists every file in one request, but only with `Accept: application/json`, which
+ * Firecrawl does not forward (measured: 404).
  */
 export const paraibaFunescSource = {
   kind: 'officialPage',
   slug: 'pb-funesc-editais',
   name: 'Funesc-PB — editais',
-  isActive: true,
+  isActive: false,
   robotsCheckedOn: '2026-11-17',
   termsCheckedOn: '2026-11-17',
   listingUrl: 'https://funesc.pb.gov.br/editais',
