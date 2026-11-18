@@ -19,11 +19,13 @@ export const readableRegistrationCloses = (now: number) => ({
 });
 
 /**
- * Mapas titles that are no call, compared without accents or case: drafts and tests, and the
- * accountability a call's winners file (Maringá, 2026-11-17: "Prestação de Contas - FOMENTO…",
- * open to 01/12 with the old notice attached).
+ * Titles that are no call, compared without accents or case: drafts and tests, the accountability
+ * a call's winners file (Maringá, 2026-11-17: "Prestação de Contas - FOMENTO…", open to 01/12 with
+ * the old notice attached), a staff election (Spcine: "Edital de Eleição de Representantes dos
+ * Funcionários").
  */
-const notACallTitlePattern = /\b(teste|em construcao|prestacao de contas)\b/;
+const notACallTitlePattern =
+  /\b(teste|em construcao|prestacao de contas|eleicao de representantes)\b/;
 
 type CallNoticeToScreen = Pick<CallNotice, 'title' | 'documentUrls' | 'registrationCloses'>;
 
@@ -74,7 +76,10 @@ const noticeNamePrefix = '(\\d+[-_.]*|i+-|sei[-_]\\d+[-_])?';
 const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ['callNotice', /consolidacao/],
   // A notice republished whole with its changes (Minas Gerais: "Edital FEC 02/2026 - Retificado").
-  ['callNotice', new RegExp(`^(${noticeWords})(?!.*anexo).*(retificad|consolidad)`)],
+  [
+    'callNotice',
+    new RegExp(`^${noticeNamePrefix}(${noticeWords})(?!.*anexo).*(retificad|consolidad)`),
+  ],
   [
     'amendment',
     /errata|aditivo|adendo|prorrogacao|reabertura|retifica|cronograma-(atualizado|alterado|retificado)/,
