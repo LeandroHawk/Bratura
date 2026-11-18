@@ -1,3 +1,5 @@
+import { monthNumberByPortugueseName } from '../../lib/monthNames';
+
 const normalizeWhitespace = (text: string) => text.replace(/\s+/g, ' ').trim();
 
 /**
@@ -92,25 +94,10 @@ export function amountAppearsInQuote({
   return false;
 }
 
-const monthByName: Record<string, number> = {
-  janeiro: 1,
-  fevereiro: 2,
-  março: 3,
-  marco: 3,
-  abril: 4,
-  maio: 5,
-  junho: 6,
-  julho: 7,
-  agosto: 8,
-  setembro: 9,
-  outubro: 10,
-  novembro: 11,
-  dezembro: 12,
-};
 const numericDate = /(?<!\d)(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})(?!\d)/g;
 const isoDate = /(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)/g;
 const writtenDate = new RegExp(
-  `(?<!\\d)(\\d{1,2})[º°o]?\\s+de\\s+(${Object.keys(monthByName).join('|')})\\s+(?:de\\s+)?(\\d{4})(?!\\d)`,
+  `(?<!\\d)(\\d{1,2})[º°o]?\\s+de\\s+(${Object.keys(monthNumberByPortugueseName).join('|')})\\s+(?:de\\s+)?(\\d{4})(?!\\d)`,
   'giu',
 );
 
@@ -128,7 +115,13 @@ function datesWrittenIn(text: string): Set<string> {
     dates.add(isoFromParts(Number(year), Number(month), Number(day)));
   }
   for (const [, day, monthName, year] of text.matchAll(writtenDate)) {
-    dates.add(isoFromParts(Number(year), monthByName[monthName!.toLowerCase()]!, Number(day)));
+    dates.add(
+      isoFromParts(
+        Number(year),
+        monthNumberByPortugueseName[monthName!.toLowerCase()]!,
+        Number(day),
+      ),
+    );
   }
   return dates;
 }

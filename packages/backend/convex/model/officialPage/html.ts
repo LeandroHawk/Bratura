@@ -104,7 +104,8 @@ export function textOfClass(html: string, className: string) {
 }
 
 /**
- * A page's headings and http(s) links in page order. A link's URL is absolute, without its `#`.
+ * A page's headings, http(s) links and the text between them, in page order. A link's URL is
+ * absolute, without its `#`.
  * Only a heading's opening tag is matched, so a link inside a heading is still read. A link that
  * names only an action takes the first text between it and the item before, else that link's label.
  * An element of `headingClass` is a heading too: accordions title their items with a button or
@@ -126,6 +127,7 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
   )) {
     const [tag, classTag, double, single, bare, inner, headingTag] = match;
     const textBefore = page.slice(previousEnd, match.index);
+    yield { textHtml: textBefore };
     if (classTag || headingTag) {
       const heading = elementInnerFrom(
         page,
@@ -151,6 +153,7 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
     url.hash = '';
     yield { link: { url: url.href, label } };
   }
+  yield { textHtml: page.slice(previousEnd) };
 }
 
 /** Links in page order, each URL once: its first label that is not empty wins. */
@@ -168,15 +171,32 @@ export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
   return onePerUrl([...headingsAndLinksOf(html, pageUrl)].flatMap((item) => item.link ?? []));
 }
 
-/** One section per heading: its text and the links under it, up to the next heading. */
+/**
+ * One section per heading: the links under it, up to the next heading, and its text with their
+ * labels.
+ */
 export function sectionsOfHtml(html: string, pageUrl: string, headingClass?: string) {
-  const sections: { heading: string; links: PageLink[] }[] = [];
+  const sections: { heading: string; links: PageLink[]; texts: string[] }[] = [];
   for (const item of headingsAndLinksOf(html, pageUrl, headingClass)) {
-    if (item.heading !== undefined) sections.push({ heading: item.heading, links: [] });
-    else sections.at(-1)?.links.push(item.link);
+    if (item.heading !== undefined) {
+      sections.push({ heading: item.heading, links: [], texts: [] });
+      continue;
+    }
+    const section = sections.at(-1);
+    if (item.link) {
+      section?.links.push(item.link);
+      section?.texts.push(item.link.label);
+    } else if (item.textHtml) section?.texts.push(plainLabel(item.textHtml));
   }
-  return sections.map(({ heading, links }) => ({ heading, links: onePerUrl(links) }));
+  return sections.map(({ heading, links, texts }) => ({
+    heading,
+    links: onePerUrl(links),
+    text: texts.filter((text) => text).join(' '),
+  }));
 }
+
+/** A page's text, without its scripts, styles and comments. */
+export const textOfHtml = (html: string) => plainLabel(withoutCode(html));
 
 /** A page's first `<h1>` as plain text; empty when it has none. */
 export const headingOfHtml = (html: string) =>

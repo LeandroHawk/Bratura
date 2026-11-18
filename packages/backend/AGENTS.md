@@ -10,7 +10,7 @@ convex/
   crons.ts        the daily ingestion (09:00 UTC); deadline alerts later        } entry files:
   http.ts         routes only (Nvoip inbound, Firecrawl webhooks: not yet)      } fixed names
   lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts,
-                  sha256.ts, text.ts (plain text, cut to a ceiling): no functions
+                  sha256.ts, text.ts (plain text, cut to a ceiling), monthNames.ts: no functions
 
   sources.ts      the sources the team registers and ingestion reads
   callNotices.ts  the call notice's only writer
@@ -24,7 +24,8 @@ convex/
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
-    officialPage/    client.ts (the page, via sourceHost/), html.ts (links, headings), discovery.ts, payload.ts, listing.ts
+    officialPage/    client.ts (the page, via sourceHost/), html.ts (links, headings), discovery.ts, payload.ts, listing.ts,
+                     registrationClose.ts (the close a page prints)
     sourceHost/      fetchOnSourceHost.ts: the only fetch whose URL a source's data chooses (its own host;
                      through Firecrawl from Brazil for a source that answers only from there)
     pdfText/         a PDF's text layer (unpdf), for a read Firecrawl answered nearly empty

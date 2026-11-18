@@ -128,7 +128,9 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
   will report a changed window once `alerts.ts` exists to consume it.
 - **A structured date beats an extracted one**: when the Mapas API gives the registration window,
   it stays; a different date in the PDF is kept as a flagged divergence, not a replacement (user,
-  2026-11-14).
+  2026-11-14). The close an official page prints in its own registration sentence ("inscrições …
+  até 25 de novembro de 2026", `model/officialPage/registrationClose.ts`) counts as given by the source too
+  (user, 2026-11-18): read before any document is paid for, it lets a closed call go unread.
 - **WhatsApp and e-mail are channels of "alerted"**, behind the channel adapter in `model/`; they read
   what the stages stored and never compute (`docs/integrations/whatsapp.md`). Who writes and reads
   each part, folder by folder: `docs/contracts.md` §4.
