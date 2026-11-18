@@ -528,7 +528,7 @@ describe('callsOfDocumentsOnListing', () => {
     ]);
   });
 
-  test("a Plone file's /view page is read as the file it shows (Funesc)", () => {
+  test("a Plone file's /view page is read as the file it shows, each file once (Funesc)", () => {
     const funesc = {
       ...source,
       slug: 'pb-funesc-editais',
@@ -536,10 +536,18 @@ describe('callsOfDocumentsOnListing', () => {
       documentUrlParts: ['.pdf'],
     };
     const file = `${funesc.listingUrl}/edital-012_2026-panapana-2026.pdf`;
-    const listing = a(`${file}/view`, 'Edital 012/2026 - Panapaná 2026');
+    const annex = `${funesc.listingUrl}/anexo-i-criterios.pdf`;
+    const listing = [
+      a(`${file}/view`, 'Edital 012/2026 - Panapaná 2026'),
+      a(`${annex}/view`, 'Anexo I - Critérios de avaliação'),
+      a(annex, 'Baixar'),
+    ].join('');
     expect(
       callsOfDocumentsOnListing(funesc, { html: listing, url: funesc.listingUrl })[0]?.documents,
-    ).toEqual([{ url: file, label: 'Edital 012/2026 - Panapaná 2026' }]);
+    ).toEqual([
+      { url: file, label: 'Edital 012/2026 - Panapaná 2026' },
+      { url: annex, label: 'Anexo I - Critérios de avaliação' },
+    ]);
     const site = a('https://funesc.pb.gov.br/view', 'Edital 012/2026 - Panapaná 2026');
     expect(
       callsOfDocumentsOnListing(

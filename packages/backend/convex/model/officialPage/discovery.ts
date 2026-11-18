@@ -53,14 +53,13 @@ const withoutFileViewPage = (link: PageLink): PageLink => {
   return { ...link, url: url.href };
 };
 
+/** A page's document links, each file once: a page may link it both as the file and its `/view`. */
 function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
-  return links
-    .map(withoutFileViewPage)
-    .filter(
-      ({ url }) =>
-        documentUrlParts.some((part) => url.includes(part)) &&
-        CallNoticeDocumentUrlSchema.safeParse(url).success,
-    );
+  return onePerUrl(links.map(withoutFileViewPage)).filter(
+    ({ url }) =>
+      documentUrlParts.some((part) => url.includes(part)) &&
+      CallNoticeDocumentUrlSchema.safeParse(url).success,
+  );
 }
 
 /**
