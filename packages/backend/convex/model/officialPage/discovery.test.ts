@@ -15,6 +15,7 @@ import {
   portoAlegreCultureSource,
   portoVelhoFunculturalSource,
   recifeCultureSource,
+  rioGrandeDoNorteFjaSource,
   rioBrancoCulturaSource,
   salvadorFgmSource,
   sesiSpCultureSource,
@@ -816,6 +817,63 @@ describe('callsOfCallPages', () => {
       ufuProexcCultureSource.listingUrl,
       `${site}/node/6742`,
       `${site}/node/6741`,
+    ]);
+  });
+
+  test('call folders holding folders (FJA-RN): a cut link text named by its folder, files one level below, stopping at a result; the breadcrumb not opened', async () => {
+    const listing = rioGrandeDoNorteFjaSource.listingUrl;
+    const openFolder = `${listing}CHAMADA%20P%C3%9ABLICA%20N%C2%BA%20003_2027%20%20ARTISTAS%20E%20COLETIVOS/`;
+    const closedFolder = `${listing}CHAMADA%20P%C3%9ABLICA%20N%C2%BA%20001_2026%20ARTISTAS/`;
+    const file = (name: string) =>
+      a(
+        `https://www.cultura.rn.gov.br/wp-json/nextcloud/v1/download?filePath=FJA%2F${encodeURIComponent(name)}`,
+        name,
+      );
+    const breadcrumb = a(
+      'https://www.cultura.rn.gov.br/documentos/Editais%20Culturais/',
+      'Editais Culturais',
+    );
+    const fetchMock = siteAnswers({
+      [listing]: [
+        breadcrumb,
+        a(openFolder, 'CHAMADA PÚBLICA Nº 003_2027  ARTISTAS E C...'),
+        a(closedFolder, 'CHAMADA PÚBLICA Nº 001_2026 ARTISTAS'),
+      ].join(''),
+      [openFolder]: [
+        breadcrumb,
+        a(`${openFolder}PUBLICA%C3%87%C3%95ES/`, 'PUBLICAÇÕES'),
+        a(`${openFolder}ANEXOS/`, 'ANEXOS'),
+      ].join(''),
+      [`${openFolder}PUBLICA%C3%87%C3%95ES/`]: file('EDITAL DE CHAMADA PÚBLICA 003_2027.pdf'),
+      [`${openFolder}ANEXOS/`]: file('ANEXO I - CATEGORIAS.pdf'),
+      [closedFolder]: [
+        a(`${closedFolder}PUBLICA%C3%87%C3%95ES/`, 'PUBLICAÇÕES'),
+        a(`${closedFolder}ANEXOS/`, 'ANEXOS'),
+      ].join(''),
+      [`${closedFolder}PUBLICA%C3%87%C3%95ES/`]: [
+        file('edital de chamada publica 001 2026 fja.pdf'),
+        file('PORTARIA 143_2026 RESULTADO FINAL DA ETAPA II.pdf'),
+      ].join(''),
+    });
+
+    expect(
+      (await callsOf(rioGrandeDoNorteFjaSource)).map(({ title, documents }) => [
+        title,
+        documents.map(({ label }) => label),
+      ]),
+    ).toEqual([
+      [
+        'CHAMADA PÚBLICA Nº 003_2027 ARTISTAS E COLETIVOS',
+        ['EDITAL DE CHAMADA PÚBLICA 003_2027.pdf', 'ANEXO I - CATEGORIAS.pdf'],
+      ],
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      listing,
+      openFolder,
+      `${openFolder}PUBLICA%C3%87%C3%95ES/`,
+      `${openFolder}ANEXOS/`,
+      closedFolder,
+      `${closedFolder}PUBLICA%C3%87%C3%95ES/`,
     ]);
   });
 

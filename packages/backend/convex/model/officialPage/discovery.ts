@@ -24,6 +24,10 @@ import { registrationClosePrintedIn } from './registrationClose';
 const titleIsKept = ({ callTitleParts }: OfficialPageSource, title: string) =>
   !callTitleParts || callTitleParts.some((part) => plainText(title).includes(plainText(part)));
 
+/** Whether `url` is inside the folder `folderUrl` names (`…/edital-x/anexos` in `…/edital-x`). */
+const isBelowFolder = (url: string, folderUrl: string) =>
+  url !== folderUrl && url.startsWith(`${folderUrl.replace(/\/$/, '')}/`);
+
 /** An official page whose listing links one page per call. */
 type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
 
@@ -207,6 +211,18 @@ function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
 }
 
 /**
+ * A link text cut short with "..." (FJA-RN, 2026-11-18: "CHAMADA PÚBLICA Nº 002_2026 ARTISTAS,
+ * GR...") as the whole name its URL's last segment spells, when that segment starts with the text.
+ */
+function withUntruncatedLabel(link: PageLink): PageLink {
+  const shown = /^(.*\S)\s*(\.{3}|…)$/.exec(link.label)?.[1];
+  if (!shown) return link;
+  // The link text is already spaced (`plainLabel`); a folder name can hold two spaces in a row.
+  const segment = fileNameOf(link.url.replace(/\/$/, '')).replace(/\s+/g, ' ').trim();
+  return plainText(segment).startsWith(plainText(shown)) ? { ...link, label: segment } : link;
+}
+
+/**
  * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`), each
  * title spaced as a link text is: an item with no id or no text title is skipped.
  */
@@ -249,19 +265,26 @@ async function linksInRecentYears(
 }
 
 /**
- * The links in a call folder's subfolders (`callsFiledInYearFolders`: Porto Velho files most
- * documents, results included, one folder each). Stops at the first result posted, on the call
- * page or below: the call is dropped anyway, and 002/2026 holds 18 subfolders. Throws past
- * `deadline`: a call cut short could miss its result and pay for a closed call.
+ * The folders a call page links under its own path (`callFilesInSubfolders`: FJA-RN's "PUBLICAÇÕES
+ * CHAMADA 01_26", "ANEXOS PARA INSCRIÇÃO…"); breadcrumbs and menus sit above it.
+ */
+const subfoldersLinkedBelow = ({ html, url }: FetchedPage) =>
+  linksOfHtml(html, url).filter((link) => isBelowFolder(link.url, url));
+
+/**
+ * The links in a call's `subfolders` (Porto Velho files most documents, results included, one
+ * folder each; FJA-RN, notices and annexes apart). Stops at the first result posted, on the call
+ * page or below: the call is dropped anyway, and Porto Velho's 002/2026 holds 18 subfolders.
+ * Throws past `deadline`: a call cut short could miss its result and pay for a closed call.
  */
 async function linksInSubfolders(
-  callPage: FetchedPage,
+  subfolders: PageLink[],
   links: PageLink[],
   source: CallPageSource,
   { spacingMs, deadline }: { spacingMs: number; deadline: number },
 ) {
   const found: PageLink[] = [];
-  for (const subfolder of folderLinksOfHtml(callPage.html, callPage.url)) {
+  for (const subfolder of subfolders) {
     if (hasPublishedResult(documentLinksOf([...links, ...found], source.documentUrlParts))) break;
     if (Date.now() > deadline) throw new Error('Subfolders left unread for lack of time');
     await pause(spacingMs);
@@ -306,7 +329,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
   // source says so (`callPageNeedsNotice`: folders of courses and plans).
   const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
-  const { callPagePublishedAtClass, callsFiledInYearFolders } = source.discovery;
+  const { callPagePublishedAtClass, callsFiledInYearFolders, callFilesInSubfolders } =
+    source.discovery;
   const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
@@ -315,7 +339,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
    */
   const frameUrls = new Set(listing.map(({ url }) => url));
   const callPages = onePerUrl(
-    listing.map((link) => withHttpsOnHost(link, source.listingUrl)),
+    listing.map((link) => withUntruncatedLabel(withHttpsOnHost(link, source.listingUrl))),
   ).filter(
     ({ url, label }) =>
       label &&
@@ -334,12 +358,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
    * The site's root is no call's folder: the PNAB platform links its home and calls at root slugs.
    */
   const isInsideAnotherCallPage = (url: string) =>
-    callPages.some(
-      (other) =>
-        url !== other.url &&
-        new URL(other.url).pathname !== '/' &&
-        url.startsWith(`${other.url.replace(/\/$/, '')}/`),
-    );
+    callPages.some((other) => new URL(other.url).pathname !== '/' && isBelowFolder(url, other.url));
   const ownCallPages = callPages.filter(({ url }) => !isInsideAnotherCallPage(url));
   const calls: OfficialPageCall[] = [];
   const deadline = Date.now() + callPagesBudgetMs;
@@ -363,9 +382,12 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         continue;
       }
       page = linksOfHtml(fetched.html, fetched.url);
-      if (callsFiledInYearFolders) {
-        page.push(...(await linksInSubfolders(fetched, page, source, { spacingMs, deadline })));
-      }
+      const subfolders = callsFiledInYearFolders
+        ? folderLinksOfHtml(fetched.html, fetched.url)
+        : callFilesInSubfolders
+          ? subfoldersLinkedBelow(fetched)
+          : [];
+      page.push(...(await linksInSubfolders(subfolders, page, source, { spacingMs, deadline })));
       heading = headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);
       pageText = textOfHtml(fetched.html);

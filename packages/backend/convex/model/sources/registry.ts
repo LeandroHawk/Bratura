@@ -1430,6 +1430,29 @@ export const sescRoraimaVisualArtsSource = {
   timeZone: ianaTimeZone.parse('America/Boa_Vista'),
 } satisfies Source;
 
+/**
+ * Fundação José Augusto (RN state culture): a Nextcloud file browser, one folder per call under
+ * "Editais Abertos", its files one level down ("PUBLICAÇÕES CHAMADA 01_26", "ANEXOS…"), served at
+ * `/wp-json/nextcloud/v1/download?filePath=…`. Its two 2026 calls opened in January–February and
+ * post Etapa II results; the rest are 2023–2024. WordPress `robots.txt`; privacy policy only.
+ */
+export const rioGrandeDoNorteFjaSource = {
+  kind: 'officialPage',
+  slug: 'rn-fja-editais-abertos',
+  name: 'Fundação José Augusto (RN) — editais abertos',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.cultura.rn.gov.br/documentos/Editais%20Culturais/Editais%20Abertos/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/Editais%20Abertos/'],
+    callFilesInSubfolders: true,
+  },
+  documentUrlParts: ['/wp-json/nextcloud/v1/download'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1525,4 +1548,5 @@ export const registeredSources: readonly Source[] = [
   ufuProexcCultureSource,
   sescRoraimaArtistCredentialingSource,
   sescRoraimaVisualArtsSource,
+  rioGrandeDoNorteFjaSource,
 ];
