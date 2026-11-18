@@ -63,10 +63,10 @@ const personalDataName = new RegExp(
 const noticeWords = 'edital|chamada|chamamento|convocatoria';
 
 /**
- * What a notice's file name may start with before its word: a number ("0.", "01_"), a roman
- * numeral, or its SEI document number ("sei-9911864-edital-6-1.pdf", Maringá, 2026-11-17).
+ * What a notice's name may start with before its word (in `nameOf` terms): a number ("0.", "01-"),
+ * a roman numeral, or its SEI document number ("sei-9911864-edital-6-1.pdf", Maringá, 2026-11-17).
  */
-const noticeNamePrefix = '(\\d+[-_.]*|i+-|sei[-_]\\d+[-_])?';
+const noticeNamePrefix = '(\\d+[-_.]*|i+-|sei-\\d+-)?';
 
 /**
  * Name rules, first match wins; `null` is never read: forms are what an applicant fills in, not the
