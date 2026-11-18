@@ -165,6 +165,23 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
+  test("a page inside another call page's folder is part of that call, not a call (Funesc)", async () => {
+    const listing = 'https://funesc.pb.gov.br/editais';
+    const call = `${listing}/edital-selecao-de-musicos-bolsistas-2026`;
+    const inside = `${call}/audicoes-pecas-de-confronto`;
+    const source = {
+      ...chamberOfDeputiesCultureSource,
+      listingUrl: listing,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['funesc.pb.gov.br/editais/'] },
+    };
+    siteAnswers({
+      [listing]: a(call, 'Edital Seleção de músicos bolsistas 2026') + a(inside, 'Audições'),
+      [call]: a(`${call}/edital-001_2026.pdf`, 'Edital 001/2026'),
+      [inside]: a(`${call}/edital-001_2026.pdf`, 'Edital 001/2026'),
+    });
+    expect((await callsOf(source)).map(({ externalId }) => externalId)).toEqual([call]);
+  });
+
   test("a call's notice the listing links through its /view page is the call's, not the frame (Câmara)", async () => {
     const listing = chamberOfDeputiesCultureSource.listingUrl;
     const page = `${listing}/edital-2026`;

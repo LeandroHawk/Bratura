@@ -193,11 +193,21 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       isOnSourceHost(url, source.listingUrl) &&
       !source.documentUrlParts.some((part) => url.includes(part)),
   );
+  /**
+   * A page inside another call page's folder is part of that call, not one of its own (Funesc,
+   * 2026-11-17: "Audições OSJPB - Peças de confronto" under its orchestra call, which posts results
+   * the sub-page does not). Measured on the 20 `callPage` listings: only Funesc has any (2 of 67).
+   */
+  const isInsideAnotherCallPage = (url: string) =>
+    callPages.some(
+      (other) => url !== other.url && url.startsWith(`${other.url.replace(/\/$/, '')}/`),
+    );
+  const ownCallPages = callPages.filter(({ url }) => !isInsideAnotherCallPage(url));
   const calls: OfficialPageCall[] = [];
   const startedAt = Date.now();
-  for (const [index, { url, label }] of callPages.entries()) {
+  for (const [index, { url, label }] of ownCallPages.entries()) {
     if (Date.now() - startedAt > callPagesBudgetMs) {
-      console.warn('Call pages left unread for lack of time', callPages.length - index);
+      console.warn('Call pages left unread for lack of time', ownCallPages.length - index);
       break;
     }
     if (index > 0) await new Promise((done) => setTimeout(done, spacingMs));
