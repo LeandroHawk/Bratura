@@ -1387,14 +1387,47 @@ export const ufuProexcCultureSource = {
   robotsCheckedOn: '2026-11-18',
   termsCheckedOn: '2026-11-18',
   listingUrl: 'https://editais.ufu.br/extensao-cultura',
-  discovery: {
-    hops: 'callPage',
-    callPageUrlParts: ['/node/'],
-    callPageTitleParts: ['processo seletivo de profissionais'],
-    crawlDelaySeconds: 10,
-  },
+  discovery: { hops: 'callPage', callPageUrlParts: ['/node/'], crawlDelaySeconds: 10 },
+  callTitleParts: ['processo seletivo de profissionais'],
   documentUrlParts: ['/sites/editais.ufu.br/files/'],
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Sesc Roraima's credenciamentos: one page, every file a link titled "EDITAL Nº 06/2026 –
+ * CREDENCIAMENTO ARTÍSTICO – …" under a year heading, beside its food vendors' (Edital 11/2026,
+ * Semana S), left out by title. The artists' call opens each January to February (06/2026 closed
+ * 28/02, results posted). `robots.txt` WordPress defaults; terms cited, `/termos-de-uso/` 404.
+ */
+export const sescRoraimaArtistCredentialingSource = {
+  kind: 'officialPage',
+  slug: 'sesc-rr-credenciamento-artistico',
+  name: 'Sesc Roraima — credenciamento artístico',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.sescrr.com.br/cultura/edital-de-credenciamento-de-artistas/',
+  discovery: { hops: 'documentsOnListing' },
+  callTitleParts: ['credenciamento artistico'],
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Boa_Vista'),
+} satisfies Source;
+
+/**
+ * Sesc Roraima's visual arts calls: files titled "EDITAL Nº 01/2026 – CULTURA – INTERVENÇÕES DE
+ * MURALISMO" under a year heading (MEI only, closed with its final result in February 2026).
+ */
+export const sescRoraimaVisualArtsSource = {
+  kind: 'officialPage',
+  slug: 'sesc-rr-artes-visuais',
+  name: 'Sesc Roraima — editais de artes visuais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.sescrr.com.br/editais-de-artes-visuais/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Boa_Vista'),
 } satisfies Source;
 
 /** What `registerSource` can register, by slug. */
@@ -1490,4 +1523,6 @@ export const registeredSources: readonly Source[] = [
   iphanOpenCallsSource,
   museuDoIndioCallsSource,
   ufuProexcCultureSource,
+  sescRoraimaArtistCredentialingSource,
+  sescRoraimaVisualArtsSource,
 ];

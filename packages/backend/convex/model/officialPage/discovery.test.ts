@@ -18,6 +18,7 @@ import {
   rioBrancoCulturaSource,
   salvadorFgmSource,
   sesiSpCultureSource,
+  sescRoraimaArtistCredentialingSource,
   ufuProexcCultureSource,
 } from '../sources/registry';
 import {
@@ -913,6 +914,22 @@ describe('callsOfDocumentsOnListing', () => {
     a('/editais/editais-pnab', 'Editais PNAB'),
   ].join('');
   const url = (id: number) => `https://www.secult.mg.gov.br${mg}?download=${id}`;
+
+  test("a title filter (Sesc RR): the artists' credenciamento kept, the food vendors' left out", () => {
+    const uploads = 'https://www.sescrr.com.br/wp-content/uploads/2027/01';
+    const listing = [
+      a(`${uploads}/EMPRESAS.pdf`, 'EDITAL Nº 02/2027 – CREDENCIAMENTO DE EMPRESAS DE ALIMENTOS'),
+      a(
+        `${uploads}/ARTISTA-2027.pdf`,
+        'EDITAL Nº 03/2027 – CREDENCIAMENTO ARTÍSTICO – CULTURA SESC',
+      ),
+    ].join('');
+    const calls = callsOfDocumentsOnListing(sescRoraimaArtistCredentialingSource, {
+      html: listing,
+      url: sescRoraimaArtistCredentialingSource.listingUrl,
+    });
+    expect(calls.map(({ externalId }) => externalId)).toEqual(['edital 3/2027']);
+  });
 
   test('one call per number: its newest notice and its annexes, the listing as its link', () => {
     expect(callsOfDocumentsOnListing(source, { html, url: source.listingUrl })).toEqual([
