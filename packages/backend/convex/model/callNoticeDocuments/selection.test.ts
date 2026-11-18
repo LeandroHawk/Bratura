@@ -218,6 +218,22 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     ).toBeNull();
   });
 
+  test('a contract signed without a call is procurement, though its text names a chamamento (Funesc)', () => {
+    const funesc = 'https://funesc.pb.gov.br/editais/ratificacoes';
+    expect(
+      callNoticeDocumentRole(
+        `${funesc}/termo-inex-chamamento-publico-fec-prc-2025-01160-termo-fomento-002-2025-arribaca.pdf`,
+        'TERMO INEX CHAMAMENTO PUBLICO -TERMO FOMENTO 002 2025 ARRIBACA',
+      ),
+    ).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${funesc}/x.pdf`, 'Ratificação de Inexigiblidade n° 154'),
+    ).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${funesc}/x.pdf`, 'Edital de Chamamento Público nº 004/2026'),
+    ).toBe('callNotice');
+  });
+
   test('personal data in the file name rules out a link whose text looks like a notice', () => {
     const rio = 'https://cultura.prefeitura.rio/wp-content/uploads/sites/38/2026/11';
     expect(callNoticeDocumentRole(`${rio}/Resultado-Final-Teatro.pdf`, 'Edital Teatro')).toBeNull();

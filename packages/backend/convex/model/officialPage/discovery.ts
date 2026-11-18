@@ -42,12 +42,23 @@ const callPagesBudgetMs = 5 * 60_000;
 const hasPublishedResult = (documents: PageLink[]) =>
   documents.some(({ url, label }) => postsResult(url, label));
 
+/**
+ * A Plone file's page (`…/edital.pdf/view`, Funesc and gov.br, 2026-11-17) is HTML around the file;
+ * the file itself answers at the same URL without `/view`.
+ */
+const withoutFileViewPage = (link: PageLink): PageLink => {
+  const file = /^(.+\.[a-z0-9]+)\/view$/i.exec(link.url)?.[1];
+  return file ? { ...link, url: file } : link;
+};
+
 function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
-  return links.filter(
-    ({ url }) =>
-      documentUrlParts.some((part) => url.includes(part)) &&
-      CallNoticeDocumentUrlSchema.safeParse(url).success,
-  );
+  return links
+    .map(withoutFileViewPage)
+    .filter(
+      ({ url }) =>
+        documentUrlParts.some((part) => url.includes(part)) &&
+        CallNoticeDocumentUrlSchema.safeParse(url).success,
+    );
 }
 
 /**
@@ -164,12 +175,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   );
   const listing = linksOfHtml(html, listingUrl);
   /**
-   * A document the listing links too is the site's frame, not the call's (Funarte, 2026-11-15:
-   * every page links an internal "Edital No. 409/2025"). Without this, it is each call's notice.
+   * A link printed the same on the listing and a call page is the site's frame, not the call's
+   * (Funarte, 2026-11-15: every page links an internal "Edital No. 409/2025"). Compared as printed:
+   * the Câmara's listing links its call's own notice as `…pdf/view`, the call page as `….pdf`.
    */
-  const frameDocumentUrls = new Set(
-    documentLinksOf(listing, source.documentUrlParts).map(({ url }) => url),
-  );
+  const frameUrls = new Set(listing.map(({ url }) => url));
   const callPages = onePerUrl(
     listing.map((link) => withHttpsOnHost(link, source.listingUrl)),
   ).filter(
@@ -208,8 +218,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       console.warn('Call page not read', url, String(error));
       continue;
     }
-    const linked = documentLinksOf(page, source.documentUrlParts).filter(
-      ({ url }) => !frameDocumentUrls.has(url),
+    const linked = documentLinksOf(
+      page.filter(({ url }) => !frameUrls.has(url)),
+      source.documentUrlParts,
     );
     const documents = pageIsTheNotice
       ? withPageAsNotice(linked, { url, label: pageTitle })
