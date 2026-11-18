@@ -28,12 +28,6 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
     /** What a call page's URL contains; other links on the listing are skipped. */
     callPageUrlParts: textParts,
     /**
-     * What a call page's link text contains, compared without accents or case; other call pages
-     * are skipped. UFU's listing holds 6 of 7 items for its own students (grants, courses) beside
-     * the calls open to anyone ("Processo Seletivo de Profissionais": artists, technicians).
-     */
-    callPageTitleParts: textParts.optional(),
-    /**
      * robots.txt's `Crawl-delay`, kept between the pages the reader fetches (UFU: 10); Firecrawl's
      * document reads keep their own spacing. At 30 s, the 5 min for call pages still opens 10.
      */
@@ -104,6 +98,12 @@ export const OfficialPageSourceSchema = z.object({
   /** The page where the site lists its calls. */
   listingUrl: requiredHttpsUrl,
   discovery: OfficialPageDiscoverySchema,
+  /**
+   * What a call's title contains (a call page's link text, a listed notice's), compared without
+   * accents or case; other calls are skipped (headings: no source needs it yet). UFU lists 6 of 7
+   * items for its students beside "Processo Seletivo de Profissionais"; Sesc RR, food vendors.
+   */
+  callTitleParts: textParts.optional(),
   /** What a document link contains; a link with none of them is not a document. */
   documentUrlParts: textParts,
   /** The site's zone: its dates ("até 20/11") carry none. */

@@ -20,6 +20,10 @@ import {
 import { JsonListedCallSchema, type OfficialPageCall } from './payload';
 import { registrationClosePrintedIn } from './registrationClose';
 
+/** Whether a call's title holds one of the source's `callTitleParts`, when it has any. */
+const titleIsKept = ({ callTitleParts }: OfficialPageSource, title: string) =>
+  !callTitleParts || callTitleParts.some((part) => plainText(title).includes(plainText(part)));
+
 /** An official page whose listing links one page per call. */
 type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
 
@@ -302,11 +306,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
   // source says so (`callPageNeedsNotice`: folders of courses and plans).
   const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
-  const { callPagePublishedAtClass, callsFiledInYearFolders, callPageTitleParts } =
-    source.discovery;
-  const titleIsKept = (label: string) =>
-    !callPageTitleParts ||
-    callPageTitleParts.some((part) => plainText(label).includes(plainText(part)));
+  const { callPagePublishedAtClass, callsFiledInYearFolders } = source.discovery;
   const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
@@ -319,7 +319,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   ).filter(
     ({ url, label }) =>
       label &&
-      titleIsKept(label) &&
+      titleIsKept(source, label) &&
       !titleNamesAPastCall(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
@@ -494,7 +494,7 @@ export function callsOfDocumentsOnListing(
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
     if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
     const recorded = listedCallDocuments(callDocuments);
-    if (!recorded) return [];
+    if (!recorded || !titleIsKept(source, recorded.notice.label)) return [];
     return [
       {
         externalId: key,
