@@ -38,9 +38,9 @@ The team's draft of this flow also stored an embedding per call; matching is rul
    measured on 2026-11-15: PR, BA, Rio, MG, MA), so a plain fetch finds the call pages and document
    links for free (`officialPage` source: `discovery`, `documentUrlParts`). A site that renders its
    list with JavaScript usually fills it from a JSON request, read for free too
-   (`callPagesListedAsJson`, Rio Branco 2026-11-18); `/map` (1 credit per call) stays the option
-   when there is none. For one section,
-   `/crawl` with `includePaths` and `limit`.
+   (`callPagesListedAsJson`, Rio Branco 2026-11-18), and folders a button opens can be served at a
+   URL too (`callsFiledInYearFolders`, Porto Velho's `?folder=N`); `/map` (1 credit per call) stays
+   the option when there is none. For one section, `/crawl` with `includePaths` and `limit`.
 3. **New calls and amendments.** `changeTracking` (`git-diff` mode) says what changed since the last
    scrape: an unchanged page spends no Gemini call; an amended deadline triggers a new extraction and
    an alert ("o prazo mudou").

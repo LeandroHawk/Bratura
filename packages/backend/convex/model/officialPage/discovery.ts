@@ -7,6 +7,7 @@ import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 import { fetchListingJson, fetchPageHtml, type FetchedPage } from './client';
 import {
+  folderLinksOfHtml,
   headingOfHtml,
   linksOfHtml,
   onePerUrl,
@@ -212,16 +213,68 @@ function callPageLinksOfJsonListing(
   });
 }
 
-/** The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON. */
-async function linksOfCallPageListing(source: CallPageSource) {
-  const { callPagesListedAsJson } = source.discovery;
+const pause = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+/**
+ * The call folders in this year's and last year's folders of the listing
+ * (`callsFiledInYearFolders`): in January a call opened in December still sits in last year's.
+ * Older years are not opened (Porto Velho keeps them back to 2019).
+ */
+async function callFoldersOfYearFolders(
+  { html, url }: FetchedPage,
+  source: CallPageSource,
+  spacingMs: number,
+) {
+  const years = [currentYear(), currentYear() - 1].map(String);
+  const callFolders: PageLink[] = [];
+  for (const yearFolder of folderLinksOfHtml(html, url)) {
+    if (!years.includes(yearFolder.label)) continue;
+    await pause(spacingMs);
+    const yearPage = await fetchPageHtml(yearFolder.url, source.listingUrl, source);
+    callFolders.push(...folderLinksOfHtml(yearPage.html, yearPage.url));
+  }
+  return callFolders;
+}
+
+/**
+ * The links in a call folder's subfolders (`callsFiledInYearFolders`: Porto Velho files most
+ * documents, results included, one folder each). Stops at the first result posted, on the call
+ * page or below: the call is dropped anyway, and 002/2026 holds 18 subfolders. Throws past
+ * `deadline`: a call cut short could miss its result and pay for a closed call.
+ */
+async function linksInSubfolders(
+  callPage: FetchedPage,
+  links: PageLink[],
+  source: CallPageSource,
+  { spacingMs, deadline }: { spacingMs: number; deadline: number },
+) {
+  const found: PageLink[] = [];
+  for (const subfolder of folderLinksOfHtml(callPage.html, callPage.url)) {
+    if (hasPublishedResult(documentLinksOf([...links, ...found], source.documentUrlParts))) break;
+    if (Date.now() > deadline) throw new Error('Subfolders left unread for lack of time');
+    await pause(spacingMs);
+    const page = await fetchPageHtml(subfolder.url, source.listingUrl, source);
+    found.push(...linksOfHtml(page.html, page.url));
+  }
+  return found;
+}
+
+/**
+ * The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON; with
+ * `callsFiledInYearFolders`, the call folders of its year folders too.
+ */
+async function linksOfCallPageListing(source: CallPageSource, spacingMs: number) {
+  const { callPagesListedAsJson, callsFiledInYearFolders } = source.discovery;
   if (callPagesListedAsJson) {
     const items = await fetchListingJson(source.listingUrl, source);
     const links = callPageLinksOfJsonListing(items, callPagesListedAsJson, source.listingUrl);
     return { links, url: source.listingUrl };
   }
-  const { html, url } = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
-  return { links: linksOfHtml(html, url), url };
+  const listing = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
+  const links = linksOfHtml(listing.html, listing.url);
+  if (callsFiledInYearFolders)
+    links.push(...(await callFoldersOfYearFolders(listing, source, spacingMs)));
+  return { links, url: listing.url };
 }
 
 /** Two hops: the listing's call pages, each read for its own documents. */
@@ -229,8 +282,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
-  const { callPagePublishedAtClass } = source.discovery;
-  const { links: listing, url: listingUrl } = await linksOfCallPageListing(source);
+  const { callPagePublishedAtClass, callsFiledInYearFolders } = source.discovery;
+  const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
    * (Funarte, 2026-11-15: every page links an internal "Edital No. 409/2025"). Compared as printed:
@@ -264,13 +317,13 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     );
   const ownCallPages = callPages.filter(({ url }) => !isInsideAnotherCallPage(url));
   const calls: OfficialPageCall[] = [];
-  const startedAt = Date.now();
+  const deadline = Date.now() + callPagesBudgetMs;
   for (const [index, { url, label }] of ownCallPages.entries()) {
-    if (Date.now() - startedAt > callPagesBudgetMs) {
+    if (Date.now() > deadline) {
       console.warn('Call pages left unread for lack of time', ownCallPages.length - index);
       break;
     }
-    if (index > 0) await new Promise((done) => setTimeout(done, spacingMs));
+    if (index > 0) await pause(spacingMs);
     let page: PageLink[];
     let heading: string;
     let pageTitle: string;
@@ -284,6 +337,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         continue;
       }
       page = linksOfHtml(fetched.html, fetched.url);
+      if (callsFiledInYearFolders) {
+        page.push(...(await linksInSubfolders(fetched, page, source, { spacingMs, deadline })));
+      }
       heading = headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);
       pageText = textOfHtml(fetched.html);
@@ -299,8 +355,10 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       ? withPageAsNotice(linked, { url, label: pageTitle })
       : linked;
     const kept = callDocumentsWorthRecording(documents);
-    // Where the page is the notice, a page with none is no call ("MATERIAIS EDUCATIVOS").
-    if (!kept || (pageIsTheNotice && !kept.some(isNotice))) continue;
+    // Where the page is the notice, a page with none is no call ("MATERIAIS EDUCATIVOS"); nor is
+    // a folder, which only its files name (Porto Velho's "Termos de Inexigibilidade").
+    const needsNotice = pageIsTheNotice || callsFiledInYearFolders === true;
+    if (!kept || (needsNotice && !kept.some(isNotice))) continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),
     );

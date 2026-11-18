@@ -10,6 +10,7 @@ import {
   jundiaiCultureSource,
   paranaSeecSource,
   portoAlegreCultureSource,
+  portoVelhoFunculturalSource,
   recifeCultureSource,
   rioBrancoCulturaSource,
   salvadorFgmSource,
@@ -576,6 +577,102 @@ describe('callsOfCallPages', () => {
       `${site}/site/edital-documento/43`,
       `${site}/site/edital-documento/42`,
     ]);
+  });
+
+  /** Porto Velho's Funcultural: folders a Livewire button opens, served at `?folder=N`. */
+  const portoVelhoSite = 'https://funcultural.portovelho.ro.gov.br';
+  const folder = (id: number) => `${portoVelhoSite}/arquivos?folder=${id}`;
+  const button = (id: number, name: string) =>
+    `<button wire:click="selectFolder(${id})" class="flex"><svg><path d="M1"/></svg>` +
+    `<div><span class="text-sm">${name}</span><span class="text-xs">Descrição da pasta</span></div></button>`;
+
+  test('year folders (Porto Velho): this and last year opened, each call a folder titled by its button, files in it or a subfolder below, which stop at a result; a folder with no notice is no call', async () => {
+    const file = (name: string) => a(`${portoVelhoSite}/uploads/arquivos/${name}.pdf`, name);
+    const fetchMock = siteAnswers({
+      [portoVelhoFunculturalSource.listingUrl]: [
+        a(`${portoVelhoSite}/arquivos/lista/33997?editais`, 'Editais'),
+        button(88673, '2026'),
+        button(71932, '2025'),
+        button(33999, '2019'),
+        button(59545, 'EDITAIS e ANEXOS - LEI PAULO GUSTAVO'),
+      ].join(''),
+      [folder(88673)]: [
+        button(99327, 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026/FUNCULTURAL'),
+        button(90593, 'EDITAL DE CHAMAMENTO PÚBLICO - SIMPLIFICADO N.º 003/2026/FUNCULTURAL'),
+      ].join(''),
+      [folder(71932)]: button(79491, 'Termos de Inexigibilidade de Licitações'),
+      [folder(99327)]: [
+        button(99619, 'ERRATAS (RETIFICAÇÕES)'),
+        file('EDITAL DE CHAMAMENTO PÚBLICO N.º 004-FUNCULTURAL-2026'),
+        file('ANEXO VIII - CRONOGRAMA'),
+      ].join(''),
+      [folder(99619)]: file('PRIMEIRA ERRATA (RETIFICAÇÃO) PRAZOS'),
+      [folder(90593)]: [
+        button(91729, 'RESULTADOS'),
+        button(90604, 'EDITAL DE CHAMAMENTO PÚBLICO SIMPLIFICADO N.º 003/2026'),
+      ].join(''),
+      [folder(91729)]: file('RESULTADO FINAL CONCURSO DE QUADRILHAS'),
+      [folder(79491)]: file('TERMO DE INEXIGIBILIDADE DE LICITAÇÃO Nº 003-2025'),
+    });
+
+    expect(await callsOf(portoVelhoFunculturalSource)).toEqual([
+      {
+        externalId: folder(99327),
+        title: 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026/FUNCULTURAL',
+        officialUrl: folder(99327),
+        documents: [
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/EDITAL%20DE%20CHAMAMENTO%20P%C3%9ABLICO%20N.%C2%BA%20004-FUNCULTURAL-2026.pdf`,
+            label: 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004-FUNCULTURAL-2026',
+          },
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/ANEXO%20VIII%20-%20CRONOGRAMA.pdf`,
+            label: 'ANEXO VIII - CRONOGRAMA',
+          },
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/PRIMEIRA%20ERRATA%20(RETIFICA%C3%87%C3%83O)%20PRAZOS.pdf`,
+            label: 'PRIMEIRA ERRATA (RETIFICAÇÃO) PRAZOS',
+          },
+        ],
+        registrationCloses: null,
+      },
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      portoVelhoFunculturalSource.listingUrl,
+      folder(88673),
+      folder(71932),
+      folder(99327),
+      folder(99619),
+      folder(90593),
+      folder(91729),
+      folder(79491),
+    ]);
+  });
+
+  test('a call folder whose subfolders run past the 5 min is skipped, not recorded without them (Porto Velho)', async () => {
+    const pagesOfSite: Record<string, string> = {
+      [portoVelhoFunculturalSource.listingUrl]: button(88673, '2026'),
+      [folder(88673)]: button(99327, 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026'),
+      [folder(99327)]: [
+        a(
+          `${portoVelhoSite}/uploads/arquivos/EDITAL-004-2026.pdf`,
+          'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026',
+        ),
+        button(99619, 'ERRATAS'),
+        button(99613, 'RESULTADOS'),
+      ].join(''),
+      [folder(99619)]: a(`${portoVelhoSite}/uploads/arquivos/ERRATA.pdf`, 'ERRATA'),
+    };
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      if (String(input) === folder(99619)) await new Promise((done) => setTimeout(done, 400_000));
+      return new Response(pagesOfSite[String(input)] ?? '', {
+        headers: { 'content-type': 'text/html' },
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await callsOf(portoVelhoFunculturalSource)).toEqual([]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain(folder(99613));
   });
 });
 
