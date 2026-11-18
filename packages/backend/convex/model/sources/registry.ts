@@ -1455,6 +1455,43 @@ export const rioGrandeDoNorteFjaSource = {
   timeZone: ianaTimeZone.parse('America/Fortaleza'),
 } satisfies Source;
 
+/**
+ * Secult-ES's calls page: one heading per call, its files under it (`/media/…?v=<upload time>`), 27
+ * calls back to 2019. Its PNAB calls apply through the ES Mapas (registered). Three 2020 calls name
+ * no year and post no result, so they are read once (~20 pages; team choice over a new rule).
+ * `robots.txt` and terms 404; an LGPD page only.
+ */
+export const espiritoSantoSecultCallsSource = {
+  kind: 'officialPage',
+  slug: 'es-secult-editais-de-chamamento',
+  name: 'Secult-ES — editais de chamamento',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://secult.es.gov.br/editaisdechamamento',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/media/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Secult-ES's yearly calls with a page of their own (Circulação e Intercâmbio, monthly rounds,
+ * 2026: 17/03 to 06/11; Parque das Esculturas), reached from the calls page's menu: their URL
+ * changes each year (`…-intercambio-2026-2`), the menu link does not.
+ */
+export const espiritoSantoSecultCallPagesSource = {
+  kind: 'officialPage',
+  slug: 'es-secult-grupos-de-arquivos',
+  name: 'Secult-ES — editais com página própria',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://secult.es.gov.br/editaisdechamamento',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/GrupodeArquivos/edital-'] },
+  documentUrlParts: ['/media/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1551,4 +1588,6 @@ export const registeredSources: readonly Source[] = [
   sescRoraimaArtistCredentialingSource,
   sescRoraimaVisualArtsSource,
   rioGrandeDoNorteFjaSource,
+  espiritoSantoSecultCallsSource,
+  espiritoSantoSecultCallPagesSource,
 ];
