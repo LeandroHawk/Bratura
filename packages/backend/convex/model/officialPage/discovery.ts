@@ -59,12 +59,10 @@ const withoutFileViewPage = (link: PageLink): PageLink => {
  * FORMULÁRIO…", "RESULTADO FINAL…"), so it is the label. Without it no annex or result is known.
  */
 function withTitleItsUrlCarries(link: PageLink): PageLink {
-  const encoded = /^\/lerarquivo\/[^/]+\/([A-Za-z0-9+/=_-]+)$/.exec(
-    new URL(link.url).pathname,
-  )?.[1];
+  const encoded = /^\/lerarquivo\/[^/]+\/([A-Za-z0-9+/=]+)$/.exec(new URL(link.url).pathname)?.[1];
   if (!encoded) return link;
   try {
-    const bytes = Uint8Array.from(atob(decodeURIComponent(encoded)), (char) => char.charCodeAt(0));
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
     const title = new TextDecoder('utf-8', { fatal: true }).decode(bytes).trim();
     return title ? { ...link, label: title } : link;
   } catch {
