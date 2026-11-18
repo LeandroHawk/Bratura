@@ -19,7 +19,6 @@ import {
   callNumberOf,
   callsOfCallPages,
   callsOfDocumentsOnListing,
-  callPageLinksOfJsonListing,
   callsOfDocumentsUnderHeadings,
   fileNameAsLabel,
 } from './discovery';
@@ -512,11 +511,12 @@ describe('callsOfCallPages', () => {
     expect(call?.documents.map(({ url }) => url)).toEqual([media]);
   });
 
-  test('a JSON listing (Rio Branco): each item a call page by its id, titled by its field; the close the page prints', async () => {
+  test('a JSON listing (Rio Branco): each item a call page by its id, titled by its field; a past edition not opened; the close the page prints', async () => {
     const site = 'https://cultura.riobranco.ac.gov.br';
     const listing = [
       { id: 43, titulo: 'Edital 10/2026 - Pequenos Apoios - Música', status_edital: '1' },
       { id: 42, titulo: 'Edital 09/2026 - Patrimônio Cultural' },
+      { id: 6, titulo: 'Fundo Municipal de Cultura 2023 - Povos Originários' },
       { id: 7, titulo: null },
       { titulo: 'Sem id' },
     ];
@@ -575,10 +575,6 @@ describe('callsOfCallPages', () => {
       `${site}/site/edital-documento/43`,
       `${site}/site/edital-documento/42`,
     ]);
-  });
-
-  test('a JSON listing that is not a list is a changed API: it throws', () => {
-    expect(() => callPageLinksOfJsonListing({ data: [] }, rioBrancoCulturaSource)).toThrow();
   });
 });
 

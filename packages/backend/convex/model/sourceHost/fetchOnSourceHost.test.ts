@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { fetchOnSourceHost, isOnSourceHost } from './fetchOnSourceHost';
+import { fetchJsonListOnSourceHost, fetchOnSourceHost, isOnSourceHost } from './fetchOnSourceHost';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -114,5 +114,29 @@ describe('fetchOnSourceHost, for a source that answers only from Brazil', () => 
   test('a body over the ceiling is refused', async () => {
     firecrawlAnswers({ url: api, statusCode: 200 }, 'x'.repeat(1_001));
     await expect(fetchOnSourceHost(api, api, json, fromBrazil)).rejects.toThrow('over 1000 bytes');
+  });
+});
+
+describe('fetchJsonListOnSourceHost', () => {
+  const listing = 'https://cultura.riobranco.ac.gov.br/admin/editais/edital-listar-json';
+  const limits = { timeoutMs: 1_000, maxBytes: 1_000 };
+  const answering = (body: unknown) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => Response.json(body)),
+    );
+
+  test('a JSON list comes back parsed', async () => {
+    answering([{ id: 42, titulo: 'Edital 09/2026' }]);
+    await expect(fetchJsonListOnSourceHost(listing, listing, limits)).resolves.toEqual([
+      { id: 42, titulo: 'Edital 09/2026' },
+    ]);
+  });
+
+  test('anything but a list is an API that changed shape: it throws, naming the host', async () => {
+    answering({ data: [] });
+    await expect(fetchJsonListOnSourceHost(listing, listing, limits)).rejects.toThrow(
+      'cultura.riobranco.ac.gov.br did not answer a list',
+    );
   });
 });

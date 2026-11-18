@@ -88,8 +88,18 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < currentYear() - 1;
 
-/** A link text or file name that names such a call. */
-const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
+/**
+ * Whether a title (a heading, a call page's link text) names a past call. Numbered, by the
+ * numbered rule (last year's stay: a credenciamento 08/2025 is open to 2049). Unnumbered, it names
+ * an edition, past when every year it names is ("CICLO NATALINO 2025", Spcine's "05/2019 |
+ * EDITAL…", Rio Branco's "Fundo Municipal de Cultura 2023 - Arte"): Recife (2026-11-17) lists 196
+ * calls since 2019 and Spcine 57 since 2015, with no date on the page, each kept one a read.
+ */
+function titleNamesAPastCall(title: string) {
+  const callNumber = callNumberOf(title);
+  if (callNumber) return isNumberedBeforeLastYear(callNumber);
+  return namesOnlyYearsBefore(title, currentYear());
+}
 
 /**
  * `lpg-edital-012-2023.pdf` as `lpg edital 012/2023`, a label `callNumberOf` reads. A chain stays
@@ -184,14 +194,13 @@ function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
 
 /**
  * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`): an
- * item with no id or no text title is skipped. Anything but a list throws: a changed API.
+ * item with no id or no text title is skipped.
  */
-export function callPageLinksOfJsonListing(body: unknown, source: CallPageSource): PageLink[] {
+export function callPageLinksOfJsonListing(items: unknown[], source: CallPageSource): PageLink[] {
   const { callPagesListedAsJson } = source.discovery;
   if (!callPagesListedAsJson) return [];
-  if (!Array.isArray(body)) throw new Error('The JSON listing is not a list');
   const { callPagePath, titleField } = callPagesListedAsJson;
-  return body.flatMap((item) => {
+  return items.flatMap((item) => {
     const listed = JsonListedCallSchema.safeParse(item);
     const title: unknown = listed.success ? listed.data[titleField] : undefined;
     if (!listed.success || typeof title !== 'string') return [];
@@ -203,8 +212,8 @@ export function callPageLinksOfJsonListing(body: unknown, source: CallPageSource
 /** The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON. */
 async function linksOfCallPageListing(source: CallPageSource) {
   if (source.discovery.callPagesListedAsJson) {
-    const body = await fetchListingJson(source.listingUrl, source);
-    return { links: callPageLinksOfJsonListing(body, source), url: source.listingUrl };
+    const items = await fetchListingJson(source.listingUrl, source);
+    return { links: callPageLinksOfJsonListing(items, source), url: source.listingUrl };
   }
   const { html, url } = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
   return { links: linksOfHtml(html, url), url };
@@ -228,7 +237,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   ).filter(
     ({ url, label }) =>
       label &&
-      !namesACallBeforeLastYear(label) &&
+      !titleNamesAPastCall(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
@@ -411,18 +420,6 @@ export function callsOfDocumentsOnListing(
   });
 }
 
-/**
- * Whether a heading titles a past call. Numbered, by the numbered rule (last year's stay: a
- * credenciamento 08/2025 is open to 2049). Unnumbered, it names an edition, past when every year
- * it names is ("CICLO NATALINO 2025", Spcine's "05/2019 | EDITAL…"): Recife (2026-11-17) lists 196
- * calls since 2019 and Spcine 57 since 2015, with no date on the page, each kept one a read.
- */
-function headingNamesAPastCall(heading: string) {
-  const callNumber = callNumberOf(heading);
-  if (callNumber) return isNumberedBeforeLastYear(callNumber);
-  return namesOnlyYearsBefore(heading, currentYear());
-}
-
 /** An accordion's indicator glyph before the title ("▸ 07/2026 | …"). */
 const withoutLeadingSymbols = (heading: string) => heading.replace(/^[^\p{L}\p{N}]+/u, '');
 
@@ -437,7 +434,7 @@ export function callsOfDocumentsUnderHeadings(
   const { headingClass } = source.discovery;
   return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links, text }) => {
     const heading = withoutLeadingSymbols(rawHeading);
-    if (!heading || headingNamesAPastCall(heading)) return [];
+    if (!heading || titleNamesAPastCall(heading)) return [];
     const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
     if (!recorded) return [];
     return [

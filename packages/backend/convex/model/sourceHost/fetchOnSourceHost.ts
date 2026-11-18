@@ -139,3 +139,25 @@ async function answerFromBrazil(
   }
   return { body, contentType, finalUrl };
 }
+
+/**
+ * A JSON list from a registered source's own host (the Mapas API, a call listing published as
+ * JSON), through `fetchOnSourceHost`. Throws as it does, and when the answer is not a JSON list:
+ * an API that changed shape.
+ */
+export async function fetchJsonListOnSourceHost(
+  url: string,
+  sourceUrl: string,
+  limits: Pick<SourceHostRequest, 'timeoutMs' | 'maxBytes'>,
+  access: SourceAccess = {},
+): Promise<unknown[]> {
+  const { body } = await fetchOnSourceHost(
+    url,
+    sourceUrl,
+    { accept: 'application/json', isExpectedType: (type) => type.includes('json'), ...limits },
+    access,
+  );
+  const parsed: unknown = JSON.parse(new TextDecoder().decode(body));
+  if (!Array.isArray(parsed)) throw new Error(`${new URL(url).host} did not answer a list`);
+  return parsed;
+}
