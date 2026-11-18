@@ -317,9 +317,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     );
   const ownCallPages = callPages.filter(({ url }) => !isInsideAnotherCallPage(url));
   const calls: OfficialPageCall[] = [];
-  const startedAt = Date.now();
+  const deadline = Date.now() + callPagesBudgetMs;
   for (const [index, { url, label }] of ownCallPages.entries()) {
-    if (Date.now() - startedAt > callPagesBudgetMs) {
+    if (Date.now() > deadline) {
       console.warn('Call pages left unread for lack of time', ownCallPages.length - index);
       break;
     }
@@ -338,7 +338,6 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       }
       page = linksOfHtml(fetched.html, fetched.url);
       if (callsFiledInYearFolders) {
-        const deadline = startedAt + callPagesBudgetMs;
         page.push(...(await linksInSubfolders(fetched, page, source, { spacingMs, deadline })));
       }
       heading = headingOfHtml(fetched.html);

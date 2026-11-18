@@ -184,7 +184,6 @@ export function folderLinksOfHtml(html: string, pageUrl: string): PageLink[] {
     [...buttons].map(([, id, inner]) => {
       const url = new URL(pageUrl);
       url.search = `?folder=${id}`;
-      url.hash = '';
       return { url: url.href, label: firstTextOf(inner ?? '') };
     }),
   );
