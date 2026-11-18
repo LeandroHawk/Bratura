@@ -1251,6 +1251,26 @@ export const palmasFcpSource = {
   timeZone: ianaTimeZone.parse('America/Araguaina'),
 } satisfies Source;
 
+/**
+ * Minas Gerais' Fundação Clóvis Salgado (Palácio das Artes): one WordPress page with a heading per
+ * call ("6º Prêmio Décio Noviello…"), each file linked as "Acesse aqui o Edital", years back to
+ * 2017, and its management contract's documents below. 1 call in 2026 and 3 programming calls
+ * (Chamamento 01–03/2025) with no result posted on 2026-11-18. `robots.txt` disallows only
+ * `/wp-admin/`; its LGPD page has no clause on automated access.
+ */
+export const clovisSalgadoFoundationSource = {
+  kind: 'officialPage',
+  slug: 'fundacao-clovis-salgado-editais',
+  name: 'Fundação Clóvis Salgado — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://fcs.mg.gov.br/editais/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1337,4 +1357,5 @@ export const registeredSources: readonly Source[] = [
   caruaruOportunidadesSource,
   portoVelhoFunculturalSource,
   palmasFcpSource,
+  clovisSalgadoFoundationSource,
 ];

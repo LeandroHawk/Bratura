@@ -48,12 +48,13 @@ describe('reasonToSkipReadingDocuments', () => {
     expect(reason({ registrationCloses: closingIn(300 * day) })).toBeNull();
   });
 
-  test('a draft, test, accountability or staff election title is skipped, whatever its case and accents', () => {
+  test('a draft, test, accountability, management contract or staff election title is skipped, whatever its case and accents', () => {
     expect(reason({ title: 'TESTE EDITAL' })).toBe('notACallTitle');
     expect(reason({ title: 'Edital em construção' })).toBe('notACallTitle');
     expect(reason({ title: 'Prestação de Contas - FOMENTO ANICETO MATTI 2024' })).toBe(
       'notACallTitle',
     );
+    expect(reason({ title: 'Contrato de Gestão' })).toBe('notACallTitle');
     expect(
       reason({
         title: 'Exclusivo para Funcionários da Spcine | Edital de Eleição de Representantes',
