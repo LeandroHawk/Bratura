@@ -11,7 +11,7 @@ source's robots.txt and terms before adding or changing it.
   `packages/backend/convex/model/sources/registry.ts`, with the days its robots.txt and terms were
   read, and copied to a deployment by `sources:registerSource` (the same command changes it). A
   `Crawl-delay` there is kept between the pages the reader fetches (`crawlDelaySeconds`); Firecrawl's
-  document reads keep their own 6.5 s spacing. The
+  document reads keep their own spacing (`firecrawlRequestSpacingMs`). The
   competition excludes "coleta de dados que viole os termos do site de origem ou exponha dados
   pessoais" (5.2) and scraping that exposes personal data (6.8).
 - **Eligibility, amounts and documents live only in the call's PDF.** The Mapas API gives name,

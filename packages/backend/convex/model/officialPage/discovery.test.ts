@@ -779,8 +779,7 @@ describe('callsOfCallPages', () => {
     const site = 'https://editais.ufu.br';
     const notice = (name: string) =>
       a(`${site}/sites/editais.ufu.br/files/${name}.pdf`, `${name}.pdf`);
-    const fetchedAt: [string, number][] = [];
-    const answer = siteAnswers({
+    const fetchMock = siteAnswers({
       [ufuProexcCultureSource.listingUrl]: [
         a('/node/2', 'Apresentação'),
         a(
@@ -802,23 +801,21 @@ describe('callsOfCallPages', () => {
         notice('Resultado Final_EDITAL PROEXC 17'),
       ].join(''),
     });
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>(async (input, init) => {
-        fetchedAt.push([String(input), Date.now()]);
-        return await answer(input, init);
-      }),
-    );
 
-    const calls = await callsOf(ufuProexcCultureSource);
-    expect(calls.map(({ externalId }) => externalId)).toEqual([`${site}/node/6742`]);
-    expect(fetchedAt.map(([url]) => url)).toEqual([
+    const calls = callsOfCallPages(ufuProexcCultureSource);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the listing; its first call page waits 10 s
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.runAllTimersAsync();
+    expect((await calls).map(({ externalId }) => externalId)).toEqual([`${site}/node/6742`]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
       ufuProexcCultureSource.listingUrl,
       `${site}/node/6742`,
       `${site}/node/6741`,
     ]);
-    const times = fetchedAt.map(([, at]) => at);
-    expect(times.slice(1).map((at, index) => at - times[index]!)).toEqual([10_000, 10_000]);
   });
 
   test('a call folder whose subfolders run past the 5 min is skipped, not recorded without them (Porto Velho)', async () => {
