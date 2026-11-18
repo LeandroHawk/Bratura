@@ -30,6 +30,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     callPageIsTheNotice: z.boolean().optional(),
     /**
+     * A call page is a call only when it links a notice: folders hold courses, plans and contracts
+     * too (Palmas "Cursos de Iniciação Artística", Porto Velho "Termos de Inexigibilidade").
+     * Without it, a page with no notice is still recorded, for the admin review.
+     */
+    callPageNeedsNotice: z.boolean().optional(),
+    /**
      * The class of the element holding a call page's publication date ("17/10/2026 04:42"), where
      * the listing keeps years of news with no year in the title (Porto Alegre
      * `field--name-field-noticia-data-no-calendario`): a page published over a year ago is skipped.

@@ -1204,9 +1204,34 @@ export const portoVelhoFunculturalSource = {
   robotsCheckedOn: '2026-11-18',
   termsCheckedOn: '2026-11-18',
   listingUrl: 'https://funcultural.portovelho.ro.gov.br/arquivos?folder=33997',
-  discovery: { hops: 'callPage', callPageUrlParts: ['?folder='], callsFiledInYearFolders: true },
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['?folder='],
+    callsFiledInYearFolders: true,
+    callPageNeedsNotice: true,
+  },
   documentUrlParts: ['/uploads/arquivos/'],
   timeZone: ianaTimeZone.parse('America/Porto_Velho'),
+} satisfies Source;
+
+/**
+ * Palmas' culture foundation (FCP, TO) on the city's portal: one folder per call or subject
+ * (`?arquivo_pasta=<uuid>`, real links), each file linked by an eye icon named only by its
+ * `aria-label` ("Visualizar PDF Edital … Nº 05/2026/FCP"). Courses, the city's plan and its history
+ * sit in folders too, with no notice. The 10th Salão (05/2026) closed 24/09/2026. `robots.txt`
+ * answers 404; `/core/lgpd/` has no clause on automated access.
+ */
+export const palmasFcpSource = {
+  kind: 'officialPage',
+  slug: 'palmas-fcp-arquivos',
+  name: 'Palmas — Fundação Cultural, arquivos',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.palmas.to.gov.br/core/orgao/fundacao-cultural/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['arquivo_pasta='], callPageNeedsNotice: true },
+  documentUrlParts: ['/media/arquivo/'],
+  timeZone: ianaTimeZone.parse('America/Araguaina'),
 } satisfies Source;
 
 /** What `registerSource` can register, by slug. */
@@ -1293,4 +1318,5 @@ export const registeredSources: readonly Source[] = [
   rioBrancoCulturaSource,
   caruaruOportunidadesSource,
   portoVelhoFunculturalSource,
+  palmasFcpSource,
 ];

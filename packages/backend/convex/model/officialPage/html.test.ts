@@ -44,6 +44,19 @@ describe('linksOfHtml', () => {
       { url: 'https://www.ba.gov.br/download?a=1&b=2', label: 'Seleção PÚBLICA Nº 03' },
     ]);
   });
+
+  test("an icon link is named by its aria-label (Palmas), never by its title tooltip (Salvador's share icon)", () => {
+    const html = [
+      '<a class="orgao-arquivo-visualizar" href="/e.pdf" title="Visualizar PDF Edital 05/2026"',
+      ' aria-label="Visualizar PDF Edital  05/2026"><i class="bi bi-eye"></i></a>',
+      '<a class="link-compartilhar" title="Copiar link!" href="/edital-x/"><i></i></a>',
+      '<a href="/edital-x/">Edital X</a>',
+    ].join('');
+    expect(linksOfHtml(html, page)).toEqual([
+      { url: 'https://www.ba.gov.br/e.pdf', label: 'Visualizar PDF Edital 05/2026' },
+      { url: 'https://www.ba.gov.br/edital-x/', label: 'Edital X' },
+    ]);
+  });
 });
 
 describe('linksOfHtml: a link that names only an action (Estância)', () => {

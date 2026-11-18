@@ -8,6 +8,7 @@ import {
   funarteCallsSource,
   maranhaoSecmaSource,
   jundiaiCultureSource,
+  palmasFcpSource,
   paranaSeecSource,
   portoAlegreCultureSource,
   portoVelhoFunculturalSource,
@@ -576,6 +577,36 @@ describe('callsOfCallPages', () => {
       rioBrancoCulturaSource.listingUrl,
       `${site}/site/edital-documento/43`,
       `${site}/site/edital-documento/42`,
+    ]);
+  });
+
+  test('folders that need a notice (Palmas): a folder of courses is no call; an icon link named by its aria-label is the notice', async () => {
+    const site = 'https://www.palmas.to.gov.br';
+    const page = `${site}/core/orgao/fundacao-cultural/`;
+    const icon = (file: string, name: string) =>
+      `<a class="orgao-arquivo-visualizar" href="/media/arquivo/pagina_arquivo/${file}" aria-label="Visualizar PDF ${name}"><i class="bi bi-eye"></i></a>`;
+    siteAnswers({
+      [palmasFcpSource.listingUrl]: [
+        a('?arquivo_pasta=8ea2#arquivos-documentos', 'EDITAL Nº 05/2026/FCP - 10º SALÃO PALMENSE'),
+        a('?arquivo_pasta=84b4#arquivos-documentos', 'Cursos de Iniciação Artística - 2026'),
+      ].join(''),
+      [`${page}?arquivo_pasta=8ea2`]: icon('edital_10_SALAO.pdf', 'Edital Nº 05/2026/FCP'),
+      [`${page}?arquivo_pasta=84b4`]: icon('Grade_de_Cursos.pdf', 'Grade de Cursos 2026'),
+    });
+
+    expect(await callsOf(palmasFcpSource)).toEqual([
+      {
+        externalId: `${page}?arquivo_pasta=8ea2`,
+        title: 'EDITAL Nº 05/2026/FCP - 10º SALÃO PALMENSE',
+        officialUrl: `${page}?arquivo_pasta=8ea2`,
+        documents: [
+          {
+            url: `${site}/media/arquivo/pagina_arquivo/edital_10_SALAO.pdf`,
+            label: 'Visualizar PDF Edital Nº 05/2026/FCP',
+          },
+        ],
+        registrationCloses: null,
+      },
     ]);
   });
 
