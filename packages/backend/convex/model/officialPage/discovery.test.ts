@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   badescCultureSource,
-  palmasFcpSource,
   bahiaFuncebSource,
   tocantinsPnabPlatformSource,
   chamberOfDeputiesCultureSource,
@@ -9,6 +8,7 @@ import {
   funarteCallsSource,
   maranhaoSecmaSource,
   jundiaiCultureSource,
+  palmasFcpSource,
   paranaSeecSource,
   portoAlegreCultureSource,
   portoVelhoFunculturalSource,

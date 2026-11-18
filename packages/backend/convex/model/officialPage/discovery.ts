@@ -282,7 +282,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
-  // Where the page is the notice, a page with none is no call either ("MATERIAIS EDUCATIVOS").
+  // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
+  // source says so (`callPageNeedsNotice`: folders of courses and plans).
   const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
   const { callPagePublishedAtClass, callsFiledInYearFolders } = source.discovery;
   const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
