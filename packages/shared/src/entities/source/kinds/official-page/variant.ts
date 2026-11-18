@@ -104,9 +104,9 @@ export const OfficialPageSourceSchema = z.object({
   listingUrl: requiredHttpsUrl,
   discovery: OfficialPageDiscoverySchema,
   /**
-   * What a call's title contains (a call page's link text, a listed notice's, a heading), compared
-   * without accents or case; other calls are skipped. UFU lists 6 of 7 items for its own students
-   * beside "Processo Seletivo de Profissionais"; Sesc RR, food vendors beside its artists.
+   * What a call's title contains (a call page's link text, a listed notice's), compared without
+   * accents or case; other calls are skipped (headings: no source needs it yet). UFU lists 6 of 7
+   * items for its students beside "Processo Seletivo de Profissionais"; Sesc RR, food vendors.
    */
   callTitleParts: textParts.optional(),
   /** What a document link contains; a link with none of them is not a document. */
