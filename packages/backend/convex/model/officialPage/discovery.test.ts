@@ -540,6 +540,13 @@ describe('callsOfDocumentsOnListing', () => {
     expect(
       callsOfDocumentsOnListing(funesc, { html: listing, url: funesc.listingUrl })[0]?.documents,
     ).toEqual([{ url: file, label: 'Edital 012/2026 - Panapaná 2026' }]);
+    const site = a('https://funesc.pb.gov.br/view', 'Edital 012/2026 - Panapaná 2026');
+    expect(
+      callsOfDocumentsOnListing(
+        { ...funesc, documentUrlParts: ['funesc.pb.gov.br'] },
+        { html: site, url: funesc.listingUrl },
+      )[0]?.documents,
+    ).toEqual([{ url: 'https://funesc.pb.gov.br/view', label: 'Edital 012/2026 - Panapaná 2026' }]);
   });
 });
 

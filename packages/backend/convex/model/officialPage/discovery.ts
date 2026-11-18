@@ -47,8 +47,10 @@ const hasPublishedResult = (documents: PageLink[]) =>
  * the file itself answers at the same URL without `/view`.
  */
 const withoutFileViewPage = (link: PageLink): PageLink => {
-  const file = /^(.+\.[a-z0-9]+)\/view$/i.exec(link.url)?.[1];
-  return file ? { ...link, url: file } : link;
+  const url = new URL(link.url);
+  if (url.search || !/\/[^/]+\.[a-z0-9]+\/view$/i.test(url.pathname)) return link;
+  url.pathname = url.pathname.slice(0, -'/view'.length);
+  return { ...link, url: url.href };
 };
 
 function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
