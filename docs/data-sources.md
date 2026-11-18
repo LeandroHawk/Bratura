@@ -99,6 +99,7 @@ ingestion recorded 0 and they wait for PNAB Ciclo 3):
 | Mapa Cultura Goiás (14 municipalities, privately run, operator not named; added 2026-11-17) | `mapa.culturagoias.com.br` | 1 open (Professor Jamil, Chamamento 06/2026, to 19/11) | `Etc/GMT+3` |
 | Lagoa Santa-MG (added 2026-11-17) | `mapacultural.lagoasanta.mg.gov.br` | 7 (PNAB Ciclo 3 in public consultation to 14/12) | `Etc/GMT+3` |
 | São Bernardo do Campo-SP (added 2026-11-17, through Firecrawl from Brazil) | `mapacultural.saobernardo.sp.gov.br` | 42 (CeMAM choirs' meeting open to 22/11) | `Etc/GMT+3` |
+| Londrina-PR, "Londrina Cultura" (added 2026-11-18, through Firecrawl from Brazil: no GoGetSSL RSA DV CA intermediate sent) | `londrinacultura.londrina.pr.gov.br` | 27 (2 open: PNAB 003/2026 alternates' documents to 23/11, PROMIC selection committees to 30/11); the PROMIC page `portal.londrina.pr.gov.br/incentivo-cultura/promic/editais` lists the same calls behind "clique aqui" links | `Etc/GMT+3` |
 | Maringá-PR (added 2026-11-17, through Firecrawl from Brazil) | `maringacultura.maringa.pr.gov.br` | 21 (4 open: Ocupação dos Espaços Culturais 2027, Bolsas Cultura Viva, CEU das Artes, Pontão de Cultura; its notices are named by SEI number, `sei-…-edital-…pdf`) | `Etc/GMT+3` |
 | Santa Luzia-MG (added 2026-11-18) | `mapacultural.santaluzia.mg.gov.br` | 48 (none open; about half are council meetings, elections and appeal steps, skipped by title) | `America/Sao_Paulo` |
 
