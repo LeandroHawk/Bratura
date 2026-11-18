@@ -46,7 +46,11 @@ From Telegram's Bot API (`core.telegram.org/bots/api`), checked 2026-11-17:
   receives messages — how `/start` deep links (`t.me/<bot>?start=<userId>`) will bind a chat to a
   user, and how `/parar` will arrive. Not built yet; `getUpdates` polling stays a fallback.
 
-**Still to verify with a real call** (token not issued yet): the exact non-2xx body shape on a
-blocked bot. When the team runs `telegram:checkTelegramCredentials` and a real
-`sendPendingDeliveries`, record the date, request shape and answer shape here — no token, no real
-chat id.
+**Checked with real calls, 2026-11-17** (dev deployment; no token, no real chat id recorded):
+
+- `POST /bot<token>/getMe` → `{ "ok": true, "result": { "id": <bot id>, "username": "<bot>" } }`.
+- `POST /bot<token>/sendMessage` with `{ "chat_id": "<id>", "text": "<pt-BR>" }` →
+  `{ "ok": true, "result": { "message_id": 2, … } }`; the delivery stored `providerMessageId: "2"`
+  and `status: "sent"`, and the message reached the test chat.
+- Not yet seen live: the non-2xx shape on a blocked bot (`403`, `{ ok: false, error_code,
+  description }` per the docs) — treated as a final refusal until proven otherwise.
