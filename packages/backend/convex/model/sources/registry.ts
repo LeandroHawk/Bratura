@@ -1329,6 +1329,29 @@ export const araxaCalmonBarretoSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * IPHAN's open calls on gov.br (Volto): the listing and each call's links live only in the page's
+ * embedded state (`window.__data`), never as `<a>` in its HTML, and the site's API answers no JSON
+ * (`@querystring-search` 404, `++api++` HTML). Off (measured 2026-11-18): needs that state read on
+ * both hops and a title filter (consultant hires `Projeto 914BRZ…`, RFIs, opinions). Its creator
+ * prizes (Mário de Andrade, Sílvio Romero 2026) closed 04/08/2026; the next ones come in July.
+ */
+export const iphanOpenCallsSource = {
+  kind: 'officialPage',
+  slug: 'iphan-editais-abertos',
+  name: 'IPHAN — editais e seleções abertos',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.gov.br/iphan/pt-br/acesso-a-informacao/editais-e-selecoes/abertos',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/iphan/pt-br/acesso-a-informacao/editais-e-selecoes/abertos/'],
+  },
+  documentUrlParts: ['.pdf', '.docx'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1419,4 +1442,5 @@ export const registeredSources: readonly Source[] = [
   matoGrossoDoSulFcmsSource,
   erechimPnabSource,
   araxaCalmonBarretoSource,
+  iphanOpenCallsSource,
 ];
