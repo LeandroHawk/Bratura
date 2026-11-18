@@ -5,7 +5,7 @@ import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
-import { fetchPageHtml, type FetchedPage } from './client';
+import { fetchListingJson, fetchPageHtml, type FetchedPage } from './client';
 import {
   headingOfHtml,
   linksOfHtml,
@@ -16,11 +16,13 @@ import {
   titleOfHtml,
   type PageLink,
 } from './html';
-import type { OfficialPageCall } from './payload';
+import { JsonListedCallSchema, type OfficialPageCall } from './payload';
 import { registrationClosePrintedIn } from './registrationClose';
 
 /** An official page whose listing links one page per call. */
 type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
+
+type CallPagesListedAsJson = NonNullable<CallPageSource['discovery']['callPagesListedAsJson']>;
 
 /** An official page whose listing links each call's documents under a heading naming it. */
 type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderHeadings' } };
@@ -88,8 +90,18 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < currentYear() - 1;
 
-/** A link text or file name that names such a call. */
-const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
+/**
+ * Whether a title (a heading, a call page's link text) names a past call. Numbered, by the
+ * numbered rule (last year's stay: a credenciamento 08/2025 is open to 2049). Unnumbered, it names
+ * an edition, past when every year it names is ("CICLO NATALINO 2025", Spcine's "05/2019 |
+ * EDITAL…", Rio Branco's "Fundo Municipal de Cultura 2023 - Arte"): Recife (2026-11-17) lists 196
+ * calls since 2019 and Spcine 57 since 2015, with no date on the page, each kept one a read.
+ */
+function titleNamesAPastCall(title: string) {
+  const callNumber = callNumberOf(title);
+  if (callNumber) return isNumberedBeforeLastYear(callNumber);
+  return namesOnlyYearsBefore(title, currentYear());
+}
 
 /**
  * `lpg-edital-012-2023.pdf` as `lpg edital 012/2023`, a label `callNumberOf` reads. A chain stays
@@ -182,18 +194,43 @@ function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
   return isOnSourceHost(url.href, sourceUrl) ? { ...link, url: url.href } : link;
 }
 
+/**
+ * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`), each
+ * title spaced as a link text is: an item with no id or no text title is skipped.
+ */
+function callPageLinksOfJsonListing(
+  items: unknown[],
+  { callPagePath, titleField }: CallPagesListedAsJson,
+  listingUrl: string,
+): PageLink[] {
+  return items.flatMap((item) => {
+    const listed = JsonListedCallSchema.safeParse(item);
+    const title: unknown = listed.success ? listed.data[titleField] : undefined;
+    if (!listed.success || typeof title !== 'string') return [];
+    const path = callPagePath.replace('{id}', encodeURIComponent(String(listed.data.id)));
+    return [{ url: new URL(path, listingUrl).href, label: title.replace(/\s+/g, ' ').trim() }];
+  });
+}
+
+/** The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON. */
+async function linksOfCallPageListing(source: CallPageSource) {
+  const { callPagesListedAsJson } = source.discovery;
+  if (callPagesListedAsJson) {
+    const items = await fetchListingJson(source.listingUrl, source);
+    const links = callPageLinksOfJsonListing(items, callPagesListedAsJson, source.listingUrl);
+    return { links, url: source.listingUrl };
+  }
+  const { html, url } = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
+  return { links: linksOfHtml(html, url), url };
+}
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
   const { callPagePublishedAtClass } = source.discovery;
-  const { html, url: listingUrl } = await fetchPageHtml(
-    source.listingUrl,
-    source.listingUrl,
-    source,
-  );
-  const listing = linksOfHtml(html, listingUrl);
+  const { links: listing, url: listingUrl } = await linksOfCallPageListing(source);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
    * (Funarte, 2026-11-15: every page links an internal "Edital No. 409/2025"). Compared as printed:
@@ -205,7 +242,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   ).filter(
     ({ url, label }) =>
       label &&
-      !namesACallBeforeLastYear(label) &&
+      !titleNamesAPastCall(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
@@ -388,18 +425,6 @@ export function callsOfDocumentsOnListing(
   });
 }
 
-/**
- * Whether a heading titles a past call. Numbered, by the numbered rule (last year's stay: a
- * credenciamento 08/2025 is open to 2049). Unnumbered, it names an edition, past when every year
- * it names is ("CICLO NATALINO 2025", Spcine's "05/2019 | EDITAL…"): Recife (2026-11-17) lists 196
- * calls since 2019 and Spcine 57 since 2015, with no date on the page, each kept one a read.
- */
-function headingNamesAPastCall(heading: string) {
-  const callNumber = callNumberOf(heading);
-  if (callNumber) return isNumberedBeforeLastYear(callNumber);
-  return namesOnlyYearsBefore(heading, currentYear());
-}
-
 /** An accordion's indicator glyph before the title ("▸ 07/2026 | …"). */
 const withoutLeadingSymbols = (heading: string) => heading.replace(/^[^\p{L}\p{N}]+/u, '');
 
@@ -414,7 +439,7 @@ export function callsOfDocumentsUnderHeadings(
   const { headingClass } = source.discovery;
   return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links, text }) => {
     const heading = withoutLeadingSymbols(rawHeading);
-    if (!heading || headingNamesAPastCall(heading)) return [];
+    if (!heading || titleNamesAPastCall(heading)) return [];
     const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
     if (!recorded) return [];
     return [

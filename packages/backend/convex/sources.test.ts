@@ -7,6 +7,7 @@ import {
   federalMapasSource,
   pernambucoMapasSource,
   registeredSources,
+  rioBrancoCulturaSource,
 } from './model/sources/registry';
 import schema from './schema';
 import { modules } from './test.setup';
@@ -30,6 +31,19 @@ describe('registeredSources', () => {
   test('no two sources share a slug', () => {
     const slugs = registeredSources.map((source) => source.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  test("a JSON listing's call page path stays on the listing's host", () => {
+    const withPath = (callPagePath: string) => ({
+      ...rioBrancoCulturaSource,
+      discovery: {
+        ...rioBrancoCulturaSource.discovery,
+        callPagesListedAsJson: { callPagePath, titleField: 'titulo' },
+      },
+    });
+    expect(SourceSchema.safeParse(withPath('/site/edital-documento/{id}')).success).toBe(true);
+    expect(SourceSchema.safeParse(withPath('//other.host/{id}')).success).toBe(false);
+    expect(SourceSchema.safeParse(withPath('/site/edital-documento/')).success).toBe(false);
   });
 });
 

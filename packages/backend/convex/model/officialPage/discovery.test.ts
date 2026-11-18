@@ -11,6 +11,7 @@ import {
   paranaSeecSource,
   portoAlegreCultureSource,
   recifeCultureSource,
+  rioBrancoCulturaSource,
   salvadorFgmSource,
   sesiSpCultureSource,
 } from '../sources/registry';
@@ -508,6 +509,73 @@ describe('callsOfCallPages', () => {
     };
     const [call] = await callsOf(frameAsDocument);
     expect(call?.documents.map(({ url }) => url)).toEqual([media]);
+  });
+
+  test('a JSON listing (Rio Branco): each item a call page by its id, titled by its field; a past edition not opened; the close the page prints', async () => {
+    const site = 'https://cultura.riobranco.ac.gov.br';
+    const listing = [
+      { id: 43, titulo: ' Edital 10/2026 -  Pequenos Apoios - Música ', status_edital: '1' },
+      { id: 42, titulo: 'Edital 09/2026 - Patrimônio Cultural' },
+      { id: 6, titulo: 'Fundo Municipal de Cultura 2023 - Povos Originários' },
+      { id: 7, titulo: null },
+      { id: '', titulo: 'Id vazio' },
+      { titulo: 'Sem id' },
+    ];
+    const html = (body: string) =>
+      new Response(body, { headers: { 'content-type': 'text/html; charset=UTF-8' } });
+    const answers: Record<string, () => Response> = {
+      [rioBrancoCulturaSource.listingUrl]: () => Response.json(listing),
+      [`${site}/site/edital-documento/43`]: () =>
+        html(
+          [
+            '<p>Data de Início das Inscrições: 01/12/2026 Data de Término das Inscrições: 20/12/2026</p>',
+            a(
+              `${site}/site/edital-documento/download/800`,
+              'Edital 10/2026 - Pequenos Apoios - Música',
+            ),
+            a(`${site}/site/edital-documento/download/801`, 'Anexo nº 05 - Planilha de Categorias'),
+          ].join(''),
+        ),
+      [`${site}/site/edital-documento/42`]: () =>
+        html(
+          [
+            a(`${site}/site/edital-documento/download/703`, 'Edital 09/2026 - Patrimônio Cultural'),
+            a(`${site}/site/edital-documento/download/740`, 'RESULTADO FINAL - EDITAL 09/2026'),
+          ].join(''),
+        ),
+    };
+    const fetchMock = vi.fn<typeof fetch>(
+      async (input) => answers[String(input)]?.() ?? new Response('', { status: 404 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await callsOf(rioBrancoCulturaSource)).toEqual([
+      {
+        externalId: `${site}/site/edital-documento/43`,
+        title: 'Edital 10/2026 - Pequenos Apoios - Música',
+        officialUrl: `${site}/site/edital-documento/43`,
+        documents: [
+          {
+            url: `${site}/site/edital-documento/download/800`,
+            label: 'Edital 10/2026 - Pequenos Apoios - Música',
+          },
+          {
+            url: `${site}/site/edital-documento/download/801`,
+            label: 'Anexo nº 05 - Planilha de Categorias',
+          },
+        ],
+        registrationCloses: {
+          at: Date.UTC(2026, 11, 21, 4, 59, 59),
+          timeZone: rioBrancoCulturaSource.timeZone,
+          precision: 'day',
+        },
+      },
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      rioBrancoCulturaSource.listingUrl,
+      `${site}/site/edital-documento/43`,
+      `${site}/site/edital-documento/42`,
+    ]);
   });
 });
 

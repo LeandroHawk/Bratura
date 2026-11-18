@@ -36,8 +36,10 @@ The team's draft of this flow also stored an embedding per call; matching is rul
 1. **PDF → Markdown.** `/scrape` detects a PDF by its URL and returns clean Markdown. The main use.
 2. **Not for finding calls on official pages.** Their listings are server-rendered HTML (5 of 5
    measured on 2026-11-15: PR, BA, Rio, MG, MA), so a plain fetch finds the call pages and document
-   links for free (`officialPage` source: `discovery`, `documentUrlParts`). `/map` (1 credit per
-   call) stays the option for a site that renders its list with JavaScript. For one section,
+   links for free (`officialPage` source: `discovery`, `documentUrlParts`). A site that renders its
+   list with JavaScript usually fills it from a JSON request, read for free too
+   (`callPagesListedAsJson`, Rio Branco 2026-11-18); `/map` (1 credit per call) stays the option
+   when there is none. For one section,
    `/crawl` with `includePaths` and `limit`.
 3. **New calls and amendments.** `changeTracking` (`git-diff` mode) says what changed since the last
    scrape: an unchanged page spends no Gemini call; an amended deadline triggers a new extraction and

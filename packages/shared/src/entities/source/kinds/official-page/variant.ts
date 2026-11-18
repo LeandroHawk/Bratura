@@ -13,10 +13,11 @@ const urlParts = z.array(requiredString('short')).min(1).max(20);
 const cssClassName = requiredString('short').regex(/^[A-Za-z_][\w-]*$/);
 
 /**
- * How the site reaches a call's documents. `callPage` (PR, BA, Rio): listing → one page per call →
- * its documents. `documentsOnListing` (MG, MA): the listing links every version and annex itself,
- * and only the link text says which call each belongs to. `documentsUnderHeadings` (Jundiaí,
- * Jaboatão): the listing links them under one heading per call, which names the call.
+ * How the site reaches a call's documents. `callPage` (PR, BA, Rio; Rio Branco from a JSON
+ * listing): listing → one page per call → its documents. `documentsOnListing` (MG, MA): the
+ * listing links every version and annex itself, and only the link text says which call each
+ * belongs to. `documentsUnderHeadings` (Jundiaí, Jaboatão): the listing links them under one
+ * heading per call, which names the call.
  */
 export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
   z.object({
@@ -34,6 +35,18 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      * `field--name-field-noticia-data-no-calendario`): a page published over a year ago is skipped.
      */
     callPagePublishedAtClass: cssClassName.optional(),
+    /**
+     * The listing is a JSON list of calls, not links (Rio Branco: an Alpine template filled from
+     * `/admin/editais/edital-listar-json`). Each item's call page is `callPagePath` on the
+     * listing's host (a path, never `//host`) with `{id}` replaced by the item's `id`, its link
+     * text the item's `titleField`.
+     */
+    callPagesListedAsJson: z
+      .object({
+        callPagePath: requiredString('short').regex(/^\/(?!\/)\S*\{id\}\S*$/),
+        titleField: requiredString('short'),
+      })
+      .optional(),
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
   z.object({
@@ -48,7 +61,8 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
 
 /**
  * A government or agency site with no API (Bahia's FUNCEB, Rio's culture office): its listing
- * page is fetched as plain HTML, and Firecrawl reads only the documents.
+ * page is fetched as plain HTML (or the JSON a page fills itself from, `callPagesListedAsJson`),
+ * and Firecrawl reads only the documents.
  */
 export const OfficialPageSourceSchema = z.object({
   kind: z.literal('officialPage'),

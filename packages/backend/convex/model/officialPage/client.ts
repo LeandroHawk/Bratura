@@ -1,5 +1,5 @@
 import type { SourceAccess } from '@bratura/shared/entities/source/fragments/access/fields';
-import { fetchOnSourceHost } from '../sourceHost/fetchOnSourceHost';
+import { fetchJsonListOnSourceHost, fetchOnSourceHost } from '../sourceHost/fetchOnSourceHost';
 
 /** A government page slower than this is down for today's run (Minas Gerais took 10 s). */
 const pageTimeoutMs = 30_000;
@@ -40,3 +40,12 @@ export async function fetchPageHtml(
   );
   return { html: decoderFor(contentType).decode(body), url: finalUrl };
 }
+
+/** A call listing published as JSON (`callPagesListedAsJson`), with a page's limits. */
+export const fetchListingJson = (listingUrl: string, access: SourceAccess = {}) =>
+  fetchJsonListOnSourceHost(
+    listingUrl,
+    listingUrl,
+    { timeoutMs: pageTimeoutMs, maxBytes: pageMaxBytes },
+    access,
+  );
