@@ -1051,6 +1051,23 @@ export const saoBernardoMapasSource = {
 } satisfies Source;
 
 /**
+ * Londrina's Mapas ("Londrina Cultura"; PROMIC, FSA local, PNAB Ciclo 2): 27 calls closing in 2026,
+ * 2 open on 2026-11-18. Its server sends no GoGetSSL RSA DV CA intermediate, so Convex cannot
+ * verify it; Firecrawl from Brazil reads it, as São Bernardo. The city's PROMIC page lists the same
+ * calls behind "clique aqui" links. `robots.txt` names only Amazonbot and AhrefsBot; no terms.
+ */
+export const londrinaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-londrina',
+  name: 'Mapas Culturais — Londrina',
+  isActive: true,
+  answersOnlyFromBrazil: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  baseUrl: 'https://londrinacultura.londrina.pr.gov.br',
+} satisfies Source;
+
+/**
  * The PNAB platform several states run (one build; vendor not named): its listing of open calls
  * only, each a page at a root slug ("Acessar") titled by its `<h1>`, files at `/lerarquivo/…`.
  * Measured 2026-11-17: 0 open on all six (~44 calls in 2026), the next wave is PNAB Ciclo 3.
@@ -1307,6 +1324,7 @@ export const registeredSources: readonly Source[] = [
   itajaiFciSource,
   lagoaSantaMapasSource,
   saoBernardoMapasSource,
+  londrinaMapasSource,
   bahiaPnabPlatformSource,
   piauiPnabPlatformSource,
   amazonasPnabPlatformSource,
