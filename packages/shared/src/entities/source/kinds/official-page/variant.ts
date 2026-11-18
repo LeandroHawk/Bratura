@@ -34,6 +34,18 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      * `field--name-field-noticia-data-no-calendario`): a page published over a year ago is skipped.
      */
     callPagePublishedAtClass: cssClassName.optional(),
+    /**
+     * The listing is a JSON list of calls, not links (Rio Branco: an Alpine template filled from
+     * `/admin/editais/edital-listar-json`). Each item's call page is `callPagePath` on the
+     * listing's host (a path, never `//host`) with `{id}` replaced by the item's `id`, its link
+     * text the item's `titleField`.
+     */
+    callPagesListedAsJson: z
+      .object({
+        callPagePath: requiredString('short').regex(/^\/(?!\/)\S*\{id\}\S*$/),
+        titleField: requiredString('short'),
+      })
+      .optional(),
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
   z.object({

@@ -1148,6 +1148,48 @@ export const santaLuziaMapasSource = {
   baseUrl: 'https://mapacultural.santaluzia.mg.gov.br',
 } satisfies Source;
 
+/**
+ * Rio Branco's culture portal (Fundação Garibaldi Brasil, Fundo Municipal, PNAB): the listing page
+ * is an Alpine template filled from a JSON list of the calls (40, back to 2020); each call's page
+ * is server-rendered with its labelled files (extensionless downloads) and prints "Data de Término
+ * das Inscrições". 9 calls in 2026, none open on 2026-11-18.
+ */
+export const rioBrancoCulturaSource = {
+  kind: 'officialPage',
+  slug: 'rio-branco-cultura-editais',
+  name: 'Rio Branco — Fundação Garibaldi Brasil, editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://cultura.riobranco.ac.gov.br/admin/editais/edital-listar-json',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/site/edital-documento/'],
+    callPagesListedAsJson: { callPagePath: '/site/edital-documento/{id}', titleField: 'titulo' },
+  },
+  documentUrlParts: ['/site/edital-documento/download/'],
+  timeZone: ianaTimeZone.parse('America/Rio_Branco'),
+} satisfies Source;
+
+/**
+ * Caruaru's culture portal (PE; a Laravel + Inertia app, not Mapas): `/oportunidades` carries its
+ * items as JSON in the page's `data-page`, one item per file (22: notices and each annex apart),
+ * with nothing tying a file to its call. Off (measured 2026-11-18): no reader groups loose files
+ * into calls, and none was open (Rock Azulado 2026 closed in April).
+ */
+export const caruaruOportunidadesSource = {
+  kind: 'officialPage',
+  slug: 'caruaru-oportunidades',
+  name: 'Caruaru — oportunidades',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://mapacultural.caruaru.pe.gov.br/oportunidades',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['editais_oportunidades/'],
+  timeZone: ianaTimeZone.parse('America/Recife'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1229,4 +1271,6 @@ export const registeredSources: readonly Source[] = [
   macapaPnabPlatformSource,
   maringaMapasSource,
   santaLuziaMapasSource,
+  rioBrancoCulturaSource,
+  caruaruOportunidadesSource,
 ];

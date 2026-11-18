@@ -40,3 +40,25 @@ export async function fetchPageHtml(
   );
   return { html: decoderFor(contentType).decode(body), url: finalUrl };
 }
+
+/**
+ * A listing that is JSON (`callPagesListedAsJson`), parsed, on the host of `listingUrl` only.
+ * Throws as `fetchPageHtml` does, and when the answer is not JSON.
+ */
+export async function fetchListingJson(
+  listingUrl: string,
+  access: SourceAccess = {},
+): Promise<unknown> {
+  const { body } = await fetchOnSourceHost(
+    listingUrl,
+    listingUrl,
+    {
+      accept: 'application/json',
+      isExpectedType: (type) => type.includes('json'),
+      timeoutMs: pageTimeoutMs,
+      maxBytes: pageMaxBytes,
+    },
+    access,
+  );
+  return JSON.parse(new TextDecoder().decode(body));
+}

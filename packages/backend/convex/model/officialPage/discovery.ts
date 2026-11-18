@@ -5,7 +5,7 @@ import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
-import { fetchPageHtml, type FetchedPage } from './client';
+import { fetchListingJson, fetchPageHtml, type FetchedPage } from './client';
 import {
   headingOfHtml,
   linksOfHtml,
@@ -16,7 +16,7 @@ import {
   titleOfHtml,
   type PageLink,
 } from './html';
-import type { OfficialPageCall } from './payload';
+import { JsonListedCallSchema, type OfficialPageCall } from './payload';
 import { registrationClosePrintedIn } from './registrationClose';
 
 /** An official page whose listing links one page per call. */
@@ -182,18 +182,41 @@ function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
   return isOnSourceHost(url.href, sourceUrl) ? { ...link, url: url.href } : link;
 }
 
+/**
+ * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`): an
+ * item with no id or no text title is skipped. Anything but a list throws: a changed API.
+ */
+export function callPageLinksOfJsonListing(body: unknown, source: CallPageSource): PageLink[] {
+  const { callPagesListedAsJson } = source.discovery;
+  if (!callPagesListedAsJson) return [];
+  if (!Array.isArray(body)) throw new Error('The JSON listing is not a list');
+  const { callPagePath, titleField } = callPagesListedAsJson;
+  return body.flatMap((item) => {
+    const listed = JsonListedCallSchema.safeParse(item);
+    const title: unknown = listed.success ? listed.data[titleField] : undefined;
+    if (!listed.success || typeof title !== 'string') return [];
+    const path = callPagePath.replace('{id}', encodeURIComponent(String(listed.data.id)));
+    return [{ url: new URL(path, source.listingUrl).href, label: title }];
+  });
+}
+
+/** The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON. */
+async function linksOfCallPageListing(source: CallPageSource) {
+  if (source.discovery.callPagesListedAsJson) {
+    const body = await fetchListingJson(source.listingUrl, source);
+    return { links: callPageLinksOfJsonListing(body, source), url: source.listingUrl };
+  }
+  const { html, url } = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
+  return { links: linksOfHtml(html, url), url };
+}
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
   const { callPagePublishedAtClass } = source.discovery;
-  const { html, url: listingUrl } = await fetchPageHtml(
-    source.listingUrl,
-    source.listingUrl,
-    source,
-  );
-  const listing = linksOfHtml(html, listingUrl);
+  const { links: listing, url: listingUrl } = await linksOfCallPageListing(source);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
    * (Funarte, 2026-11-15: every page links an internal "Edital No. 409/2025"). Compared as printed:
