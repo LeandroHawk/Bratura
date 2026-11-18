@@ -282,6 +282,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
   const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
+  // Where the page is the notice, a page with none is no call either ("MATERIAIS EDUCATIVOS").
+  const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
   const { callPagePublishedAtClass, callsFiledInYearFolders } = source.discovery;
   const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
   /**
@@ -355,9 +357,6 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       ? withPageAsNotice(linked, { url, label: pageTitle })
       : linked;
     const kept = callDocumentsWorthRecording(documents);
-    // Where the page is the notice, a page with none is no call ("MATERIAIS EDUCATIVOS"); nor is
-    // a folder, which only its files name (Porto Velho's "Termos de Inexigibilidade").
-    const needsNotice = pageIsTheNotice || callsFiledInYearFolders === true;
     if (!kept || (needsNotice && !kept.some(isNotice))) continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),

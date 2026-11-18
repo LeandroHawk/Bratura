@@ -67,6 +67,16 @@ const withoutCode = (html: string) =>
  */
 const namesOnlyAnAction = (label: string) => /^(baixar|visualizar)$/.test(plainText(label));
 
+/**
+ * A link's name when it shows no text, only an icon: its `aria-label` (Palmas, 2026-11-18:
+ * "Visualizar PDF Edital … Nº 05/2026/FCP" on an eye icon). Not `title`, a tooltip that can name an
+ * action: Salvador's share icon, "Copiar link!", precedes each call's link on its listing.
+ */
+function ariaLabelOf(openingTag: string) {
+  const value = /(?<![\w-])aria-label\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(openingTag);
+  return plainLabel(value?.[1] ?? value?.[2] ?? '');
+}
+
 /** The first text in `html`: "<p><strong>Edital 022</strong></p>" → "Edital 022". */
 const firstTextOf = (html: string) =>
   html
@@ -140,7 +150,7 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
       continue;
     }
     previousEnd = match.index + tag.length;
-    let label = plainLabel(inner ?? '');
+    let label = plainLabel(inner ?? '') || ariaLabelOf(tag.slice(0, tag.indexOf('>') + 1));
     if (namesOnlyAnAction(label)) label = firstTextOf(textBefore) || previousLinkLabel || label;
     previousLinkLabel = label;
     let url: URL;
