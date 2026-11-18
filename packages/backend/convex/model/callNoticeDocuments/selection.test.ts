@@ -75,6 +75,19 @@ describe('reasonToSkipReadingDocuments', () => {
     }
   });
 
+  test("a cooperation project's consultant hire or a market survey is skipped (IPHAN); its prizes are not", () => {
+    for (const title of [
+      'Projeto 914BRZ4027 Edital nº 67/2026: Perfil Gestão - Iphan/SEDE - Brasília/DF',
+      'PROJETO 914BRZ4018 EDITAL Nº 001/2025 - Perfil: 1/2025-CGNT-DEPAM – Porto Nacional/TO',
+      'EDITAL IPHAN Nº 11 - CONSULTA PRELIMINAR DE MERCADO (RFI) PARA REFINAMENTO DE DESAFIOS',
+    ]) {
+      expect(reason({ title })).toBe('notACallTitle');
+    }
+    expect(
+      reason({ title: 'Prêmio Mário de Andrade de Fotografias Etnográficas - Edição 2026' }),
+    ).toBeNull();
+  });
+
   test("a call's appeal or review step opened as its own item is skipped; raising funds is a call", () => {
     for (const title of [
       'Recurso - Edital Intercâmbio Circulação Audiovisual 2026',

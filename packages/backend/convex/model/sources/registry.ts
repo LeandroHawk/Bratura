@@ -1330,17 +1330,17 @@ export const araxaCalmonBarretoSource = {
 } satisfies Source;
 
 /**
- * IPHAN's open calls on gov.br (Volto): the listing and each call's links live only in the page's
- * embedded state (`window.__data`), never as `<a>` in its HTML, and the site's API answers no JSON
- * (`@querystring-search` 404, `++api++` HTML). Off (measured 2026-11-18): needs that state read on
- * both hops and a title filter (consultant hires `Projeto 914BRZ…`, RFIs, opinions). Its creator
- * prizes (Mário de Andrade, Sílvio Romero 2026) closed 04/08/2026; the next ones come in July.
+ * IPHAN's open calls on gov.br (Volto): the listing's items and each call's file links live only in
+ * the page's embedded state (`linksOfHtml` reads it), files served at `…/@@display-file/file`.
+ * Items mix calls with consultant hires (`Projeto 914BRZ…`) and market surveys, recorded and never
+ * read (`notACallTitlePattern`), and opinions, agreements and statements, with no notice. Its
+ * creator prizes (Mário de Andrade, Sílvio Romero) come each July: 2026's closed 04/08.
  */
 export const iphanOpenCallsSource = {
   kind: 'officialPage',
   slug: 'iphan-editais-abertos',
   name: 'IPHAN — editais e seleções abertos',
-  isActive: false,
+  isActive: true,
   robotsCheckedOn: '2026-11-18',
   termsCheckedOn: '2026-11-18',
   listingUrl: 'https://www.gov.br/iphan/pt-br/acesso-a-informacao/editais-e-selecoes/abertos',
@@ -1348,7 +1348,28 @@ export const iphanOpenCallsSource = {
     hops: 'callPage',
     callPageUrlParts: ['/iphan/pt-br/acesso-a-informacao/editais-e-selecoes/abertos/'],
   },
-  documentUrlParts: ['.pdf', '.docx'],
+  documentUrlParts: ['/@@display-file/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Museu do Índio (FUNAI) on gov.br (Volto): three pages — consultant hires (to 2023), use of its
+ * spaces, and the credenciamento of Indigenous cultural associations (Edital 90008/2025, open to
+ * new entrants for 5 years, its first list posted). Links only in the page state, as IPHAN's.
+ */
+export const museuDoIndioCallsSource = {
+  kind: 'officialPage',
+  slug: 'museu-do-indio-editais',
+  name: 'Museu do Índio — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.gov.br/museudoindio/pt-br/acesso-a-informacao/editais',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/museudoindio/pt-br/acesso-a-informacao/editais/'],
+  },
+  documentUrlParts: ['/@@display-file/'],
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
@@ -1443,4 +1464,5 @@ export const registeredSources: readonly Source[] = [
   erechimPnabSource,
   araxaCalmonBarretoSource,
   iphanOpenCallsSource,
+  museuDoIndioCallsSource,
 ];

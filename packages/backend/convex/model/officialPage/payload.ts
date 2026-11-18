@@ -29,3 +29,43 @@ export type OfficialPageCall = z.infer<typeof OfficialPageCallSchema>;
 export const JsonListedCallSchema = z.looseObject({
   id: z.union([z.number().int(), z.string().trim().min(1)]),
 });
+
+/**
+ * A gov.br Volto page's embedded state (`window.__data`): the listing block's items
+ * (`querystringsearch.subrequests`), a folder's items and the page's text blocks. IPHAN and Museu
+ * do Índio (2026-11-18) print neither their listing nor their files as `<a>`: only here.
+ */
+export const VoltoStateSchema = z.looseObject({
+  content: z
+    .looseObject({
+      data: z
+        .looseObject({
+          items: z.array(z.unknown()).optional(),
+          blocks: z.record(z.string(), z.unknown()).optional(),
+        })
+        .nullish(),
+    })
+    .nullish(),
+  querystringsearch: z
+    .looseObject({
+      subrequests: z.record(z.string(), z.looseObject({ items: z.array(z.unknown()) })).optional(),
+    })
+    .nullish(),
+});
+
+/**
+ * A listed item: its absolute URL is `getURL` (IPHAN's listing block, whose `@id` is a path
+ * without the agency) or `@id` (Museu do Índio's folder items).
+ */
+export const VoltoListedItemSchema = z.looseObject({
+  title: z.string(),
+  getURL: z.string().nullish(),
+  '@id': z.string().nullish(),
+});
+
+/** A link in a text block: `{ type: 'link', data: { url }, children: [{ text }] }`. */
+export const VoltoTextLinkSchema = z.looseObject({
+  type: z.literal('link'),
+  data: z.looseObject({ url: z.string() }),
+  children: z.array(z.unknown()),
+});
