@@ -30,12 +30,6 @@ type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderH
 
 const currentYear = () => new Date().getUTCFullYear();
 
-/**
- * The years whose folder or page a listing opens: in January a call opened in December still sits
- * in last year's.
- */
-const thisAndLastYear = () => [currentYear(), currentYear() - 1].map(String);
-
 /** Between two call pages of one site: a public office's server, not a crawl. */
 const callPageSpacingMs = 1_000;
 
@@ -222,23 +216,25 @@ function callPageLinksOfJsonListing(
 const pause = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 /**
- * The call folders in this year's and last year's folders of the listing
- * (`callsFiledInYearFolders`). Older years are not opened (Porto Velho keeps them back to 2019).
+ * What this year's and last year's folders or pages among `yearLinks` (each named by its year
+ * alone) link to, read with `linksOf`: in January a call opened in December still sits in last
+ * year's. Older years are not opened (Porto Velho keeps them back to 2019).
  */
-async function callFoldersOfYearFolders(
-  { html, url }: FetchedPage,
+async function linksInRecentYears(
+  yearLinks: PageLink[],
+  linksOf: (html: string, pageUrl: string) => PageLink[],
   source: CallPageSource,
   spacingMs: number,
 ) {
-  const years = thisAndLastYear();
-  const callFolders: PageLink[] = [];
-  for (const yearFolder of folderLinksOfHtml(html, url)) {
-    if (!years.includes(yearFolder.label)) continue;
+  const years = [currentYear(), currentYear() - 1].map(String);
+  const found: PageLink[] = [];
+  for (const year of yearLinks) {
+    if (!years.includes(year.label) || !isOnSourceHost(year.url, source.listingUrl)) continue;
     await pause(spacingMs);
-    const yearPage = await fetchPageHtml(yearFolder.url, source.listingUrl, source);
-    callFolders.push(...folderLinksOfHtml(yearPage.html, yearPage.url));
+    const page = await fetchPageHtml(year.url, source.listingUrl, source);
+    found.push(...linksOf(page.html, page.url));
   }
-  return callFolders;
+  return found;
 }
 
 /**
@@ -264,28 +260,10 @@ async function linksInSubfolders(
   return found;
 }
 
-/** The links on the listing's pages named this year or last year (`callPagesOnYearPages`). */
-async function linksOfYearPages(
-  listingLinks: PageLink[],
-  source: CallPageSource,
-  spacingMs: number,
-) {
-  const years = thisAndLastYear();
-  const found: PageLink[] = [];
-  for (const yearPage of listingLinks) {
-    if (!years.includes(yearPage.label) || !isOnSourceHost(yearPage.url, source.listingUrl))
-      continue;
-    await pause(spacingMs);
-    const page = await fetchPageHtml(yearPage.url, source.listingUrl, source);
-    found.push(...linksOfHtml(page.html, page.url));
-  }
-  return found;
-}
-
 /**
  * The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON; with
- * `callsFiledInYearFolders`, the call folders of its year folders too, and with
- * `callPagesOnYearPages`, the links of its year pages.
+ * `callsFiledInYearFolders` or `callPagesOnYearPages`, those of its recent years' folders or pages
+ * too.
  */
 async function linksOfCallPageListing(source: CallPageSource, spacingMs: number) {
   const { callPagesListedAsJson, callsFiledInYearFolders, callPagesOnYearPages } = source.discovery;
@@ -296,9 +274,12 @@ async function linksOfCallPageListing(source: CallPageSource, spacingMs: number)
   }
   const listing = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
   const links = linksOfHtml(listing.html, listing.url);
-  if (callsFiledInYearFolders)
-    links.push(...(await callFoldersOfYearFolders(listing, source, spacingMs)));
-  if (callPagesOnYearPages) links.push(...(await linksOfYearPages(links, source, spacingMs)));
+  if (callsFiledInYearFolders) {
+    const yearFolders = folderLinksOfHtml(listing.html, listing.url);
+    links.push(...(await linksInRecentYears(yearFolders, folderLinksOfHtml, source, spacingMs)));
+  }
+  if (callPagesOnYearPages)
+    links.push(...(await linksInRecentYears(links, linksOfHtml, source, spacingMs)));
   return { links, url: listing.url };
 }
 

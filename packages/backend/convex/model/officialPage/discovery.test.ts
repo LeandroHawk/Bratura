@@ -685,7 +685,8 @@ describe('callsOfCallPages', () => {
     const site = 'https://www.pmerechim.rs.gov.br/';
     const base = '<base href="https://www.pmerechim.rs.gov.br//">';
     const uploads = (name: string) => a(`uploads/paginas/${name}.pdf`, `${name}.pdf`);
-    const callPage = (id: number) => `${site}/pagina/${id}/pnab---edital-n-0${id - 1840}2026`;
+    const openCall = 'pagina/1848/pnab---edital-n-082026';
+    const callWithResult = 'pagina/1847/pnab---edital-n-072026';
     const yearLinks = [
       a('pagina/1863/2025', '2025'),
       a('pagina/1729/2024', '2024'),
@@ -701,15 +702,15 @@ describe('callsOfCallPages', () => {
       [`${site}/pagina/1846/2026`]: [
         base,
         ...yearLinks,
-        a('pagina/1848/pnab---edital-n-082026', 'PNAB - Edital nº 08/2026 - Cultura Viva'),
-        a('pagina/1847/pnab---edital-n-072026', 'PNAB - Edital nº 07/2026 - Fomento'),
+        a(openCall, 'PNAB - Edital nº 08/2026 - Cultura Viva'),
+        a(callWithResult, 'PNAB - Edital nº 07/2026 - Fomento'),
       ].join(''),
-      [callPage(1848)]: [
+      [`${site}/${openCall}`]: [
         base,
         uploads('Edital Cultura Viva 08-2026'),
         uploads('Anexo 01 - Categorias'),
       ].join(''),
-      [callPage(1847)]: [
+      [`${site}/${callWithResult}`]: [
         base,
         uploads('Edital de Chamamento Público nº 07-2026 - PNAB'),
         uploads('Ata da Etapa de Seleção - resultado final - Edital 07-2026'),
@@ -718,9 +719,9 @@ describe('callsOfCallPages', () => {
 
     expect(await callsOf(erechimPnabSource)).toEqual([
       {
-        externalId: callPage(1848),
+        externalId: `${site}/${openCall}`,
         title: 'PNAB - Edital nº 08/2026 - Cultura Viva',
-        officialUrl: callPage(1848),
+        officialUrl: `${site}/${openCall}`,
         documents: [
           {
             url: `${site}/uploads/paginas/Edital%20Cultura%20Viva%2008-2026.pdf`,
@@ -738,8 +739,8 @@ describe('callsOfCallPages', () => {
       erechimPnabSource.listingUrl,
       `${site}/pagina/1863/2025`,
       `${site}/pagina/1846/2026`,
-      callPage(1848),
-      callPage(1847),
+      `${site}/${openCall}`,
+      `${site}/${callWithResult}`,
     ]);
   });
 
