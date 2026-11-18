@@ -34,12 +34,14 @@ Public JSON, no auth. Instances confirmed working:
 | Canindé-CE | `mapacultural.caninde.ce.gov.br` | 0 (monitor) | 0 | — |
 
 **Sources that answer only from Brazil** (`answersOnlyFromBrazil` in the registry; 2026-11-16):
-Pernambuco and Sergipe Mapas, Ponta Grossa, Secult Alagoas 2026 and Secec DF. They time out from
+Pernambuco, Sergipe and São Bernardo do Campo Mapas, Ponta Grossa, Secult Alagoas 2026 and Secec DF. They time out from
 Convex (US East) in 30 s and answer from Brazil, so their listing, call pages and documents are
 fetched by Firecrawl with a Brazilian location (1 credit per page;
 `docs/integrations/firecrawl.md`, Decisions). Pernambuco and Ponta Grossa, off until then, are on
 again. Secult Alagoas is off since 2026-11-17: Firecrawl cannot read it either (official pages
-table).
+table). São Bernardo (2026-11-17) also sends an incomplete TLS chain (no Certum DV TLS G2 R39
+intermediate, so curl and Node refuse it); Firecrawl's browser completes it (measured: its API JSON
+intact, 1 credit), while a Node fetch with the intermediate pinned still times out from Convex.
 
 **The list of instances** is the `mapasculturais` README on GitHub
 (`https://github.com/mapasculturais/mapasculturais`, branch `develop`, sections "Instalações em
@@ -47,7 +49,7 @@ nível federal ou internacional", "estaduais", "municipais", "outras"). Every li
 on 2026-11-14. São Paulo state: **Mauá** (`mapacultural.maua.sp.gov.br`, 3 open, 1 with documents;
 17 opened in 2026) and Itatiba (`mapacultural.itatiba.sp.gov.br`, 0 open; 12 in 2026, 2 with
 documents) work; Campinas, Limeira and Santo Anastácio answer with nothing open. Listed but dead:
-Guarujá, Guarulhos, Itu and São Caetano (no DNS); São Bernardo and Osasco (no answer); SPCultura
+Guarujá, Guarulhos, Itu and São Caetano (no DNS); Osasco (no answer); São Bernardo answers from Brazil only, with an incomplete TLS chain (registered 2026-11-17, above); SPCultura
 (`spcultura.prefeitura.sp.gov.br`, no byte in 120 s, third check). No Baixada Santista city runs a
 working instance.
 
@@ -96,6 +98,7 @@ ingestion recorded 0 and they wait for PNAB Ciclo 3):
 | Tocantins (state; added 2026-11-16) | `mapa-cultural.to.gov.br` | 3 | `Etc/GMT+3` |
 | Mapa Cultura Goiás (14 municipalities, privately run, operator not named; added 2026-11-17) | `mapa.culturagoias.com.br` | 1 open (Professor Jamil, Chamamento 06/2026, to 19/11) | `Etc/GMT+3` |
 | Lagoa Santa-MG (added 2026-11-17) | `mapacultural.lagoasanta.mg.gov.br` | 7 (PNAB Ciclo 3 in public consultation to 14/12) | `Etc/GMT+3` |
+| São Bernardo do Campo-SP (added 2026-11-17, through Firecrawl from Brazil) | `mapacultural.saobernardo.sp.gov.br` | 42 (CeMAM choirs' meeting open to 22/11) | `Etc/GMT+3` |
 
 `robots.txt` answers the app's HTML page on all four (2026-11-15): nothing declared. Terms:
 Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas template, not read in
@@ -110,6 +113,7 @@ decision with no terms published.
 Lagoa Santa (2026-11-17): `robots.txt` allows `*` with `Content-Signal: search=yes,ai-train=no,use=reference`;
 `/termos-de-uso` serves the Mapas template; nothing here trains a model, and each call is shown with
 its source link: registered by the team's decision.
+São Bernardo (2026-11-17, read with the intermediate added): `robots.txt` and `/termos-de-uso` 404.
 Unlike the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
 
 **CultBR Editais** (`culteditais.cultura.gov.br`, added on 2026-11-15): the Ministry of Culture's

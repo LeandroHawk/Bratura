@@ -971,6 +971,21 @@ export const lagoaSantaMapasSource = {
   baseUrl: 'https://mapacultural.lagoasanta.mg.gov.br',
 } satisfies Source;
 
+/**
+ * São Bernardo do Campo's Mapas: 42 calls in 2026. It times out from Convex and sends an
+ * incomplete TLS chain; Firecrawl from Brazil reads it (2026-11-17), as Pernambuco.
+ */
+export const saoBernardoMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-sao-bernardo',
+  name: 'Mapas Culturais — São Bernardo do Campo',
+  isActive: true,
+  answersOnlyFromBrazil: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-17',
+  baseUrl: 'https://mapacultural.saobernardo.sp.gov.br',
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1040,4 +1055,5 @@ export const registeredSources: readonly Source[] = [
   pauloAfonsoSeculteSource,
   paraibaFunescSource,
   lagoaSantaMapasSource,
+  saoBernardoMapasSource,
 ];
