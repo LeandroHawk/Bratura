@@ -957,6 +957,20 @@ export const paraibaFunescSource = {
   timeZone: ianaTimeZone.parse('America/Fortaleza'),
 } satisfies Source;
 
+/**
+ * Lagoa Santa's Mapas: 7 calls in 2026, none open on 2026-11-17 (PNAB Ciclo 3 in public
+ * consultation to 14/12). Its robots allows all, with Cloudflare's `ai-train=no` content signal.
+ */
+export const lagoaSantaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-lagoa-santa',
+  name: 'Mapas Culturais — Lagoa Santa',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-17',
+  baseUrl: 'https://mapacultural.lagoasanta.mg.gov.br',
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1025,4 +1039,5 @@ export const registeredSources: readonly Source[] = [
   goiasMunicipalitiesMapasSource,
   pauloAfonsoSeculteSource,
   paraibaFunescSource,
+  lagoaSantaMapasSource,
 ];

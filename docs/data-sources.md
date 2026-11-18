@@ -95,6 +95,7 @@ ingestion recorded 0 and they wait for PNAB Ciclo 3):
 | Goiás (state, Mapa Goiano; added 2026-11-16) | `mapagoiano.cultura.go.gov.br` | 4 (1 agent's "Agenda aberta" to 2034) | `Etc/GMT+3` |
 | Tocantins (state; added 2026-11-16) | `mapa-cultural.to.gov.br` | 3 | `Etc/GMT+3` |
 | Mapa Cultura Goiás (14 municipalities, privately run, operator not named; added 2026-11-17) | `mapa.culturagoias.com.br` | 1 open (Professor Jamil, Chamamento 06/2026, to 19/11) | `Etc/GMT+3` |
+| Lagoa Santa-MG (added 2026-11-17) | `mapacultural.lagoasanta.mg.gov.br` | 7 (PNAB Ciclo 3 in public consultation to 14/12) | `Etc/GMT+3` |
 
 `robots.txt` answers the app's HTML page on all four (2026-11-15): nothing declared. Terms:
 Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas template, not read in
@@ -106,6 +107,9 @@ no clause on automated access or reuse of call data); Itatiba and Tocantins publ
 Their far-future items (2111, 2034) are open-ended, so no credits go to them.
 Mapa Cultura Goiás (2026-11-17): `robots.txt` and `/termos-de-uso` 404; registered by the team's
 decision with no terms published.
+Lagoa Santa (2026-11-17): `robots.txt` allows `*` with `Content-Signal: search=yes,ai-train=no,use=reference`;
+`/termos-de-uso` serves the Mapas template; nothing here trains a model, and each call is shown with
+its source link: registered by the team's decision.
 Unlike the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
 
 **CultBR Editais** (`culteditais.cultura.gov.br`, added on 2026-11-15): the Ministry of Culture's
@@ -226,6 +230,7 @@ later.
 | Fomento CultSP (`fomentocultsp.sp.gov.br/editais-vigentes`, SP state) | The state's list of open calls, but the page redirects to a login (`/auth/login`, 2026-11-14): link to it, not a source |
 | SP state culture portal (`cultura.sp.gov.br`, Portal do Fomento) | Behind Incapsula (anti-bot); `proac.sp.gov.br` redirects there |
 | Mongaguá, Guarujá, Itanhaém | Cloudflare content signals leave AI input undecided: a team call before use |
+| Aracaju (Funcaju Mapas, `mapacultural.aracaju.se.gov.br`) | `robots.txt` answers HTTP 500 (the Mapas app's own `TemplateNotFound`, 2026-11-15 and 2026-11-17): read as disallow. A future partner (team, 2026-11-17); its only open item, the yearly credenciamento 003/2026, runs to 2028 |
 | ProAC (SP state, ~R$ 90 mi in 2026) | Applications closed 3/8; current official page not found |
 | São José dos Campos | Uses Prosas: out |
 | News (e.g. Catraca Livre) | robots allows except search and `wp-json`; a signal only, never stored |
