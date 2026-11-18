@@ -114,6 +114,22 @@ export function textOfClass(html: string, className: string) {
 }
 
 /**
+ * What a page's relative links resolve against: its `<base href>`, else its own URL. Erechim
+ * (2026-11-18) declares `<base href="https://www.pmerechim.rs.gov.br//">` and links
+ * `pagina/1848/…`: against the page URL every call page is a 404.
+ */
+function baseUrlOf(page: string, pageUrl: string) {
+  const base = /<base\b[^>]*?\bhref\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(page);
+  try {
+    return base
+      ? new URL(decodeEntities((base[1] ?? base[2] ?? '').trim()), pageUrl).href
+      : pageUrl;
+  } catch {
+    return pageUrl;
+  }
+}
+
+/**
  * A page's headings, http(s) links and the text between them, in page order. A link's URL is
  * absolute, without its `#`.
  * Only a heading's opening tag is matched, so a link inside a heading is still read. A link that
@@ -123,6 +139,7 @@ export function textOfClass(html: string, className: string) {
  */
 function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: string) {
   const page = withoutCode(html);
+  const baseUrl = baseUrlOf(page, pageUrl);
   // Without a class, `(?!)` never matches and its group stays empty.
   const classHeading = headingClass ? openingTagOfClass(headingClass) : '(?!)()';
   // Any `</h1-6>` ends an `<h1-6>`: pages close an `<h2>` with `</h3>`.
@@ -155,7 +172,10 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
     previousLinkLabel = label;
     let url: URL;
     try {
-      url = new URL(decodeEntities((double ?? single ?? bare ?? '').trim()), pageUrl);
+      const href = decodeEntities((double ?? single ?? bare ?? '').trim());
+      // An in-page anchor is the page itself, never its base: Funarte's "Ir para o Conteúdo" would
+      // be `…/chamadas-2026/`, a folder holding every call page.
+      url = new URL(href, href.startsWith('#') ? pageUrl : baseUrl);
     } catch {
       continue;
     }

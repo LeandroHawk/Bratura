@@ -28,6 +28,19 @@ describe('linksOfHtml', () => {
     ]);
   });
 
+  test("resolves relative links against the page's <base href> (Erechim), an in-page anchor against the page (Funarte)", () => {
+    const html = `<base href="https://www.pmerechim.rs.gov.br//">
+      <a href="#conteudo">Ir para o Conteúdo</a>
+      <a href="pagina/1848/pnab---edital-n-022026">PNAB - Edital nº 02/2026</a>`;
+    expect(linksOfHtml(html, 'https://www.pmerechim.rs.gov.br/pagina/1846/2026')).toEqual([
+      { url: 'https://www.pmerechim.rs.gov.br/pagina/1846/2026', label: 'Ir para o Conteúdo' },
+      {
+        url: 'https://www.pmerechim.rs.gov.br//pagina/1848/pnab---edital-n-022026',
+        label: 'PNAB - Edital nº 02/2026',
+      },
+    ]);
+  });
+
   test('drops other schemes, fragments, scripts and comments; one entry per URL', () => {
     const html = `
       <a href="mailto:x@ba.gov.br">mail</a><a href="javascript:void(0)">js</a>
