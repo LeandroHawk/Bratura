@@ -53,9 +53,26 @@ const withoutFileViewPage = (link: PageLink): PageLink => {
   return { ...link, url: url.href };
 };
 
+/**
+ * The PNAB platform (BA, PI, AM, AP, TO, Macapá; 2026-11-17) links every file as "Baixar", at
+ * `/lerarquivo/<base64 path>/<base64 title>`: the title it carries names the file ("ANEXO 1 -
+ * FORMULÁRIO…", "RESULTADO FINAL…"), so it is the label. Without it no annex or result is known.
+ */
+function withTitleItsUrlCarries(link: PageLink): PageLink {
+  const encoded = /^\/lerarquivo\/[^/]+\/([A-Za-z0-9+/=]+)$/.exec(new URL(link.url).pathname)?.[1];
+  if (!encoded) return link;
+  try {
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+    const title = new TextDecoder('utf-8', { fatal: true }).decode(bytes).trim();
+    return title ? { ...link, label: title } : link;
+  } catch {
+    return link;
+  }
+}
+
 /** A page's document links, each file once: a page may link it both as the file and its `/view`. */
 function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
-  return onePerUrl(links.map(withoutFileViewPage)).filter(
+  return onePerUrl(links.map((link) => withTitleItsUrlCarries(withoutFileViewPage(link)))).filter(
     ({ url }) =>
       documentUrlParts.some((part) => url.includes(part)) &&
       CallNoticeDocumentUrlSchema.safeParse(url).success,
@@ -197,10 +214,14 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
    * A page inside another call page's folder is part of that call, not one of its own (Funesc,
    * 2026-11-17: "Audições OSJPB - Peças de confronto" under its orchestra call, which posts results
    * the sub-page does not). Measured on the 20 `callPage` listings: only Funesc has any (2 of 67).
+   * The site's root is no call's folder: the PNAB platform links its home and calls at root slugs.
    */
   const isInsideAnotherCallPage = (url: string) =>
     callPages.some(
-      (other) => url !== other.url && url.startsWith(`${other.url.replace(/\/$/, '')}/`),
+      (other) =>
+        url !== other.url &&
+        new URL(other.url).pathname !== '/' &&
+        url.startsWith(`${other.url.replace(/\/$/, '')}/`),
     );
   const ownCallPages = callPages.filter(({ url }) => !isInsideAnotherCallPage(url));
   const calls: OfficialPageCall[] = [];
