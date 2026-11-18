@@ -1054,6 +1054,22 @@ export const macapaPnabPlatformSource = pnabPlatformSource({
   timeZone: 'America/Belem',
 });
 
+/**
+ * Maringá's Mapas: 21 calls in 2026; 4 open on 2026-11-17 (Ocupação dos Espaços Culturais 2027,
+ * Bolsas Cultura Viva, CEU das Artes, Pontão de Cultura). It times out from Convex: read through
+ * Firecrawl from Brazil, as Pernambuco.
+ */
+export const maringaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-maringa',
+  name: 'Mapas Culturais — Maringá',
+  isActive: true,
+  answersOnlyFromBrazil: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-17',
+  baseUrl: 'https://maringacultura.maringa.pr.gov.br',
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1130,4 +1146,5 @@ export const registeredSources: readonly Source[] = [
   amapaPnabPlatformSource,
   tocantinsPnabPlatformSource,
   macapaPnabPlatformSource,
+  maringaMapasSource,
 ];
