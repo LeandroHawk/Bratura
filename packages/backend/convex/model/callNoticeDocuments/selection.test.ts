@@ -218,6 +218,17 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     ).toBeNull();
   });
 
+  test("a council's resolution can be the rules; one annexed to them is not (São Bernardo, Natal)", () => {
+    const sbc = 'https://mapacultural.saobernardo.sp.gov.br/files/opportunity/292';
+    expect(callNoticeDocumentRole(`${sbc}/resolucao-sc-37-encontro-de-corais-04nov.pdf`)).toBe(
+      'callNotice',
+    );
+    const pe = 'https://www.mapacultural.pe.gov.br/files/opportunity/2491';
+    expect(
+      callNoticeDocumentRole(`${pe}/anexo-i-resolucao-cd-funcultura-01-2025-banco.pdf`),
+    ).toBeNull();
+  });
+
   test('a contract signed without a call is procurement, though its text names a chamamento (Funesc)', () => {
     const funesc = 'https://funesc.pb.gov.br/editais/ratificacoes';
     expect(
