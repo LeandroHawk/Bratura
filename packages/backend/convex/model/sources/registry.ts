@@ -1271,6 +1271,25 @@ export const clovisSalgadoFoundationSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Mato Grosso do Sul's culture foundation (FCMS), "Consultas": a table, one row per call, the name
+ * in "Assunto" and the file linked as "Acessar proposta". Off (measured 2026-11-18): the menu's
+ * `<script>` is never closed, so the table is script text to the reader (and to a browser); and
+ * a row-per-call listing has no reader. 8 rows, 2 "Em andamento" (Prêmio Guadakan, 26/2026).
+ */
+export const matoGrossoDoSulFcmsSource = {
+  kind: 'officialPage',
+  slug: 'fcms-consultas',
+  name: 'FCMS — consultas de editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.fundacaodecultura.ms.gov.br/informativos/consultas/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Campo_Grande'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1358,4 +1377,5 @@ export const registeredSources: readonly Source[] = [
   portoVelhoFunculturalSource,
   palmasFcpSource,
   clovisSalgadoFoundationSource,
+  matoGrossoDoSulFcmsSource,
 ];
