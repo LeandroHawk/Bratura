@@ -21,12 +21,14 @@ export const readableRegistrationCloses = (now: number) => ({
 /**
  * Titles that are no call, compared without accents or case: drafts and tests, the accountability
  * a call's winners file (Maringá, 2026-11-17: "Prestação de Contas - FOMENTO…", open to 01/12 with
- * the old notice attached), an election (Spcine: "Edital de Eleição de Representantes dos
- * Funcionários"; Santa Luzia: "ELEIÇÃO DOS MEMBROS REPRESENTANTES…", "…DOS CONSELHEIROS…"), a
- * council meeting's sign-up (Santa Luzia, monthly: "INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO…").
+ * the old notice attached) or a foundation's management contract (Clóvis Salgado, 2026-11-18:
+ * "Contrato de Gestão" under its calls, its purchasing "Regulamento" read as a notice), an
+ * election (Spcine: "Edital de Eleição de Representantes dos Funcionários"; Santa Luzia: "ELEIÇÃO
+ * DOS MEMBROS REPRESENTANTES…", "…DOS CONSELHEIROS…"), a council meeting's sign-up (Santa Luzia,
+ * monthly: "INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO…").
  */
 const notACallTitlePattern =
-  /\b(teste|em construcao|prestacao de contas|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao)\b/;
+  /\b(teste|em construcao|prestacao de contas|contrato de gestao|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao)\b/;
 
 /**
  * A later step of a call, opened as an item of its own with the call's documents attached: its
