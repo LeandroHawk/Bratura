@@ -937,6 +937,23 @@ export const pauloAfonsoSeculteSource = {
   timeZone: ianaTimeZone.parse('America/Bahia'),
 } satisfies Source;
 
+/**
+ * Funesc, Paraíba's state culture foundation: one Plone page per call under `/editais/`, its files
+ * linked through their `/view` pages. ~20 calls in 2026 among ~80 back to 2024.
+ */
+export const paraibaFunescSource = {
+  kind: 'officialPage',
+  slug: 'pb-funesc-editais',
+  name: 'Funesc-PB — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-17',
+  termsCheckedOn: '2026-11-17',
+  listingUrl: 'https://funesc.pb.gov.br/editais',
+  discovery: { hops: 'callPage', callPageUrlParts: ['funesc.pb.gov.br/editais/'] },
+  documentUrlParts: ['.pdf'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1004,4 +1021,5 @@ export const registeredSources: readonly Source[] = [
   sesiSpCultureSource,
   goiasMunicipalitiesMapasSource,
   pauloAfonsoSeculteSource,
+  paraibaFunescSource,
 ];
