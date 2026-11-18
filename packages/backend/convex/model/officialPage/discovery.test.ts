@@ -18,6 +18,7 @@ import {
   rioBrancoCulturaSource,
   salvadorFgmSource,
   sesiSpCultureSource,
+  ufuProexcCultureSource,
 } from '../sources/registry';
 import {
   callNumberOf,
@@ -772,6 +773,52 @@ describe('callsOfCallPages', () => {
         documents.length,
       ]),
     ).toEqual([['Credenciamento Associações Culturais', 2]]);
+  });
+
+  test("a title filter and the site's crawl delay (UFU): only the calls open to anyone opened, each page 10 s after the last", async () => {
+    const site = 'https://editais.ufu.br';
+    const notice = (name: string) =>
+      a(`${site}/sites/editais.ufu.br/files/${name}.pdf`, `${name}.pdf`);
+    const fetchedAt: [string, number][] = [];
+    const answer = siteAnswers({
+      [ufuProexcCultureSource.listingUrl]: [
+        a('/node/2', 'Apresentação'),
+        a(
+          '/node/6742',
+          'EDITAL PROEXC 18_UFU_PROEXC_2026_Processo Seletivo de Profissionais_ APEC_Práxis',
+        ),
+        a(
+          '/node/6739',
+          'EDITAL PROEXC 14_UFU_PROEXC_2026_Bolsistas de Extensão_Projeto Salve Elas',
+        ),
+        a(
+          '/node/6741',
+          'EDITAL PROEXC 17_UFU_PROEXC_2026_PROCESSO SELETIVO DE PROFISSIONAIS_Saberes',
+        ),
+      ].join(''),
+      [`${site}/node/6742`]: notice('EDITAL PROEXC 18_Processo Seletivo de Profissionais'),
+      [`${site}/node/6741`]: [
+        notice('EDITAL PROEXC 17_Processo Seletivo de Profissionais'),
+        notice('Resultado Final_EDITAL PROEXC 17'),
+      ].join(''),
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input, init) => {
+        fetchedAt.push([String(input), Date.now()]);
+        return await answer(input, init);
+      }),
+    );
+
+    const calls = await callsOf(ufuProexcCultureSource);
+    expect(calls.map(({ externalId }) => externalId)).toEqual([`${site}/node/6742`]);
+    expect(fetchedAt.map(([url]) => url)).toEqual([
+      ufuProexcCultureSource.listingUrl,
+      `${site}/node/6742`,
+      `${site}/node/6741`,
+    ]);
+    const times = fetchedAt.map(([, at]) => at);
+    expect(times.slice(1).map((at, index) => at - times[index]!)).toEqual([10_000, 10_000]);
   });
 
   test('a call folder whose subfolders run past the 5 min is skipped, not recorded without them (Porto Velho)', async () => {

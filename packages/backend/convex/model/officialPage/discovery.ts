@@ -292,13 +292,21 @@ async function linksOfCallPageListing(source: CallPageSource, spacingMs: number)
 
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
-  // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
-  const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
+  // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart; both
+  // at least the site's crawl delay.
+  const spacingMs = Math.max(
+    source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs,
+    (source.discovery.crawlDelaySeconds ?? 0) * 1_000,
+  );
   const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
   // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
   // source says so (`callPageNeedsNotice`: folders of courses and plans).
   const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
-  const { callPagePublishedAtClass, callsFiledInYearFolders } = source.discovery;
+  const { callPagePublishedAtClass, callsFiledInYearFolders, callPageTitleParts } =
+    source.discovery;
+  const titleIsKept = (label: string) =>
+    !callPageTitleParts ||
+    callPageTitleParts.some((part) => plainText(label).includes(plainText(part)));
   const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
@@ -311,6 +319,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   ).filter(
     ({ url, label }) =>
       label &&
+      titleIsKept(label) &&
       !titleNamesAPastCall(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
@@ -339,7 +348,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       console.warn('Call pages left unread for lack of time', ownCallPages.length - index);
       break;
     }
-    if (index > 0) await pause(spacingMs);
+    // The first one too: the listing was the site's last page.
+    await pause(spacingMs);
     let page: PageLink[];
     let heading: string;
     let pageTitle: string;

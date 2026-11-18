@@ -6,8 +6,11 @@ import { SourceAccessFields } from '../../fragments/access/fields';
 import { SourceComplianceFields } from '../../fragments/compliance/fields';
 import { SourceIdentityFields } from '../../fragments/identity/fields';
 
-/** Parts of a URL (`/fundacaocultural/`, `.pdf`, `?download=`): plain text, never a regex. */
-const urlParts = z.array(requiredString('short')).min(1).max(20);
+/**
+ * Parts of a URL (`/fundacaocultural/`, `.pdf`, `?download=`) or of a link's text (`processo
+ * seletivo de profissionais`): plain text, never a regex.
+ */
+const textParts = z.array(requiredString('short')).min(1).max(20);
 
 /** One HTML class name (`accordion-toggle`): the reader matches it as a whole word. */
 const cssClassName = requiredString('short').regex(/^[A-Za-z_][\w-]*$/);
@@ -23,7 +26,18 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
   z.object({
     hops: z.literal('callPage'),
     /** What a call page's URL contains; other links on the listing are skipped. */
-    callPageUrlParts: urlParts,
+    callPageUrlParts: textParts,
+    /**
+     * What a call page's link text contains, compared without accents or case; other call pages
+     * are skipped. UFU's listing holds 6 of 7 items for its own students (grants, courses) beside
+     * the calls open to anyone ("Processo Seletivo de Profissionais": artists, technicians).
+     */
+    callPageTitleParts: textParts.optional(),
+    /**
+     * robots.txt's `Crawl-delay`, kept between any two of the site's pages (UFU: 10). At 30 s,
+     * the reader's 5 min for call pages still opens 10.
+     */
+    crawlDelaySeconds: z.number().int().min(1).max(30).optional(),
     /**
      * The call page's own text is its notice when it links none (Badesc: rules in the post,
      * applications on a form). Without it, such a call is recorded with no document to read.
@@ -91,7 +105,7 @@ export const OfficialPageSourceSchema = z.object({
   listingUrl: requiredHttpsUrl,
   discovery: OfficialPageDiscoverySchema,
   /** What a document link contains; a link with none of them is not a document. */
-  documentUrlParts: urlParts,
+  documentUrlParts: textParts,
   /** The site's zone: its dates ("até 20/11") carry none. */
   timeZone: ianaTimeZone,
 });
