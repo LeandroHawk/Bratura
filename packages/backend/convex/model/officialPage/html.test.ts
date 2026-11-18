@@ -41,6 +41,71 @@ describe('linksOfHtml', () => {
     ]);
   });
 
+  test("reads the links a Volto page keeps only in its state: listing items by getURL or an absolute @id, text-block links; a relative @id is not a page's URL", () => {
+    const state = {
+      content: {
+        data: {
+          items: [
+            {
+              '@id': 'https://www.gov.br/museudoindio/pt-br/editais/credenciamento',
+              title: 'Credenciamento',
+            },
+          ],
+          blocks: {
+            b1: {
+              '@type': 'slate',
+              value: [
+                {
+                  type: 'h2',
+                  children: [
+                    { text: '' },
+                    {
+                      type: 'link',
+                      data: {
+                        url: 'https://www.gov.br/iphan/pt-br/x/edital.pdf/@@display-file/file',
+                      },
+                      children: [{ text: 'Edital ' }],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+      querystringsearch: {
+        subrequests: {
+          block1: {
+            items: [
+              {
+                '@id': '/pt-br/abertos/premio',
+                getURL: 'https://www.gov.br/iphan/pt-br/abertos/premio',
+                title: 'Prêmio 2026',
+              },
+              { '@id': '/pt-br/abertos/sem-url', title: 'Sem URL absoluta' },
+            ],
+          },
+        },
+      },
+    };
+    const html = `<a href="/iphan/pt-br/assuntos">Assuntos</a><p>Carregando</p>
+      <script>window.__data=${JSON.stringify(state).replace('"items":[', '"loading":undefined,"items":[')};</script>`;
+    expect(linksOfHtml(html, 'https://www.gov.br/iphan/pt-br/abertos')).toEqual([
+      { url: 'https://www.gov.br/iphan/pt-br/assuntos', label: 'Assuntos' },
+      {
+        url: 'https://www.gov.br/museudoindio/pt-br/editais/credenciamento',
+        label: 'Credenciamento',
+      },
+      { url: 'https://www.gov.br/iphan/pt-br/abertos/premio', label: 'Prêmio 2026' },
+      { url: 'https://www.gov.br/iphan/pt-br/x/edital.pdf/@@display-file/file', label: 'Edital' },
+    ]);
+  });
+
+  test('a page whose state is not JSON keeps its HTML links', () => {
+    const html = '<a href="/a">A</a><script>window.__data={broken;</script>';
+    expect(linksOfHtml(html, page)).toEqual([{ url: 'https://www.ba.gov.br/a', label: 'A' }]);
+  });
+
   test('drops other schemes, fragments, scripts and comments; one entry per URL', () => {
     const html = `
       <a href="mailto:x@ba.gov.br">mail</a><a href="javascript:void(0)">js</a>

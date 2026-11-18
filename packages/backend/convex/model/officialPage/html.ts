@@ -1,4 +1,5 @@
 import { plainText } from '../../lib/text';
+import { VoltoListedItemSchema, VoltoStateSchema, VoltoTextLinkSchema } from './payload';
 
 /** A link on a page: where it goes, absolute, and the text a person reads on it. */
 export type PageLink = { url: string; label: string };
@@ -113,6 +114,15 @@ export function textOfClass(html: string, className: string) {
   return plainLabel(element?.inner ?? '');
 }
 
+/** A link's absolute http(s) URL without its `#`; `null` for another scheme or no URL at all. */
+function httpUrlOf(href: string, baseUrl: string) {
+  if (!URL.canParse(href, baseUrl)) return null;
+  const url = new URL(href, baseUrl);
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+  url.hash = '';
+  return url.href;
+}
+
 /**
  * What a page's relative links resolve against: its `<base href>`, else its own URL. Erechim
  * (2026-11-18) declares `<base href="https://www.pmerechim.rs.gov.br//">` and links
@@ -170,18 +180,11 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
     let label = plainLabel(inner ?? '') || ariaLabelOf(tag.slice(0, tag.indexOf('>') + 1));
     if (namesOnlyAnAction(label)) label = firstTextOf(textBefore) || previousLinkLabel || label;
     previousLinkLabel = label;
-    let url: URL;
-    try {
-      const href = decodeEntities((double ?? single ?? bare ?? '').trim());
-      // An in-page anchor is the page itself, never its base: Funarte's "Ir para o Conteúdo" would
-      // be `…/chamadas-2026/`, a folder holding every call page.
-      url = new URL(href, href.startsWith('#') ? pageUrl : baseUrl);
-    } catch {
-      continue;
-    }
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') continue;
-    url.hash = '';
-    yield { link: { url: url.href, label } };
+    const href = decodeEntities((double ?? single ?? bare ?? '').trim());
+    // An in-page anchor is the page itself, never its base: Funarte's "Ir para o Conteúdo" would be
+    // `…/chamadas-2026/`, a folder holding every call page.
+    const url = httpUrlOf(href, href.startsWith('#') ? pageUrl : baseUrl);
+    if (url) yield { link: { url, label } };
   }
   yield { textHtml: page.slice(previousEnd) };
 }
@@ -194,11 +197,73 @@ export function onePerUrl(links: PageLink[]): PageLink[] {
 }
 
 /**
- * The http(s) links of a server-rendered page, in page order, each URL once. A regex over
- * `<a href>` is enough: the sites read are plain HTML, and a link a script would add is not read.
+ * The http(s) links of a server-rendered page, in page order, each URL once, then those only its
+ * embedded Volto state holds. A regex over `<a href>` is enough elsewhere: the sites read are plain
+ * HTML, and a link a script would add is not read.
  */
 export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
-  return onePerUrl([...headingsAndLinksOf(html, pageUrl)].flatMap((item) => item.link ?? []));
+  return onePerUrl([
+    ...[...headingsAndLinksOf(html, pageUrl)].flatMap((item) => item.link ?? []),
+    ...linksInVoltoState(html, pageUrl),
+  ]);
+}
+
+/** The text a Volto text node holds, its children's included. */
+function textOfVoltoNode(node: unknown): string {
+  if (Array.isArray(node)) return node.map(textOfVoltoNode).join('');
+  if (!node || typeof node !== 'object') return '';
+  const { text, children } = node as { text?: unknown; children?: unknown };
+  return (typeof text === 'string' ? text : '') + textOfVoltoNode(children);
+}
+
+/** Every link node anywhere in a Volto page's text blocks. */
+function* voltoTextLinksOf(node: unknown): Generator<PageLink> {
+  if (Array.isArray(node)) {
+    for (const child of node) yield* voltoTextLinksOf(child);
+    return;
+  }
+  if (!node || typeof node !== 'object') return;
+  const link = VoltoTextLinkSchema.safeParse(node);
+  if (link.success)
+    yield { url: link.data.data.url, label: plainLabel(textOfVoltoNode(link.data)) };
+  for (const child of Object.values(node)) yield* voltoTextLinksOf(child);
+}
+
+/** `undefined`, which a script may assign and JSON lacks, where a JSON value stands. */
+const undefinedValue = /(?<=[:,[]\s*)undefined(?=\s*[,}\]])/g;
+
+/**
+ * The links a gov.br Volto page (`window.__data = {…}`) keeps only in its embedded state: its
+ * listing's and folder's items, named by their title, and the links in its text blocks (IPHAN and
+ * Museu do Índio, 2026-11-18: the HTML prints "Carregando" and no file). Empty for any other page.
+ */
+function linksInVoltoState(html: string, pageUrl: string): PageLink[] {
+  const json = /window\.__data\s*=\s*(\{[\s\S]*?\});?\s*<\/script>/.exec(html)?.[1];
+  if (!json) return [];
+  let state: unknown;
+  try {
+    state = JSON.parse(json.replace(undefinedValue, 'null'));
+  } catch {
+    return [];
+  }
+  const parsed = VoltoStateSchema.safeParse(state);
+  if (!parsed.success) return [];
+  const { content, querystringsearch } = parsed.data;
+  const listed = [
+    ...(content?.data?.items ?? []),
+    ...Object.values(querystringsearch?.subrequests ?? {}).flatMap(({ items }) => items),
+  ].flatMap((item) => {
+    const listedItem = VoltoListedItemSchema.safeParse(item);
+    if (!listedItem.success) return [];
+    const { title, getURL, '@id': id } = listedItem.data;
+    const url = [getURL, id].find((candidate) => candidate && URL.canParse(candidate));
+    return url ? [{ url, label: plainLabel(title) }] : [];
+  });
+  const inText = [...voltoTextLinksOf(content?.data?.blocks ?? {})];
+  return [...listed, ...inText].flatMap(({ url, label }) => {
+    const absolute = httpUrlOf(url, pageUrl);
+    return absolute ? [{ url: absolute, label }] : [];
+  });
 }
 
 /**

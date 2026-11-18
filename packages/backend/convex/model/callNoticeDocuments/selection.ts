@@ -25,10 +25,12 @@ export const readableRegistrationCloses = (now: number) => ({
  * "Contrato de Gestão" under its calls, its purchasing "Regulamento" read as a notice), an
  * election (Spcine: "Edital de Eleição de Representantes dos Funcionários"; Santa Luzia: "ELEIÇÃO
  * DOS MEMBROS REPRESENTANTES…", "…DOS CONSELHEIROS…"), a council meeting's sign-up (Santa Luzia,
- * monthly: "INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO…").
+ * monthly: "INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO…"), a consultant hire under a cooperation
+ * project or a market survey (IPHAN, 2026-11-18: "Projeto 914BRZ4027 Edital nº 67/2026: Perfil
+ * Gestão", "Consulta Preliminar de Mercado (RFI)").
  */
 const notACallTitlePattern =
-  /\b(teste|em construcao|prestacao de contas|contrato de gestao|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao)\b/;
+  /\b(teste|em construcao|prestacao de contas|contrato de gestao|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao|projeto \d{3}brz\d+|consulta preliminar de mercado)\b/;
 
 /**
  * A later step of a call, opened as an item of its own with the call's documents attached: its

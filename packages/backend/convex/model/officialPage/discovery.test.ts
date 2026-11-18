@@ -8,6 +8,7 @@ import {
   estanciaCultureCallsSource,
   funarteCallsSource,
   maranhaoSecmaSource,
+  museuDoIndioCallsSource,
   jundiaiCultureSource,
   palmasFcpSource,
   paranaSeecSource,
@@ -742,6 +743,35 @@ describe('callsOfCallPages', () => {
       `${site}/${openCall}`,
       `${site}/${callWithResult}`,
     ]);
+  });
+
+  test('a credenciamento stays after its list of the accredited is posted; another call with a result is dropped (Museu do Índio)', async () => {
+    const site = 'https://www.gov.br/museudoindio/pt-br/acesso-a-informacao/editais';
+    const file = (name: string, label: string) => a(`${site}/x/${name}/@@display-file/file`, label);
+    siteAnswers({
+      [museuDoIndioCallsSource.listingUrl]: [
+        a(`${site}/credenciamento-associacoes-culturais`, 'Credenciamento Associações Culturais'),
+        a(`${site}/uso-de-espacos`, 'Uso de Espaços'),
+      ].join(''),
+      [`${site}/credenciamento-associacoes-culturais`]: [
+        file('edital-de-credenciamento', 'Edital'),
+        file(
+          'listadecredenciados_11.pdf',
+          'Edital 90008/2025 - Resultado do credenciamento / lista 1',
+        ),
+      ].join(''),
+      [`${site}/uso-de-espacos`]: [
+        file('sei-edital.pdf', 'Edital'),
+        file('sei-resultado-1.pdf', 'Resultado 1'),
+      ].join(''),
+    });
+
+    expect(
+      (await callsOf(museuDoIndioCallsSource)).map(({ title, documents }) => [
+        title,
+        documents.length,
+      ]),
+    ).toEqual([['Credenciamento Associações Culturais', 2]]);
   });
 
   test('a call folder whose subfolders run past the 5 min is skipped, not recorded without them (Porto Velho)', async () => {

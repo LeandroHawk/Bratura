@@ -48,6 +48,13 @@ const hasPublishedResult = (documents: PageLink[]) =>
   documents.some(({ url, label }) => postsResult(url, label));
 
 /**
+ * A credenciamento stays open to new entrants while it is valid (Lei 14.133, art. 79): the list of
+ * those accredited so far closes nothing (Museu do Índio, 2026-11-18: Edital 90008/2025, open for 5
+ * years, "lista 1" posted).
+ */
+const staysOpenAfterAResult = (title: string) => /\bcredenciamento\b/.test(plainText(title));
+
+/**
  * A Plone file's page (`…/edital.pdf/view`, Funesc and gov.br, 2026-11-17) is HTML around the file;
  * the file itself answers at the same URL without `/view`.
  */
@@ -363,7 +370,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     const documents = pageIsTheNotice
       ? withPageAsNotice(linked, { url, label: pageTitle })
       : linked;
-    const kept = callDocumentsWorthRecording(documents);
+    const kept = callDocumentsWorthRecording(documents, label);
     if (!kept || (needsNotice && !kept.some(isNotice))) continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),
@@ -433,11 +440,13 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 }
 
 /**
- * A call's documents worth recording, whatever shape the page has: some, no result posted, not
- * every notice from before last year. Its newest notice only; `null` when not worth it.
+ * A call's documents worth recording, whatever shape the page has: some, no result posted (unless
+ * its `title` names a credenciamento), not every notice from before last year. Its newest notice
+ * only; `null` when not worth it.
  */
-function callDocumentsWorthRecording(documents: PageLink[]) {
-  if (documents.length === 0 || hasPublishedResult(documents)) return null;
+function callDocumentsWorthRecording(documents: PageLink[], title = '') {
+  if (documents.length === 0) return null;
+  if (hasPublishedResult(documents) && !staysOpenAfterAResult(title)) return null;
   if (noticesNameOnlyYearsBeforeLastYear(documents)) return null;
   return withNewestNoticeOnly(documents);
 }
@@ -446,8 +455,8 @@ function callDocumentsWorthRecording(documents: PageLink[]) {
  * On a listing a notice is what makes documents a call (Ponta Grossa, 2026-11-15: two decrees
  * under "Legislação"); a call page is one by its URL, recorded without one for the admin review.
  */
-function listedCallDocuments(documents: PageLink[]) {
-  const kept = callDocumentsWorthRecording(documents);
+function listedCallDocuments(documents: PageLink[], title?: string) {
+  const kept = callDocumentsWorthRecording(documents, title);
   const notice = kept?.find(isNotice);
   return kept && notice ? { kept, notice } : null;
 }
@@ -504,7 +513,7 @@ export function callsOfDocumentsUnderHeadings(
   return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links, text }) => {
     const heading = withoutLeadingSymbols(rawHeading);
     if (!heading || titleNamesAPastCall(heading)) return [];
-    const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
+    const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts), heading);
     if (!recorded) return [];
     return [
       {
