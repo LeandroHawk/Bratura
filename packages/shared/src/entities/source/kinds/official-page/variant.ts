@@ -14,10 +14,10 @@ const cssClassName = requiredString('short').regex(/^[A-Za-z_][\w-]*$/);
 
 /**
  * How the site reaches a call's documents. `callPage` (PR, BA, Rio; Rio Branco from a JSON
- * listing): listing → one page per call → its documents. `documentsOnListing` (MG, MA): the
- * listing links every version and annex itself, and only the link text says which call each
- * belongs to. `documentsUnderHeadings` (Jundiaí, Jaboatão): the listing links them under one
- * heading per call, which names the call.
+ * listing, Porto Velho from year folders): listing → one page per call → its documents.
+ * `documentsOnListing` (MG, MA): the listing links every version and annex itself, and only the
+ * link text says which call each belongs to. `documentsUnderHeadings` (Jundiaí, Jaboatão): the
+ * listing links them under one heading per call, which names the call.
  */
 export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
   z.object({
@@ -47,6 +47,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
         titleField: requiredString('short'),
       })
       .optional(),
+    /**
+     * Calls filed as folders a button opens, not a link (Porto Velho, a Livewire file manager:
+     * `wire:click="selectFolder(N)"`, served at `?folder=N`): the listing holds one folder per
+     * year, named by it, which holds one per call; a call's files sit in its folder or one below.
+     */
+    callsFiledInYearFolders: z.boolean().optional(),
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
   z.object({

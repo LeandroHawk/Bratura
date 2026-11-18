@@ -172,6 +172,25 @@ export function linksOfHtml(html: string, pageUrl: string): PageLink[] {
 }
 
 /**
+ * The folders a Livewire file manager opens with a button, not a link (Porto Velho, 2026-11-18:
+ * `<button wire:click="selectFolder(88673)">`, also served at `?folder=88673`), as links named by
+ * the button's first text: a second one describes the folder.
+ */
+export function folderLinksOfHtml(html: string, pageUrl: string): PageLink[] {
+  const buttons = withoutCode(html).matchAll(
+    /<button\b[^>]*?\bwire:click\s*=\s*["']selectFolder\((\d+)\)["'][^>]*>([\s\S]*?)<\/button>/gi,
+  );
+  return onePerUrl(
+    [...buttons].map(([, id, inner]) => {
+      const url = new URL(pageUrl);
+      url.search = `?folder=${id}`;
+      url.hash = '';
+      return { url: url.href, label: firstTextOf(inner ?? '') };
+    }),
+  );
+}
+
+/**
  * One section per heading: the links under it, up to the next heading, and its text with their
  * labels.
  */

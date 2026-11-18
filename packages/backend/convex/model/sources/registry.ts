@@ -1190,6 +1190,25 @@ export const caruaruOportunidadesSource = {
   timeZone: ianaTimeZone.parse('America/Recife'),
 } satisfies Source;
 
+/**
+ * Porto Velho's culture foundation (Funcultural, RO): a Livewire file manager whose folders open
+ * by button, each also served at `?folder=N`. "Editais" holds one folder per year (2019–2026),
+ * each one folder per call, whose files sit in it or in one folder per document. 4 calls in 2026,
+ * none open on 2026-11-18 (004/2026 closed 04/11). `robots.txt` disallows nothing; no terms found.
+ */
+export const portoVelhoFunculturalSource = {
+  kind: 'officialPage',
+  slug: 'porto-velho-funcultural-editais',
+  name: 'Porto Velho — Funcultural, editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://funcultural.portovelho.ro.gov.br/arquivos?folder=33997',
+  discovery: { hops: 'callPage', callPageUrlParts: ['?folder='], callsFiledInYearFolders: true },
+  documentUrlParts: ['/uploads/arquivos/'],
+  timeZone: ianaTimeZone.parse('America/Porto_Velho'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1273,4 +1292,5 @@ export const registeredSources: readonly Source[] = [
   santaLuziaMapasSource,
   rioBrancoCulturaSource,
   caruaruOportunidadesSource,
+  portoVelhoFunculturalSource,
 ];
