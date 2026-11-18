@@ -48,9 +48,12 @@ describe('reasonToSkipReadingDocuments', () => {
     expect(reason({ registrationCloses: closingIn(300 * day) })).toBeNull();
   });
 
-  test('a draft or test title is skipped, whatever its case and accents', () => {
-    expect(reason({ title: 'TESTE EDITAL' })).toBe('draftTitle');
-    expect(reason({ title: 'Edital em construção' })).toBe('draftTitle');
+  test('a draft, test or accountability title is skipped, whatever its case and accents', () => {
+    expect(reason({ title: 'TESTE EDITAL' })).toBe('notACallTitle');
+    expect(reason({ title: 'Edital em construção' })).toBe('notACallTitle');
+    expect(reason({ title: 'Prestação de Contas - FOMENTO ANICETO MATTI 2024' })).toBe(
+      'notACallTitle',
+    );
     expect(reason({ title: 'Edital de Teatro e Contestação' })).toBeNull();
   });
 
@@ -216,6 +219,14 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     expect(
       callNoticeDocumentRole(`${ba}/x.pdf`, 'Portaria 270 - Convocação de suplentes'),
     ).toBeNull();
+  });
+
+  test('a notice may start with its SEI document number; a decree with one is still no notice (Maringá)', () => {
+    const mga = 'https://maringacultura.maringa.pr.gov.br/files/opportunity/912';
+    expect(callNoticeDocumentRole(`${mga}/sei-9911864-edital-6-1.pdf`)).toBe('callNotice');
+    expect(callNoticeDocumentRole(`${mga}/sei_179381701_edital_21-pdf`)).toBe('callNotice');
+    expect(callNoticeDocumentRole(`${mga}/sei_179379910_portaria_209-pdf`)).toBeNull();
+    expect(callNoticeDocumentRole(`${mga}/sei-9759096-notificacao-n-26.pdf`)).toBeNull();
   });
 
   test("a council's resolution can be the rules; one annexed to them is not (São Bernardo, Natal)", () => {

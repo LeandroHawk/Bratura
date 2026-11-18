@@ -18,12 +18,16 @@ export const readableRegistrationCloses = (now: number) => ({
   to: now + openEndedRegistrationAfterMs,
 });
 
-/** Mapas titles of drafts and tests, compared without accents or case. */
-const draftTitlePattern = /\b(teste|em construcao)\b/;
+/**
+ * Mapas titles that are no call, compared without accents or case: drafts and tests, and the
+ * accountability a call's winners file (Maringá, 2026-11-17: "Prestação de Contas - FOMENTO…",
+ * open to 01/12 with the old notice attached).
+ */
+const notACallTitlePattern = /\b(teste|em construcao|prestacao de contas)\b/;
 
 type CallNoticeToScreen = Pick<CallNotice, 'title' | 'documentUrls' | 'registrationCloses'>;
 
-export type ReasonToSkipReadingDocuments = 'closed' | 'openEnded' | 'draftTitle' | 'noDocuments';
+export type ReasonToSkipReadingDocuments = 'closed' | 'openEnded' | 'notACallTitle' | 'noDocuments';
 
 /** Why a call notice's documents are not worth credits, or `null` to read them. */
 export function reasonToSkipReadingDocuments(
@@ -32,7 +36,7 @@ export function reasonToSkipReadingDocuments(
 ): ReasonToSkipReadingDocuments | null {
   const deadline = callNoticeDeadline({ registrationCloses }, now);
   if (deadline === 'closed' || deadline === 'openEnded') return deadline;
-  if (draftTitlePattern.test(plainText(title))) return 'draftTitle';
+  if (notACallTitlePattern.test(plainText(title))) return 'notACallTitle';
   if (documentUrls.length === 0) return 'noDocuments';
   return null;
 }
@@ -57,6 +61,12 @@ const personalDataName = new RegExp(
 const noticeWords = 'edital|chamada|chamamento|convocatoria';
 
 /**
+ * What a notice's file name may start with before its word: a number ("0.", "01_"), a roman
+ * numeral, or its SEI document number ("sei-9911864-edital-6-1.pdf", Maringá, 2026-11-17).
+ */
+const noticeNamePrefix = '(\\d+[-_.]*|i+-|sei[-_]\\d+[-_])?';
+
+/**
  * Name rules, first match wins; `null` is never read: forms are what an applicant fills in, not the
  * rules, and procurement or notices about a call are not the call. A contract signed without a call
  * ("inexigibilidade", Funesc's "TERMO INEX CHAMAMENTO PUBLICO", 2026-11-17) is procurement too.
@@ -71,7 +81,10 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ],
   // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
   // A council's resolution can be the rules (São Bernardo, Natal on Mapas, 2026-11-17).
-  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento|resolucao)(?!.*anexo)`)],
+  [
+    'callNotice',
+    new RegExp(`^${noticeNamePrefix}(${noticeWords}|regulamento|resolucao)(?!.*anexo)`),
+  ],
   [
     null,
     /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao|inexigib|(^|-)inex-/,
@@ -83,7 +96,7 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   [
     'callNotice',
     new RegExp(
-      `^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo-?(\\d|[ivx]+([-.]|$))|.*editave)`,
+      `^${noticeNamePrefix}(${noticeWords}|regulamento)(?!.*anexo-?(\\d|[ivx]+([-.]|$))|.*editave)`,
     ),
   ],
 ];

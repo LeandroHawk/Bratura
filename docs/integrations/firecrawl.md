@@ -83,7 +83,7 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   `formats: ['rawHtml']` and `location: { country: 'BR' }` returned Pernambuco's and Sergipe's Mapas
   API JSON intact in 2–3 s and Ponta Grossa's listing in 6 s, while without the location Firecrawl
   failed like Convex. For those sources the daily ingestion fetches the listing (and each call page)
-  through Firecrawl, 1 credit per page per day: 5 sources on 2026-11-17 (São Bernardo added), about 5 credits a day.
+  through Firecrawl, 1 credit per page per day: 6 sources on 2026-11-17 (São Bernardo and Maringá added), about 6 credits a day.
   Those reads ask `maxAge: 0` (the default cache would answer a listing up to two days old), keep
   the caller's timeout (30 s a page, 60 s for Mapas; Firecrawl's own `timeout` is 10 s shorter so
   its error arrives first), are spaced 6.5 s apart and retried once after a 429, as document reads

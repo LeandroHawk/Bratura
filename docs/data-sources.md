@@ -34,7 +34,7 @@ Public JSON, no auth. Instances confirmed working:
 | Canindé-CE | `mapacultural.caninde.ce.gov.br` | 0 (monitor) | 0 | — |
 
 **Sources that answer only from Brazil** (`answersOnlyFromBrazil` in the registry; 2026-11-16):
-Pernambuco, Sergipe and São Bernardo do Campo Mapas, Ponta Grossa, Secult Alagoas 2026 and Secec DF. They time out from
+Pernambuco, Sergipe, São Bernardo do Campo and Maringá Mapas, Ponta Grossa, Secult Alagoas 2026 and Secec DF. They time out from
 Convex (US East) in 30 s and answer from Brazil, so their listing, call pages and documents are
 fetched by Firecrawl with a Brazilian location (1 credit per page;
 `docs/integrations/firecrawl.md`, Decisions). Pernambuco and Ponta Grossa, off until then, are on
@@ -99,6 +99,7 @@ ingestion recorded 0 and they wait for PNAB Ciclo 3):
 | Mapa Cultura Goiás (14 municipalities, privately run, operator not named; added 2026-11-17) | `mapa.culturagoias.com.br` | 1 open (Professor Jamil, Chamamento 06/2026, to 19/11) | `Etc/GMT+3` |
 | Lagoa Santa-MG (added 2026-11-17) | `mapacultural.lagoasanta.mg.gov.br` | 7 (PNAB Ciclo 3 in public consultation to 14/12) | `Etc/GMT+3` |
 | São Bernardo do Campo-SP (added 2026-11-17, through Firecrawl from Brazil) | `mapacultural.saobernardo.sp.gov.br` | 42 (CeMAM choirs' meeting open to 22/11) | `Etc/GMT+3` |
+| Maringá-PR (added 2026-11-17, through Firecrawl from Brazil) | `maringacultura.maringa.pr.gov.br` | 21 (4 open: Ocupação dos Espaços Culturais 2027, Bolsas Cultura Viva, CEU das Artes, Pontão de Cultura; its notices are named by SEI number, `sei-…-edital-…pdf`) | `Etc/GMT+3` |
 
 `robots.txt` answers the app's HTML page on all four (2026-11-15): nothing declared. Terms:
 Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas template, not read in
@@ -114,6 +115,8 @@ Lagoa Santa (2026-11-17): `robots.txt` allows `*` with `Content-Signal: search=y
 `/termos-de-uso` serves the Mapas template; nothing here trains a model, and each call is shown with
 its source link: registered by the team's decision.
 São Bernardo (2026-11-17, read with the intermediate added): `robots.txt` and `/termos-de-uso` 404.
+Maringá (2026-11-17): `robots.txt` and `/termos-de-uso` 404. Two of its open items are a past call's
+accountability ("Prestação de Contas …"), skipped by title.
 Unlike the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
 
 **CultBR Editais** (`culteditais.cultura.gov.br`, added on 2026-11-15): the Ministry of Culture's
