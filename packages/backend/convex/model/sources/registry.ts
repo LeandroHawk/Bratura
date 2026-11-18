@@ -958,6 +958,70 @@ export const paraibaFunescSource = {
 } satisfies Source;
 
 /**
+ * Magé's Seculte (RJ): one page for every municipal notice (culture, housing, nurseries, street
+ * vendors), each call a block opened by its image, its files labelled only "Edital", "Errata",
+ * "Resultado" (the number is in the file name, and not always: 009 is `EDITAL-ESCOLA-DO-SAMBA-4`).
+ * Off: `documentsOnListing` reads no call from it (measured 2026-11-18); it needs a call number
+ * from the file name and the image as the call's boundary. Its 2026 culture calls (007–014, PNAB
+ * Ciclo 2) all post final results.
+ */
+export const mageSeculteSource = {
+  kind: 'officialPage',
+  slug: 'mage-seculte-editais',
+  name: 'Magé — Seculte, editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://mage.rj.gov.br/editais/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Balneário Camboriú's Fundação Cultural (SC): ~11 numbered calls a year. 7 of 2026's are posts
+ * with the notice linked; 4 (003, 008, 010, 011, PNAB among them) are hub pages linking only result
+ * posts, a hop the reader does not take. Off (measured 2026-11-18): the listing also links the
+ * council's minutes and other frame pages, and 5 of the 7 posts print no close, so closed calls
+ * would be read.
+ */
+export const balnearioCamboriuFcbcSource = {
+  kind: 'officialPage',
+  slug: 'balneario-camboriu-fcbc-editais',
+  name: 'Balneário Camboriú — Fundação Cultural, editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://culturabc.com.br/editais-fundacao-cultural/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['culturabc.com.br/20', 'culturabc.com.br/editais-fundacao-cultural/edital-'],
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Itajaí's Fundação Cultural (SC), "Abertos 2026": ~16 calls in 2026, Elementor puts each
+ * document link under its own heading and labels say "EDITAL 015 – …" with no year. Off (measured
+ * 2026-11-18): `documentsOnListing` groups wrongly (016 takes 21 documents of other calls) and
+ * `documentsUnderHeadings` finds none; it needs a call number without a year and a heading per
+ * document.
+ */
+export const itajaiFciSource = {
+  kind: 'officialPage',
+  slug: 'itajai-fci-abertos',
+  name: 'Itajaí — Fundação Cultural, editais abertos',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://fundacaocultural.itajai.sc.gov.br/abertos-2026/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
  * Lagoa Santa's Mapas: 7 calls in 2026, none open on 2026-11-17 (PNAB Ciclo 3 in public
  * consultation to 14/12). Its robots allows all, with Cloudflare's `ai-train=no` content signal.
  */
@@ -1152,6 +1216,9 @@ export const registeredSources: readonly Source[] = [
   goiasMunicipalitiesMapasSource,
   pauloAfonsoSeculteSource,
   paraibaFunescSource,
+  mageSeculteSource,
+  balnearioCamboriuFcbcSource,
+  itajaiFciSource,
   lagoaSantaMapasSource,
   saoBernardoMapasSource,
   bahiaPnabPlatformSource,
