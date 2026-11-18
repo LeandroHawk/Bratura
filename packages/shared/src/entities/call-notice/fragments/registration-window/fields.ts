@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { ZonedInstantSchema } from '../../../../primitives/code/time/zoned-instant/fields';
 
 /**
- * Writes: `recordCallNotice`. Comes from: the listing [Mapas `registrationFrom`, `registrationTo`].
+ * Writes: `recordCallNotice`. Comes from: the listing [Mapas `registrationFrom`, `registrationTo`;
+ * an official page's close as its text prints it, `registrationClosePrintedIn`].
  * When applications open and close, as published; `null` when the source does not say.
  */
 export const CallNoticeRegistrationWindowFields = z.object({

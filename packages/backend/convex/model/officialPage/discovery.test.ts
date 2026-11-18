@@ -115,6 +115,7 @@ describe('callsOfCallPages', () => {
             label: 'ANEXO I - DETALHAMENTO DO OBJETO.pdf',
           },
         ],
+        registrationCloses: null,
       },
     ]);
   });
@@ -225,6 +226,7 @@ describe('callsOfCallPages', () => {
           { url: annex, label: 'ANEXO 1 - FORMULÁRIO DE INSCRIÇÃO' },
           { url: categories, label: 'ANEXO 9 - CATEGORIAS E VAGAS' },
         ],
+        registrationCloses: null,
       },
     ]);
   });
@@ -588,6 +590,7 @@ describe('callsOfDocumentsOnListing', () => {
           { url: url(5062), label: 'Edital FEC 06/2026 - Coreto - Retificado em 10/11/26' },
           { url: url(4833), label: 'Anexo I - Critérios de avaliação' },
         ],
+        registrationCloses: null,
       },
     ]);
   });
@@ -627,7 +630,7 @@ describe('callsOfDocumentsUnderHeadings', () => {
   const files = `${site}/wp-content/uploads/2026/11`;
   const html = [
     '<h1>Editais e Regulamentos</h1>',
-    `<h1>BLOCOS DE CARNAVAL DE RUA 2027</h1><p>Período de inscrições: 03/11 a 19/11</p>`,
+    `<h1>BLOCOS DE CARNAVAL DE RUA 2027</h1><p>Período de inscrições: de 03 de novembro a 19 de novembro de 2026</p>`,
     a(`${files}/Publicacao_edital-Blocos.pdf`, 'Imprensa'),
     a(`${files}/Edital_Blocos-de-Carnaval_2027.pdf`, 'PDF'),
     a(`${files}/ANEXO-I_-EDITAL-No-25_2026_Blocos.pdf`, 'Anexo I'),
@@ -640,7 +643,7 @@ describe('callsOfDocumentsUnderHeadings', () => {
     a(`${files}/Edital-02-2023.pdf`, 'Edital'),
   ].join('');
 
-  test('one call per heading with a notice under it, the heading as its name and id; no result posted, none older', () => {
+  test('one call per heading with a notice under it, the heading as its name and id, the close its text prints; no result posted, none older', () => {
     const calls = callsOfDocumentsUnderHeadings(jundiaiCultureSource, {
       html,
       url: jundiaiCultureSource.listingUrl,
@@ -655,6 +658,11 @@ describe('callsOfDocumentsUnderHeadings', () => {
           { url: `${files}/Edital_Blocos-de-Carnaval_2027.pdf`, label: 'PDF' },
           { url: `${files}/ANEXO-I_-EDITAL-No-25_2026_Blocos.pdf`, label: 'Anexo I' },
         ],
+        registrationCloses: {
+          at: Date.UTC(2026, 10, 20, 2, 59, 59),
+          timeZone: jundiaiCultureSource.timeZone,
+          precision: 'day',
+        },
       },
     ]);
   });

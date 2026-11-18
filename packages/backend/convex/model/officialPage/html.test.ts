@@ -105,7 +105,7 @@ describe('headingOfHtml', () => {
 });
 
 describe('sectionsOfHtml', () => {
-  test('each link goes under the heading above it, once; a link above every heading goes nowhere', () => {
+  test('each link goes under the heading above it, once, with the text between; what is above every heading goes nowhere', () => {
     const page = 'https://cultura.jundiai.sp.gov.br/editais-e-regulamentos/';
     const html = [
       '<a href="/decreto.pdf">Decreto</a><h1>Editais</h1>',
@@ -113,15 +113,17 @@ describe('sectionsOfHtml', () => {
       '<h2>ENCERRADOS</h2><h1>CORTE <em>AFRO</em></h1><a href="/c.pdf">Edital</a>',
     ].join('');
     expect(sectionsOfHtml(html, page)).toEqual([
-      { heading: 'Editais', links: [] },
+      { heading: 'Editais', links: [], text: '' },
       {
         heading: 'BLOCOS DE CARNAVAL',
         links: [{ url: 'https://cultura.jundiai.sp.gov.br/b.pdf', label: 'PDF' }],
+        text: 'Período PDF Edital',
       },
-      { heading: 'ENCERRADOS', links: [] },
+      { heading: 'ENCERRADOS', links: [], text: '' },
       {
         heading: 'CORTE AFRO',
         links: [{ url: 'https://cultura.jundiai.sp.gov.br/c.pdf', label: 'Edital' }],
+        text: 'Edital',
       },
     ]);
   });
@@ -140,7 +142,9 @@ describe('sectionsOfHtml', () => {
       '2026',
       'RECIFE É DE CINEMA',
     ]);
-    expect(sectionsOfHtml(html, page, 'x-acc-header')).toEqual([
+    expect(
+      sectionsOfHtml(html, page, 'x-acc-header').map(({ heading, links }) => ({ heading, links })),
+    ).toEqual([
       {
         heading: '2026',
         links: [

@@ -12,10 +12,12 @@ import {
   onePerUrl,
   sectionsOfHtml,
   textOfClass,
+  textOfHtml,
   titleOfHtml,
   type PageLink,
 } from './html';
 import type { OfficialPageCall } from './payload';
+import { registrationClosePrintedIn } from './registrationClose';
 
 /** An official page whose listing links one page per call. */
 type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
@@ -235,6 +237,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     let page: PageLink[];
     let heading: string;
     let pageTitle: string;
+    let pageText: string;
     try {
       const fetched = await fetchPageHtml(url, source.listingUrl, source);
       if (
@@ -246,6 +249,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       page = linksOfHtml(fetched.html, fetched.url);
       heading = headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);
+      pageText = textOfHtml(fetched.html);
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
@@ -269,7 +273,13 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         ? heading || numberedNotice?.label
         : label;
     if (!title) continue;
-    calls.push({ externalId: url, title, officialUrl: url, documents: kept });
+    calls.push({
+      externalId: url,
+      title,
+      officialUrl: url,
+      documents: kept,
+      registrationCloses: registrationClosePrintedIn(pageText, source.timeZone),
+    });
   }
   return calls;
 }
@@ -371,6 +381,8 @@ export function callsOfDocumentsOnListing(
         title: recorded.notice.label,
         officialUrl: source.listingUrl,
         documents: recorded.kept,
+        // A listing of bare files printed no close (12 calls measured, 2026-11-18).
+        registrationCloses: null,
       },
     ];
   });
@@ -400,7 +412,7 @@ export function callsOfDocumentsUnderHeadings(
   { html, url }: FetchedPage,
 ): OfficialPageCall[] {
   const { headingClass } = source.discovery;
-  return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links }) => {
+  return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links, text }) => {
     const heading = withoutLeadingSymbols(rawHeading);
     if (!heading || headingNamesAPastCall(heading)) return [];
     const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
@@ -411,6 +423,7 @@ export function callsOfDocumentsUnderHeadings(
         title: heading,
         officialUrl: source.listingUrl,
         documents: recorded.kept,
+        registrationCloses: registrationClosePrintedIn(text, source.timeZone),
       },
     ];
   });
