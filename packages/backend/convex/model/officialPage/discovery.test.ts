@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   badescCultureSource,
   bahiaFuncebSource,
+  tocantinsPnabPlatformSource,
   chamberOfDeputiesCultureSource,
   estanciaCultureCallsSource,
   funarteCallsSource,
@@ -180,6 +181,52 @@ describe('callsOfCallPages', () => {
       [inside]: a(`${call}/edital-001_2026.pdf`, 'Edital 001/2026'),
     });
     expect((await callsOf(source)).map(({ externalId }) => externalId)).toEqual([call]);
+  });
+
+  test('the PNAB platform: calls at root slugs beside its home, each file titled by its link (Tocantins)', async () => {
+    const site = 'https://pnabtocantins.com.br';
+    const base64 = (text: string) => btoa(String.fromCharCode(...new TextEncoder().encode(text)));
+    const file = (id: number, title: string) =>
+      `${site}/lerarquivo/${base64(`upload/edital_documento/25/edital-25-documento-${id}.pdf`)}/${base64(title)}`;
+    const notice = file(371, 'EDITAL Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS');
+    const annex = file(372, 'ANEXO 1 - FORMULÁRIO DE INSCRIÇÃO');
+    const categories = file(380, 'ANEXO 9 - CATEGORIAS E VAGAS');
+    siteAnswers({
+      [tocantinsPnabPlatformSource.listingUrl]: [
+        a(`${site}/`, 'Início'),
+        a(`${site}/faq`, 'FAQ'),
+        a(`${site}/fomento-cultura-urbana`, 'Acessar'),
+        a(`${site}/fomento-povo-indigena`, 'Acessar'),
+      ].join(''),
+      [`${site}/`]: a(`${site}/fomento-cultura-urbana`, 'Acessar'),
+      [`${site}/faq`]: '<h1>Dúvidas</h1>',
+      [`${site}/fomento-cultura-urbana`]:
+        '<h1>EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS</h1>' +
+        [
+          a(notice, 'Baixar Edital em PDF'),
+          a(notice, 'Baixar'),
+          a(annex, 'Baixar'),
+          a(categories, 'Baixar'),
+        ].join(''),
+      [`${site}/fomento-povo-indigena`]:
+        '<h1>EDITAL Nº 05/2026 - POVOS INDÍGENAS</h1>' +
+        [
+          a(file(390, 'EDITAL Nº 05/2026 - POVOS INDÍGENAS'), 'Baixar'),
+          a(file(408, 'RESULTADO FINAL ETAPA DE AVALIAÇÃO'), 'Baixar'),
+        ].join(''),
+    });
+    expect(await callsOf(tocantinsPnabPlatformSource)).toEqual([
+      {
+        externalId: `${site}/fomento-cultura-urbana`,
+        title: 'EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS',
+        officialUrl: `${site}/fomento-cultura-urbana`,
+        documents: [
+          { url: notice, label: 'EDITAL Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS' },
+          { url: annex, label: 'ANEXO 1 - FORMULÁRIO DE INSCRIÇÃO' },
+          { url: categories, label: 'ANEXO 9 - CATEGORIAS E VAGAS' },
+        ],
+      },
+    ]);
   });
 
   test("a call's notice the listing links through its /view page is the call's, not the frame (Câmara)", async () => {

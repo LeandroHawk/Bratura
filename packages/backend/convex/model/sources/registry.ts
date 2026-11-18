@@ -986,6 +986,63 @@ export const saoBernardoMapasSource = {
   baseUrl: 'https://mapacultural.saobernardo.sp.gov.br',
 } satisfies Source;
 
+/**
+ * The PNAB platform several states run (one build; vendor not named): its listing of open calls
+ * only, each a page at a root slug ("Acessar") titled by its `<h1>`, files at `/lerarquivo/…`.
+ * Measured 2026-11-17: 0 open on all six (~44 calls in 2026), the next wave is PNAB Ciclo 3.
+ * Menu pages on the host link no file, so they record nothing.
+ */
+const pnabPlatformSource = (slug: string, name: string, host: string, timeZone: string) =>
+  ({
+    kind: 'officialPage',
+    slug,
+    name,
+    isActive: true,
+    robotsCheckedOn: '2026-11-17',
+    termsCheckedOn: '2026-11-17',
+    listingUrl: `https://${host}/editais?situacao=abertos`,
+    discovery: { hops: 'callPage', callPageUrlParts: [`${host}/`] },
+    documentUrlParts: ['/lerarquivo/'],
+    timeZone: ianaTimeZone.parse(timeZone),
+  }) satisfies Source;
+
+export const bahiaPnabPlatformSource = pnabPlatformSource(
+  'pnab-bahia',
+  'PNAB Bahia — editais (Secult-BA)',
+  'bahiapnab.com.br',
+  'America/Bahia',
+);
+export const piauiPnabPlatformSource = pnabPlatformSource(
+  'pnab-piaui',
+  'PNAB Piauí — editais',
+  'pnabpiaui.com.br',
+  'America/Fortaleza',
+);
+export const amazonasPnabPlatformSource = pnabPlatformSource(
+  'pnab-amazonas',
+  'PNAB Amazonas — editais',
+  'pnab.cultura.am.gov.br',
+  'America/Manaus',
+);
+export const amapaPnabPlatformSource = pnabPlatformSource(
+  'pnab-amapa',
+  'PNAB Amapá — editais',
+  'pnabamapa.com.br',
+  'America/Belem',
+);
+export const tocantinsPnabPlatformSource = pnabPlatformSource(
+  'pnab-tocantins',
+  'PNAB Tocantins — editais',
+  'pnabtocantins.com.br',
+  'America/Araguaina',
+);
+export const macapaPnabPlatformSource = pnabPlatformSource(
+  'pnab-macapa',
+  'PNAB Macapá — editais (Fumcult)',
+  'pnabmacapa.com.br',
+  'America/Belem',
+);
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1056,4 +1113,10 @@ export const registeredSources: readonly Source[] = [
   paraibaFunescSource,
   lagoaSantaMapasSource,
   saoBernardoMapasSource,
+  bahiaPnabPlatformSource,
+  piauiPnabPlatformSource,
+  amazonasPnabPlatformSource,
+  amapaPnabPlatformSource,
+  tocantinsPnabPlatformSource,
+  macapaPnabPlatformSource,
 ];
