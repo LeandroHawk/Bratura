@@ -58,7 +58,8 @@ const noticeWords = 'edital|chamada|chamamento|convocatoria';
 
 /**
  * Name rules, first match wins; `null` is never read: forms are what an applicant fills in, not the
- * rules, and procurement or notices about a call are not the call.
+ * rules, and procurement or notices about a call are not the call. A contract signed without a call
+ * ("inexigibilidade", Funesc's "TERMO INEX CHAMAMENTO PUBLICO", 2026-11-17) is procurement too.
  */
 const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ['callNotice', /consolidacao/],
@@ -72,7 +73,7 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo)`)],
   [
     null,
-    /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao/,
+    /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao|inexigib|(^|-)inex-/,
   ],
   ['criteria', /criterio|pontuacao|avaliacao/],
   ['categories', /categoria|vaga/],

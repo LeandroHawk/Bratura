@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   badescCultureSource,
   bahiaFuncebSource,
+  chamberOfDeputiesCultureSource,
   estanciaCultureCallsSource,
   funarteCallsSource,
   maranhaoSecmaSource,
@@ -162,6 +163,35 @@ describe('callsOfCallPages', () => {
     expect(call?.documents.map(({ url }) => url)).toEqual([
       `${chamadas}/marc-ferrez/Edital_MarcFerrez_final.pdf`,
     ]);
+  });
+
+  test("a page inside another call page's folder is part of that call, not a call (Funesc)", async () => {
+    const listing = 'https://funesc.pb.gov.br/editais';
+    const call = `${listing}/edital-selecao-de-musicos-bolsistas-2026`;
+    const inside = `${call}/audicoes-pecas-de-confronto`;
+    const source = {
+      ...chamberOfDeputiesCultureSource,
+      listingUrl: listing,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['funesc.pb.gov.br/editais/'] },
+    };
+    siteAnswers({
+      [listing]: a(call, 'Edital Seleção de músicos bolsistas 2026') + a(inside, 'Audições'),
+      [call]: a(`${call}/edital-001_2026.pdf`, 'Edital 001/2026'),
+      [inside]: a(`${call}/edital-001_2026.pdf`, 'Edital 001/2026'),
+    });
+    expect((await callsOf(source)).map(({ externalId }) => externalId)).toEqual([call]);
+  });
+
+  test("a call's notice the listing links through its /view page is the call's, not the frame (Câmara)", async () => {
+    const listing = chamberOfDeputiesCultureSource.listingUrl;
+    const page = `${listing}/edital-2026`;
+    const notice = `${listing}/EditaldeSeleoCultural012026.pdf`;
+    siteAnswers({
+      [listing]: a(page, 'Abertura Edital 2026/2027') + a(`${notice}/view`, 'Edital 01/2026'),
+      [page]: a(notice, 'Edital de Seleção Cultural 01/2026'),
+    });
+    const [call] = await callsOf(chamberOfDeputiesCultureSource);
+    expect(call?.documents.map(({ url }) => url)).toEqual([notice]);
   });
 
   test('a "Clique aqui!" link names no call: the call page\'s own heading does (Salvador)', async () => {
@@ -513,6 +543,35 @@ describe('callsOfDocumentsOnListing', () => {
         ],
       },
     ]);
+  });
+
+  test("a Plone file's /view page is read as the file it shows, each file once (Funesc)", () => {
+    const funesc = {
+      ...source,
+      slug: 'pb-funesc-editais',
+      listingUrl: 'https://funesc.pb.gov.br/editais/edital-panapana-2026',
+      documentUrlParts: ['.pdf'],
+    };
+    const file = `${funesc.listingUrl}/edital-012_2026-panapana-2026.pdf`;
+    const annex = `${funesc.listingUrl}/anexo-i-criterios.pdf`;
+    const listing = [
+      a(`${file}/view`, 'Edital 012/2026 - Panapaná 2026'),
+      a(`${annex}/view`, 'Anexo I - Critérios de avaliação'),
+      a(annex, 'Baixar'),
+    ].join('');
+    expect(
+      callsOfDocumentsOnListing(funesc, { html: listing, url: funesc.listingUrl })[0]?.documents,
+    ).toEqual([
+      { url: file, label: 'Edital 012/2026 - Panapaná 2026' },
+      { url: annex, label: 'Anexo I - Critérios de avaliação' },
+    ]);
+    const site = a('https://funesc.pb.gov.br/view', 'Edital 012/2026 - Panapaná 2026');
+    expect(
+      callsOfDocumentsOnListing(
+        { ...funesc, documentUrlParts: ['funesc.pb.gov.br'] },
+        { html: site, url: funesc.listingUrl },
+      )[0]?.documents,
+    ).toEqual([{ url: 'https://funesc.pb.gov.br/view', label: 'Edital 012/2026 - Panapaná 2026' }]);
   });
 });
 
