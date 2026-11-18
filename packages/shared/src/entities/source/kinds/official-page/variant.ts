@@ -68,6 +68,11 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     callsFiledInYearFolders: z.boolean().optional(),
     /**
+     * A call page holds folders, not files: the links below its own path are opened, one level, for
+     * its documents (FJA-RN: "PUBLICAÇÕES CHAMADA 01_26" with the notice, "ANEXOS…" with forms).
+     */
+    callFilesInSubfolders: z.boolean().optional(),
+    /**
      * The listing links one page per year, named by the year alone, and each year page links its
      * calls' pages (Erechim: "PNAB" → "2026" → "PNAB - Edital nº 04/2026"). This and last year's
      * are opened: the listing stays the same URL when a new year's page appears.

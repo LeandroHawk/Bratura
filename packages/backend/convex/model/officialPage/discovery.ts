@@ -207,6 +207,20 @@ function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
 }
 
 /**
+ * A link text cut short with "..." (FJA-RN, 2026-11-18: "CHAMADA PÚBLICA Nº 002_2026 ARTISTAS,
+ * GR...") as the whole name its URL's last segment spells, when that segment starts with the text.
+ */
+function withUntruncatedLabel(link: PageLink): PageLink {
+  const shown = /^(.*\S)\s*(\.{3}|…)$/.exec(link.label)?.[1];
+  if (!shown) return link;
+  const spaced = (text: string) => text.replace(/\s+/g, ' ').trim();
+  const segment = spaced(fileNameOf(link.url.replace(/\/$/, '')));
+  return plainText(segment).startsWith(plainText(spaced(shown)))
+    ? { ...link, label: segment }
+    : link;
+}
+
+/**
  * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`), each
  * title spaced as a link text is: an item with no id or no text title is skipped.
  */
@@ -249,19 +263,33 @@ async function linksInRecentYears(
 }
 
 /**
- * The links in a call folder's subfolders (`callsFiledInYearFolders`: Porto Velho files most
- * documents, results included, one folder each). Stops at the first result posted, on the call
+ * The folders a call page links under its own path (`callFilesInSubfolders`: FJA-RN's "PUBLICAÇÕES
+ * CHAMADA 01_26", "ANEXOS PARA INSCRIÇÃO…"); breadcrumbs and menus sit above it.
+ */
+function subfoldersLinkedBelow({ html, url }: FetchedPage, source: CallPageSource) {
+  const folder = url.endsWith('/') ? url : `${url}/`;
+  return linksOfHtml(html, url).filter(
+    (link) =>
+      link.url.startsWith(folder) &&
+      link.url !== folder &&
+      !source.documentUrlParts.some((part) => link.url.includes(part)),
+  );
+}
+
+/**
+ * The links in a call's `subfolders` (Porto Velho files most documents, results included, one
+ * folder each; FJA-RN, notices and annexes apart). Stops at the first result posted, on the call
  * page or below: the call is dropped anyway, and 002/2026 holds 18 subfolders. Throws past
  * `deadline`: a call cut short could miss its result and pay for a closed call.
  */
 async function linksInSubfolders(
-  callPage: FetchedPage,
+  subfolders: PageLink[],
   links: PageLink[],
   source: CallPageSource,
   { spacingMs, deadline }: { spacingMs: number; deadline: number },
 ) {
   const found: PageLink[] = [];
-  for (const subfolder of folderLinksOfHtml(callPage.html, callPage.url)) {
+  for (const subfolder of subfolders) {
     if (hasPublishedResult(documentLinksOf([...links, ...found], source.documentUrlParts))) break;
     if (Date.now() > deadline) throw new Error('Subfolders left unread for lack of time');
     await pause(spacingMs);
@@ -306,7 +334,8 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
   // source says so (`callPageNeedsNotice`: folders of courses and plans).
   const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
-  const { callPagePublishedAtClass, callsFiledInYearFolders } = source.discovery;
+  const { callPagePublishedAtClass, callsFiledInYearFolders, callFilesInSubfolders } =
+    source.discovery;
   const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
@@ -315,7 +344,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
    */
   const frameUrls = new Set(listing.map(({ url }) => url));
   const callPages = onePerUrl(
-    listing.map((link) => withHttpsOnHost(link, source.listingUrl)),
+    listing.map((link) => withUntruncatedLabel(withHttpsOnHost(link, source.listingUrl))),
   ).filter(
     ({ url, label }) =>
       label &&
@@ -363,9 +392,12 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         continue;
       }
       page = linksOfHtml(fetched.html, fetched.url);
-      if (callsFiledInYearFolders) {
-        page.push(...(await linksInSubfolders(fetched, page, source, { spacingMs, deadline })));
-      }
+      const subfolders = callsFiledInYearFolders
+        ? folderLinksOfHtml(fetched.html, fetched.url)
+        : callFilesInSubfolders
+          ? subfoldersLinkedBelow(fetched, source)
+          : [];
+      page.push(...(await linksInSubfolders(subfolders, page, source, { spacingMs, deadline })));
       heading = headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);
       pageText = textOfHtml(fetched.html);
