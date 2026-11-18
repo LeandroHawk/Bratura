@@ -1309,6 +1309,26 @@ export const erechimPnabSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Araxá's Fundação Calmon Barreto (MG), PNAB Ciclo 2: one page per item, calls ("EDITAL DE
+ * CHAMAMENTO PÚBLICO Nº 01/2026 …") mixed with notices to all calls (schedule, applicants list,
+ * results), files in `/dados/fomento/`. Off (measured 2026-11-18): results are items of their own,
+ * never on the call's page, which prints no close, so its 3 closed calls would cost 139 pages; the
+ * schedule's file reads as a notice; each cycle is a new category of `/fomento`.
+ */
+export const araxaCalmonBarretoSource = {
+  kind: 'officialPage',
+  slug: 'araxa-calmon-barreto-pnab-ciclo-2',
+  name: 'Araxá — Fundação Calmon Barreto, PNAB Ciclo 2',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://fundacaocalmonbarreto.mg.gov.br/fomento/categoria/6/lei-aldir-blanc-ciclo-2',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/lei-aldir-blanc-ciclo-2/link/'] },
+  documentUrlParts: ['/dados/fomento/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1398,4 +1418,5 @@ export const registeredSources: readonly Source[] = [
   clovisSalgadoFoundationSource,
   matoGrossoDoSulFcmsSource,
   erechimPnabSource,
+  araxaCalmonBarretoSource,
 ];
