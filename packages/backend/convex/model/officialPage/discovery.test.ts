@@ -514,10 +514,11 @@ describe('callsOfCallPages', () => {
   test('a JSON listing (Rio Branco): each item a call page by its id, titled by its field; a past edition not opened; the close the page prints', async () => {
     const site = 'https://cultura.riobranco.ac.gov.br';
     const listing = [
-      { id: 43, titulo: 'Edital 10/2026 - Pequenos Apoios - Música', status_edital: '1' },
+      { id: 43, titulo: ' Edital 10/2026 -  Pequenos Apoios - Música ', status_edital: '1' },
       { id: 42, titulo: 'Edital 09/2026 - Patrimônio Cultural' },
       { id: 6, titulo: 'Fundo Municipal de Cultura 2023 - Povos Originários' },
       { id: 7, titulo: null },
+      { id: '', titulo: 'Id vazio' },
       { titulo: 'Sem id' },
     ];
     const html = (body: string) =>

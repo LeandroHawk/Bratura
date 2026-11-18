@@ -22,6 +22,8 @@ import { registrationClosePrintedIn } from './registrationClose';
 /** An official page whose listing links one page per call. */
 type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
 
+type CallPagesListedAsJson = NonNullable<CallPageSource['discovery']['callPagesListedAsJson']>;
+
 /** An official page whose listing links each call's documents under a heading naming it. */
 type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderHeadings' } };
 
@@ -193,27 +195,30 @@ function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
 }
 
 /**
- * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`): an
- * item with no id or no text title is skipped.
+ * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`), each
+ * title spaced as a link text is: an item with no id or no text title is skipped.
  */
-export function callPageLinksOfJsonListing(items: unknown[], source: CallPageSource): PageLink[] {
-  const { callPagesListedAsJson } = source.discovery;
-  if (!callPagesListedAsJson) return [];
-  const { callPagePath, titleField } = callPagesListedAsJson;
+function callPageLinksOfJsonListing(
+  items: unknown[],
+  { callPagePath, titleField }: CallPagesListedAsJson,
+  listingUrl: string,
+): PageLink[] {
   return items.flatMap((item) => {
     const listed = JsonListedCallSchema.safeParse(item);
     const title: unknown = listed.success ? listed.data[titleField] : undefined;
     if (!listed.success || typeof title !== 'string') return [];
     const path = callPagePath.replace('{id}', encodeURIComponent(String(listed.data.id)));
-    return [{ url: new URL(path, source.listingUrl).href, label: title }];
+    return [{ url: new URL(path, listingUrl).href, label: title.replace(/\s+/g, ' ').trim() }];
   });
 }
 
 /** The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON. */
 async function linksOfCallPageListing(source: CallPageSource) {
-  if (source.discovery.callPagesListedAsJson) {
+  const { callPagesListedAsJson } = source.discovery;
+  if (callPagesListedAsJson) {
     const items = await fetchListingJson(source.listingUrl, source);
-    return { links: callPageLinksOfJsonListing(items, source), url: source.listingUrl };
+    const links = callPageLinksOfJsonListing(items, callPagesListedAsJson, source.listingUrl);
+    return { links, url: source.listingUrl };
   }
   const { html, url } = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
   return { links: linksOfHtml(html, url), url };

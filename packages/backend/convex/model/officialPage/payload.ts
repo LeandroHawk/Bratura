@@ -26,4 +26,6 @@ export type OfficialPageCall = z.infer<typeof OfficialPageCallSchema>;
  * One item of a JSON listing (`callPagesListedAsJson`): its id and, under the source's
  * `titleField`, its title. An item without both is skipped, not the listing.
  */
-export const JsonListedCallSchema = z.looseObject({ id: z.union([z.number().int(), z.string()]) });
+export const JsonListedCallSchema = z.looseObject({
+  id: z.union([z.number().int(), z.string().trim().min(1)]),
+});
