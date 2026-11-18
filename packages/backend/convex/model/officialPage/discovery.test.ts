@@ -588,7 +588,7 @@ describe('callsOfCallPages', () => {
 
   test('year folders (Porto Velho): this and last year opened, each call a folder titled by its button, files in it or a subfolder below, which stop at a result; a folder with no notice is no call', async () => {
     const file = (name: string) => a(`${portoVelhoSite}/uploads/arquivos/${name}.pdf`, name);
-    siteAnswers({
+    const fetchMock = siteAnswers({
       [portoVelhoFunculturalSource.listingUrl]: [
         a(`${portoVelhoSite}/arquivos/lista/33997?editais`, 'Editais'),
         button(88673, '2026'),
@@ -614,7 +614,6 @@ describe('callsOfCallPages', () => {
       [folder(91729)]: file('RESULTADO FINAL CONCURSO DE QUADRILHAS'),
       [folder(79491)]: file('TERMO DE INEXIGIBILIDADE DE LICITAÇÃO Nº 003-2025'),
     });
-    const fetchMock = vi.mocked(fetch);
 
     expect(await callsOf(portoVelhoFunculturalSource)).toEqual([
       {
