@@ -990,9 +990,20 @@ export const saoBernardoMapasSource = {
  * The PNAB platform several states run (one build; vendor not named): its listing of open calls
  * only, each a page at a root slug ("Acessar") titled by its `<h1>`, files at `/lerarquivo/…`.
  * Measured 2026-11-17: 0 open on all six (~44 calls in 2026), the next wave is PNAB Ciclo 3.
- * Menu pages on the host link no file, so they record nothing.
+ * Menu pages are fetched too; the two with files (Amapá's "Material de apoio", Bahia's
+ * "Transparência") are recorded with no notice, never read.
  */
-const pnabPlatformSource = (slug: string, name: string, host: string, timeZone: string) =>
+const pnabPlatformSource = ({
+  slug,
+  name,
+  host,
+  timeZone,
+}: {
+  slug: string;
+  name: string;
+  host: string;
+  timeZone: string;
+}) =>
   ({
     kind: 'officialPage',
     slug,
@@ -1006,42 +1017,42 @@ const pnabPlatformSource = (slug: string, name: string, host: string, timeZone: 
     timeZone: ianaTimeZone.parse(timeZone),
   }) satisfies Source;
 
-export const bahiaPnabPlatformSource = pnabPlatformSource(
-  'pnab-bahia',
-  'PNAB Bahia — editais (Secult-BA)',
-  'bahiapnab.com.br',
-  'America/Bahia',
-);
-export const piauiPnabPlatformSource = pnabPlatformSource(
-  'pnab-piaui',
-  'PNAB Piauí — editais',
-  'pnabpiaui.com.br',
-  'America/Fortaleza',
-);
-export const amazonasPnabPlatformSource = pnabPlatformSource(
-  'pnab-amazonas',
-  'PNAB Amazonas — editais',
-  'pnab.cultura.am.gov.br',
-  'America/Manaus',
-);
-export const amapaPnabPlatformSource = pnabPlatformSource(
-  'pnab-amapa',
-  'PNAB Amapá — editais',
-  'pnabamapa.com.br',
-  'America/Belem',
-);
-export const tocantinsPnabPlatformSource = pnabPlatformSource(
-  'pnab-tocantins',
-  'PNAB Tocantins — editais',
-  'pnabtocantins.com.br',
-  'America/Araguaina',
-);
-export const macapaPnabPlatformSource = pnabPlatformSource(
-  'pnab-macapa',
-  'PNAB Macapá — editais (Fumcult)',
-  'pnabmacapa.com.br',
-  'America/Belem',
-);
+export const bahiaPnabPlatformSource = pnabPlatformSource({
+  slug: 'pnab-bahia',
+  name: 'PNAB Bahia — editais (Secult-BA)',
+  host: 'bahiapnab.com.br',
+  timeZone: 'America/Bahia',
+});
+export const piauiPnabPlatformSource = pnabPlatformSource({
+  slug: 'pnab-piaui',
+  name: 'PNAB Piauí — editais',
+  host: 'pnabpiaui.com.br',
+  timeZone: 'America/Fortaleza',
+});
+export const amazonasPnabPlatformSource = pnabPlatformSource({
+  slug: 'pnab-amazonas',
+  name: 'PNAB Amazonas — editais',
+  host: 'pnab.cultura.am.gov.br',
+  timeZone: 'America/Manaus',
+});
+export const amapaPnabPlatformSource = pnabPlatformSource({
+  slug: 'pnab-amapa',
+  name: 'PNAB Amapá — editais',
+  host: 'pnabamapa.com.br',
+  timeZone: 'America/Belem',
+});
+export const tocantinsPnabPlatformSource = pnabPlatformSource({
+  slug: 'pnab-tocantins',
+  name: 'PNAB Tocantins — editais',
+  host: 'pnabtocantins.com.br',
+  timeZone: 'America/Araguaina',
+});
+export const macapaPnabPlatformSource = pnabPlatformSource({
+  slug: 'pnab-macapa',
+  name: 'PNAB Macapá — editais (Fumcult)',
+  host: 'pnabmacapa.com.br',
+  timeZone: 'America/Belem',
+});
 
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
