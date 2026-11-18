@@ -70,7 +70,8 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
     /errata|aditivo|adendo|prorrogacao|reabertura|retifica|cronograma-(atualizado|alterado|retificado)/,
   ],
   // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
-  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo)`)],
+  // A council's resolution can be the rules (São Bernardo, Natal on Mapas, 2026-11-17).
+  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento|resolucao)(?!.*anexo)`)],
   [
     null,
     /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao|inexigib|(^|-)inex-/,
