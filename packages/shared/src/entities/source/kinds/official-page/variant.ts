@@ -34,8 +34,8 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     callPageTitleParts: textParts.optional(),
     /**
-     * robots.txt's `Crawl-delay`, kept between any two of the site's pages (UFU: 10). At 30 s,
-     * the reader's 5 min for call pages still opens 10.
+     * robots.txt's `Crawl-delay`, kept between the pages the reader fetches (UFU: 10); Firecrawl's
+     * document reads keep their own spacing. At 30 s, the 5 min for call pages still opens 10.
      */
     crawlDelaySeconds: z.number().int().min(1).max(30).optional(),
     /**
