@@ -30,6 +30,12 @@ type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderH
 
 const currentYear = () => new Date().getUTCFullYear();
 
+/**
+ * The years whose folder or page a listing opens: in January a call opened in December still sits
+ * in last year's.
+ */
+const thisAndLastYear = () => [currentYear(), currentYear() - 1].map(String);
+
 /** Between two call pages of one site: a public office's server, not a crawl. */
 const callPageSpacingMs = 1_000;
 
@@ -217,15 +223,14 @@ const pause = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 /**
  * The call folders in this year's and last year's folders of the listing
- * (`callsFiledInYearFolders`): in January a call opened in December still sits in last year's.
- * Older years are not opened (Porto Velho keeps them back to 2019).
+ * (`callsFiledInYearFolders`). Older years are not opened (Porto Velho keeps them back to 2019).
  */
 async function callFoldersOfYearFolders(
   { html, url }: FetchedPage,
   source: CallPageSource,
   spacingMs: number,
 ) {
-  const years = [currentYear(), currentYear() - 1].map(String);
+  const years = thisAndLastYear();
   const callFolders: PageLink[] = [];
   for (const yearFolder of folderLinksOfHtml(html, url)) {
     if (!years.includes(yearFolder.label)) continue;
@@ -259,12 +264,31 @@ async function linksInSubfolders(
   return found;
 }
 
+/** The links on the listing's pages named this year or last year (`callPagesOnYearPages`). */
+async function linksOfYearPages(
+  listingLinks: PageLink[],
+  source: CallPageSource,
+  spacingMs: number,
+) {
+  const years = thisAndLastYear();
+  const found: PageLink[] = [];
+  for (const yearPage of listingLinks) {
+    if (!years.includes(yearPage.label) || !isOnSourceHost(yearPage.url, source.listingUrl))
+      continue;
+    await pause(spacingMs);
+    const page = await fetchPageHtml(yearPage.url, source.listingUrl, source);
+    found.push(...linksOfHtml(page.html, page.url));
+  }
+  return found;
+}
+
 /**
  * The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON; with
- * `callsFiledInYearFolders`, the call folders of its year folders too.
+ * `callsFiledInYearFolders`, the call folders of its year folders too, and with
+ * `callPagesOnYearPages`, the links of its year pages.
  */
 async function linksOfCallPageListing(source: CallPageSource, spacingMs: number) {
-  const { callPagesListedAsJson, callsFiledInYearFolders } = source.discovery;
+  const { callPagesListedAsJson, callsFiledInYearFolders, callPagesOnYearPages } = source.discovery;
   if (callPagesListedAsJson) {
     const items = await fetchListingJson(source.listingUrl, source);
     const links = callPageLinksOfJsonListing(items, callPagesListedAsJson, source.listingUrl);
@@ -274,6 +298,7 @@ async function linksOfCallPageListing(source: CallPageSource, spacingMs: number)
   const links = linksOfHtml(listing.html, listing.url);
   if (callsFiledInYearFolders)
     links.push(...(await callFoldersOfYearFolders(listing, source, spacingMs)));
+  if (callPagesOnYearPages) links.push(...(await linksOfYearPages(links, source, spacingMs)));
   return { links, url: listing.url };
 }
 

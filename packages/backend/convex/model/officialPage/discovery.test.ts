@@ -4,6 +4,7 @@ import {
   bahiaFuncebSource,
   tocantinsPnabPlatformSource,
   chamberOfDeputiesCultureSource,
+  erechimPnabSource,
   estanciaCultureCallsSource,
   funarteCallsSource,
   maranhaoSecmaSource,
@@ -677,6 +678,68 @@ describe('callsOfCallPages', () => {
       folder(90593),
       folder(91729),
       folder(79491),
+    ]);
+  });
+
+  test("year pages (Erechim): this and last year's pages opened for their call pages, older years and the menu not; a call with a result posted is dropped", async () => {
+    const site = 'https://www.pmerechim.rs.gov.br/';
+    const base = '<base href="https://www.pmerechim.rs.gov.br//">';
+    const uploads = (name: string) => a(`uploads/paginas/${name}.pdf`, `${name}.pdf`);
+    const callPage = (id: number) => `${site}/pagina/${id}/pnab---edital-n-0${id - 1840}2026`;
+    const yearLinks = [
+      a('pagina/1863/2025', '2025'),
+      a('pagina/1729/2024', '2024'),
+      a('pagina/1846/2026', '2026'),
+    ];
+    const fetchMock = siteAnswers({
+      [erechimPnabSource.listingUrl]: [
+        base,
+        a('pagina/200/ouvidoria', 'Ouvidoria'),
+        ...yearLinks,
+      ].join(''),
+      [`${site}/pagina/1863/2025`]: [base, ...yearLinks, uploads('Extrato do PAR')].join(''),
+      [`${site}/pagina/1846/2026`]: [
+        base,
+        ...yearLinks,
+        a('pagina/1848/pnab---edital-n-082026', 'PNAB - Edital nº 08/2026 - Cultura Viva'),
+        a('pagina/1847/pnab---edital-n-072026', 'PNAB - Edital nº 07/2026 - Fomento'),
+      ].join(''),
+      [callPage(1848)]: [
+        base,
+        uploads('Edital Cultura Viva 08-2026'),
+        uploads('Anexo 01 - Categorias'),
+      ].join(''),
+      [callPage(1847)]: [
+        base,
+        uploads('Edital de Chamamento Público nº 07-2026 - PNAB'),
+        uploads('Ata da Etapa de Seleção - resultado final - Edital 07-2026'),
+      ].join(''),
+    });
+
+    expect(await callsOf(erechimPnabSource)).toEqual([
+      {
+        externalId: callPage(1848),
+        title: 'PNAB - Edital nº 08/2026 - Cultura Viva',
+        officialUrl: callPage(1848),
+        documents: [
+          {
+            url: `${site}/uploads/paginas/Edital%20Cultura%20Viva%2008-2026.pdf`,
+            label: 'Edital Cultura Viva 08-2026.pdf',
+          },
+          {
+            url: `${site}/uploads/paginas/Anexo%2001%20-%20Categorias.pdf`,
+            label: 'Anexo 01 - Categorias.pdf',
+          },
+        ],
+        registrationCloses: null,
+      },
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      erechimPnabSource.listingUrl,
+      `${site}/pagina/1863/2025`,
+      `${site}/pagina/1846/2026`,
+      callPage(1848),
+      callPage(1847),
     ]);
   });
 

@@ -1290,6 +1290,25 @@ export const matoGrossoDoSulFcmsSource = {
   timeZone: ianaTimeZone.parse('America/Campo_Grande'),
 } satisfies Source;
 
+/**
+ * Erechim's PNAB page (RS): one page per year ("2026"), each linking its calls' pages ("PNAB -
+ * Edital nº 04/2026 - Fomento Cultural Geral"), whose files sit in `/uploads/paginas/`. Links are
+ * relative to a `<base href>` with a double slash. Its 3 calls of 2026 closed 09/04/2026 with
+ * results posted (measured 2026-11-18). `robots.txt` disallows only `/admin`; no terms page.
+ */
+export const erechimPnabSource = {
+  kind: 'officialPage',
+  slug: 'erechim-pnab',
+  name: 'Erechim — Política Nacional Aldir Blanc',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.pmerechim.rs.gov.br/pagina/1727/politica-nacional-aldir-blanc',
+  discovery: { hops: 'callPage', callPageUrlParts: ['-edital-'], callPagesOnYearPages: true },
+  documentUrlParts: ['/uploads/paginas/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1378,4 +1397,5 @@ export const registeredSources: readonly Source[] = [
   palmasFcpSource,
   clovisSalgadoFoundationSource,
   matoGrossoDoSulFcmsSource,
+  erechimPnabSource,
 ];

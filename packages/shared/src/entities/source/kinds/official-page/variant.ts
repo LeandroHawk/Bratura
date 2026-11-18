@@ -59,6 +59,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      * year, named by it, which holds one per call; a call's files sit in its folder or one below.
      */
     callsFiledInYearFolders: z.boolean().optional(),
+    /**
+     * The listing links one page per year, named by the year alone, and each year page links its
+     * calls' pages (Erechim: "PNAB" → "2026" → "PNAB - Edital nº 04/2026"). This and last year's
+     * are opened: the listing stays the same URL when a new year's page appears.
+     */
+    callPagesOnYearPages: z.boolean().optional(),
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
   z.object({
