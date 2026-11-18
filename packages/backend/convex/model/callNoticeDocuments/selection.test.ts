@@ -62,6 +62,34 @@ describe('reasonToSkipReadingDocuments', () => {
     expect(reason({ title: 'Edital de Teatro e Contestação' })).toBeNull();
   });
 
+  test("a council election or meeting sign-up is skipped (Santa Luzia's Mapas)", () => {
+    for (const title of [
+      'ELEIÇÃO DOS MEMBROS REPRESENTANTES DA SOCIEDADE CIVIL NO CONSELHO MUNICIPAL',
+      'EDITAL DE ELEIÇÃO DOS CONSELHEIROS REPRESENTANTES DA SOCIEDADE CIVIL',
+      'INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO DO CMPC (13/11/26)',
+      ' Inscrição para participação em Reunião extraordinária do CMPC',
+      'INSCRIÇÃO PARA PARTICIPAR DE REUNIÃO EXTRAORDINÁRIA DO CMPC (31/10/25)',
+    ]) {
+      expect(reason({ title })).toBe('notACallTitle');
+    }
+  });
+
+  test("a call's appeal or review step opened as its own item is skipped; raising funds is a call", () => {
+    for (const title of [
+      'Recurso - Edital Intercâmbio Circulação Audiovisual 2026',
+      'Formulário de Recurso (Resultado 13/11/2026) - Credenciamento Nacional de Pareceristas',
+      'RECURSO - FASE SELEÇÃO - PNAB CICLO 2 - Edital 04/2026 - SUBSÍDIO A ESPAÇOS CULTURAIS',
+      'CONTRARRAZÕES, RECURSO DE MÉRITO E DILIGÊNCIA - ETAPA DE SELEÇÃO - PNAB CICLO 2',
+      'Fase Avaliação Preliminar - Edital Chamamento PNAB 01/2026 - Ritmos da Terra',
+    ]) {
+      expect(reason({ title })).toBe('notACallTitle');
+    }
+    expect(
+      reason({ title: 'BOMBINHAS - EDITAL 01/FMCB/2026 – CAPTAÇÃO DE RECURSOS VIA LEI ROUANET' }),
+    ).toBeNull();
+    expect(reason({ title: 'Edital de Recursos para a Cultura 2026' })).toBeNull();
+  });
+
   test('a call without documents is skipped', () => {
     expect(reason({ documentUrls: [] })).toBe('noDocuments');
   });

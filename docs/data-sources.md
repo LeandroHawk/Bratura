@@ -100,6 +100,7 @@ ingestion recorded 0 and they wait for PNAB Ciclo 3):
 | Lagoa Santa-MG (added 2026-11-17) | `mapacultural.lagoasanta.mg.gov.br` | 7 (PNAB Ciclo 3 in public consultation to 14/12) | `Etc/GMT+3` |
 | São Bernardo do Campo-SP (added 2026-11-17, through Firecrawl from Brazil) | `mapacultural.saobernardo.sp.gov.br` | 42 (CeMAM choirs' meeting open to 22/11) | `Etc/GMT+3` |
 | Maringá-PR (added 2026-11-17, through Firecrawl from Brazil) | `maringacultura.maringa.pr.gov.br` | 21 (4 open: Ocupação dos Espaços Culturais 2027, Bolsas Cultura Viva, CEU das Artes, Pontão de Cultura; its notices are named by SEI number, `sei-…-edital-…pdf`) | `Etc/GMT+3` |
+| Santa Luzia-MG (added 2026-11-18) | `mapacultural.santaluzia.mg.gov.br` | 48 (none open; about half are council meetings, elections and appeal steps, skipped by title) | `America/Sao_Paulo` |
 
 `robots.txt` answers the app's HTML page on all four (2026-11-15): nothing declared. Terms:
 Petrolina and Paulista serve `/termos-de-uso`, rendered by script (the Mapas template, not read in
@@ -118,6 +119,8 @@ São Bernardo (2026-11-17, read with the intermediate added): `robots.txt` and `
 Maringá (2026-11-17): `robots.txt` and `/termos-de-uso` 404. Two of its open items are a past call's
 accountability ("Prestação de Contas …"), skipped by title.
 Unlike the Pernambuco state instance, both Pernambuco cities answer the cloud ingestion (under 1 s).
+Santa Luzia (2026-11-18): `robots.txt` 404; `/termos-de-uso` forbids copying other users' personal
+data only, and no user profile is read.
 
 **CultBR Editais** (`culteditais.cultura.gov.br`, added on 2026-11-15): the Ministry of Culture's
 Mapas for municipalities with no instance of their own, mostly PNAB. 261 opportunities closing in
