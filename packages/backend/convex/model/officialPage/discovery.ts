@@ -614,8 +614,7 @@ export function callsOfDocumentsUnderHeadings(
   source: HeadingsSource,
   { html, url }: FetchedPage,
 ): OfficialPageCall[] {
-  const { headingClass } = source.discovery;
-  return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links, text }) => {
+  return sectionsOfHtml(html, url, source.discovery).flatMap(({ heading: rawHeading, links, text }) => {
     const heading = withoutLeadingSymbols(rawHeading);
     if (!heading || !titleIsKept(source, heading) || titleNamesAPastCall(heading)) return [];
     const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts), heading);

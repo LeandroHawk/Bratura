@@ -139,26 +139,38 @@ function baseUrlOf(page: string, pageUrl: string) {
   }
 }
 
+/** What titles a section besides an `<h1-6>`: the source's `documentsUnderHeadings` options. */
+type OtherHeadings = { headingClass?: string; boldParagraphIsHeading?: boolean };
+
 /**
  * A page's headings, http(s) links and the text between them, in page order. A link's URL is
  * absolute, without its `#`.
  * Only a heading's opening tag is matched, so a link inside a heading is still read. A link that
  * names only an action takes the first text between it and the item before, else that link's label.
  * An element of `headingClass` is a heading too: accordions title their items with a button or
- * an in-page link (Recife `accordion-toggle`, Spcine `x-acc-header`), never an `<h1-6>`.
+ * an in-page link (Recife `accordion-toggle`, Spcine `x-acc-header`), never an `<h1-6>`. So is a
+ * paragraph that opens in bold, with `boldParagraphIsHeading` (RS Sedac).
  */
-function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: string) {
+function* headingsAndLinksOf(
+  html: string,
+  pageUrl: string,
+  { headingClass, boldParagraphIsHeading }: OtherHeadings = {},
+) {
   const page = withoutCode(html);
   const baseUrl = baseUrlOf(page, pageUrl);
-  // Without a class, `(?!)` never matches and its group stays empty.
-  const classHeading = headingClass ? openingTagOfClass(headingClass) : '(?!)()';
+  // With neither, `(?!)` never matches and its group stays empty.
+  const otherHeading = headingClass
+    ? openingTagOfClass(headingClass)
+    : boldParagraphIsHeading
+      ? '<(p)\\b[^>]*>(?=\\s*<strong\\b)'
+      : '(?!)()';
   // Any `</h1-6>` ends an `<h1-6>`: pages close an `<h2>` with `</h3>`.
   const standardHeadingText = /([\s\S]*?)<\/h[1-6]>/iy;
   let previousEnd = 0;
   let previousLinkLabel = '';
   for (const match of page.matchAll(
     new RegExp(
-      `${classHeading}|<a\\b[^>]*?\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+))[^>]*>([\\s\\S]*?)</a>|<(h[1-6])\\b[^>]*>`,
+      `${otherHeading}|<a\\b[^>]*?\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+))[^>]*>([\\s\\S]*?)</a>|<(h[1-6])\\b[^>]*>`,
       'gi',
     ),
   )) {
@@ -297,9 +309,9 @@ export function folderLinksOfHtml(html: string, pageUrl: string): PageLink[] {
  * One section per heading: the links under it, up to the next heading, and its text with their
  * labels.
  */
-export function sectionsOfHtml(html: string, pageUrl: string, headingClass?: string) {
+export function sectionsOfHtml(html: string, pageUrl: string, otherHeadings?: OtherHeadings) {
   const sections: { heading: string; links: PageLink[]; texts: string[] }[] = [];
-  for (const item of headingsAndLinksOf(html, pageUrl, headingClass)) {
+  for (const item of headingsAndLinksOf(html, pageUrl, otherHeadings)) {
     if (item.heading !== undefined) {
       sections.push({ heading: item.heading, links: [], texts: [] });
       continue;

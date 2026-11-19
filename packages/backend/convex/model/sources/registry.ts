@@ -2583,6 +2583,27 @@ export const vigiaPnabSource = {
   timeZone: ianaTimeZone.parse('America/Belem'),
 } satisfies Source;
 
+/**
+ * Rio Grande do Sul's Sedac, 2026 calls: one page titling each call with a bold paragraph, then a
+ * summary and a link reading only "EDITAL". The files sit on `procultura.rs.gov.br/upload/`, which
+ * robots disallows: linked, never read. Measured 2026-11-19: 20 calls (FAC, LIC, Artista na
+ * Escola, Arranjos Regionais FSA); one more applies on a Google form with no notice linked. A new
+ * year gets a new page: re-point the listing. Terms: `/termos-de-uso` holds only the cookie banner.
+ */
+export const rioGrandeDoSulSedacCallsSource = {
+  kind: 'officialPage',
+  slug: 'rs-sedac-editais-2026',
+  name: 'Sedac-RS — editais 2026',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://cultura.rs.gov.br/editais-2026-sedac',
+  discovery: { hops: 'documentsUnderHeadings', boldParagraphIsHeading: true },
+  documentUrlParts: ['procultura.rs.gov.br/upload/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2737,4 +2758,5 @@ export const registeredSources: readonly Source[] = [
   domEliseuPnabSource,
   mojuPnabSource,
   vigiaPnabSource,
+  rioGrandeDoSulSedacCallsSource,
 ];

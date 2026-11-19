@@ -111,6 +111,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      * (accordions: Recife `accordion-toggle`, Spcine `x-acc-header`). `<h1-6>` still count.
      */
     headingClass: cssClassName.optional(),
+    /**
+     * A paragraph that opens in bold titles each call, where the page has no heading or class for
+     * it (RS Sedac: `<p><strong>EDITAL SEDAC nº 38/2026 FAC RS ECOSSISTEMAS…</strong></p>`, then
+     * a summary and a link reading only "EDITAL"). Ignored with `headingClass`.
+     */
+    boldParagraphIsHeading: z.boolean().optional(),
   }),
 ]);
 
