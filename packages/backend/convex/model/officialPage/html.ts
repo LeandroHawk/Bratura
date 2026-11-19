@@ -1,3 +1,4 @@
+import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
 import { plainText } from '../../lib/text';
 import { VoltoListedItemSchema, VoltoStateSchema, VoltoTextLinkSchema } from './payload';
 
@@ -140,7 +141,10 @@ function baseUrlOf(page: string, pageUrl: string) {
 }
 
 /** What titles a section besides an `<h1-6>`: the source's `documentsUnderHeadings` options. */
-type OtherHeadings = { headingClass?: string; boldParagraphIsHeading?: boolean };
+type OtherHeadings = Pick<
+  Extract<OfficialPageSource['discovery'], { hops: 'documentsUnderHeadings' }>,
+  'headingClass' | 'boldParagraphIsHeading'
+>;
 
 /**
  * A page's headings, http(s) links and the text between them, in page order. A link's URL is
@@ -174,14 +178,14 @@ function* headingsAndLinksOf(
       'gi',
     ),
   )) {
-    const [tag, classTag, double, single, bare, inner, headingTag] = match;
+    const [tag, otherHeadingTag, double, single, bare, inner, headingTag] = match;
     const textBefore = page.slice(previousEnd, match.index);
     yield { textHtml: textBefore };
-    if (classTag || headingTag) {
+    if (otherHeadingTag || headingTag) {
       const heading = elementInnerFrom(
         page,
         match.index + tag.length,
-        classTag ? closingTagOf(classTag) : standardHeadingText,
+        otherHeadingTag ? closingTagOf(otherHeadingTag) : standardHeadingText,
       );
       previousEnd = heading?.end ?? match.index + tag.length;
       previousLinkLabel = '';

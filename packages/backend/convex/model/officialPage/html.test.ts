@@ -266,12 +266,16 @@ describe('sectionsOfHtml', () => {
       '<a href="./documentos/games.pdf">EDITAL</a>',
       '<a class="accordion-toggle-icon" href="#x">não é título</a>',
     ].join('');
-    expect(sectionsOfHtml(html, page, { headingClass: 'accordion-toggle' }).map(({ heading }) => heading)).toEqual([
-      '2026',
-      'RECIFE É DE CINEMA',
-    ]);
     expect(
-      sectionsOfHtml(html, page, { headingClass: 'x-acc-header' }).map(({ heading, links }) => ({ heading, links })),
+      sectionsOfHtml(html, page, { headingClass: 'accordion-toggle' }).map(
+        ({ heading }) => heading,
+      ),
+    ).toEqual(['2026', 'RECIFE É DE CINEMA']);
+    expect(
+      sectionsOfHtml(html, page, { headingClass: 'x-acc-header' }).map(({ heading, links }) => ({
+        heading,
+        links,
+      })),
     ).toEqual([
       {
         heading: '2026',
