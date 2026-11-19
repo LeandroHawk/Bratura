@@ -80,7 +80,7 @@ const DocumentToReadSchema = CallNoticeDocumentIdentityFields;
 type DocumentToRead = z.infer<typeof DocumentToReadSchema>;
 
 const ListDocumentsWorthReadingQueryArgsSchema = z.object({});
-const DocumentsToReadSchema = z.array(DocumentToReadSchema);
+const DocumentListSchema = z.array(DocumentToReadSchema);
 
 /**
  * The documents worth reading of the calls in the readable window, read or not, the calls closing
@@ -89,7 +89,7 @@ const DocumentsToReadSchema = z.array(DocumentToReadSchema);
  */
 export const listDocumentsWorthReading = internalZodQuery({
   args: ListDocumentsWorthReadingQueryArgsSchema,
-  returns: DocumentsToReadSchema,
+  returns: DocumentListSchema,
   handler: async (ctx): Promise<DocumentToRead[]> => {
     const now = Date.now();
     const { from, to } = readableRegistrationCloses(now);
@@ -139,13 +139,13 @@ export const listDocumentsWorthReading = internalZodQuery({
 export const documentsCheckedPerQuery = 15;
 
 const SelectDocumentsNeedingReadQueryArgsSchema = z.object({
-  documents: DocumentsToReadSchema.max(documentsCheckedPerQuery),
+  documents: DocumentListSchema.max(documentsCheckedPerQuery),
 });
 
 /** Of these documents, those never read, failed for a passing reason, or reserved too long. */
 export const selectDocumentsNeedingRead = internalZodQuery({
   args: SelectDocumentsNeedingReadQueryArgsSchema,
-  returns: DocumentsToReadSchema,
+  returns: DocumentListSchema,
   handler: async (ctx, { documents }): Promise<DocumentToRead[]> => {
     const now = Date.now();
     const needingRead: DocumentToRead[] = [];
@@ -178,7 +178,7 @@ const ListDocumentsToReadActionArgsSchema = z.object({});
 /** What `readPendingDocuments` would read, in its order; by hand, to see the queue first. */
 export const listDocumentsToRead = internalZodAction({
   args: ListDocumentsToReadActionArgsSchema,
-  returns: DocumentsToReadSchema,
+  returns: DocumentListSchema,
   handler: (ctx): Promise<DocumentToRead[]> => documentsToRead(ctx),
 });
 
