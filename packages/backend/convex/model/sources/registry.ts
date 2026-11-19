@@ -2305,10 +2305,9 @@ export const itapeviCultureCallsSource = {
 } satisfies Source;
 
 /**
- * Rio de Janeiro's culture secretariat (Secec-RJ): a page per call at root slugs, grouped under a
- * `<h3>` per year back to 2020, linked as `http:`. Most pages write their close with no year; the
- * year heading gives it. 2026-11-19: Cultura e Fé reopened to 01/12, the rest closed. Robots:
- * `/wp-admin/` only; the privacy text covers users' data only.
+ * Rio de Janeiro's culture secretariat (Secec-RJ): a page per call at root slugs, linked as `http:`
+ * under a year heading back to 2020. 2026-11-19: Cultura e Fé reopened to 01/12, the rest closed.
+ * Robots: `/wp-admin/` only; the privacy text covers users' data only.
  */
 export const rioDeJaneiroSececCallsSource = {
   kind: 'officialPage',

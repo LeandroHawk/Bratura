@@ -38,7 +38,7 @@ type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderH
 
 const currentYear = () => new Date().getUTCFullYear();
 
-/** This year and last: in January a call opened in December is still open. */
+/** This year and last (`linksInRecentYears`, `linksUnderRecentYearHeadings`). */
 const recentYears = () => [currentYear(), currentYear() - 1];
 
 /** Between two call pages of one site: a public office's server, not a crawl. */

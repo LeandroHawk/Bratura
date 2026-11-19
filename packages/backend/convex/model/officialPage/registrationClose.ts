@@ -50,16 +50,18 @@ const isRealDate = ({ year, month, day }: PlainDate) =>
 
 const dayNumber = ({ year, month, day }: PlainDate) => Date.UTC(year, month - 1, day);
 
-/** One close as the text writes it; `year` is `null` when it gives none. */
+/** One close as the text writes it, in `yearOfPage` when it gives no year, else with `null`. */
 function closeAsWritten(
   groups: (string | undefined)[],
+  yearOfPage?: number,
 ): (Omit<PlainDate, 'year'> & { year: number | null }) | null {
   const [day, numericMonth, numericYear, monthName, writtenYear] = groups;
   const month = numericMonth ? Number(numericMonth) : monthNumberByPortugueseName[monthName ?? ''];
   if (!day || !month) return null;
   const yearText = numericYear ?? writtenYear;
-  if (!yearText) return { year: null, month, day: Number(day) };
-  const year = yearText.length === 2 ? 2000 + Number(yearText) : Number(yearText);
+  const yearWritten = yearText && Number(yearText) + (yearText.length === 2 ? 2000 : 0);
+  const year = yearWritten || yearOfPage;
+  if (year === undefined) return { year: null, month, day: Number(day) };
   const written = { year, month, day: Number(day) };
   return isRealDate(written) ? written : null;
 }
@@ -87,15 +89,10 @@ export function registrationClosePrintedIn(
     if (!close) continue;
     const untilGroups = close.slice(1, 1 + dateGroups);
     const rangeEndGroups = close.slice(1 + 2 * dateGroups, 1 + 3 * dateGroups);
-    closes.push(closeAsWritten(untilGroups[0] ? untilGroups : rangeEndGroups));
+    closes.push(closeAsWritten(untilGroups[0] ? untilGroups : rangeEndGroups, yearOfPage));
   }
-  for (const close of page.matchAll(namedClose)) closes.push(closeAsWritten(close.slice(1)));
-  if (yearOfPage !== undefined) {
-    for (const [index, close] of closes.entries()) {
-      if (!close || close.year !== null) continue;
-      const inYearOfPage = { ...close, year: yearOfPage };
-      closes[index] = isRealDate(inYearOfPage) ? inYearOfPage : null;
-    }
+  for (const close of page.matchAll(namedClose)) {
+    closes.push(closeAsWritten(close.slice(1), yearOfPage));
   }
   const withYear = closes.filter((close): close is PlainDate => close?.year != null);
   // A close without its year and no `yearOfPage` ("até 13 de novembro") needs a guess (as in
