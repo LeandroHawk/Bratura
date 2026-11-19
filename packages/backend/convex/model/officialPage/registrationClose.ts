@@ -98,7 +98,7 @@ export function registrationClosePrintedIn(
     }
   }
   const withYear = closes.filter((close): close is PlainDate => close?.year != null);
-  // A close without its year ("até 13 de novembro", Secec-RJ) needs a guess (as in
+  // A close without its year and no `yearOfPage` ("até 13 de novembro") needs a guess (as in
   // `dateAppearsInQuote`) and may be an extension: the close is unknown, unless it repeats a dated
   // one (Porto Alegre: "até 8 de dezembro" beside "de 16 de outubro a 8 de dezembro de 2026").
   const guessNeeded = closes.some(

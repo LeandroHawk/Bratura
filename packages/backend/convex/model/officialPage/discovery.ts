@@ -38,6 +38,9 @@ type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderH
 
 const currentYear = () => new Date().getUTCFullYear();
 
+/** This year and last: in January a call opened in December is still open. */
+const recentYears = () => [currentYear(), currentYear() - 1];
+
 /** Between two call pages of one site: a public office's server, not a crawl. */
 const callPageSpacingMs = 1_000;
 
@@ -264,7 +267,7 @@ async function linksInRecentYears(
   source: CallPageSource,
   spacingMs: number,
 ) {
-  const years = [currentYear(), currentYear() - 1].map(String);
+  const years = recentYears().map(String);
   const found: PageLink[] = [];
   for (const year of yearLinks) {
     if (!years.includes(year.label) || !isOnSourceHost(year.url, source.listingUrl)) continue;
@@ -307,18 +310,19 @@ async function linksInSubfolders(
 
 /**
  * The links under the listing's headings naming this or last year alone
- * (`callPagesUnderYearHeadings`), each with that year; a link under two keeps the newer.
+ * (`callPagesUnderYearHeadings`), and each one's year by its call page's `https:` URL; a link under
+ * two keeps the newer.
  */
 function linksUnderRecentYearHeadings({ html, url }: FetchedPage) {
-  const years = [currentYear(), currentYear() - 1];
   const yearByUrl = new Map<string, number>();
   const links: PageLink[] = [];
   for (const { heading, links: sectionLinks } of sectionsOfHtml(html, url)) {
     const year = Number(heading);
-    if (!years.includes(year)) continue;
+    if (!recentYears().includes(year)) continue;
     for (const link of sectionLinks) {
-      if (yearByUrl.has(link.url)) continue;
-      yearByUrl.set(link.url, year);
+      const pageUrl = withHttpsOnHost(link, url).url;
+      if (yearByUrl.has(pageUrl)) continue;
+      yearByUrl.set(pageUrl, year);
       links.push(link);
     }
   }
@@ -379,8 +383,6 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     url: listingUrl,
     yearByUrl,
   } = await linksOfCallPageListing(source, spacingMs);
-  /** The year heading a call page is under (`callPagesUnderYearHeadings`), by its https URL. */
-  const yearOfCallPage = new Map<string, number>();
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
    * (Funarte, 2026-11-15: every page links an internal "Edital No. 409/2025"). Compared as printed:
@@ -388,12 +390,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
    */
   const frameUrls = new Set(listing.map(({ url }) => url));
   const callPages = onePerUrl(
-    listing.map((link) => {
-      const page = withUntruncatedLabel(withHttpsOnHost(link, source.listingUrl));
-      const year = yearByUrl?.get(link.url);
-      if (year !== undefined) yearOfCallPage.set(page.url, year);
-      return page;
-    }),
+    listing.map((link) => withUntruncatedLabel(withHttpsOnHost(link, source.listingUrl))),
   ).filter(
     ({ url, label }) =>
       // An image card links with no text (Guarabira): its page names it.
@@ -480,7 +477,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       registrationCloses: registrationClosePrintedIn(
         pageText,
         source.timeZone,
-        yearOfCallPage.get(url),
+        yearByUrl?.get(url),
       ),
     });
   }
