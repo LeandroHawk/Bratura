@@ -1578,6 +1578,26 @@ export const araguainaCultureSource = {
   timeZone: ianaTimeZone.parse('America/Araguaina'),
 } satisfies Source;
 
+/**
+ * São Paulo city's culture office (SMC): ~35 topic pages (Fomento ao Circo, VAI, PROMAC…), each
+ * keeping every edition as a dated block. Off: no reader mode reads dated blocks, and topic pages
+ * lag (Circo's ends at 2025; its 2026 edition is only in the 08/05/2026 news of 12 calls). Half
+ * the links are on `capital.sp.gov.br`, which 302s to this host (robots too). Terms: a city
+ * "Conteúdo livre" page, no licence printed on these pages; whether that allows us is still open.
+ */
+export const saoPauloCultureSource = {
+  kind: 'officialPage',
+  slug: 'sao-paulo-smc-editais',
+  name: 'São Paulo — Secretaria Municipal de Cultura, editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://prefeitura.sp.gov.br/web/cultura/editais/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/web/cultura/w/'] },
+  documentUrlParts: ['/documents/d/cultura/', '/cidade/upload/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1680,4 +1700,5 @@ export const registeredSources: readonly Source[] = [
   coronelFabricianoCultureSource,
   itaperunaCultureSource,
   araguainaCultureSource,
+  saoPauloCultureSource,
 ];
