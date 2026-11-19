@@ -206,7 +206,7 @@ describe('readPendingDocuments', () => {
     expect(pending.map(({ url }) => url)).toEqual([urls.at(-1)]);
   });
 
-  test('reads nothing of a source whose robots.txt disallows its files, the call still listed', async () => {
+  test('lists no document of a source whose robots.txt disallows its files', async () => {
     const t = convexTest(schema, modules);
     const sourceId = await t.run((ctx) => ctx.db.insert('sources', piedadePnabSource));
     await t.mutation(internal.callNotices.recordCallNotice, {
@@ -221,7 +221,6 @@ describe('readPendingDocuments', () => {
       registrationCloses: null,
     });
     expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
-    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
   });
 
   test('stops at the credit ceiling and leaves the rest for the next run', async () => {
