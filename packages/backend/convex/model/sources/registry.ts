@@ -2361,8 +2361,7 @@ export const transArtistsCallsSource = {
     hops: 'callPage',
     callPageUrlParts: ['transartists.org/en/news/'],
     crawlDelaySeconds: 30,
-    callPageIsTheNotice: true,
-    everyCallPageIsACall: true,
+    callPageIsTheNoticeWhateverItsTitle: true,
   },
   documentUrlParts: ['/sites/default/files/'],
   timeZone: ianaTimeZone.parse('Europe/Amsterdam'),
@@ -2372,7 +2371,9 @@ export const transArtistsCallsSource = {
  * Res Artis: the residencies' network, ~300 open calls on one listing (2026-11-19), each card with
  * "Deadline: 30 Nov 2026", most of them pay-to-stay ("RESIDENCE PROGRAM FEE … 2495 USD"). Off: 300
  * pages and reads per run serve the creator only once fees can be flagged or filtered (decision 8,
- * after 30/11). Robots allow; "Policies and Disclaimers" say nothing on automated access.
+ * after 30/11), and its closes abbreviate the month ("30 Nov"), which the close reader does not
+ * take yet (6 of 108 read on 2026-11-19).
+ * Robots allow; "Policies and Disclaimers" say nothing on automated access.
  */
 export const resArtisOpenCallsSource = {
   kind: 'officialPage',
@@ -2385,8 +2386,7 @@ export const resArtisOpenCallsSource = {
   discovery: {
     hops: 'callPage',
     callPageUrlParts: ['resartis.org/open-call/'],
-    callPageIsTheNotice: true,
-    everyCallPageIsACall: true,
+    callPageIsTheNoticeWhateverItsTitle: true,
   },
   documentUrlParts: ['/wp-content/uploads/'],
   timeZone: ianaTimeZone.parse('Europe/Amsterdam'),

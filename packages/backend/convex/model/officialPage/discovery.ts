@@ -179,11 +179,11 @@ const saysRegistrationClosed = (label: string) =>
 /**
  * A call page whose own text is the notice (Badesc, 2026-11-17: the rules in the post, applications
  * on Google Forms, no file). The page goes first as its notice when no linked file is one and its
- * title names a call, or the source says every call page is one; a menu page under the same path
+ * title names a call (or the source takes any title); a menu page under the same path
  * ("AGENDAMENTO") does not.
  */
-function withPageAsNotice(documents: PageLink[], page: PageLink, everyCallPageIsACall: boolean) {
-  if (documents.some(isNotice) || !(everyCallPageIsACall || isNotice(page))) return documents;
+function withPageAsNotice(documents: PageLink[], page: PageLink, whateverItsTitle: boolean) {
+  if (documents.some(isNotice) || !(whateverItsTitle || isNotice(page))) return documents;
   if (!CallNoticeDocumentUrlSchema.safeParse(page.url).success) return documents;
   return [page, ...documents];
 }
@@ -368,17 +368,20 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs,
     (source.discovery.crawlDelaySeconds ?? 0) * 1_000,
   );
-  const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
-  // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
-  // source says so (`callPageNeedsNotice`: folders of courses and plans).
-  const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
   const {
+    callPageIsTheNotice,
+    callPageIsTheNoticeWhateverItsTitle,
     callPagePublishedAtClass,
     callPageTitleClass,
     callTitleOnCallPage,
     callsFiledInYearFolders,
     callFilesInSubfolders,
   } = source.discovery;
+  const pageIsTheNotice =
+    callPageIsTheNotice === true || callPageIsTheNoticeWhateverItsTitle === true;
+  // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
+  // source says so (`callPageNeedsNotice`: folders of courses and plans).
+  const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
   const {
     links: listing,
     url: listingUrl,
@@ -459,7 +462,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       ? withPageAsNotice(
           linked,
           { url, label: pageTitle },
-          source.discovery.everyCallPageIsACall === true,
+          callPageIsTheNoticeWhateverItsTitle === true,
         )
       : linked;
     const name = callTitleOnCallPage ? heading || label : label;

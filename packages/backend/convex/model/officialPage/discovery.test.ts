@@ -919,7 +919,7 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
-  test('every call page a call, its page the notice (TransArtists): a title naming no call, the close an English deadline', async () => {
+  test('the page the notice whatever its title (TransArtists): a title naming no call, the close an English deadline', async () => {
     const news = 'https://www.transartists.org/en/news';
     const post = (title: string, text: string) =>
       [
