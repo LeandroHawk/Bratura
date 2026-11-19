@@ -1673,6 +1673,295 @@ export const paraFcpSource = {
   timeZone: ianaTimeZone.parse('America/Belem'),
 } satisfies Source;
 
+/**
+ * Escada-PE (2026-11-16): its notices are named "Edital 001 de 2026", which `callNumberOf` does not
+ * read (it reads "nº/ano"). Off until it does.
+ */
+export const escadaPnabSource = {
+  kind: 'officialPage',
+  slug: 'escada-pnab',
+  name: 'Escada — editais Aldir Blanc 2026',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://escada.pe.gov.br/editais-aldir-blanc-2026/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Recife'),
+} satisfies Source;
+
+/**
+ * Curvelo-MG (2026-11-16): its headings are cycles ("Ciclo 2", "Ciclo 1"), each over several calls,
+ * so a heading is no call. Off until calls are told apart inside a heading.
+ */
+export const curveloPnabSource = {
+  kind: 'officialPage',
+  slug: 'curvelo-pnab',
+  name: 'Curvelo — Política Nacional Aldir Blanc',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://curvelo.mg.gov.br/politica-nacional-aldir-blanc-pnab',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Santa Luzia-MA (2026-11-16): its links (`/upload/lei_audir_blanc/<n>.pdf`) carry no call number,
+ * so no listed file names its call. Off until a call is named some other way.
+ */
+export const santaLuziaMaranhaoPnabSource = {
+  kind: 'officialPage',
+  slug: 'santa-luzia-ma-pnab',
+  name: 'Santa Luzia (MA) — Política Nacional Aldir Blanc',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://santaluzia.ma.gov.br/politica-nacional-aldir-blanc',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/upload/lei_audir_blanc/'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Tramandaí-RS: did not answer on 2026-11-16; on 2026-11-18 it serves dated items with files at
+ * `/conteudos_documentos/<hash>.pdf`, not yet measured with the reader. Off until measured.
+ */
+export const tramandaiPnabSource = {
+  kind: 'officialPage',
+  slug: 'tramandai-pnab',
+  name: 'Tramandaí — PNAB',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://tramandai.rs.gov.br/conteudo/500042-pnab-politica-nacional-aldir-blanc',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/conteudos_documentos/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Sapiranga-RS (2026-11-18): every city call on one listing (trade fairs, school hires; culture
+ * only "Edital 112/2026 – Pontos e Pontões"), and its call page links no `.pdf`: where its files
+ * sit is unmeasured. Off until a culture filter and its files are measured.
+ */
+export const sapirangaCallsSource = {
+  kind: 'officialPage',
+  slug: 'sapiranga-editais',
+  name: 'Sapiranga — editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.sapiranga.rs.gov.br/editais/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/edital/'] },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Santo Antônio do Descoberto-GO (2026-11-18): the category page prints no links in its HTML
+ * (a script fills it), so no call page is found. Off until its listing is read some other way.
+ */
+export const santoAntonioDoDescobertoSource = {
+  kind: 'officialPage',
+  slug: 'santo-antonio-do-descoberto-cultura',
+  name: 'Santo Antônio do Descoberto — notícias da cultura',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://santoantoniododescoberto.go.gov.br/noticias/?category=40',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/chamamento-publico-'] },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Quirinópolis-GO (2026-11-16): one "EDITAIS" heading over every call's ~100 files, so the
+ * heading names no call. Off until calls are told apart under one heading.
+ */
+export const quirinopolisPnabSource = {
+  kind: 'officialPage',
+  slug: 'quirinopolis-pnab',
+  name: 'Quirinópolis — Política Nacional Aldir Blanc 2026',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://quirinopolis.go.gov.br/politica-nacional-aldir-blanc-2026/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Campina Grande do Sul-PR (2026-11-18): each call is on APPorte (`app.apporte.me/edital/…`), a
+ * host the reader never follows; APPorte's robots and terms are unread. Off until they are.
+ */
+export const campinaGrandeDoSulCultureSource = {
+  kind: 'officialPage',
+  slug: 'campina-grande-do-sul-cultura',
+  name: 'Campina Grande do Sul — projetos culturais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://campinagrandedosul.pr.gov.br/projetos-culturais',
+  discovery: { hops: 'callPage', callPageUrlParts: ['app.apporte.me/edital/'] },
+  documentUrlParts: ['app.apporte.me/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Telêmaco Borba-PR (2026-11-18): one page per year ("Lei Aldir Blanc - 2026"), not named by the
+ * year alone (`callPagesOnYearPages`), each holding every call's files (127 in 2026). Off until
+ * a year page's calls are told apart.
+ */
+export const telemacoBorbaPnabSource = {
+  kind: 'officialPage',
+  slug: 'telemaco-borba-pnab',
+  name: 'Telêmaco Borba — Lei Aldir Blanc',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl:
+    'https://telemacoborba.pr.gov.br/index.php/informacoes/incentivo-cultural/lei-aldir-blanc',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/lei-aldir-blanc/'] },
+  documentUrlParts: ['/images/pdfs/aldir_blanc_'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Centro Cultural Justiça Federal (TRF2, 2026-11-16): its notices are linked as "Regulamento", no
+ * call named or numbered, beside a law-student prize. Off until a title comes from the file.
+ */
+export const ccjfOccupationSource = {
+  kind: 'officialPage',
+  slug: 'ccjf-ocupacao',
+  name: 'CCJF — projetos e ocupação',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://ccjf.trf2.jus.br/sobre-o-ccjf/projetos',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/sites/default/files/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Profice 5th edition (SEEC-PR, 2026-11-16): a page per edition whose links carry no call number,
+ * so no file names its call. Off until a call is named some other way.
+ */
+export const paranaProficeSource = {
+  kind: 'officialPage',
+  slug: 'pr-profice-5',
+  name: 'SEEC-PR — Profice 5ª edição',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.cultura.pr.gov.br/PROFICE/Pagina/Profice-5a-Edicao',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/arquivos_restritos/files/documento/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Firjan Sesi RJ (2026-11-16): its headings are blocks over several calls, not calls (Mosaico Rio
+ * 2027 closed 08/09/2026, for companies). Off until calls are told apart inside a block.
+ */
+export const firjanSesiCultureSource = {
+  kind: 'officialPage',
+  slug: 'firjan-sesi-editais-culturais',
+  name: 'Firjan Sesi RJ — editais culturais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl:
+    'https://www.firjan.com.br/sesi/qualidade-de-vida/guia-sesi-cultural/editais-culturais/default.htm',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/data/files/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Sesc national, Mostra Sesc de Cinema (2026-11-16): one "Acesse o edital" link with no call
+ * number, so it names no call. Closed 31/03/2026, next March 2027. Off until a call is named some
+ * other way.
+ */
+export const sescCinemaShowcaseSource = {
+  kind: 'officialPage',
+  slug: 'sesc-mostra-de-cinema',
+  name: 'Sesc — Mostra Sesc de Cinema',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.sesc.com.br/cultura/mostra-sesc-de-cinema/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['cdnsesc.azureedge.net/assets/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Sesc national, Prêmio Sesc de Literatura (2026-11-16): as the Mostra, one "Edital 2026" link with
+ * no call number. Closed 02/03/2026, next February 2027. Off until a call is named otherwise.
+ */
+export const sescLiteraturePrizeSource = {
+  ...sescCinemaShowcaseSource,
+  slug: 'sesc-premio-de-literatura',
+  name: 'Sesc — Prêmio Sesc de Literatura',
+  listingUrl: 'https://www.sesc.com.br/cultura/premio-sesc-de-literatura/',
+} satisfies Source;
+
+/**
+ * Sesc RN (2026-11-16): no culture call since 2024, and those posted no result, so each would be
+ * read (paid) as if open. Off until a past year's call with no result is skipped.
+ */
+export const sescRioGrandeDoNorteSource = {
+  kind: 'officialPage',
+  slug: 'sesc-rn-editais',
+  name: 'Sesc RN — editais de cultura',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://sescrn.com.br/editais/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/edital-cultura/'] },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Fundação Franklin Cascaes (Florianópolis, 2026-11-16): the listing mixes years and its links
+ * carry no call number, so no file names its call. Off until a call is dated from its PDF.
+ */
+export const florianopolisFranklinCascaesSource = {
+  kind: 'officialPage',
+  slug: 'florianopolis-franklin-cascaes',
+  name: 'Florianópolis — Fundação Franklin Cascaes, editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.pmf.sc.gov.br/entidades/franklincascaes/index.php?pagina=goveditais',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/arquivos/editais/pdf/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Campo Grande Fundac: `/fundac/` redirected to tourism (2026-11-16) and failed once, then answered
+ * in 4 s (2026-11-18); its parts are unmeasured. Applications are on `maiscultura-editais`. Off
+ * until measured.
+ */
+export const campoGrandeFundacSource = {
+  kind: 'officialPage',
+  slug: 'campo-grande-fundac',
+  name: 'Campo Grande — Fundac',
+  isActive: false,
+  robotsCheckedOn: '2026-11-16',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.campogrande.ms.gov.br/fundac/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['-2026/', '/edital-'] },
+  documentUrlParts: ['cdn.campogrande.ms.gov.br'],
+  timeZone: ianaTimeZone.parse('America/Campo_Grande'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1780,4 +2069,21 @@ export const registeredSources: readonly Source[] = [
   rioGrandeDoNortePnabSource,
   rioGrandeDoNorteAudiovisualSource,
   paraFcpSource,
+  escadaPnabSource,
+  curveloPnabSource,
+  santaLuziaMaranhaoPnabSource,
+  tramandaiPnabSource,
+  sapirangaCallsSource,
+  santoAntonioDoDescobertoSource,
+  quirinopolisPnabSource,
+  campinaGrandeDoSulCultureSource,
+  telemacoBorbaPnabSource,
+  ccjfOccupationSource,
+  paranaProficeSource,
+  firjanSesiCultureSource,
+  sescCinemaShowcaseSource,
+  sescLiteraturePrizeSource,
+  sescRioGrandeDoNorteSource,
+  florianopolisFranklinCascaesSource,
+  campoGrandeFundacSource,
 ];
