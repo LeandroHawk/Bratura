@@ -1598,6 +1598,31 @@ export const saoPauloCultureSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Sesi MG's culture news (Fiemg): calls are news posts (SESI em Cena, the galleries, Ciclo ODS), so
+ * only titles naming a call are opened, and only posts linking a notice are calls ("Resultado do
+ * chamamento…" links none). Posts usually print their window, so closed ones go unread.
+ * `robots.txt`: `Crawl-delay: 10`, nothing disallowed; only a privacy notice, no terms.
+ */
+export const sesiMinasCultureNewsSource = {
+  kind: 'officialPage',
+  slug: 'sesi-mg-cultura-noticias',
+  name: 'Sesi MG — Sesi Cultura, notícias',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.fiemg.com.br/sesi-cultura/noticias/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/sesi-cultura/noticias/'],
+    crawlDelaySeconds: 10,
+    callPageNeedsNotice: true,
+  },
+  callTitleParts: ['edital', 'chamamento', 'selecao', 'convocatoria'],
+  documentUrlParts: ['/sesi-cultura/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1701,4 +1726,5 @@ export const registeredSources: readonly Source[] = [
   itaperunaCultureSource,
   araguainaCultureSource,
   saoPauloCultureSource,
+  sesiMinasCultureNewsSource,
 ];
