@@ -1554,10 +1554,11 @@ export const itaperunaCultureSource = {
 } satisfies Source;
 
 /**
- * Araguaína's culture office (TO): calls at root slugs, linked as "Acessar Edital", named by
- * `elementor-heading-title` (no `<h1>`). Off: two call pages link the same old notice above their
- * own, read as both calls' notice. Turns on with a rule for a notice several call pages link, and
- * "Acessar Edital" in `namesNoCall`. `robots.txt` bars `/wp-admin/` only; no terms.
+ * Araguaína's culture office (TO): calls at root slugs sharing no URL part, so any page on the
+ * host is a candidate and the title filter keeps the "Acessar Edital" links (the menu's "Editais"
+ * fails it); named by `elementor-heading-title` (no `<h1>`). Off: two call pages link the same old
+ * notice above their own, read as both calls' notice; turns on with a rule for a notice several
+ * call pages link, and "Acessar Edital" in `namesNoCall`. robots: `/wp-admin/` only; no terms.
  */
 export const araguainaCultureSource = {
   kind: 'officialPage',
