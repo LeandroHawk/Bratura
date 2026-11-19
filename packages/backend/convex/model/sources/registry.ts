@@ -2392,6 +2392,96 @@ export const resArtisOpenCallsSource = {
   timeZone: ianaTimeZone.parse('Europe/Amsterdam'),
 } satisfies Source;
 
+/**
+ * Guaxupé-MG: every office's notices, newest first, a page each under `/editais/<date>/`; only the
+ * culture ones are calls (PNAB, "Mestres e Mestras da Cultura", artisans; not ambulantes, the
+ * Christmas fund-raising or the civil-service notices). The files sit on `sistema.`, whose
+ * robots.txt says `Disallow: /`: linked, never read. Measured 2026-11-19: 6 calls, no close on the
+ * pages (PNAB 01–04/2026 published 06/11). Terms: a privacy policy only (personal data).
+ */
+export const guaxupeCultureCallsSource = {
+  kind: 'officialPage',
+  slug: 'guaxupe-editais-cultura',
+  name: 'Guaxupé — editais de cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.guaxupe.mg.gov.br/editais',
+  discovery: { hops: 'callPage', callPageUrlParts: ['guaxupe.mg.gov.br/editais/'] },
+  callTitleParts: ['pnab', 'da cultura', 'cultural', 'culturais', 'artesa'],
+  documentUrlParts: ['sistema.guaxupe.mg.gov.br/UpFiles/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Piedade-SP's PNAB page (Instar): a page per call, its title only in `sw_leitura_audio` (the
+ * `<h1>` is "Ir para o conteúdo", the card cut with "..."). Robots disallows `/imgeditor/`, where
+ * the files sit: linked, never read. Measured 2026-11-19: 4 calls (003/2026, Aldir Blanc II ×3),
+ * no close on the pages. Terms: none (`/portal/privacidade` redirects home).
+ */
+export const piedadePnabSource = {
+  kind: 'officialPage',
+  slug: 'piedade-pnab',
+  name: 'Piedade — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.piedade.sp.gov.br/pnab/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['piedade.sp.gov.br/edital-'],
+    callTitleOnCallPage: true,
+    callPageTitleClass: 'sw_leitura_audio',
+  },
+  documentUrlParts: ['/imgeditor/file/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Francisco Beltrão-PR's culture incentives: a page per call under `/incentivo-cultural/`, which
+ * prints its schedule ("Término das inscrições 26/10/2026"). Robots disallows `/uploads/`, where
+ * the files sit: linked, never read. Measured 2026-11-19: 0 calls, every 2026 one closed with its
+ * ranking posted ("Abrir classificação"). Terms: an LGPD policy, nothing on reuse or crawling.
+ */
+export const franciscoBeltraoCultureSource = {
+  kind: 'officialPage',
+  slug: 'francisco-beltrao-incentivos-culturais',
+  name: 'Francisco Beltrão — incentivos culturais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://franciscobeltrao.pr.gov.br/incentivos-culturais',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['franciscobeltrao.pr.gov.br/incentivo-cultural/'],
+  },
+  documentUrlParts: ['/uploads/media/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Nova Serrana-MG's PNAB 2026 (Instar): a page per call, its files under `/portal/download/`,
+ * which robots disallows: linked, never read. Measured 2026-11-19: 0 calls, editais 01–04/2026
+ * (May) with their rankings posted. A new year gets a new category page: re-point the listing.
+ * Terms: none (`/portal/privacidade` redirects home).
+ */
+export const novaSerranaPnabSource = {
+  kind: 'officialPage',
+  slug: 'nova-serrana-pnab',
+  name: 'Nova Serrana — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.novaserrana.mg.gov.br/portal/paginas-dinamicas-categoria/37/pnab-2026',
+  discovery: { hops: 'callPage', callPageUrlParts: ['novaserrana.mg.gov.br/pnab-2026---editais-'] },
+  documentUrlParts: ['/portal/download/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2537,4 +2627,8 @@ export const registeredSources: readonly Source[] = [
   rioDeJaneiroSececCallsSource,
   transArtistsCallsSource,
   resArtisOpenCallsSource,
+  guaxupeCultureCallsSource,
+  piedadePnabSource,
+  franciscoBeltraoCultureSource,
+  novaSerranaPnabSource,
 ];

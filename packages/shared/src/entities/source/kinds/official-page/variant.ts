@@ -136,6 +136,12 @@ export const OfficialPageSourceSchema = z.object({
   callTitleParts: textParts.optional(),
   /** What a document link contains; a link with none of them is not a document. */
   documentUrlParts: textParts,
+  /**
+   * The site's robots.txt disallows the folders its documents sit in while its pages are allowed
+   * (Piedade's `/imgeditor/`, Guaxupé's file host): its calls keep the documents' links, and no
+   * document is read. Without it, Firecrawl would read files the site asks not to be crawled.
+   */
+  filesDisallowedByRobots: z.boolean().optional(),
   /** The site's zone: its dates ("até 20/11") carry none. */
   timeZone: ianaTimeZone,
 });
