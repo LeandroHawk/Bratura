@@ -320,9 +320,14 @@ export function sectionsOfHtml(html: string, pageUrl: string, headingClass?: str
 /** A page's text, without its scripts, styles and comments. */
 export const textOfHtml = (html: string) => plainLabel(withoutCode(html));
 
-/** A page's first `<h1>` as plain text; empty when it has none. */
+/**
+ * A page's first `<h1>` with text, as plain text; empty when it has none. A logo's `<h1>` holds
+ * only an image link (Secult-RN Mais Cultura, 2026-11-18).
+ */
 export const headingOfHtml = (html: string) =>
-  plainLabel(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i.exec(withoutCode(html))?.[1] ?? '');
+  [...withoutCode(html).matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)]
+    .map(([, inner]) => plainLabel(inner ?? ''))
+    .find(Boolean) ?? '';
 
 /**
  * A page's `<title>` without the site's name after its last " - " or " | " (Badesc, 2026-11-17:

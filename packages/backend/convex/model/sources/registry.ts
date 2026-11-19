@@ -1623,6 +1623,56 @@ export const sesiMinasCultureNewsSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Secult-RN's Mais Cultura platform (vendor Seletar): one listing per group of calls, each a card
+ * linking `/editais/editais/N/` with its title, description and status as one text, so the title
+ * comes from the call page and a card saying "Inscrições encerradas" is not opened. Files on
+ * DigitalOcean Spaces. `robots.txt` 404; no terms. Groups 1 and 2 hold only 2023 calls; this is
+ * group 3, the PNAB calls (Blocos I–V, 2024–2026).
+ */
+export const rioGrandeDoNortePnabSource = {
+  kind: 'officialPage',
+  slug: 'rn-mais-cultura-pnab',
+  name: 'Secult-RN — Mais Cultura, editais PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://maiscultura.rn.gov.br/editais/?grupo=3',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/editais/editais/'],
+    callTitleOnCallPage: true,
+  },
+  documentUrlParts: ['/seletar/media/editais/'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/** Mais Cultura RN group 4, same platform: regional audiovisual calls (20/2026, open to 07/12). */
+export const rioGrandeDoNorteAudiovisualSource = {
+  ...rioGrandeDoNortePnabSource,
+  slug: 'rn-mais-cultura-arranjos-regionais',
+  name: 'Secult-RN — Mais Cultura, Arranjos Regionais do audiovisual',
+  listingUrl: 'https://maiscultura.rn.gov.br/editais/?grupo=4',
+} satisfies Source;
+
+/**
+ * Fundação Cultural do Pará: one page per call (`/edital/N`), each a card whose text starts with
+ * "Abertura: … Modalidade: …", so the title comes from the call page's `<h1>`. It also lists staff
+ * hires (Processo Seletivo Simplificado), recorded but never read. `robots.txt` 404; no terms.
+ */
+export const paraFcpSource = {
+  kind: 'officialPage',
+  slug: 'pa-fcp-editais',
+  name: 'Fundação Cultural do Pará — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://fcp.pa.gov.br/editais',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/edital/'], callTitleOnCallPage: true },
+  documentUrlParts: ['/midias/anexos/'],
+  timeZone: ianaTimeZone.parse('America/Belem'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1727,4 +1777,7 @@ export const registeredSources: readonly Source[] = [
   araguainaCultureSource,
   saoPauloCultureSource,
   sesiMinasCultureNewsSource,
+  rioGrandeDoNortePnabSource,
+  rioGrandeDoNorteAudiovisualSource,
+  paraFcpSource,
 ];
