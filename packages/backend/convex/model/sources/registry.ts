@@ -2187,6 +2187,53 @@ export const itapemaCultureSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Fundação Biblioteca Nacional's literary prize on gov.br (Volto, as IPHAN's): a page per edition
+ * (`premio-literario-2026`), notice and lists as files on it. Each edition opens mid-year and posts
+ * its winners by November, so it is kept only until then. Its translation grants (foreign
+ * publishers) and research grants are left out: not calls for creators.
+ */
+export const bnLiteraryPrizeSource = {
+  kind: 'officialPage',
+  slug: 'bn-premio-literario',
+  name: 'Biblioteca Nacional — Prêmio Literário',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.gov.br/bn/pt-br/acesso-a-informacao-2/editais/premio-literario',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/editais/premio-literario/premio-literario-20'],
+  },
+  documentUrlParts: ['/bn/pt-br/acesso-a-informacao-2/editais/premio-literario/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Instituto Cultural Vale's national call (Lei Rouanet sponsorship, applications in April–May) and
+ * its cultural spaces' calls, a page each, files in `wp-content/uploads`. The national call's page
+ * is rewritten for each edition at the same URL: a later edition finds the first one's call notice
+ * (`externalId` is the page URL). No terms page; robots WordPress default.
+ */
+export const valeCulturalInstituteCallsSource = {
+  kind: 'officialPage',
+  slug: 'instituto-cultural-vale-editais',
+  name: 'Instituto Cultural Vale — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://institutoculturalvale.org/editais/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: [
+      '/editais/chamada-instituto-cultural-vale/',
+      '/editais/editais-dos-espacos-culturais/',
+    ],
+  },
+  documentUrlParts: ['institutoculturalvale.org/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2323,4 +2370,6 @@ export const registeredSources: readonly Source[] = [
   portoNacionalPnabSource,
   santosPnabSource,
   itapemaCultureSource,
+  bnLiteraryPrizeSource,
+  valeCulturalInstituteCallsSource,
 ];
