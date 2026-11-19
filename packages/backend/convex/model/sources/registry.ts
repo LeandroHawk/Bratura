@@ -2239,13 +2239,15 @@ export const valeCulturalInstituteCallsSource = {
 /**
  * Piauí's Secult calls: a page per programme and year, opened only for Boca da Noite and Patrimônio
  * Vivo (`callPageUrlParts` as an allow-list): other pages under `/editais/` carry jury members'
- * biographies. Robots `/wp-admin/` only; no terms page.
+ * biographies. Robots `/wp-admin/` only; no terms page. It times out from Convex (US East) and
+ * answers from Brazil in under a second (2026-11-19): read through Firecrawl from Brazil.
  */
 export const piauiSecultCallsSource = {
   kind: 'officialPage',
   slug: 'pi-secult-editais',
   name: 'Secult Piauí — Boca da Noite e Patrimônio Vivo',
   isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-19',
   termsCheckedOn: '2026-11-19',
   listingUrl: 'https://www.cultura.pi.gov.br/editais/',
