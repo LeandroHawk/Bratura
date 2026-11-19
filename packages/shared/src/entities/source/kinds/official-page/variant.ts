@@ -50,6 +50,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     callPagePublishedAtClass: cssClassName.optional(),
     /**
+     * The class of the element naming the call on its page, where the `<h1>` names a form
+     * (Itaperuna: `<h1>` "Formulário de Inscrição — …", `texto-secundario` "Edital de Chamamento
+     * Público nº 01/2026 — …"). It takes the `<h1>`'s place wherever the page's heading is read.
+     */
+    callPageTitleClass: cssClassName.optional(),
+    /**
      * The listing is a JSON list of calls, not links (Rio Branco: an Alpine template filled from
      * `/admin/editais/edital-listar-json`). Each item's call page is `callPagePath` on the
      * listing's host (a path, never `//host`) with `{id}` replaced by the item's `id`, its link

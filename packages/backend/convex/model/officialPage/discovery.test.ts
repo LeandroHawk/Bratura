@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   badescCultureSource,
   bahiaFuncebSource,
+  balsasCultureSource,
   tocantinsPnabPlatformSource,
   chamberOfDeputiesCultureSource,
   erechimPnabSource,
   estanciaCultureCallsSource,
   funarteCallsSource,
+  itaperunaCultureSource,
   maranhaoSecmaSource,
   museuDoIndioCallsSource,
   jundiaiCultureSource,
@@ -269,6 +271,42 @@ describe('callsOfCallPages', () => {
     const calls = await callsOf(salvadorFgmSource);
     expect(calls.map(({ title, documents }) => [title, documents.length])).toEqual([
       ['Edital Ateliê Itinerante de Restauro abre inscrições', 2],
+    ]);
+  });
+
+  test('"Mais informações" names no call: the call page\'s <h1> does (Balsas)', async () => {
+    const site = 'https://www.balsas.ma.gov.br';
+    siteAnswers({
+      [balsasCultureSource.listingUrl]: a('cultura_editais.php?id=6', 'Mais informações'),
+      [`${site}/cultura_editais.php?id=6`]: [
+        '<h1>EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026</h1>',
+        a(
+          'cultura/editais/6/30/EDITAL_DE_CHAMAMENTO_PUBLICO_Nm_022026.PDF',
+          'EDITAL DE CHAMAMENTO',
+        ),
+      ].join(''),
+    });
+    const calls = await callsOf(balsasCultureSource);
+    expect(calls.map(({ title }) => title)).toEqual(['EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026']);
+  });
+
+  test('the call is named by `callPageTitleClass`; a `.php?id=` handler is a document (Itaperuna)', async () => {
+    const system = 'https://prefeituraitaperuna.com.br/sistema-inscricoes/public';
+    const file = (id: number, label: string) => a(`edital_arquivo.php?id=${id}`, label);
+    siteAnswers({
+      [itaperunaCultureSource.listingUrl]: a('edital.php?e=edital01', 'Ver edital e inscrever-se'),
+      [`${system}/edital.php?e=edital01`]: [
+        '<h1>Formulário de Inscrição — Pessoa Física</h1>',
+        '<p class="texto-secundario">Edital de Chamamento Público nº 01/2026 — Vinicius Batista</p>',
+        file(19, 'Anexo II'),
+        file(94, 'Edital'),
+      ].join(''),
+    });
+    const [call] = await callsOf(itaperunaCultureSource);
+    expect(call?.title).toBe('Edital de Chamamento Público nº 01/2026 — Vinicius Batista');
+    expect(call?.documents).toEqual([
+      { url: `${system}/edital_arquivo.php?id=19`, label: 'Anexo II' },
+      { url: `${system}/edital_arquivo.php?id=94`, label: 'Edital' },
     ]);
   });
 

@@ -1492,6 +1492,92 @@ export const espiritoSantoSecultCallPagesSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Balsas' culture office (MA): one page per call (`cultura_editais.php?id=N`), linked as "Mais
+ * informações", its `<h1>` the call ("EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026 - ENCERRADO"); its
+ * window ("11/09/2026 - 02/10/2026") is no close the reader parses, so a call drops by its result.
+ * The listing also names the artists of the city's register: only call pages are followed.
+ * `robots.txt` keeps `/anexo/`, `/arquivos/` from all and bars some engines by name; no terms.
+ */
+export const balsasCultureSource = {
+  kind: 'officialPage',
+  slug: 'balsas-cultura-editais',
+  name: 'Balsas — Secretaria de Cultura, editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.balsas.ma.gov.br/cultura.php',
+  discovery: { hops: 'callPage', callPageUrlParts: ['cultura_editais.php?id='] },
+  documentUrlParts: ['/cultura/editais/'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Coronel Fabriciano's culture platform (MG): each call at `/edital/<uuid>`, linked as "Ver
+ * edital", its `<h1>` the call's name, its page printing "Período de inscrição … até …"; files
+ * on the platform's DigitalOcean Spaces bucket. `robots.txt` allows everything; no terms page.
+ */
+export const coronelFabricianoCultureSource = {
+  kind: 'officialPage',
+  slug: 'coronel-fabriciano-cultura-editais',
+  name: 'Coronel Fabriciano — plataforma de editais da cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://cultura.fabriciano.mg.gov.br/editais',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/edital/'] },
+  documentUrlParts: ['siscultura.sfo3.digitaloceanspaces.com/media/org-2/editais/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Itaperuna's culture sign-up system (RJ): one page per call (`edital.php?e=…`), linked as "Ver
+ * edital e inscrever-se"; its `<h1>` names the form, the line below it the call ("Edital de
+ * Chamamento Público nº 01/2026 — …"). Every file is `edital_arquivo.php?id=N`, so only its link
+ * text tells the notice from an annex. `robots.txt` 404 (the city portal's, 500, is not used).
+ */
+export const itaperunaCultureSource = {
+  kind: 'officialPage',
+  slug: 'itaperuna-cultura-inscricoes',
+  name: 'Itaperuna — sistema de inscrições da cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://prefeituraitaperuna.com.br/sistema-inscricoes/public/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['edital.php?e='],
+    callPageTitleClass: 'texto-secundario',
+  },
+  documentUrlParts: ['edital_arquivo.php?id='],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Araguaína's culture office (TO): calls at root slugs sharing no URL part, so any page on the
+ * host is a candidate and the title filter keeps the "Acessar Edital" links (the menu's "Editais"
+ * fails it); named by `elementor-heading-title` (no `<h1>`). Off: two call pages link the same old
+ * notice above their own, read as both calls' notice; turns on with a rule for a notice several
+ * call pages link, and "Acessar Edital" in `namesNoCall`. robots: `/wp-admin/` only; no terms.
+ */
+export const araguainaCultureSource = {
+  kind: 'officialPage',
+  slug: 'araguaina-cultura-editais',
+  name: 'Araguaína — SEMECL, editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://cultura.araguaina.to.gov.br/editais-2/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['cultura.araguaina.to.gov.br/'],
+    callPageTitleClass: 'elementor-heading-title',
+  },
+  callTitleParts: ['edital'],
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Araguaina'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1590,4 +1676,8 @@ export const registeredSources: readonly Source[] = [
   rioGrandeDoNorteFjaSource,
   espiritoSantoSecultCallsSource,
   espiritoSantoSecultCallPagesSource,
+  balsasCultureSource,
+  coronelFabricianoCultureSource,
+  itaperunaCultureSource,
+  araguainaCultureSource,
 ];
