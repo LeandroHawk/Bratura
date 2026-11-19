@@ -2482,6 +2482,107 @@ export const novaSerranaPnabSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Unaí-MG's PNAB page: one page linking every notice, annex and result as bare files. Off:
+ * `documentsOnListing` reads 2 of its 3 calls of 2026 (measured 2026-11-19), files Edital 003's
+ * annexes under 002 (003's link has no text) and misses the results above them (labelled "PDF"),
+ * so it would read closed notices. It turns on with a call number taken from the file name
+ * (`Edital 003_2026 - Cultura Viva.pdf`, `resultado_final_edital_001_2026_…`). Terms: none (404).
+ */
+export const unaiPnabSource = {
+  kind: 'officialPage',
+  slug: 'unai-pnab',
+  name: 'Unaí — PNAB',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.prefeituraunai.mg.gov.br/pmu2/pnabpage/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/pmu2/pnabpage/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Acará-PA (a WordPress theme several Pará cities share): one post per call, no category page
+ * (`/category/editais/` redirects to a post), so the site's search for "aldir blanc" is the
+ * listing: it keeps the next year's posts at the same URL. Measured 2026-11-19: Edital 03/2026
+ * PNAB and the reviewers' credenciamento 02/2026. Terms: a cookie policy (`/lgpd/`), nothing on
+ * reuse.
+ */
+export const acaraPnabSource = {
+  kind: 'officialPage',
+  slug: 'acara-pnab',
+  name: 'Acará — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://acara.pa.gov.br/?s=aldir+blanc',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['acara.pa.gov.br/edital', 'acara.pa.gov.br/chamamento'],
+    callPageNeedsNotice: true,
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Belem'),
+} satisfies Source;
+
+/**
+ * Dom Eliseu-PA's PNAB 2026 post (same theme as Acará; its search finds nothing): every notice
+ * linked on one post. Off: measured 2026-11-19, its 3 calls (001–003/2026) closed on 07/04 and
+ * would cost 130 pages; next year's post gets a new URL. Turns on re-pointed to the 2027 post.
+ * Terms: a cookie policy (`/lgpd/`), nothing on reuse.
+ */
+export const domEliseuPnabSource = {
+  kind: 'officialPage',
+  slug: 'dom-eliseu-pnab',
+  name: 'Dom Eliseu — PNAB',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://domeliseu.pa.gov.br/editais-aldir-blanc-2026-pnab/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Belem'),
+} satisfies Source;
+
+/**
+ * Moju-PA's Lei Aldir Blanc 2026 post (same theme as Acará). Off: `documentsOnListing` reads no
+ * call from it (measured 2026-11-19), its labels number calls with a space ("CHAMAMENTO PUBLICO
+ * 005 2026"); both 2026 calls (June) are closed. Turns on with that number form and re-pointed to
+ * the 2027 post. Terms: a cookie policy (`/lgpd/`), nothing on reuse.
+ */
+export const mojuPnabSource = {
+  kind: 'officialPage',
+  slug: 'moju-pnab',
+  name: 'Moju — Lei Aldir Blanc',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://moju.pa.gov.br/lei-aldir-blanc-2026/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Belem'),
+} satisfies Source;
+
+/**
+ * Vigia-PA's Aldir Blanc Ciclo II post (same theme as Acará). Off: its notice has no number
+ * ("EDITAL ALDIR BLANC CICLO 2 – VIGIA 2026"), so `documentsOnListing` reads no call (measured
+ * 2026-11-19); the call is closed, its final result posted. Turns on with a call named without a
+ * number, on the next cycle's post. Terms: a cookie policy (`/lgpd/`), nothing on reuse.
+ */
+export const vigiaPnabSource = {
+  kind: 'officialPage',
+  slug: 'vigia-pnab',
+  name: 'Vigia — Aldir Blanc',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://vigia.pa.gov.br/aldir-blanc-ciclo-ii/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Belem'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2631,4 +2732,9 @@ export const registeredSources: readonly Source[] = [
   piedadePnabSource,
   franciscoBeltraoCultureSource,
   novaSerranaPnabSource,
+  unaiPnabSource,
+  acaraPnabSource,
+  domEliseuPnabSource,
+  mojuPnabSource,
+  vigiaPnabSource,
 ];
