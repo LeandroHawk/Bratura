@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { callNoticeDocumentRole } from '../callNoticeDocuments/selection';
 import {
   badescCultureSource,
   bahiaFuncebSource,
@@ -291,7 +290,7 @@ describe('callsOfCallPages', () => {
     expect(calls.map(({ title }) => title)).toEqual(['EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026']);
   });
 
-  test('the call is named by `callPageTitleClass`, its notice by its link, not its annexes (Itaperuna)', async () => {
+  test('the call is named by `callPageTitleClass`; a `.php?id=` handler is a document (Itaperuna)', async () => {
     const system = 'https://prefeituraitaperuna.com.br/sistema-inscricoes/public';
     const file = (id: number, label: string) => a(`edital_arquivo.php?id=${id}`, label);
     siteAnswers({
@@ -305,11 +304,10 @@ describe('callsOfCallPages', () => {
     });
     const [call] = await callsOf(itaperunaCultureSource);
     expect(call?.title).toBe('Edital de Chamamento Público nº 01/2026 — Vinicius Batista');
-    expect(
-      call?.documents.filter(
-        ({ url, label }) => callNoticeDocumentRole(url, label) === 'callNotice',
-      ),
-    ).toEqual([{ url: `${system}/edital_arquivo.php?id=94`, label: 'Edital' }]);
+    expect(call?.documents).toEqual([
+      { url: `${system}/edital_arquivo.php?id=19`, label: 'Anexo II' },
+      { url: `${system}/edital_arquivo.php?id=94`, label: 'Edital' },
+    ]);
   });
 
   test('a notice in two formats is kept once; a call page with no notice still is a call (Salvador, Paraná)', async () => {

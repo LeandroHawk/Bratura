@@ -1553,6 +1553,30 @@ export const itaperunaCultureSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Araguaína's culture office (TO): calls at root slugs, linked as "Acessar Edital", named by
+ * `elementor-heading-title` (no `<h1>`). Off: two call pages link the same old notice above their
+ * own, read as both calls' notice. Turns on with a rule for a notice several call pages link, and
+ * "Acessar Edital" in `namesNoCall`. `robots.txt` bars `/wp-admin/` only; no terms.
+ */
+export const araguainaCultureSource = {
+  kind: 'officialPage',
+  slug: 'araguaina-cultura-editais',
+  name: 'Araguaína — SEMECL, editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://cultura.araguaina.to.gov.br/editais-2/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['cultura.araguaina.to.gov.br/'],
+    callPageTitleClass: 'elementor-heading-title',
+  },
+  callTitleParts: ['edital'],
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Araguaina'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -1654,4 +1678,5 @@ export const registeredSources: readonly Source[] = [
   balsasCultureSource,
   coronelFabricianoCultureSource,
   itaperunaCultureSource,
+  araguainaCultureSource,
 ];
