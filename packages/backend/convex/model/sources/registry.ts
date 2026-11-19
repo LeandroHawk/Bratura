@@ -1795,7 +1795,8 @@ export const quirinopolisPnabSource = {
 
 /**
  * Campina Grande do Sul-PR (2026-11-18): each call is on APPorte (`app.apporte.me/edital/…`), a
- * host the reader never follows; APPorte's robots and terms are unread. Off until they are.
+ * host the reader never follows (APPorte publishes no terms; its robots bar `/wp-admin/` only).
+ * Off until a call page on another host is read.
  */
 export const campinaGrandeDoSulCultureSource = {
   kind: 'officialPage',
@@ -1962,6 +1963,230 @@ export const campoGrandeFundacSource = {
   timeZone: ianaTimeZone.parse('America/Campo_Grande'),
 } satisfies Source;
 
+/**
+ * Pelotas-RS culture publications: each notice titled with its posting date ("28/09/2026 - EDITAL
+ * Nº 008-2026 - …"); files on `sai4.pelotas.com.br`, whose `robots.txt` answers its app page
+ * (no rules). Robots allow all; no terms (`/termos-de-uso` serves the home page).
+ */
+export const pelotasCultureSource = {
+  kind: 'officialPage',
+  slug: 'pelotas-cultura-publicacoes',
+  name: 'Pelotas — publicações da cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.pelotas.com.br/publicacoes/cultura',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['sai4.pelotas.com.br/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Indaiatuba-SP PNAB, phase two: a heading per call; "Anexos - Resoluções" heads 2024 resolutions,
+ * so only headings naming an "edital" are calls. The URL names the phase: re-point it for the
+ * next one. `robots.txt` and terms 404.
+ */
+export const indaiatubaPnabSource = {
+  kind: 'officialPage',
+  slug: 'indaiatuba-pnab-fase-dois',
+  name: 'Indaiatuba — PNAB, fase dois',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://cultura.indaiatuba.sp.gov.br/pnab/fase-dois/',
+  discovery: { hops: 'documentsUnderHeadings' },
+  callTitleParts: ['edital'],
+  documentUrlParts: ['/pnab/anexos/', 'indaiatuba.sp.gov.br/download/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Imperatriz-MA Fundação Cultural: one page per PNAB call (`/pnab-…`), printing its window; files
+ * on the city portal over http (`novo.imperatriz.ma.gov.br`, whose `robots.txt` answers a page).
+ * Robots: the Cloudflare preamble, no rule; no terms.
+ */
+export const imperatrizFciSource = {
+  kind: 'officialPage',
+  slug: 'imperatriz-fci-pnab',
+  name: 'Imperatriz — Fundação Cultural, PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.culturaimperatriz.com.br/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/pnab-'] },
+  documentUrlParts: ['imperatriz.ma.gov.br/media/site/notify/fci/'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Jequié-BA PNAB: every 2026 notice and its results on one page beside the council's minutes;
+ * Editais 01–04/2026 have results posted. Robots allow all; privacy page only.
+ */
+export const jequiePnabSource = {
+  kind: 'officialPage',
+  slug: 'jequie-pnab',
+  name: 'Jequié — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.jequie.ba.gov.br/pnab/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/storage/files/'],
+  timeZone: ianaTimeZone.parse('America/Bahia'),
+} satisfies Source;
+
+/**
+ * Barbacena-MG PNAB: one page per call (`/cultura/pnab/pnab01`…), its notice under `editais/`,
+ * annexes under `anexoNN/` (the call pages share `/cultura/pnab/`, so the file parts are narrower).
+ * `robots.txt` 404; terms pages empty.
+ */
+export const barbacenaPnabSource = {
+  kind: 'officialPage',
+  slug: 'barbacena-pnab',
+  name: 'Barbacena — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.barbacena.mg.gov.br/cultura/pnab/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['/cultura/pnab/pnab0'] },
+  documentUrlParts: ['/cultura/pnab/editais/', '/cultura/pnab/anexo'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Ferraz de Vasconcelos-SP PNAB: notices titled only "Edital Nº 001-2026", each with its annexes.
+ * Robots allow all; no terms.
+ */
+export const ferrazDeVasconcelosPnabSource = {
+  kind: 'officialPage',
+  slug: 'ferraz-de-vasconcelos-pnab',
+  name: 'Ferraz de Vasconcelos — editais PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://cultura.ferrazdevasconcelos.sp.gov.br/editais-pnab/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Varginha-MG Fundação Cultural PNAB: Chamamentos 01–04/2026 with their annexes. Robots bar
+ * `/wp-admin/` only; privacy page on personal data only.
+ */
+export const varginhaPnabSource = {
+  kind: 'officialPage',
+  slug: 'varginha-fundacao-cultural-pnab',
+  name: 'Varginha — Fundação Cultural, PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://fundacaoculturaldevarginha.com.br/pnab/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Bragança-PA PNAB, second cycle (about one call a year). The URL names the cycle: re-point it
+ * for the next one. Robots allow all; an LGPD page only.
+ */
+export const bragancaPnabSource = {
+  kind: 'officialPage',
+  slug: 'braganca-pa-pnab',
+  name: 'Bragança (PA) — PNAB 2º ciclo',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://braganca.pa.gov.br/pnab-2o-ciclo/',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Belem'),
+} satisfies Source;
+
+/**
+ * Guarabira-PB: each call an image card with no text, so its title is the call page's
+ * `f1-l-3` line (its `<h1>` is the city's name). The call pages' folder names the year
+ * (`…-2026/`): re-point it yearly. Robots allow all; privacy portal only.
+ */
+export const guarabiraPnabSource = {
+  kind: 'officialPage',
+  slug: 'guarabira-pnab',
+  name: 'Guarabira — Lei Aldir Blanc',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://guarabira.pb.gov.br/lei-aldir-blanc',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/editais-lei-aldair-blanc-2026/'],
+    callTitleOnCallPage: true,
+    callPageTitleClass: 'f1-l-3',
+  },
+  documentUrlParts: ['/storage/content/publicacoes/editais-lei-aldair-blanc-'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Porto Nacional-TO PNAB: notices on the vendor's Google Cloud bucket (`robots.txt` 404). The
+ * URL names the year: re-point it yearly. Its `robots.txt` answers a page (no rules); no terms.
+ */
+export const portoNacionalPnabSource = {
+  kind: 'officialPage',
+  slug: 'porto-nacional-pnab',
+  name: 'Porto Nacional — PNAB',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://portonacional.to.gov.br/concursos/2026/pnab',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['storage.googleapis.com/server-tocantins/portonacional/'],
+  timeZone: ianaTimeZone.parse('America/Araguaina'),
+} satisfies Source;
+
+/**
+ * Santos-SP PNAB 2026: a heading per call, its notice and annexes below (links carry no call
+ * number, so headings name them). The URL names the year: re-point it yearly. Robots and terms
+ * 404.
+ */
+export const santosPnabSource = {
+  kind: 'officialPage',
+  slug: 'santos-pnab-2026',
+  name: 'Santos — PNAB 2026',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl:
+    'https://www.santos.sp.gov.br/?q=institucional/politica-nacional-aldir-blanc-pnab-2026',
+  discovery: { hops: 'documentsUnderHeadings' },
+  documentUrlParts: ['/portal_files/SECULT/aldir-blanc/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Itapema-SC culture news: cards ("Cultura 13/10/2025 CHAMAMENTO PÚBLICO Nº 033/2025 Leia mais"),
+ * so only cards naming a call are opened, the title comes from the post, and a post linking no
+ * notice is no call. Robots bar some bots by name, none of ours; privacy page only.
+ */
+export const itapemaCultureSource = {
+  kind: 'officialPage',
+  slug: 'itapema-cultura',
+  name: 'Itapema — Cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-18',
+  termsCheckedOn: '2026-11-18',
+  listingUrl: 'https://www.itapema.sc.gov.br/cultura/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/cultura/'],
+    callPageNeedsNotice: true,
+    callTitleOnCallPage: true,
+  },
+  callTitleParts: ['chamamento', 'edital', 'credenciamento'],
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2086,4 +2311,16 @@ export const registeredSources: readonly Source[] = [
   sescRioGrandeDoNorteSource,
   florianopolisFranklinCascaesSource,
   campoGrandeFundacSource,
+  pelotasCultureSource,
+  indaiatubaPnabSource,
+  imperatrizFciSource,
+  jequiePnabSource,
+  barbacenaPnabSource,
+  ferrazDeVasconcelosPnabSource,
+  varginhaPnabSource,
+  bragancaPnabSource,
+  guarabiraPnabSource,
+  portoNacionalPnabSource,
+  santosPnabSource,
+  itapemaCultureSource,
 ];

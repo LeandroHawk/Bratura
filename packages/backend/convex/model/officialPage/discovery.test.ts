@@ -8,6 +8,8 @@ import {
   erechimPnabSource,
   estanciaCultureCallsSource,
   funarteCallsSource,
+  guarabiraPnabSource,
+  indaiatubaPnabSource,
   itaperunaCultureSource,
   paraFcpSource,
   rioGrandeDoNorteAudiovisualSource,
@@ -332,6 +334,24 @@ describe('callsOfCallPages', () => {
     const calls = await callsOf(rioGrandeDoNorteAudiovisualSource);
     expect(calls.map(({ title }) => title)).toEqual(['Edital de Fomento ao Audiovisual 20/2026']);
     expect(fetch).not.toHaveBeenCalledWith(`${site}/editais/editais/139/`, expect.anything());
+  });
+
+  test('an image card with no text opens its call page, titled by `callPageTitleClass` (Guarabira)', async () => {
+    const page =
+      'https://guarabira.pb.gov.br/publicacoes/editais-lei-aldair-blanc-2026/edital-05-x';
+    siteAnswers({
+      [guarabiraPnabSource.listingUrl]: a(page, '<img src="/edital-05.jpeg">'),
+      [page]: [
+        '<h1>Prefeitura de Guarabira (PB)</h1>',
+        '<h3 class="f1-l-3 cl2">Edital 05 - Fomento à Música</h3>',
+        a(
+          '/storage/content/publicacoes/editais-lei-aldair-blanc-2026/7100/arquivos/x.pdf',
+          'EDITAL_05',
+        ),
+      ].join(''),
+    });
+    const calls = await callsOf(guarabiraPnabSource);
+    expect(calls.map(({ title }) => title)).toEqual(['Edital 05 - Fomento à Música']);
   });
 
   test("a card's modality is not the call's name: a credenciamento's word on the card keeps no result open (FCP-PA)", async () => {
@@ -1151,6 +1171,21 @@ describe('callsOfDocumentsUnderHeadings', () => {
         },
       },
     ]);
+  });
+});
+
+describe('callsOfDocumentsUnderHeadings: a title filter (Indaiatuba)', () => {
+  test('a heading naming no call is skipped, its files with it', () => {
+    const page = indaiatubaPnabSource.listingUrl;
+    const files = 'https://cultura.indaiatuba.sp.gov.br/application/views/pnab/anexos';
+    const html = [
+      '<h3>EDITAL DE CHAMAMENTO PÚBLICO PNAB 05/2026</h3>',
+      a(`${files}/PNAB02/EDITAL_CHAMAMENTO_PUBLICO_GERAL_PNAB_05.pdf`, 'Edital'),
+      '<h3>Anexos - Resoluções</h3>',
+      a(`${files}/PNAB02/RESOLUCAO.pdf`, 'Resolução'),
+    ].join('');
+    const calls = callsOfDocumentsUnderHeadings(indaiatubaPnabSource, { html, url: page });
+    expect(calls.map(({ title }) => title)).toEqual(['EDITAL DE CHAMAMENTO PÚBLICO PNAB 05/2026']);
   });
 });
 
