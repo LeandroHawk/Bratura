@@ -2604,6 +2604,96 @@ export const rioGrandeDoSulSedacCallsSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * São Luís-MA's Secult (Instar, read as Piedade): its page links one page per call. Robots
+ * disallows the root `/editais/` and `/portal/download/`, where the files sit: linked, never read.
+ * Measured 2026-11-19: 6 calls, mostly festivities (Feira do Livro, Réveillon 2027) and a
+ * reviewers' credenciamento. Terms: "reprodução não comercial" only for the news area.
+ */
+export const saoLuisSecultCallsSource = {
+  kind: 'officialPage',
+  slug: 'sao-luis-secult',
+  name: 'São Luís — Secult',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl:
+    'https://www.saoluis.ma.gov.br/portal/secretarias/21/secretaria-municipal-de-cultura---secult',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/portal/editais/0/'],
+    callTitleOnCallPage: true,
+    callPageTitleClass: 'sw_leitura_audio',
+  },
+  documentUrlParts: ['/portal/download/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Catanduva-SP's culture office (Instar, read as Piedade). Measured 2026-11-19: the artists'
+ * credenciamento 004/2026 (open to 08/2027) and the poetry contest 01/2026. Terms: an LGPD text,
+ * nothing on reuse.
+ */
+export const catanduvaCultureCallsSource = {
+  kind: 'officialPage',
+  slug: 'catanduva-cultura',
+  name: 'Catanduva — cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.catanduva.sp.gov.br/portal/secretarias/6/cultura',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/portal/editais/0/'],
+    callTitleOnCallPage: true,
+    callPageTitleClass: 'sw_leitura_audio',
+  },
+  documentUrlParts: ['/portal/download/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Cajazeiras-PB's culture office (SIASP): one page per publication, which wraps one PDF under
+ * `/arquivos/`, disallowed by robots: linked, never read. The title filter drops the culture
+ * council's election notices. Measured 2026-11-19: FUMINC 01 and 02/2026 (13/11). Terms: a
+ * privacy page, nothing on reuse.
+ */
+export const cajazeirasCultureCallsSource = {
+  kind: 'officialPage',
+  slug: 'cajazeiras-cultura',
+  name: 'Cajazeiras — cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.cajazeiras.pb.gov.br/secretaria.php?sec=71',
+  discovery: { hops: 'callPage', callPageUrlParts: ['publicacoes.php?id='] },
+  callTitleParts: ['chamamento'],
+  documentUrlParts: ['/arquivos/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Caicó-RN's culture office (SIASP, read as Cajazeiras, no title filter needed). Measured
+ * 2026-11-19: Fomento 001, PNAB 01 and Pontos e Pontões 02/2026 (two publications), none open.
+ * Terms: none.
+ */
+export const caicoCultureCallsSource = {
+  kind: 'officialPage',
+  slug: 'caico-cultura',
+  name: 'Caicó — cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.caico.rn.gov.br/secretaria.php?sec=171',
+  discovery: { hops: 'callPage', callPageUrlParts: ['publicacoes.php?id='] },
+  documentUrlParts: ['/arquivos/'],
+  filesDisallowedByRobots: true,
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2759,4 +2849,8 @@ export const registeredSources: readonly Source[] = [
   mojuPnabSource,
   vigiaPnabSource,
   rioGrandeDoSulSedacCallsSource,
+  saoLuisSecultCallsSource,
+  catanduvaCultureCallsSource,
+  cajazeirasCultureCallsSource,
+  caicoCultureCallsSource,
 ];
