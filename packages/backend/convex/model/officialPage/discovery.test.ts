@@ -322,7 +322,6 @@ describe('callsOfCallPages', () => {
         card(142, 'Edital de Fomento ao Audiovisual 20/2026', 'Inscrições até 7 de Dezembro'),
       ].join(''),
       [`${site}/editais/editais/142/`]: [
-        '<h1> <a href="/" title="Mais Cultura RN"> </a> </h1>',
         '<h1>Edital de Fomento ao Audiovisual 20/2026</h1>',
         a(
           'https://nyc3.digitaloceanspaces.com/repo/seletar/media/editais/142/1._Edital.PDF',
