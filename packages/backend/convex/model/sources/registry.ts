@@ -2234,6 +2234,63 @@ export const valeCulturalInstituteCallsSource = {
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
+/**
+ * Piauí's Secult calls: a page per programme and year, opened only for Boca da Noite and Patrimônio
+ * Vivo (`callPageUrlParts` as an allow-list): other pages under `/editais/` carry jury members'
+ * biographies. Robots `/wp-admin/` only; no terms page.
+ */
+export const piauiSecultCallsSource = {
+  kind: 'officialPage',
+  slug: 'pi-secult-editais',
+  name: 'Secult Piauí — Boca da Noite e Patrimônio Vivo',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.cultura.pi.gov.br/editais/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['/editais/boca-da-noite-', '/editais/patrimonio-vivo-'],
+  },
+  documentUrlParts: ['www.cultura.pi.gov.br/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+} satisfies Source;
+
+/**
+ * Funcap Sergipe: every file on one page, named by its call. Off: its results name the call "PNAB
+ * Nº 18/2026" and its notice "Chamamento Nº 18/2026", so the results never drop the call and every
+ * closed notice would be read. Turns on with results matched by number and year whatever the kind,
+ * plus `callTitleParts` leaving out the event concessions (ambulantes, brinquedos). Files on
+ * `dados.cge.se.gov.br`, whose robots answers an HTML error page: no rules.
+ */
+export const sergipeFuncapCallsSource = {
+  kind: 'officialPage',
+  slug: 'se-funcap-editais',
+  name: 'Funcap Sergipe — editais',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://portal.cge.se.gov.br/funcap/editais',
+  discovery: { hops: 'documentsOnListing' },
+  documentUrlParts: ['dados.cge.se.gov.br/transparencia/TRS/cms/portais/19/'],
+  timeZone: ianaTimeZone.parse('America/Maceio'),
+} satisfies Source;
+
+/**
+ * IberCultura Viva's Mapas (Ibero-American calls; Brazilians apply). Off outside its season: on
+ * 2026-11-19 its 3 open items were a volunteer coordination, a site-hosting guide and one open to
+ * 2111. Turn it on for the January mobility call. Robots: the Cloudflare preamble, no rule; terms
+ * 404.
+ */
+export const iberCulturaVivaMapasSource = {
+  kind: 'mapasCulturaisInstance',
+  slug: 'mapas-ibercultura-viva',
+  name: 'Mapas Culturais — IberCultura Viva',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  baseUrl: 'https://mapa.iberculturaviva.org',
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2372,4 +2429,7 @@ export const registeredSources: readonly Source[] = [
   itapemaCultureSource,
   bnLiteraryPrizeSource,
   valeCulturalInstituteCallsSource,
+  piauiSecultCallsSource,
+  sergipeFuncapCallsSource,
+  iberCulturaVivaMapasSource,
 ];
