@@ -232,14 +232,16 @@ export const agenteCulturalMapasSource = {
 /**
  * Bahia's FUNCEB: one page per call, linked from its 2026 listing (measured 2026-11-15). The
  * training centre's calls are `/fundacaocultural/centro-de-formacao-em-artes-convocatoria-…`.
+ * Off: the ba.gov.br terms (rendered by its app from `servicosaocidadao.ba.gov.br`) forbid "a cópia
+ * de textos, imagens, ou quaisquer partes"; link and calendar only, until the state agrees.
  */
 export const bahiaFuncebSource = {
   kind: 'officialPage',
   slug: 'ba-funceb',
   name: 'Fundação Cultural do Estado da Bahia — editais 2026',
-  isActive: true,
+  isActive: false,
   robotsCheckedOn: '2026-11-15',
-  termsCheckedOn: '2026-11-15',
+  termsCheckedOn: '2026-11-19',
   listingUrl: 'https://www.ba.gov.br/fundacaocultural/editais-2026',
   discovery: {
     hops: 'callPage',
