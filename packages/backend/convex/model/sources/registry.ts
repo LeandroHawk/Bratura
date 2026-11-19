@@ -2369,10 +2369,10 @@ export const transArtistsCallsSource = {
 
 /**
  * Res Artis: the residencies' network, ~300 open calls on one listing (2026-11-19), each card with
- * "Deadline: 30 Nov 2026", most of them pay-to-stay ("RESIDENCE PROGRAM FEE … 2495 USD"). Off: the
- * 5 min for call pages open 108 of them a run, and the reads serve the creator only once fees can be
- * flagged or filtered (decision 8, after 30/11); its closes abbreviate the month ("30 Nov"), which
- * the close reader does not take yet (6 of 108 read on 2026-11-19).
+ * "Deadline: 30 Nov 2026", most of them pay-to-stay ("RESIDENCE PROGRAM FEE … 2495 USD").
+ * Off: the 5 min for call pages open 108 of them a run, and the reads serve the creator only once
+ * fees can be flagged or filtered (decision 8, after 30/11); its closes abbreviate the month
+ * ("30 Nov"), which the close reader does not take yet (6 of 108 read on 2026-11-19).
  * Robots allow; "Policies and Disclaimers" say nothing on automated access.
  */
 export const resArtisOpenCallsSource = {
