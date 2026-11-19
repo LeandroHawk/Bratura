@@ -2260,6 +2260,49 @@ export const piauiSecultCallsSource = {
 } satisfies Source;
 
 /**
+ * Cachoeiro de Itapemirim-ES: every office's calls, newest first, 30 to a listing page, a page
+ * each; only culture titles are calls ("de cultura", not "cultura": "agricultura"). 2026-11-19:
+ * PNAB 14–16 and Pontos de Cultura 12–13/2026 had results, Folia de Reis 022/2026 open to 27/11.
+ * Robots: `/site-pmci/wp-admin/` only; the privacy page has no reuse clause.
+ */
+export const cachoeiroCultureCallsSource = {
+  kind: 'officialPage',
+  slug: 'cachoeiro-editais-cultura',
+  name: 'Cachoeiro de Itapemirim — editais da cultura',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://www.cachoeiro.es.gov.br/editais/',
+  discovery: { hops: 'callPage', callPageUrlParts: ['www.cachoeiro.es.gov.br/cp_edital/'] },
+  callTitleParts: ['de cultura', 'cultural', 'pnab', 'folia'],
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
+ * Itapevi-SP's call portal: every office's calls since 2017 on one table, a page each. Off: a page
+ * prints its close only as a table row "Data | 17/11/2026 às 23:59:59", which the page-close
+ * reader does not take, so all 12 culture calls of 2026-11-19 (none open) would be read. Turns on
+ * when that row is read as the close. Robots allow all; no terms published.
+ */
+export const itapeviCultureCallsSource = {
+  kind: 'officialPage',
+  slug: 'itapevi-chamamentos-cultura',
+  name: 'Itapevi — chamamentos da cultura',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://chamamentos.itapevi.sp.gov.br/chamamentos',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['chamamentos.itapevi.sp.gov.br/chamamentos/'],
+  },
+  callTitleParts: ['de cultura', 'cultural', 'culturais', 'aldir blanc'],
+  documentUrlParts: ['/filemanager/files/shares/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
  * IberCultura Viva's Mapas (Ibero-American calls; Brazilians apply). Off outside its season: on
  * 2026-11-19 its 3 open items were a volunteer coordination, a site-hosting guide and one open to
  * 2111. Turn it on for the January mobility call. Robots: the Cloudflare preamble, no rule; terms
@@ -2415,4 +2458,6 @@ export const registeredSources: readonly Source[] = [
   valeCulturalInstituteCallsSource,
   piauiSecultCallsSource,
   iberCulturaVivaMapasSource,
+  cachoeiroCultureCallsSource,
+  itapeviCultureCallsSource,
 ];
