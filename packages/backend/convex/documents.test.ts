@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
 import { documentReadingLeaseMs, documentsCheckedPerQuery } from './documents';
 import schema from './schema';
-import { cearaMapasSource, federalMapasSource } from './model/sources/registry';
+import { cearaMapasSource, federalMapasSource, piedadePnabSource } from './model/sources/registry';
 import { modules } from './test.setup';
 
 const day = 24 * 60 * 60 * 1000;
@@ -204,6 +204,23 @@ describe('readPendingDocuments', () => {
     }
     const pending = await t.action(internal.documents.listDocumentsToRead, {});
     expect(pending.map(({ url }) => url)).toEqual([urls.at(-1)]);
+  });
+
+  test('lists no document of a source whose robots.txt disallows its files', async () => {
+    const t = convexTest(schema, modules);
+    const sourceId = await t.run((ctx) => ctx.db.insert('sources', piedadePnabSource));
+    await t.mutation(internal.callNotices.recordCallNotice, {
+      sourceId,
+      externalId: 'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      title: 'EDITAL TERMO DE EXECUÇÃO CULTURAL PNAB - CICLO 2',
+      summary: null,
+      officialUrl:
+        'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      documentUrls: ['https://www.piedade.sp.gov.br/imgeditor/file/003%20-%20Edital.pdf'],
+      registrationOpens: null,
+      registrationCloses: null,
+    });
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
   });
 
   test('stops at the credit ceiling and leaves the rest for the next run', async () => {

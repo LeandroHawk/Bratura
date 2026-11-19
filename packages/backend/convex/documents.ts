@@ -9,7 +9,7 @@ import { CallNoticeDocumentIdentityFields } from '@bratura/shared/entities/call-
 import { SourceAccessFields } from '@bratura/shared/entities/source/fragments/access/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server';
 import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
 import { requiredEnv } from './lib/env';
@@ -80,15 +80,16 @@ const DocumentToReadSchema = CallNoticeDocumentIdentityFields;
 type DocumentToRead = z.infer<typeof DocumentToReadSchema>;
 
 const ListDocumentsWorthReadingQueryArgsSchema = z.object({});
-const DocumentsToReadSchema = z.array(DocumentToReadSchema);
+const DocumentListSchema = z.array(DocumentToReadSchema);
 
 /**
  * The documents worth reading of the calls in the readable window, read or not, the calls closing
- * soonest first (they matter most to an alert), through the close-date index.
+ * soonest first (they matter most to an alert), through the close-date index. None of a source
+ * whose robots.txt disallows its files.
  */
 export const listDocumentsWorthReading = internalZodQuery({
   args: ListDocumentsWorthReadingQueryArgsSchema,
-  returns: DocumentsToReadSchema,
+  returns: DocumentListSchema,
   handler: async (ctx): Promise<DocumentToRead[]> => {
     const now = Date.now();
     const { from, to } = readableRegistrationCloses(now);
@@ -103,9 +104,22 @@ export const listDocumentsWorthReading = internalZodQuery({
       .withIndex('by_registration_closes', (index) => index.eq('registrationCloses.at', undefined))
       .collect();
 
+    const filesDisallowedBySource = new Map<Id<'sources'>, boolean>();
+    const filesDisallowed = async (sourceId: Id<'sources'>) => {
+      if (!filesDisallowedBySource.has(sourceId)) {
+        const source = await ctx.db.get(sourceId);
+        filesDisallowedBySource.set(
+          sourceId,
+          source?.kind === 'officialPage' && source.filesDisallowedByRobots === true,
+        );
+      }
+      return filesDisallowedBySource.get(sourceId)!;
+    };
+
     const worthReading: DocumentToRead[] = [];
     for (const callNotice of [...closingSoonestFirst, ...withoutCloseDate]) {
       if (reasonToSkipReadingDocuments(callNotice, now) !== null) continue;
+      if (await filesDisallowed(callNotice.sourceId)) continue;
       for (const { url, role } of documentsWorthReading(
         callNotice.documentUrls,
         callNotice.documentLabels,
@@ -125,13 +139,13 @@ export const listDocumentsWorthReading = internalZodQuery({
 export const documentsCheckedPerQuery = 15;
 
 const SelectDocumentsNeedingReadQueryArgsSchema = z.object({
-  documents: DocumentsToReadSchema.max(documentsCheckedPerQuery),
+  documents: DocumentListSchema.max(documentsCheckedPerQuery),
 });
 
 /** Of these documents, those never read, failed for a passing reason, or reserved too long. */
 export const selectDocumentsNeedingRead = internalZodQuery({
   args: SelectDocumentsNeedingReadQueryArgsSchema,
-  returns: DocumentsToReadSchema,
+  returns: DocumentListSchema,
   handler: async (ctx, { documents }): Promise<DocumentToRead[]> => {
     const now = Date.now();
     const needingRead: DocumentToRead[] = [];
@@ -164,7 +178,7 @@ const ListDocumentsToReadActionArgsSchema = z.object({});
 /** What `readPendingDocuments` would read, in its order; by hand, to see the queue first. */
 export const listDocumentsToRead = internalZodAction({
   args: ListDocumentsToReadActionArgsSchema,
-  returns: DocumentsToReadSchema,
+  returns: DocumentListSchema,
   handler: (ctx): Promise<DocumentToRead[]> => documentsToRead(ctx),
 });
 
