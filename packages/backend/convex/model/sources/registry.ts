@@ -2263,13 +2263,15 @@ export const piauiSecultCallsSource = {
  * Cachoeiro de Itapemirim-ES: every office's calls, newest first, 30 to a listing page, a page
  * each; only culture titles are calls ("de cultura", not "cultura": "agricultura"). 2026-11-19:
  * PNAB 14–16 and Pontos de Cultura 12–13/2026 had results, Folia de Reis 022/2026 open to 27/11.
- * Robots: `/site-pmci/wp-admin/` only; the privacy page has no reuse clause.
+ * Times out from Convex (30 s); read through Firecrawl from Brazil. Robots: `/site-pmci/wp-admin/`
+ * only; the privacy page has no reuse clause.
  */
 export const cachoeiroCultureCallsSource = {
   kind: 'officialPage',
   slug: 'cachoeiro-editais-cultura',
   name: 'Cachoeiro de Itapemirim — editais da cultura',
   isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-19',
   termsCheckedOn: '2026-11-19',
   listingUrl: 'https://www.cachoeiro.es.gov.br/editais/',
