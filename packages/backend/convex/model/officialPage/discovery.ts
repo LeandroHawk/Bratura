@@ -157,10 +157,14 @@ function noticesNameOnlyYearsBeforeLastYear(documents: PageLink[]) {
 
 /**
  * A listing link that names no call, only an action (2026-11-15: Salvador links every call page as
- * "Clique aqui!", Estância as "Acessar"). The call page's own heading names the call instead, or,
- * with no `<h1>` (Estância), a notice whose name carries a call number ("EDITAL 022/2026 – …").
+ * "Clique aqui!", Estância as "Acessar"; 2026-11-18: Balsas "Mais informações", Coronel Fabriciano
+ * "Ver edital", Itaperuna "Ver edital e inscrever-se"). The call page's own heading names the call
+ * instead, or, with no `<h1>` (Estância), a notice whose name carries a call number.
  */
-const namesNoCall = (label: string) => /^(clique aqui|acessar)[\s!.]*$/.test(plainText(label));
+const namesNoCall = (label: string) =>
+  /^(clique aqui|acessar|mais informacoes|ver edital( e inscrever-se)?)[\s!.]*$/.test(
+    plainText(label),
+  );
 
 /**
  * A call page whose own text is the notice (Badesc, 2026-11-17: the rules in the post, applications
@@ -329,8 +333,12 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
   // source says so (`callPageNeedsNotice`: folders of courses and plans).
   const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
-  const { callPagePublishedAtClass, callsFiledInYearFolders, callFilesInSubfolders } =
-    source.discovery;
+  const {
+    callPagePublishedAtClass,
+    callPageTitleClass,
+    callsFiledInYearFolders,
+    callFilesInSubfolders,
+  } = source.discovery;
   const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
@@ -388,7 +396,9 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
           ? subfoldersLinkedBelow(fetched)
           : [];
       page.push(...(await linksInSubfolders(subfolders, page, source, { spacingMs, deadline })));
-      heading = headingOfHtml(fetched.html);
+      heading = callPageTitleClass
+        ? textOfClass(fetched.html, callPageTitleClass)
+        : headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);
       pageText = textOfHtml(fetched.html);
     } catch (error) {

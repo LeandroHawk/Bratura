@@ -216,6 +216,14 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     expect(callNoticeDocumentRole(`${mg}?download=5062`)).toBeNull();
   });
 
+  test('a link named as an annex is no notice, though its file name says "edital" (Itaperuna)', () => {
+    const file = 'https://prefeituraitaperuna.com.br/sistema-inscricoes/public/edital_arquivo.php';
+    expect(callNoticeDocumentRole(`${file}?id=97`, 'Edital')).toBe('callNotice');
+    expect(callNoticeDocumentRole(`${file}?id=12`, 'Anexo II')).toBeNull();
+    expect(callNoticeDocumentRole(`${file}?id=93`, 'Anexo I')).toBeNull();
+    expect(callNoticeDocumentRole(`${file}?id=19`, 'Anexo I - Categorias')).toBe('categories');
+  });
+
   test("a link's text ending in the notice's word is the notice; a word inside another is not (Sesi SP)", () => {
     const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
     expect(callNoticeDocumentRole(media, 'Acesse o edital')).toBe('callNotice');

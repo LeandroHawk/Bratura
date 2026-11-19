@@ -9,15 +9,19 @@ const callNoticeDocumentExtensions = new Set(['pdf', 'doc', 'docx', 'odt', 'rtf'
 // Zod runs a refine even when `httpUrl` already failed, so an unparsable link must not throw here.
 function hasDocumentExtension(url: string) {
   if (!URL.canParse(url)) return false;
-  const fileName = new URL(url).pathname.split('/').pop() ?? '';
+  const { pathname, search } = new URL(url);
+  const fileName = pathname.split('/').pop() ?? '';
   if (!fileName.includes('.')) return true;
-  return callNoticeDocumentExtensions.has(fileName.split('.').pop()!.toLowerCase());
+  const extension = fileName.split('.').pop()!.toLowerCase();
+  if (extension === 'php' && search) return true;
+  return callNoticeDocumentExtensions.has(extension);
 }
 
 /**
  * A link to one of a call notice's text files. Ingestion filters a source's attachments with it.
- * A path with no extension passes: a download handler (`/download/category/15?download=5059`)
- * names the file only in its answer.
+ * A path with no extension passes, and a PHP script with a query: a download handler
+ * (`/download/category/15?download=5059`, `edital_arquivo.php?id=94`) names the file only in its
+ * answer.
  */
 export const CallNoticeDocumentUrlSchema = requiredHttpUrl.refine(hasDocumentExtension, {
   params: { message: 'notADocument' },

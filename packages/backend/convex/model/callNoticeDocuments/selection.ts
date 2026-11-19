@@ -155,19 +155,26 @@ export function fileNameOf(url: string) {
   }
 }
 
+/** A link text naming an annex ("Anexo II", "Anexo I - Categorias"). */
+const annexLabel = /^anexo(-|$)/;
+
 /**
  * What a document is to its call, from its link's text when the source gives one, else its file
  * name; `null` when it is not worth reading. Personal data in either one rules it out.
  */
 export function callNoticeDocumentRole(url: string, label?: string): CallNoticeDocumentRole | null {
+  const labelName = label ? nameOf(label) : '';
   const named = [
-    { name: label ? nameOf(label) : '', rules: labelRoles },
+    { name: labelName, rules: labelRoles },
     { name: nameOf(fileNameOf(url)), rules: documentRoleByName },
   ].filter(({ name }) => name);
   if (named.length === 0 || named.some(({ name }) => personalDataName.test(name))) return null;
   for (const { name, rules } of named) {
     const rule = rules.find(([, pattern]) => pattern.test(name));
-    if (rule) return rule[0];
+    if (!rule) continue;
+    // Itaperuna (2026-11-18) serves every file as `edital_arquivo.php`: "Anexo II" is no notice.
+    if (rule[0] === 'callNotice' && annexLabel.test(labelName)) return null;
+    return rule[0];
   }
   return null;
 }
