@@ -29,9 +29,12 @@ const registrationWord = /\b(?:inscricao|inscricoes|prazo|submissao|prorrogad[ao
 const otherStage = /resultado|divulga|homologa|recurso|execucao|vigencia|\.\s/;
 const registrationSentenceMaxLength = 220;
 
-/** The close in one registration sentence: "até DATE", the end of "de DATE a DATE". */
+/**
+ * The close in one registration sentence: "até DATE", "encerrando às 18h do dia DATE" (Secec-RJ),
+ * the end of "de DATE a DATE".
+ */
 const closeInSentence = new RegExp(
-  `\\bate\\s+(?:o\\s+)?(?:dia\\s+)?(?:${hour})?${date}|(?:\\bde\\s+)?${date}${aside}\\s+(?:a|ate)\\s+${date}`,
+  `\\b(?:ate|encerrando)\\s+(?:o\\s+)?(?:dia\\s+)?(?:${hour})?${date}|(?:\\bde\\s+)?${date}${aside}\\s+(?:a|ate)\\s+${date}`,
 );
 
 /** A close named as such, with no "até": "Término das inscrições 26/07/2026" (Sesc SE). */
@@ -64,11 +67,14 @@ function closeAsWritten(
 /**
  * The registration close a page's text prints, as that day's end in `timeZone`, or `null` when it
  * prints none. With several, the latest: a module or an extension closes later, and a close read
- * too late only costs a read, while one read too early would drop an open call.
+ * too late only costs a read, while one read too early would drop an open call. `yearOfPage` is
+ * the year the source files the page under (`callPagesUnderYearHeadings`): a close with no year
+ * written is in it.
  */
 export function registrationClosePrintedIn(
   text: string,
   timeZone: IanaTimeZone,
+  yearOfPage?: number,
 ): ZonedInstant | null {
   const page = plainText(text).replace(/\s+/g, ' ');
   const closes: ReturnType<typeof closeAsWritten>[] = [];
@@ -84,6 +90,13 @@ export function registrationClosePrintedIn(
     closes.push(closeAsWritten(untilGroups[0] ? untilGroups : rangeEndGroups));
   }
   for (const close of page.matchAll(namedClose)) closes.push(closeAsWritten(close.slice(1)));
+  if (yearOfPage !== undefined) {
+    for (const [index, close] of closes.entries()) {
+      if (!close || close.year !== null) continue;
+      const inYearOfPage = { ...close, year: yearOfPage };
+      closes[index] = isRealDate(inYearOfPage) ? inYearOfPage : null;
+    }
+  }
   const withYear = closes.filter((close): close is PlainDate => close?.year != null);
   // A close without its year ("até 13 de novembro", Secec-RJ) needs a guess (as in
   // `dateAppearsInQuote`) and may be an extension: the close is unknown, unless it repeats a dated

@@ -267,6 +267,19 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
       callNoticeDocumentRole(mg, 'Edital FEC 01/2026 - Afromineiridades - Retificado em 10/11/26'),
     ).toBe('callNotice');
     expect(callNoticeDocumentRole(mg, 'CRONOGRAMA ATUALIZADO.pdf')).toBe('amendment');
+    const rj = 'http://cultura.rj.gov.br/wp-content/uploads/2026/02';
+    expect(
+      callNoticeDocumentRole(
+        `${rj}/Edital-Cultura-e-F%C3%A9_COm-Retifica%C3%A7%C3%B5es_26022025.pdf`,
+        'Edital – com retificações',
+      ),
+    ).toBe('callNotice');
+    expect(
+      callNoticeDocumentRole(
+        `${rj}/Cultura-e-F%C3%A9_Ret.-Anexo-09_DOERJ26022025.pdf`,
+        'Publicação de retificações',
+      ),
+    ).toBe('amendment');
   });
 
   test("accepts Paraná's underscores and skips what a page posts around the notice", () => {

@@ -306,11 +306,35 @@ async function linksInSubfolders(
 }
 
 /**
+ * The links under the listing's headings naming this or last year alone
+ * (`callPagesUnderYearHeadings`), each with that year; a link under two keeps the newer.
+ */
+function linksUnderRecentYearHeadings({ html, url }: FetchedPage) {
+  const years = [currentYear(), currentYear() - 1];
+  const yearByUrl = new Map<string, number>();
+  const links: PageLink[] = [];
+  for (const { heading, links: sectionLinks } of sectionsOfHtml(html, url)) {
+    const year = Number(heading);
+    if (!years.includes(year)) continue;
+    for (const link of sectionLinks) {
+      if (yearByUrl.has(link.url)) continue;
+      yearByUrl.set(link.url, year);
+      links.push(link);
+    }
+  }
+  return { links, yearByUrl };
+}
+
+/**
  * The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON; with
  * `callsFiledInYearFolders` or `callPagesOnYearPages`, those of its recent years' folders or pages
- * too.
+ * too; with `callPagesUnderYearHeadings`, only those under its recent years' headings, and the
+ * year each is under.
  */
-async function linksOfCallPageListing(source: CallPageSource, spacingMs: number) {
+async function linksOfCallPageListing(
+  source: CallPageSource,
+  spacingMs: number,
+): Promise<{ links: PageLink[]; url: string; yearByUrl?: Map<string, number> }> {
   const { callPagesListedAsJson, callsFiledInYearFolders, callPagesOnYearPages } = source.discovery;
   if (callPagesListedAsJson) {
     const items = await fetchListingJson(source.listingUrl, source);
@@ -318,6 +342,9 @@ async function linksOfCallPageListing(source: CallPageSource, spacingMs: number)
     return { links, url: source.listingUrl };
   }
   const listing = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
+  if (source.discovery.callPagesUnderYearHeadings) {
+    return { ...linksUnderRecentYearHeadings(listing), url: listing.url };
+  }
   const links = linksOfHtml(listing.html, listing.url);
   if (callsFiledInYearFolders) {
     const yearFolders = folderLinksOfHtml(listing.html, listing.url);
@@ -347,7 +374,13 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     callsFiledInYearFolders,
     callFilesInSubfolders,
   } = source.discovery;
-  const { links: listing, url: listingUrl } = await linksOfCallPageListing(source, spacingMs);
+  const {
+    links: listing,
+    url: listingUrl,
+    yearByUrl,
+  } = await linksOfCallPageListing(source, spacingMs);
+  /** The year heading a call page is under (`callPagesUnderYearHeadings`), by its https URL. */
+  const yearOfCallPage = new Map<string, number>();
   /**
    * A link printed the same on the listing and a call page is the site's frame, not the call's
    * (Funarte, 2026-11-15: every page links an internal "Edital No. 409/2025"). Compared as printed:
@@ -355,7 +388,12 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
    */
   const frameUrls = new Set(listing.map(({ url }) => url));
   const callPages = onePerUrl(
-    listing.map((link) => withUntruncatedLabel(withHttpsOnHost(link, source.listingUrl))),
+    listing.map((link) => {
+      const page = withUntruncatedLabel(withHttpsOnHost(link, source.listingUrl));
+      const year = yearByUrl?.get(link.url);
+      if (year !== undefined) yearOfCallPage.set(page.url, year);
+      return page;
+    }),
   ).filter(
     ({ url, label }) =>
       // An image card links with no text (Guarabira): its page names it.
@@ -439,7 +477,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       title,
       officialUrl: url,
       documents: kept,
-      registrationCloses: registrationClosePrintedIn(pageText, source.timeZone),
+      registrationCloses: registrationClosePrintedIn(
+        pageText,
+        source.timeZone,
+        yearOfCallPage.get(url),
+      ),
     });
   }
   return calls;

@@ -23,6 +23,7 @@ import {
   recifeCultureSource,
   rioGrandeDoNorteFjaSource,
   rioBrancoCulturaSource,
+  rioDeJaneiroSececCallsSource,
   salvadorFgmSource,
   sesiSpCultureSource,
   sescRoraimaArtistCredentialingSource,
@@ -998,6 +999,51 @@ describe('callsOfCallPages', () => {
 
     expect(await callsOf(portoVelhoFunculturalSource)).toEqual([]);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain(folder(99613));
+  });
+
+  test("year headings (Secec-RJ): only this and last year's calls, a close with no year in its heading's", async () => {
+    const site = 'https://cultura.rj.gov.br';
+    const uploads = `${site}/wp-content/uploads/2026/02`;
+    const fetchMock = siteAnswers({
+      [rioDeJaneiroSececCallsSource.listingUrl]: [
+        '<h1>Editais</h1>',
+        a('http://cultura.rj.gov.br/desenvolve-cultura/', 'Sistema Desenvolve Cultura'),
+        '<h3>2026</h3>',
+        a('http://cultura.rj.gov.br/por-tras-da-cena/', 'Por Trás da Cena'),
+        a('http://cultura.rj.gov.br/cultura-e-fe/', 'Cultura e Fé'),
+        '<h3>2025</h3>',
+        a('http://cultura.rj.gov.br/mobilidades/', 'Mobilidades'),
+        '<h3>2024</h3>',
+        a('http://cultura.rj.gov.br/ie-meu-mestre/', 'Iê Meu Mestre'),
+      ].join(''),
+      [`${site}/por-tras-da-cena/`]:
+        '<p>As inscrições terão início às 9h do dia 18 de maio e seguem abertas até as 18h do dia 8 de junho</p>' +
+        a(`${uploads}/Edital-Por-Tras-da-Cena.pdf`, 'Edital'),
+      [`${site}/cultura-e-fe/`]:
+        '<p>A reabertura das inscrições está prevista para ocorrer de 03 de novembro a 1º de dezembro de 2026</p>' +
+        a(`${uploads}/Edital-Cultura-e-Fe.pdf`, 'Edital – com retificações'),
+      [`${site}/mobilidades/`]:
+        '<p>As inscrições ficam abertas até as 18h do dia 27 de fevereiro</p>' +
+        a(`${uploads}/Edital-Mobilidades.pdf`, 'Edital'),
+    });
+
+    const closesByTitle = Object.fromEntries(
+      (await callsOf(rioDeJaneiroSececCallsSource)).map(({ title, registrationCloses }) => [
+        title,
+        registrationCloses?.at,
+      ]),
+    );
+    expect(closesByTitle).toEqual({
+      'Por Trás da Cena': Date.UTC(2026, 5, 9, 2, 59, 59),
+      'Cultura e Fé': Date.UTC(2026, 11, 2, 2, 59, 59),
+      Mobilidades: Date.UTC(2025, 1, 28, 2, 59, 59),
+    });
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      rioDeJaneiroSececCallsSource.listingUrl,
+      `${site}/por-tras-da-cena/`,
+      `${site}/cultura-e-fe/`,
+      `${site}/mobilidades/`,
+    ]);
   });
 });
 
