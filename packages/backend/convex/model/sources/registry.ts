@@ -2408,7 +2408,7 @@ export const guaxupeCultureCallsSource = {
   termsCheckedOn: '2026-11-16',
   listingUrl: 'https://www.guaxupe.mg.gov.br/editais',
   discovery: { hops: 'callPage', callPageUrlParts: ['guaxupe.mg.gov.br/editais/'] },
-  callTitleParts: ['pnab', 'da cultura', 'cultural', 'culturais', 'artesa'],
+  callTitleParts: ['pnab', 'da cultura', 'artesa'],
   documentUrlParts: ['sistema.guaxupe.mg.gov.br/UpFiles/'],
   filesDisallowedByRobots: true,
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
