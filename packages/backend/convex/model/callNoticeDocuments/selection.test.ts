@@ -75,6 +75,13 @@ describe('reasonToSkipReadingDocuments', () => {
     }
   });
 
+  test('a temporary staff hire is skipped (FCP-PA); a selection of artists is not', () => {
+    expect(
+      reason({ title: 'PROCESSO SELETIVO SIMPLIFICADO Nº 01/2026 - FCP DE 24 DE MARÇO DE 2026' }),
+    ).toBe('notACallTitle');
+    expect(reason({ title: 'Processo Seletivo de Profissionais' })).toBeNull();
+  });
+
   test("a cooperation project's consultant hire or a market survey is skipped (IPHAN); its prizes are not", () => {
     for (const title of [
       'Projeto 914BRZ4027 Edital nº 67/2026: Perfil Gestão - Iphan/SEDE - Brasília/DF',

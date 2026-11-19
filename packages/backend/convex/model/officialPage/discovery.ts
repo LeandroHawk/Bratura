@@ -167,6 +167,13 @@ const namesNoCall = (label: string) =>
   );
 
 /**
+ * A listing card saying registration is over (2026-11-18: Secult-RN Mais Cultura "Inscrições
+ * encerradas" on all 47 PNAB cards, FCP-PA "Situação: Encerrada"): its page is never opened.
+ */
+const saysRegistrationClosed = (label: string) =>
+  /\b(inscricoes encerradas|situacao: encerrada)\b/.test(plainText(label));
+
+/**
  * A call page whose own text is the notice (Badesc, 2026-11-17: the rules in the post, applications
  * on Google Forms, no file). The page goes first as its notice when no linked file is one and its
  * title names a call; a menu page under the same path ("AGENDAMENTO") does not.
@@ -336,6 +343,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
   const {
     callPagePublishedAtClass,
     callPageTitleClass,
+    callTitleOnCallPage,
     callsFiledInYearFolders,
     callFilesInSubfolders,
   } = source.discovery;
@@ -353,6 +361,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
       label &&
       titleIsKept(source, label) &&
       !titleNamesAPastCall(label) &&
+      !saysRegistrationClosed(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
@@ -412,16 +421,17 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
     const documents = pageIsTheNotice
       ? withPageAsNotice(linked, { url, label: pageTitle })
       : linked;
-    const kept = callDocumentsWorthRecording(documents, label);
+    const name = callTitleOnCallPage ? heading || label : label;
+    const kept = callDocumentsWorthRecording(documents, name);
     if (!kept || (needsNotice && !kept.some(isNotice))) continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),
     );
     const title = pageIsTheNotice
-      ? pageTitle || label
-      : namesNoCall(label)
+      ? pageTitle || name
+      : namesNoCall(name)
         ? heading || numberedNotice?.label
-        : label;
+        : name;
     if (!title) continue;
     calls.push({
       externalId: url,

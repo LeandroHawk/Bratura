@@ -9,6 +9,8 @@ import {
   estanciaCultureCallsSource,
   funarteCallsSource,
   itaperunaCultureSource,
+  paraFcpSource,
+  rioGrandeDoNorteAudiovisualSource,
   maranhaoSecmaSource,
   museuDoIndioCallsSource,
   jundiaiCultureSource,
@@ -308,6 +310,44 @@ describe('callsOfCallPages', () => {
       { url: `${system}/edital_arquivo.php?id=19`, label: 'Anexo II' },
       { url: `${system}/edital_arquivo.php?id=94`, label: 'Edital' },
     ]);
+  });
+
+  test('a card saying registration is over is not opened; an open one is titled by its page (RN)', async () => {
+    const site = 'https://maiscultura.rn.gov.br';
+    const card = (id: number, title: string, status: string) =>
+      a(`/editais/editais/${id}/`, `<h3>${title}</h3><p>Fomentar projetos.</p><p>${status}</p>`);
+    siteAnswers({
+      [rioGrandeDoNorteAudiovisualSource.listingUrl]: [
+        card(139, 'Bloco V: Edital 18/2026', 'Inscrições encerradas'),
+        card(142, 'Edital de Fomento ao Audiovisual 20/2026', 'Inscrições até 7 de Dezembro'),
+      ].join(''),
+      [`${site}/editais/editais/142/`]: [
+        '<h1> <a href="/" title="Mais Cultura RN"> </a> </h1>',
+        '<h1>Edital de Fomento ao Audiovisual 20/2026</h1>',
+        a(
+          'https://nyc3.digitaloceanspaces.com/repo/seletar/media/editais/142/1._Edital.PDF',
+          'Edital',
+        ),
+      ].join(''),
+    });
+    const calls = await callsOf(rioGrandeDoNorteAudiovisualSource);
+    expect(calls.map(({ title }) => title)).toEqual(['Edital de Fomento ao Audiovisual 20/2026']);
+    expect(fetch).not.toHaveBeenCalledWith(`${site}/editais/editais/139/`, expect.anything());
+  });
+
+  test("a card's modality is not the call's name: a credenciamento's word on the card keeps no result open (FCP-PA)", async () => {
+    siteAnswers({
+      [paraFcpSource.listingUrl]: a(
+        '/edital/44',
+        'Abertura: h Modalidade: Edital de Credenciamento <h5>Edital Semear 2026</h5>',
+      ),
+      'https://fcp.pa.gov.br/edital/44': [
+        '<h1>Edital Semear 2026</h1>',
+        a('/midias/anexos/44_edital_001-2026_semear.pdf', 'Clique aqui'),
+        a('/midias/anexos/44_2026.05.13.doe_lista_final_de_avaliacao.pdf', 'Resolução Final'),
+      ].join(''),
+    });
+    expect(await callsOf(paraFcpSource)).toEqual([]);
   });
 
   test('a notice in two formats is kept once; a call page with no notice still is a call (Salvador, Paraná)', async () => {

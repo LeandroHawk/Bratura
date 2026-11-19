@@ -205,6 +205,12 @@ describe('headingOfHtml', () => {
     expect(headingOfHtml(page)).toBe('Edital 09');
     expect(headingOfHtml('<title>Edital 09 – FGM</title><p>sem título</p>')).toBe('');
   });
+
+  test("a logo's empty <h1> is skipped (Secult-RN Mais Cultura)", () => {
+    const page =
+      '<h1> <a href="/" title="Mais Cultura RN"> </a> </h1><h1>Bloco V: Edital 17/2026</h1>';
+    expect(headingOfHtml(page)).toBe('Bloco V: Edital 17/2026');
+  });
 });
 
 describe('sectionsOfHtml', () => {

@@ -56,6 +56,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     callPageTitleClass: cssClassName.optional(),
     /**
+     * The call is named by its page's heading (or `callPageTitleClass`), not by the listing's link:
+     * cards link title, description and status as one text (Secult-RN Mais Cultura; FCP-PA
+     * "Abertura: h Modalidade: Edital de Credenciamento Edital Semear 2026").
+     */
+    callTitleOnCallPage: z.boolean().optional(),
+    /**
      * The listing is a JSON list of calls, not links (Rio Branco: an Alpine template filled from
      * `/admin/editais/edital-listar-json`). Each item's call page is `callPagePath` on the
      * listing's host (a path, never `//host`) with `{id}` replaced by the item's `id`, its link

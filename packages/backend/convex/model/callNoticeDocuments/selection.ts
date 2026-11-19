@@ -27,10 +27,11 @@ export const readableRegistrationCloses = (now: number) => ({
  * DOS MEMBROS REPRESENTANTES…", "…DOS CONSELHEIROS…"), a council meeting's sign-up (Santa Luzia,
  * monthly: "INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO…"), a consultant hire under a cooperation
  * project or a market survey (IPHAN, 2026-11-18: "Projeto 914BRZ4027 Edital nº 67/2026: Perfil
- * Gestão", "Consulta Preliminar de Mercado (RFI)").
+ * Gestão", "Consulta Preliminar de Mercado (RFI)"), a temporary staff hire (FCP-PA, 2026-11-18:
+ * "PROCESSO SELETIVO SIMPLIFICADO - BIBLIOTECAS USINAS DA PAZ").
  */
 const notACallTitlePattern =
-  /\b(teste|em construcao|prestacao de contas|contrato de gestao|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao|projeto \d{3}brz\d+|consulta preliminar de mercado)\b/;
+  /\b(teste|em construcao|prestacao de contas|contrato de gestao|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao|projeto \d{3}brz\d+|consulta preliminar de mercado|processo seletivo simplificado)\b/;
 
 /**
  * A later step of a call, opened as an item of its own with the call's documents attached: its
