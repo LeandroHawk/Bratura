@@ -109,6 +109,7 @@ export const listDocumentsToRead = internalZodQuery({
       for (const { url, role } of documentsWorthReading(
         callNotice.documentUrls,
         callNotice.documentLabels,
+        callNotice.officialUrl,
       )) {
         const document = { callNoticeId: callNotice._id, url, role };
         if (needsRead(await knownDocument(ctx, document), now)) toRead.push(document);

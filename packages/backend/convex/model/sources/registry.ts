@@ -2342,6 +2342,56 @@ export const iberCulturaVivaMapasSource = {
   baseUrl: 'https://mapa.iberculturaviva.org',
 } satisfies Source;
 
+/**
+ * TransArtists (DutchCulture): open calls for artist residencies worldwide, each a post whose text
+ * is the call (the application on the host's site). Measured 2026-11-19: 10 posts on the listing,
+ * newest first, 9 printing an English deadline ("The deadline for applying is 16 December 2026");
+ * many residencies charge a fee, shown as the post says until fees are flagged (decision 8).
+ * Robots: `Crawl-delay: 30`; no terms found (privacy page only).
+ */
+export const transArtistsCallsSource = {
+  kind: 'officialPage',
+  slug: 'transartists-calls',
+  name: 'TransArtists — open calls for artist residencies',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://www.transartists.org/en/transartists-calls',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['transartists.org/en/news/'],
+    crawlDelaySeconds: 30,
+    callPageIsTheNotice: true,
+    everyCallPageIsACall: true,
+  },
+  documentUrlParts: ['/sites/default/files/'],
+  timeZone: ianaTimeZone.parse('Europe/Amsterdam'),
+} satisfies Source;
+
+/**
+ * Res Artis: the residencies' network, ~300 open calls on one listing (2026-11-19), each card with
+ * "Deadline: 30 Nov 2026", most of them pay-to-stay ("RESIDENCE PROGRAM FEE … 2495 USD"). Off: 300
+ * pages and reads per run serve the creator only once fees can be flagged or filtered (decision 8,
+ * after 30/11). Robots allow; "Policies and Disclaimers" say nothing on automated access.
+ */
+export const resArtisOpenCallsSource = {
+  kind: 'officialPage',
+  slug: 'resartis-open-calls',
+  name: 'Res Artis — open calls',
+  isActive: false,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-16',
+  listingUrl: 'https://resartis.org/open-calls/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['resartis.org/open-call/'],
+    callPageIsTheNotice: true,
+    everyCallPageIsACall: true,
+  },
+  documentUrlParts: ['/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('Europe/Amsterdam'),
+} satisfies Source;
+
 /** What `registerSource` can register, by slug. */
 export const registeredSources: readonly Source[] = [
   federalMapasSource,
@@ -2485,4 +2535,6 @@ export const registeredSources: readonly Source[] = [
   cachoeiroCultureCallsSource,
   itapeviCultureCallsSource,
   rioDeJaneiroSececCallsSource,
+  transArtistsCallsSource,
+  resArtisOpenCallsSource,
 ];

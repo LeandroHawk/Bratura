@@ -38,6 +38,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     callPageIsTheNotice: z.boolean().optional(),
     /**
+     * Every call page the listing links is a call, so with `callPageIsTheNotice` the page is its
+     * notice whatever its title (TransArtists: "TRACES Art & Science @ Energypolis", in English).
+     * Without it, the page is the notice only when its title names a call ("Edital", "Chamada").
+     */
+    everyCallPageIsACall: z.boolean().optional(),
+    /**
      * A call page is a call only when it links a notice: folders hold courses, plans and contracts
      * too (Palmas "Cursos de Iniciação Artística", Porto Velho "Termos de Inexigibilidade").
      * Without it, a page with no notice is still recorded, for the admin review.

@@ -28,6 +28,7 @@ import {
   sesiSpCultureSource,
   sescRoraimaArtistCredentialingSource,
   ufuProexcCultureSource,
+  transArtistsCallsSource,
 } from '../sources/registry';
 import {
   callNumberOf,
@@ -915,6 +916,50 @@ describe('callsOfCallPages', () => {
       ufuProexcCultureSource.listingUrl,
       `${site}/node/6742`,
       `${site}/node/6741`,
+    ]);
+  });
+
+  test('every call page a call, its page the notice (TransArtists): a title naming no call, the close an English deadline', async () => {
+    const news = 'https://www.transartists.org/en/news';
+    const post = (title: string, text: string) =>
+      [
+        `<h1>${title}</h1>`,
+        `<img src="/sites/default/files/2026-10/main01.jpg">`,
+        a('/sites/default/files/2026-10/main01.jpg', 'Image'),
+        `<p>${text}</p>`,
+        a('https://www.arcus-project.com/en/open-call/', 'Apply here'),
+      ].join('');
+    siteAnswers({
+      [transArtistsCallsSource.listingUrl]: [
+        a('/en/deadlines', 'Upcoming Deadlines'),
+        a(`${news}/traces-art-science-energypolis`, 'TRACES Art &amp; Science @ Energypolis'),
+        a(`${news}/open-call-arcus`, 'Open Call Arcus'),
+      ].join(''),
+      [`${news}/traces-art-science-energypolis`]: post(
+        'TRACES Art &amp; Science @ Energypolis',
+        'The application deadline is 22 November 2026, 23:59 Swiss time (CET).',
+      ),
+      [`${news}/open-call-arcus`]: post(
+        'Open Call Arcus',
+        'The application is online, with a deadline: October 30, 2026, 11:59 pm.',
+      ),
+    });
+    const calls = callsOfCallPages(transArtistsCallsSource);
+    await vi.runAllTimersAsync();
+    const closesOn = (at?: number) => at && new Date(at).toISOString().slice(0, 10);
+    expect(
+      (await calls).map(({ title, documents, registrationCloses }) => [
+        title,
+        documents.map(({ url }) => url),
+        closesOn(registrationCloses?.at),
+      ]),
+    ).toEqual([
+      [
+        'TRACES Art & Science @ Energypolis',
+        [`${news}/traces-art-science-energypolis`],
+        '2026-11-22',
+      ],
+      ['Open Call Arcus', [`${news}/open-call-arcus`], '2026-10-30'],
     ]);
   });
 

@@ -1,7 +1,7 @@
 import { instantFromPlainDateTimeInZone } from '@bratura/shared/primitives/code/calendar/calendar';
 import type { IanaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import type { ZonedInstant } from '@bratura/shared/primitives/code/time/zoned-instant/fields';
-import { monthNumberByPortugueseName } from '../../lib/monthNames';
+import { monthNumberByEnglishName, monthNumberByPortugueseName } from '../../lib/monthNames';
 import { plainText } from '../../lib/text';
 
 // The registration close a call page prints in its own text ("As inscrições estão abertas até as
@@ -40,6 +40,18 @@ const closeInSentence = new RegExp(
 /** A close named as such, with no "até": "Término das inscrições 26/07/2026" (Sesc SE). */
 const namedClose = new RegExp(
   `\\b(?:termino|encerramento|prazo(?:\\s+final)?)\\s+(?:d[aoe]s?\\s+|para\\s+(?:as\\s+)?)?(?:inscricao|inscricoes|submissao)[\\s:–-]*${date}`,
+  'g',
+);
+
+const englishMonth = `(${Object.keys(monthNumberByEnglishName).join('|')})`;
+
+/**
+ * An English deadline, always with its year (TransArtists, 2026-11-19, 9 of 10 posts): "The
+ * deadline for applying is 16 December 2026", "with a deadline: October 30, 2026". Never
+ * "Deadlines", the menu entry every page prints.
+ */
+const englishDeadline = new RegExp(
+  `\\bdeadline\\b[^.]{0,40}?(?:(\\d{1,2})\\s+${englishMonth}|${englishMonth}\\s+(\\d{1,2}),?)\\s+(\\d{4})(?!\\d)`,
   'g',
 );
 
@@ -93,6 +105,14 @@ export function registrationClosePrintedIn(
   }
   for (const close of page.matchAll(namedClose)) {
     closes.push(closeAsWritten(close.slice(1), yearOfPage));
+  }
+  for (const [, day, month, monthFirst, dayAfter, year] of page.matchAll(englishDeadline)) {
+    const written = {
+      year: Number(year),
+      month: monthNumberByEnglishName[(month ?? monthFirst)!]!,
+      day: Number(day ?? dayAfter),
+    };
+    closes.push(isRealDate(written) ? written : null);
   }
   const withYear = closes.filter((close): close is PlainDate => close?.year != null);
   // A close without its year and no `yearOfPage` ("até 13 de novembro") needs a guess (as in
