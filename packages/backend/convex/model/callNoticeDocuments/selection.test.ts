@@ -360,6 +360,20 @@ describe('documentsWorthReading', () => {
     ).toEqual([]);
   });
 
+  test("the call's own page listed as a document is its notice, whatever its link text (TransArtists)", () => {
+    const page = 'https://www.transartists.org/en/news/traces-art-science-energypolis';
+    expect(
+      documentsWorthReading([page], [{ url: page, label: 'TRACES Art & Science @ Energypolis' }]),
+    ).toEqual([]);
+    expect(
+      documentsWorthReading(
+        [page],
+        [{ url: page, label: 'TRACES Art & Science @ Energypolis' }],
+        page,
+      ),
+    ).toEqual([{ url: page, role: 'callNotice' }]);
+  });
+
   test("uses each document's link text when the listing carries one", () => {
     const mg = 'https://www.secult.mg.gov.br/download/category/15';
     expect(

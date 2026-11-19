@@ -77,6 +77,25 @@ describe('registrationClosePrintedIn', () => {
     expect(closeDay('Início das inscrições 01/07/2026')).toBeNull();
   });
 
+  test.each([
+    ['day first', 'The deadline for applying is 16 December 2026', '2026-12-16'],
+    ['"of"', 'The application is online, with a deadline of 15 November 2026', '2026-11-15'],
+    ['month first', 'with a deadline: October 30, 2026, 11:59 pm (GMT +01:00)', '2026-10-30'],
+    [
+      'colon',
+      'Deadline for applications: 29 October 2026 (Timezone UTC-10 at 23:59)',
+      '2026-10-29',
+    ],
+    ['"is"', 'The application deadline is 22 November 2026, 23:59 Swiss time', '2026-11-22'],
+  ])('an English deadline, with its year (TransArtists, %s)', (_, text, day) => {
+    expect(closeDay(text)).toBe(day);
+  });
+
+  test('the "Deadlines" menu or a deadline with no year is no close', () => {
+    expect(closeDay('Upcoming Deadlines 16 December 2026')).toBeNull();
+    expect(closeDay('The deadline for applying is 16 December')).toBeNull();
+  });
+
   test("another stage's date is not the registration's (MinC)", () => {
     expect(
       closeDay(

@@ -200,15 +200,17 @@ export function postsResult(url: string, label?: string) {
 
 /**
  * The documents of a call worth reading, with their role. None when nothing identifies the call
- * notice itself: annexes alone are not read, and the call waits for the admin review.
+ * notice itself: annexes alone are not read, and the call waits for the admin review. The call's
+ * own page, listed as a document, is its notice: only a source whose page is the notice lists it.
  */
 export function documentsWorthReading(
   documentUrls: string[],
   documentLabels: { url: string; label: string }[] = [],
+  officialUrl?: string,
 ) {
   const labelOf = new Map(documentLabels.map(({ url, label }) => [url, label]));
   const withRoles = documentUrls.flatMap((url) => {
-    const role = callNoticeDocumentRole(url, labelOf.get(url));
+    const role = url === officialUrl ? 'callNotice' : callNoticeDocumentRole(url, labelOf.get(url));
     return role ? [{ url, role }] : [];
   });
   return withRoles.some(({ role }) => role === 'callNotice') ? withRoles : [];
