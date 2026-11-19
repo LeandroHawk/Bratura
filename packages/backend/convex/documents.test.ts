@@ -2,7 +2,7 @@ import { convexTest } from 'convex-test';
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
-import { documentReadingLeaseMs } from './documents';
+import { documentReadingLeaseMs, documentsCheckedPerQuery } from './documents';
 import schema from './schema';
 import { cearaMapasSource, federalMapasSource } from './model/sources/registry';
 import { modules } from './test.setup';
@@ -177,12 +177,33 @@ describe('readPendingDocuments', () => {
     ] as const) {
       await addCallNotice(t, { externalId, registrationCloses, documentUrls: [urlOf(externalId)] });
     }
-    const pending = await t.query(internal.documents.listDocumentsToRead, {});
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
     expect(pending.map(({ url }) => url)).toEqual([
       urlOf('sooner'),
       urlOf('later'),
       urlOf('undated'),
     ]);
+  });
+
+  test('a document past the first batch checked is still listed, the read ones before it not', async () => {
+    const t = convexTest(schema, modules);
+    const urls = Array.from(
+      { length: documentsCheckedPerQuery + 1 },
+      (_, index) => `${documentBase}/edital-${index}.pdf`,
+    );
+    const callNoticeId = await addCallNotice(t, { documentUrls: urls });
+    for (const url of urls.slice(0, documentsCheckedPerQuery)) {
+      await t.mutation(internal.documents.recordDocumentRead, {
+        callNoticeId,
+        url,
+        role: 'callNotice',
+        markdown: '# Edital',
+        markdownHash: 'a'.repeat(64),
+        creditsUsed: 1,
+      });
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url)).toEqual([urls.at(-1)]);
   });
 
   test('stops at the credit ceiling and leaves the rest for the next run', async () => {
@@ -251,7 +272,7 @@ describe('readPendingDocuments', () => {
     const document = { callNoticeId, url: mainNotice, role: 'callNotice' as const };
     expect(await t.mutation(internal.documents.reserveDocumentRead, document)).toBe(true);
     expect(await t.mutation(internal.documents.reserveDocumentRead, document)).toBe(false);
-    expect(await t.query(internal.documents.listDocumentsToRead, {})).toEqual([]);
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
 
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Date.now() + documentReadingLeaseMs);
