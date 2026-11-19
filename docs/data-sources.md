@@ -184,7 +184,7 @@ the rows marked so below).
 
 | Source | URL | robots | terms |
 | --- | --- | --- | --- |
-| Bahia FUNCEB (measured 2026-11-15) | `https://www.ba.gov.br/fundacaocultural/editais-2026`: one page per call | allows (only `serverinfo.json` disallowed) | none published (`ba.gov.br` answers any path with its app shell), 2026-11-15 |
+| Bahia FUNCEB (**off** since 2026-11-19; measured 2026-11-15) | `https://www.ba.gov.br/fundacaocultural/editais-2026`: one page per call. Off: the ba.gov.br terms forbid copying the portal's texts (link and calendar only, as Petrobras); Secult-BA editais (`/cultura/62646/editais`), IRDEB and IPAC (their own hosts redirect to `www.ba.gov.br/irdeb/` and `/ipac/`) are not registered for the same reason | allows (only `serverinfo.json` disallowed) | the app renders them from `https://servicosaocidadao.ba.gov.br/api/conteudo/v1/termos-condicoes` (updated 2026-03-24): "a cópia de textos, imagens, ou quaisquer partes nele contidas, é expressamente proibida", 2026-11-19 |
 | Rio de Janeiro city SMC (measured 2026-11-15) | `https://cultura.prefeitura.rio/`: one page per call, the notice named "REGULAMENTO" | allows except wp-admin | not read: not registered, its call pages share no URL part but the root |
 | Minas Gerais Secult (measured 2026-11-15) | `https://www.secult.mg.gov.br/editais/editais-pnab/editais-pnab` and `/editais/fundo-estadual-de-cultura-fec/editais-fec`: the listing links the documents (`?download=`) | 404: nothing declared | only a privacy policy, about its visitors' data, 2026-11-15 |
 | Maranhão Secma (measured 2026-11-15) | `https://cultura.ma.gov.br/programas-ou-campanhas/editais-secma`: the listing links the PDFs | allows (Semrush, Petal disallowed) | content under CC BY 4.0, 2026-11-15 |
