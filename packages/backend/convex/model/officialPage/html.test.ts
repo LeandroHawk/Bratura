@@ -135,6 +135,18 @@ describe('linksOfHtml', () => {
       { url: 'https://www.ba.gov.br/edital-x/', label: 'Edital X' },
     ]);
   });
+
+  test('a link labelled only by its date takes the title linked after it (Sesi MG news)', () => {
+    const post = '/sesi-cultura/noticias/sesi-em-cena-2026/';
+    const html = [
+      `<a href="${post}">14/07/2026</a><a href="${post}">SESI Cultura MG lança chamamento</a>`,
+      '<a href="/agenda/">10/07/2026</a>',
+    ].join('');
+    expect(linksOfHtml(html, page)).toEqual([
+      { url: `https://www.ba.gov.br${post}`, label: 'SESI Cultura MG lança chamamento' },
+      { url: 'https://www.ba.gov.br/agenda/', label: '10/07/2026' },
+    ]);
+  });
 });
 
 describe('linksOfHtml: a link that names only an action (Estância)', () => {

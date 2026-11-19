@@ -189,10 +189,19 @@ function* headingsAndLinksOf(html: string, pageUrl: string, headingClass?: strin
   yield { textHtml: page.slice(previousEnd) };
 }
 
-/** Links in page order, each URL once: its first label that is not empty wins. */
+/** A label that is only a date: Sesi MG's news cards link each post by its date, then its title. */
+const isOnlyADate = (label: string) => /^\d{2}\/\d{2}\/\d{4}$/.test(label);
+
+/**
+ * Links in page order, each URL once: its first label that is not empty wins, or a later one when
+ * the first is only a date ("13/10/2026" would title a call, and fail every title filter).
+ */
 export function onePerUrl(links: PageLink[]): PageLink[] {
   const labelByUrl = new Map<string, string>();
-  for (const { url, label } of links) if (!labelByUrl.get(url)) labelByUrl.set(url, label);
+  for (const { url, label } of links) {
+    const kept = labelByUrl.get(url);
+    if (!kept || (isOnlyADate(kept) && label && !isOnlyADate(label))) labelByUrl.set(url, label);
+  }
   return [...labelByUrl].map(([url, label]) => ({ url, label }));
 }
 
