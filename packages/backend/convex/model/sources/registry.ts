@@ -2305,6 +2305,28 @@ export const itapeviCultureCallsSource = {
 } satisfies Source;
 
 /**
+ * Rio de Janeiro's culture secretariat (Secec-RJ): a page per call at root slugs, linked as `http:`
+ * under a year heading back to 2020. 2026-11-19: Cultura e Fé reopened to 01/12, the rest closed.
+ * Robots: `/wp-admin/` only; the privacy text covers users' data only.
+ */
+export const rioDeJaneiroSececCallsSource = {
+  kind: 'officialPage',
+  slug: 'rj-secec-editais',
+  name: 'Secec RJ — editais',
+  isActive: true,
+  robotsCheckedOn: '2026-11-19',
+  termsCheckedOn: '2026-11-19',
+  listingUrl: 'https://cultura.rj.gov.br/editais-3/',
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['cultura.rj.gov.br/'],
+    callPagesUnderYearHeadings: true,
+  },
+  documentUrlParts: ['cultura.rj.gov.br/wp-content/uploads/'],
+  timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
+} satisfies Source;
+
+/**
  * IberCultura Viva's Mapas (Ibero-American calls; Brazilians apply). Off outside its season: on
  * 2026-11-19 its 3 open items were a volunteer coordination, a site-hosting guide and one open to
  * 2111. Turn it on for the January mobility call. Robots: the Cloudflare preamble, no rule; terms
@@ -2462,4 +2484,5 @@ export const registeredSources: readonly Source[] = [
   iberCulturaVivaMapasSource,
   cachoeiroCultureCallsSource,
   itapeviCultureCallsSource,
+  rioDeJaneiroSececCallsSource,
 ];

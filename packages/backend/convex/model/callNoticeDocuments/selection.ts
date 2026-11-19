@@ -92,10 +92,13 @@ const noticeNamePrefix = '(\\d+[-_.]*|i+-|sei-\\d+-)?';
  */
 const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ['callNotice', /consolidacao/],
-  // A notice republished whole with its changes (Minas Gerais: "Edital FEC 02/2026 - Retificado").
+  // A notice republished whole with its changes (Minas Gerais: "Edital FEC 02/2026 - Retificado";
+  // Secec-RJ, 2026-11-19: "Edital – com retificações").
   [
     'callNotice',
-    new RegExp(`^${noticeNamePrefix}(${noticeWords})(?!.*anexo).*(retificad|consolidad)`),
+    new RegExp(
+      `^${noticeNamePrefix}(${noticeWords})(?!.*anexo).*(retificad|com-retificacoes|consolidad)`,
+    ),
   ],
   [
     'amendment',

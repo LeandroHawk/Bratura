@@ -90,6 +90,12 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      * are opened: the listing stays the same URL when a new year's page appears.
      */
     callPagesOnYearPages: z.boolean().optional(),
+    /**
+     * The listing groups call pages under a heading naming their year alone (Secec-RJ,
+     * 2026-11-19: `<h3>2026</h3>` down to 2020): only this and last year's are opened, and a close
+     * their page writes with no year ("até as 18h do dia 8 de junho", 11 of 17 in 2026) is in it.
+     */
+    callPagesUnderYearHeadings: z.boolean().optional(),
   }),
   z.object({ hops: z.literal('documentsOnListing') }),
   z.object({

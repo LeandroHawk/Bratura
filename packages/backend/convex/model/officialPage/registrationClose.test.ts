@@ -4,8 +4,8 @@ import { registrationClosePrintedIn } from './registrationClose';
 
 const saoPaulo = ianaTimeZone.parse('America/Sao_Paulo');
 /** The day a close names, as `YYYY-MM-DD` in São Paulo, or `null`. */
-function closeDay(text: string) {
-  const close = registrationClosePrintedIn(text, saoPaulo);
+function closeDay(text: string, yearOfPage?: number) {
+  const close = registrationClosePrintedIn(text, saoPaulo, yearOfPage);
   if (!close) return null;
   expect(close).toMatchObject({ timeZone: saoPaulo, precision: 'day' });
   return new Date(close.at - 3 * 60 * 60_000).toISOString().slice(0, 10);
@@ -26,6 +26,11 @@ describe('registrationClosePrintedIn', () => {
       'Paraná',
       'As inscrições estão abertas a partir do dia 28 de abril no SISPROFICE e prosseguem até o dia 31/05/2023',
       '2023-05-31',
+    ],
+    [
+      'Secec-RJ, "encerrando"',
+      'As inscrições poderão ser realizadas a partir das 09h do dia 30 de março de 2026 e encerrando às 18h do dia 13 de abril de 2026',
+      '2026-04-13',
     ],
     [
       'Salvador',
@@ -102,6 +107,13 @@ describe('registrationClosePrintedIn', () => {
     expect(closeDay('Estão abertas as inscrições de 30 de março a 29 de novembro de 2026')).toBe(
       '2026-11-29',
     );
+  });
+
+  test('a close with no year is in the year the source files its page under (Secec-RJ)', () => {
+    const text =
+      'As inscrições terão início às 9h do dia 18 de maio e seguem abertas até as 18h do dia 8 de junho';
+    expect(closeDay(text, 2026)).toBe('2026-06-08');
+    expect(closeDay(text)).toBeNull();
   });
 
   test('several closes: the latest (Mobilidades, a module per close)', () => {
