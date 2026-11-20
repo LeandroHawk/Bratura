@@ -275,14 +275,18 @@ export const extractPendingCallNotices = internalZodAction({
         return { ...result, stoppedBy: 'timeBudget' };
       if (index > 0) await sleep(extractionSpacingMs);
 
-      const documents: ExtractionInput = await ctx.runQuery(
-        internal.extraction.getExtractionInput,
-        {
-          callNoticeId,
-        },
-      );
-      const text = extractionTextFromDocuments(documents);
       result.left -= 1;
+      // One call whose input cannot be built (a read document with no text) is skipped and
+      // logged; thrown, it would stop the run and stay first in every next one.
+      let documents: ExtractionInput;
+      try {
+        documents = await ctx.runQuery(internal.extraction.getExtractionInput, { callNoticeId });
+      } catch (error) {
+        console.warn('Extraction input failed', callNoticeId, error);
+        result.failed += 1;
+        continue;
+      }
+      const text = extractionTextFromDocuments(documents);
       let answer: unknown;
       try {
         answer = await generateJson(extractionPrompt(text));
