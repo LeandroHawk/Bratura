@@ -193,10 +193,7 @@ function* headingsAndLinksOf(
       previousEnd = heading?.end ?? match.index + tag.length;
       previousLinkLabel = '';
       const inner = heading?.inner ?? '';
-      const title =
-        otherHeadingTag && headingClass && headingEndsAtFirstLink
-          ? inner.split(/<a\b/i, 1)[0]!
-          : inner;
+      const title = otherHeadingTag && headingEndsAtFirstLink ? inner.split(/<a\b/i, 1)[0]! : inner;
       yield { heading: plainLabel(title) };
       continue;
     }

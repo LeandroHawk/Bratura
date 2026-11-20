@@ -266,7 +266,7 @@ describe('sectionsOfHtml', () => {
     ]);
   });
 
-  test("a heading-class table row is titled by its text before its first link when asked: FCMS", () => {
+  test('a heading-class table row is titled by its text before its first link when asked: FCMS', () => {
     const page = 'https://www.fundacaodecultura.ms.gov.br/informativos/consultas/';
     const html = [
       '<tr class="consulta-row"><td><strong></strong></td><td>Prêmio Guadakan de cinema</td>',
