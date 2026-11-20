@@ -2,7 +2,11 @@ import { convexTest } from 'convex-test';
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
-import { documentReadingLeaseMs, documentsCheckedPerQuery } from './documents';
+import {
+  chosenCallNoticesMax,
+  documentReadingLeaseMs,
+  documentsCheckedPerQuery,
+} from './documents';
 import schema from './schema';
 import { cearaMapasSource, federalMapasSource, piedadePnabSource } from './model/sources/registry';
 import { modules } from './test.setup';
@@ -22,6 +26,8 @@ type CallNoticeOptions = {
   documentUrls?: string[];
   externalId?: string;
   registrationCloses?: ReturnType<typeof in9Days> | null;
+  /** When ingestion first found the call; now when absent. */
+  firstSeenAt?: number;
 };
 
 async function addCallNotice(
@@ -30,6 +36,7 @@ async function addCallNotice(
     documentUrls = [mainNotice, categories, `${documentBase}/resultado-final.pdf`],
     externalId = '8498',
     registrationCloses = in9Days(),
+    firstSeenAt,
   }: CallNoticeOptions = {},
 ) {
   const sourceId =
@@ -45,6 +52,7 @@ async function addCallNotice(
     registrationOpens: null,
     registrationCloses,
   });
+  if (firstSeenAt !== undefined) await t.run((ctx) => ctx.db.patch(callNoticeId, { firstSeenAt }));
   return callNoticeId;
 }
 
@@ -177,7 +185,12 @@ describe('readPendingDocuments', () => {
       ['closedOverAYearAgo', { ...in9Days(), at: Date.now() - 400 * day }],
       ['closedYesterday', { ...in9Days(), at: Date.now() - day }],
     ] as const) {
-      await addCallNotice(t, { externalId, registrationCloses, documentUrls: [urlOf(externalId)] });
+      await addCallNotice(t, {
+        externalId,
+        registrationCloses,
+        documentUrls: [urlOf(externalId)],
+        firstSeenAt: Date.now() - 500 * day,
+      });
     }
     const pending = await t.action(internal.documents.listDocumentsToRead, {});
     expect(pending.map(({ url }) => url)).toEqual([
@@ -186,6 +199,26 @@ describe('readPendingDocuments', () => {
       urlOf('undated'),
       urlOf('closedYesterday'),
     ]);
+  });
+
+  test('leaves out a call first seen after its close; one seen open, closed since, stays', async () => {
+    const t = convexTest(schema, modules);
+    const urlOf = (id: string) => `${documentBase}/${id}/edital.pdf`;
+    const closedYesterday = { ...in9Days(), at: Date.now() - day };
+    for (const [externalId, registrationCloses, firstSeenAt] of [
+      ['closedWhenFirstSeen', closedYesterday, Date.now()],
+      ['seenOpenClosedSince', closedYesterday, Date.now() - 10 * day],
+      ['open', in9Days(), Date.now()],
+    ] as const) {
+      await addCallNotice(t, {
+        externalId,
+        registrationCloses,
+        firstSeenAt,
+        documentUrls: [urlOf(externalId)],
+      });
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url)).toEqual([urlOf('open'), urlOf('seenOpenClosedSince')]);
   });
 
   test('a document past the first batch checked is still listed, the read ones before it not', async () => {
@@ -351,5 +384,96 @@ describe('readPendingDocuments', () => {
       expect(await readPending(t)).toMatchObject({ read: 0, failed: 1 });
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('readChosenCallNotices', () => {
+  beforeEach(() => {
+    vi.stubEnv('FIRECRAWL_API_KEY', 'fc-key');
+    vi.stubGlobal('setTimeout', (resolve: () => void) => resolve());
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  const closedLastMonth = () => ({ ...in9Days(), at: Date.now() - 30 * day });
+
+  test('reads a chosen call closed when first seen, through the same rules, and no other', async () => {
+    const t = convexTest(schema, modules);
+    const chosen = await addCallNotice(t, { registrationCloses: closedLastMonth() });
+    await addCallNotice(t, {
+      externalId: 'notChosen',
+      registrationCloses: closedLastMonth(),
+      documentUrls: [`${documentBase}/notChosen/edital.pdf`],
+    });
+    const fetchMock = firecrawlAnswersPerUrl((url) => scraped(`# ${url}`, 2));
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
+
+    const readChosen = () =>
+      t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: [chosen],
+        creditCeiling: 100,
+      });
+    expect(await readChosen()).toEqual({
+      read: 2,
+      failed: 0,
+      creditsUsed: 4,
+      left: 0,
+      stoppedBy: 'nothingLeft',
+    });
+    expect((await documentsOf(t)).map(({ url, status }) => ({ url, status }))).toEqual([
+      { url: mainNotice, status: 'read' },
+      { url: categories, status: 'read' },
+    ]);
+    expect(await readChosen()).toMatchObject({ read: 0, left: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('stops at the credit ceiling, as the queue does', async () => {
+    const t = convexTest(schema, modules);
+    const chosen = await addCallNotice(t, { registrationCloses: closedLastMonth() });
+    firecrawlAnswersPerUrl(() => scraped('# Edital', 2));
+    expect(
+      await t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: [chosen],
+        creditCeiling: 1,
+      }),
+    ).toMatchObject({ read: 1, left: 1, stoppedBy: 'creditCeiling' });
+  });
+
+  test("reads nothing of a chosen call whose source's robots.txt disallows its files", async () => {
+    const t = convexTest(schema, modules);
+    const sourceId = await t.run((ctx) => ctx.db.insert('sources', piedadePnabSource));
+    const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
+      sourceId,
+      externalId: 'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      title: 'EDITAL TERMO DE EXECUÇÃO CULTURAL PNAB - CICLO 2',
+      summary: null,
+      officialUrl:
+        'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      documentUrls: ['https://www.piedade.sp.gov.br/imgeditor/file/003%20-%20Edital.pdf'],
+      registrationOpens: null,
+      registrationCloses: closedLastMonth(),
+    });
+    const fetchMock = firecrawlAnswersPerUrl(() => scraped('# Edital', 2));
+    expect(
+      await t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: [callNoticeId],
+        creditCeiling: 100,
+      }),
+    ).toMatchObject({ read: 0, left: 0, stoppedBy: 'nothingLeft' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('takes at most 50 call notices a run', async () => {
+    const t = convexTest(schema, modules);
+    const chosen = await addCallNotice(t);
+    await expect(
+      t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: Array(chosenCallNoticesMax + 1).fill(chosen),
+        creditCeiling: 100,
+      }),
+    ).rejects.toThrow(/callNoticeIds/);
   });
 });

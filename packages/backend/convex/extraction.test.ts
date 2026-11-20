@@ -143,11 +143,46 @@ describe('extractPendingCallNotices', () => {
     expect(await extractPending(t)).toMatchObject({ extracted: 1 });
   });
 
-  test('a closed call is extracted too: what it asked still counts', async () => {
+  test('a call seen open and closed since is extracted too: what it asked still counts', async () => {
     const { t, callNoticeId } = await withReadCallNotice(-1);
+    await t.run((ctx) => ctx.db.patch(callNoticeId, { firstSeenAt: Date.now() - 10 * day }));
     expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
       callNoticeId,
     ]);
+  });
+
+  test('a call closed when first seen is extracted only when picked by hand', async () => {
+    const { t, callNoticeId } = await withReadCallNotice(-1);
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);
+
+    modelAnswers({});
+    const picked = { limit: 10, callNoticeIds: [callNoticeId] };
+    expect(await t.action(internal.extraction.extractPendingCallNotices, picked)).toMatchObject({
+      extracted: 1,
+      left: 0,
+    });
+    expect(await extractionsOf(t)).toMatchObject([{ callNoticeId }]);
+  });
+
+  test('picked by hand, only the calls picked are extracted', async () => {
+    const { t, callNoticeId } = await withReadCallNotice();
+    const known = await t.run((ctx) => ctx.db.get(callNoticeId));
+    const { callNoticeId: other } = await t.mutation(internal.callNotices.recordCallNotice, {
+      sourceId: known!.sourceId,
+      externalId: 'other',
+      title: 'Outro edital',
+      summary: null,
+      officialUrl: 'https://mapacultural.secult.ce.gov.br/oportunidade/9999/',
+      documentUrls: [],
+      registrationOpens: null,
+      registrationCloses: null,
+    });
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
+      callNoticeId,
+    ]);
+    expect(
+      await t.action(internal.extraction.listCallNoticesToExtract, { callNoticeIds: [other] }),
+    ).toEqual([]);
   });
 
   test('a call notice whose document is past the first page of read documents is listed', async () => {

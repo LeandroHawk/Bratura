@@ -2,6 +2,7 @@ import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fie
 import { describe, expect, test } from 'vitest';
 import {
   callNoticeDocumentRole,
+  closedWhenFirstSeen,
   documentsWorthReading,
   postsResult,
   queueOrder,
@@ -407,5 +408,23 @@ describe('queueOrder', () => {
       .sort(queueOrder(now))
       .map(({ name }) => name);
     expect(ordered).toEqual(['sooner', 'later', 'undated', 'closedYesterday', 'closedLongAgo']);
+  });
+});
+
+describe('closedWhenFirstSeen', () => {
+  test('a call found after its close, never one found open nor one with no close', () => {
+    expect(closedWhenFirstSeen({ registrationCloses: closingIn(-day), firstSeenAt: now })).toBe(
+      true,
+    );
+    expect(
+      closedWhenFirstSeen({ registrationCloses: closingIn(-day), firstSeenAt: now - 2 * day }),
+    ).toBe(false);
+    expect(closedWhenFirstSeen({ registrationCloses: null, firstSeenAt: now })).toBe(false);
+  });
+
+  test('a close moved past the day it was first seen (an extension) makes it readable', () => {
+    expect(closedWhenFirstSeen({ registrationCloses: closingIn(day), firstSeenAt: now })).toBe(
+      false,
+    );
   });
 });

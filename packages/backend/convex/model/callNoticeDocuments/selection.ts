@@ -40,6 +40,16 @@ export const queueOrder = (now: number) => {
 };
 
 /**
+ * A call already closed when we first found it: recorded for the year's numbers, never queued for
+ * credits (reading, extraction) unless picked by hand. A close moved later than that reopens it.
+ */
+export const closedWhenFirstSeen = ({
+  registrationCloses,
+  firstSeenAt,
+}: Pick<CallNotice, 'registrationCloses' | 'firstSeenAt'>) =>
+  registrationCloses !== null && registrationCloses.at < firstSeenAt;
+
+/**
  * Titles that are no call, compared without accents or case: drafts and tests, the accountability
  * a call's winners file (Maringá, 2026-11-17: "Prestação de Contas - FOMENTO…", open to 01/12 with
  * the old notice attached) or a foundation's management contract (Clóvis Salgado, 2026-11-18:
