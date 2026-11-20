@@ -58,6 +58,23 @@ describe('recordCallNotice', () => {
     expect(stored[0]?.title).toBe('Edital de Difusão Cultural 2026 (retificado)');
   });
 
+  test('whether a result was posted is kept from the first read: one found open stays queued', async () => {
+    const { t, sourceId } = await withSource();
+    const resultPostedOf = async (externalId: string) =>
+      (await t.run((ctx) => ctx.db.query('callNotices').collect())).find(
+        (stored) => stored.externalId === externalId,
+      )?.resultPostedWhenFirstSeen;
+    const open = listing(sourceId);
+    await t.mutation(recordCallNotice, { ...open, resultPostedWhenFirstSeen: false });
+    await t.mutation(recordCallNotice, { ...open, resultPostedWhenFirstSeen: true });
+    expect(await resultPostedOf(open.externalId)).toBe(false);
+
+    const closed = { ...listing(sourceId), externalId: '4322' };
+    await t.mutation(recordCallNotice, { ...closed, resultPostedWhenFirstSeen: true });
+    await t.mutation(recordCallNotice, closed);
+    expect(await resultPostedOf(closed.externalId)).toBe(true);
+  });
+
   test('tracking comes from the server, never from the caller', async () => {
     const { t, sourceId } = await withSource();
     await expect(

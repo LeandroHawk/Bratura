@@ -20,7 +20,7 @@ const RecordCallNoticeMutationReturnsSchema = z.object({
 /**
  * Stores a call notice as its source lists it now: a new one is inserted, a known one (same source
  * and external id) is updated in place, so a notice read every day stays one row (natural-key
- * upsert).
+ * upsert). A known one keeps its `resultPostedWhenFirstSeen`: one tracked while open stays queued.
  */
 export const recordCallNotice = internalZodMutation({
   args: RecordCallNoticeMutationArgsSchema,
@@ -34,7 +34,11 @@ export const recordCallNotice = internalZodMutation({
       )
       .unique();
     if (known) {
-      await ctx.db.patch(known._id, { ...listing, lastSeenAt: now });
+      await ctx.db.patch(known._id, {
+        ...listing,
+        resultPostedWhenFirstSeen: known.resultPostedWhenFirstSeen,
+        lastSeenAt: now,
+      });
       return { callNoticeId: known._id, isNew: false };
     }
     const callNoticeId = await ctx.db.insert('callNotices', {

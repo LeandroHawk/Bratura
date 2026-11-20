@@ -427,4 +427,23 @@ describe('closedWhenFirstSeen', () => {
       false,
     );
   });
+
+  test('a call listed with a result already posted, even with no close or a later one', () => {
+    for (const registrationCloses of [null, closingIn(day)]) {
+      expect(
+        closedWhenFirstSeen({
+          registrationCloses,
+          firstSeenAt: now,
+          resultPostedWhenFirstSeen: true,
+        }),
+      ).toBe(true);
+      expect(
+        closedWhenFirstSeen({
+          registrationCloses,
+          firstSeenAt: now,
+          resultPostedWhenFirstSeen: false,
+        }),
+      ).toBe(false);
+    }
+  });
 });

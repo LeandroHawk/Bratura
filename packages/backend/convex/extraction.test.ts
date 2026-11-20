@@ -151,6 +151,17 @@ describe('extractPendingCallNotices', () => {
     ]);
   });
 
+  test('a call listed with a result already posted is extracted only when picked by hand', async () => {
+    const { t, callNoticeId } = await withReadCallNotice();
+    await t.run((ctx) => ctx.db.patch(callNoticeId, { resultPostedWhenFirstSeen: true }));
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);
+    expect(
+      await t.action(internal.extraction.listCallNoticesToExtract, {
+        callNoticeIds: [callNoticeId],
+      }),
+    ).toEqual([callNoticeId]);
+  });
+
   test('a call closed when first seen is extracted only when picked by hand', async () => {
     const { t, callNoticeId } = await withReadCallNotice(-1);
     expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);

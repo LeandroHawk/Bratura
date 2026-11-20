@@ -40,14 +40,17 @@ export const queueOrder = (now: number) => {
 };
 
 /**
- * A call already closed when we first found it: recorded for the year's numbers, never queued for
- * credits (reading, extraction) unless picked by hand. A close moved later than that reopens it.
+ * A call already closed when we first found it, by its close or a result already posted: recorded
+ * for the year's numbers, never queued for credits (reading, extraction) unless picked by hand. A
+ * close moved later than that reopens it; a result does not.
  */
 export const closedWhenFirstSeen = ({
   registrationCloses,
   firstSeenAt,
-}: Pick<CallNotice, 'registrationCloses' | 'firstSeenAt'>) =>
-  registrationCloses !== null && registrationCloses.at < firstSeenAt;
+  resultPostedWhenFirstSeen,
+}: Pick<CallNotice, 'registrationCloses' | 'firstSeenAt' | 'resultPostedWhenFirstSeen'>) =>
+  resultPostedWhenFirstSeen === true ||
+  (registrationCloses !== null && registrationCloses.at < firstSeenAt);
 
 /**
  * Titles that are no call, compared without accents or case: drafts and tests, the accountability

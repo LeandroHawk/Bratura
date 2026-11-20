@@ -28,6 +28,7 @@ type CallNoticeOptions = {
   registrationCloses?: ReturnType<typeof in9Days> | null;
   /** When ingestion first found the call; now when absent. */
   firstSeenAt?: number;
+  resultPostedWhenFirstSeen?: boolean;
 };
 
 async function addCallNotice(
@@ -37,6 +38,7 @@ async function addCallNotice(
     externalId = '8498',
     registrationCloses = in9Days(),
     firstSeenAt,
+    resultPostedWhenFirstSeen,
   }: CallNoticeOptions = {},
 ) {
   const sourceId =
@@ -51,6 +53,7 @@ async function addCallNotice(
     documentUrls,
     registrationOpens: null,
     registrationCloses,
+    ...(resultPostedWhenFirstSeen !== undefined && { resultPostedWhenFirstSeen }),
   });
   if (firstSeenAt !== undefined) await t.run((ctx) => ctx.db.patch(callNoticeId, { firstSeenAt }));
   return callNoticeId;
@@ -219,6 +222,24 @@ describe('readPendingDocuments', () => {
     }
     const pending = await t.action(internal.documents.listDocumentsToRead, {});
     expect(pending.map(({ url }) => url)).toEqual([urlOf('open'), urlOf('seenOpenClosedSince')]);
+  });
+
+  test('leaves out a call listed with a result already posted, though it prints no close', async () => {
+    const t = convexTest(schema, modules);
+    const urlOf = (id: string) => `${documentBase}/${id}/edital.pdf`;
+    for (const [externalId, resultPostedWhenFirstSeen] of [
+      ['resultPosted', true],
+      ['noResult', false],
+    ] as const) {
+      await addCallNotice(t, {
+        externalId,
+        registrationCloses: null,
+        resultPostedWhenFirstSeen,
+        documentUrls: [urlOf(externalId)],
+      });
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url)).toEqual([urlOf('noResult')]);
   });
 
   test('a document past the first batch checked is still listed, the read ones before it not', async () => {
