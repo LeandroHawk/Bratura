@@ -6,7 +6,7 @@ belongs here only when it crosses the wire and has a consumer on the other side 
 
 Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
 tables: `source`, `call-notice`, `call-notice-document`, `call-notice-extraction`, `ingestion-run`,
-`user-notification`, `notification-delivery`.
+`user-notification`, `notification-delivery`, `user-message-channel`.
 
 ```
 src/

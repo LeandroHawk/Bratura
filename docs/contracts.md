@@ -38,9 +38,9 @@ from it, so no step maps field by field:
 
 ## 2. Ports: who calls
 
-A port is a way into the backend. Two today: **the site** (`bratura-portal`) and **Telegram**. Both
-reach the same Convex functions and read the same tables (`matches`, `applicationKits`), so the two
-channels never disagree.
+A port is a way into the backend. Two today: **the site** (`bratura-portal`) and a **message
+channel** (Telegram today, WhatsApp planned). Both reach the same Convex functions and read the
+same tables (`matches`, `applicationKits`), so the two channels never disagree.
 
 ```
 packages/shared/src/entities/<entity>/
@@ -123,8 +123,8 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
     ingestion/runSourceIngestion.ts  the loop every kind shares: lease, parse, record, count, close
     mapasCulturais/         the Mapas reader: client, edge Zod (payload.ts), listing, date
     firecrawl/              clients of the outside APIs, each with its payload.ts
-    telegram/               the Telegram channel: sendMessage.ts (the only import), messageText.ts
-                            (kind → pt-BR text), client.ts + payload.ts (the Bot API)
+    telegram/               the message channel: sendMessage.ts + messageText.ts (kind → pt-BR
+                            text), client.ts + payload.ts (the Bot API: getMe, sendMessage)
     callNoticeDocuments/    selection.ts: which calls and files are worth reading, from the listing
     llm/                    generateJson.ts (the only import; provider and model from env), evidence.ts
   crons.ts  http.ts         Convex's entry files
@@ -132,6 +132,8 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
                             writer of `callNoticeExtractions`
   userNotifications.ts      what to tell a user: the web inbox (the only writer of
                             `userNotifications`)
+  userMessageChannels.ts    where a user is reachable, opt-in and opt-out (the only writer of
+                            `userMessageChannels`)
   notificationDeliveries.ts how it left the site: the send outbox (the only writer of
                             `notificationDeliveries`)
   telegram.ts  matching.ts                                  (telegram.ts is a skeleton)

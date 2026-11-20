@@ -20,6 +20,7 @@ convex/
   telegram.ts     Telegram through the Bot API                                  (skeleton)
   extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
   userNotifications.ts        what to tell a user: the only writer of `userNotifications`
+  userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
   notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
   portfolio.ts  matching.ts  orgs.ts                                            (not yet)
 
@@ -33,7 +34,8 @@ convex/
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
-    telegram/        sendMessage.ts (the only import), messageText.ts, client.ts, payload.ts
+    telegram/        sendMessage.ts + messageText.ts (kind → pt-BR text), client.ts + payload.ts
+                     (the Bot API: getMe, sendMessage)
     sources/         registry.ts: every source the team checked, what `registerSource` copies
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand

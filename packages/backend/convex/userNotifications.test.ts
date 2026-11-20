@@ -25,11 +25,25 @@ async function withCallNotice(t: ReturnType<typeof convexTest>) {
   return callNoticeId;
 }
 
+/** The user's Telegram row in `userMessageChannels`, opted in — how the demo creator is seeded. */
+async function withTelegramOptIn(
+  t: ReturnType<typeof convexTest>,
+  userId: GenericId<'users'> = testUserId,
+) {
+  await t.mutation(internal.userMessageChannels.setMessageChannel, {
+    userId,
+    channel: 'telegram',
+    destination: '123456789',
+    optInAt: Date.now(),
+    optOutAt: null,
+  });
+}
+
 const deliveriesOf = (t: ReturnType<typeof convexTest>) =>
   t.run((ctx) => ctx.db.query('notificationDeliveries').collect());
 
 describe('notify', () => {
-  test('the same dedupe key creates one notification', async () => {
+  test('the same dedupe key creates one notification, and it scopes to its user', async () => {
     const t = convexTest(schema, modules);
     const callNoticeId = await withCallNotice(t);
     const notification = {
@@ -39,10 +53,15 @@ describe('notify', () => {
       callNoticeId,
       occurrence: 'd7' as const,
     };
-    const args = { notification, telegramOptInAt: null };
-    const first = await t.mutation(internal.userNotifications.notify, args);
-    expect(await t.mutation(internal.userNotifications.notify, args)).toBe(first);
+    const first = await t.mutation(internal.userNotifications.notify, { notification });
+    expect(await t.mutation(internal.userNotifications.notify, { notification })).toBe(first);
     expect(await t.run((ctx) => ctx.db.query('userNotifications').collect())).toHaveLength(1);
+
+    const other = await t.mutation(internal.userNotifications.notify, {
+      notification: { ...notification, userId: otherUserId },
+    });
+    expect(other).not.toBe(first);
+    expect(await t.run((ctx) => ctx.db.query('userNotifications').collect())).toHaveLength(2);
   });
 
   test('opt-in reserves one Telegram delivery, later opt-in fills a missing one', async () => {
@@ -55,16 +74,11 @@ describe('notify', () => {
       callNoticeId,
       amendedAt: Date.now(),
     };
-    await t.mutation(internal.userNotifications.notify, {
-      notification,
-      telegramOptInAt: null,
-    });
+    await t.mutation(internal.userNotifications.notify, { notification });
     expect(await deliveriesOf(t)).toHaveLength(0);
 
-    const notificationId = await t.mutation(internal.userNotifications.notify, {
-      notification,
-      telegramOptInAt: Date.now(),
-    });
+    await withTelegramOptIn(t);
+    const notificationId = await t.mutation(internal.userNotifications.notify, { notification });
     const [delivery] = await deliveriesOf(t);
     expect(delivery).toMatchObject({
       notificationId,
@@ -76,11 +90,30 @@ describe('notify', () => {
     });
     expect(delivery).not.toHaveProperty('destination');
 
-    await t.mutation(internal.userNotifications.notify, {
-      notification,
-      telegramOptInAt: Date.now(),
-    });
+    await t.mutation(internal.userNotifications.notify, { notification });
     expect(await deliveriesOf(t)).toHaveLength(1);
+  });
+
+  test('an opted-out channel reserves no delivery', async () => {
+    const t = convexTest(schema, modules);
+    const callNoticeId = await withCallNotice(t);
+    await t.mutation(internal.userMessageChannels.setMessageChannel, {
+      userId: testUserId,
+      channel: 'telegram',
+      destination: '123456789',
+      optInAt: Date.now() - 10_000,
+      optOutAt: Date.now(),
+    });
+    await t.mutation(internal.userNotifications.notify, {
+      notification: {
+        kind: 'callNoticeAmended' as const,
+        userId: testUserId,
+        dedupeKey: 'amended:2',
+        callNoticeId,
+        amendedAt: Date.now(),
+      },
+    });
+    expect(await deliveriesOf(t)).toHaveLength(0);
   });
 
   test('a platform announcement reaches the inbox with no delivery when the user has no opt-in', async () => {
@@ -93,7 +126,6 @@ describe('notify', () => {
         title: { ptBR: 'Bem-vinda ao Bratura', en: 'Welcome to Bratura' },
         body: { ptBR: 'Cadastre seu portfólio.', en: 'Register your portfolio.' },
       },
-      telegramOptInAt: null,
     });
     const [stored] = await t.query(internal.userNotifications.listForUser, {
       userId: testUserId,
@@ -119,7 +151,6 @@ describe('the inbox', () => {
           title: { ptBR: `Título ${key}`, en: `Title ${key}` },
           body: { ptBR: 'corpo', en: 'body' },
         },
-        telegramOptInAt: null,
       });
     }
     const list = await t.query(internal.userNotifications.listForUser, {
@@ -140,7 +171,6 @@ describe('the inbox', () => {
         title: { ptBR: 'Olá', en: 'Hello' },
         body: { ptBR: 'corpo', en: 'body' },
       },
-      telegramOptInAt: null,
     });
     await t.mutation(internal.userNotifications.markRead, { notificationId });
     const first = await t.query(internal.userNotifications.getUserNotification, {

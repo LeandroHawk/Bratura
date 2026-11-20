@@ -50,6 +50,7 @@ import type * as notificationDeliveries from "../notificationDeliveries.js";
 import type * as pdfText from "../pdfText.js";
 import type * as sources from "../sources.js";
 import type * as telegram from "../telegram.js";
+import type * as userMessageChannels from "../userMessageChannels.js";
 import type * as userNotifications from "../userNotifications.js";
 
 import type {
@@ -101,6 +102,7 @@ declare const fullApi: ApiFromModules<{
   pdfText: typeof pdfText;
   sources: typeof sources;
   telegram: typeof telegram;
+  userMessageChannels: typeof userMessageChannels;
   userNotifications: typeof userNotifications;
 }>;
 

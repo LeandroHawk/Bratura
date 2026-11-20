@@ -21,6 +21,9 @@ cultural MEI) who cannot afford a producer or a project consultant.
   activity; LinkedIn does not fit artisans; data the creator provides needs no scraping. The
   Instagram personal-account API is discontinued as far as known, so uploads are manual. Framed as
   proof for calls and fairs, not as marketing.
+- **Platform announcements stay** (decided 2026-11-18, text confirmed by Atilio): beyond the call
+  alerts, Bratura itself can message a creator — a new source covered, a feature shipped — as a
+  `platformAnnouncement` notification, same inbox and same opted-in message channel.
 
 ## Competitors (checked 2026-11-07)
 

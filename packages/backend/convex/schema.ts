@@ -7,6 +7,7 @@ import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice
 import { IngestionRunSchema } from '@bratura/shared/entities/ingestion-run/entity';
 import { NotificationDeliverySchema } from '@bratura/shared/entities/notification-delivery/entity';
 import { SourceSchema } from '@bratura/shared/entities/source/entity';
+import { UserMessageChannelSchema } from '@bratura/shared/entities/user-message-channel/entity';
 import { UserNotificationSchema } from '@bratura/shared/entities/user-notification/entity';
 
 // Each table is its entity's Zod, never a validator written beside it (docs/architecture.md §3).
@@ -37,4 +38,8 @@ export default defineSchema({
   notificationDeliveries: defineTable(zodToConvex(NotificationDeliverySchema))
     .index('by_notification_and_channel', ['notificationId', 'channel'])
     .index('by_status', ['status']),
+  userMessageChannels: defineTable(zodToConvex(UserMessageChannelSchema)).index(
+    'by_user_and_channel',
+    ['userId', 'channel'],
+  ),
 });

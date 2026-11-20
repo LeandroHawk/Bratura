@@ -17,9 +17,10 @@ import { internalZodMutation, internalZodQuery } from './lib/builders';
 
 // The web inbox's only writer. A trigger (matching, the deadline cron, an amended call, an admin
 // announcement) calls `notify`; the notification exists — and the inbox shows it — with or
-// without Telegram. With `telegramOptInAt` the same call reserves a `notificationDeliveries`
-// row; without it, nothing leaves the site (`docs/security.md` §2). Internal until login lands
-// the `users` table and the auth builders (`docs/contracts.md` §3).
+// without a message channel. When `userMessageChannels` says the user opted in to a channel
+// (and never opted out), the same call reserves a `notificationDeliveries` row; without it,
+// nothing leaves the site (`docs/security.md` §2). Internal until login lands the `users` table
+// and the auth builders (`docs/contracts.md` §3).
 
 const userNotificationsOf = (ctx: QueryCtx, userId: GenericId<'users'>) =>
   ctx.db
@@ -28,20 +29,18 @@ const userNotificationsOf = (ctx: QueryCtx, userId: GenericId<'users'>) =>
 
 const NotifyMutationArgsSchema = z.object({
   notification: UserNotificationDraftSchema,
-  /** The user's `telegramOptInAt`, resolved by the caller: no opt-in, no delivery, never. */
-  telegramOptInAt: requiredInstant.nullable(),
 });
 const NotifyMutationReturnsSchema = documentId('userNotifications');
 
 /**
- * Creates the notification (natural-key upsert on user + `dedupeKey`) and, when the user has
- * Telegram opt-in, reserves its Telegram delivery. A repeat of the same key returns the existing
+ * Creates the notification (natural-key upsert on user + `dedupeKey`) and, when the user has an
+ * opted-in message channel, reserves its delivery. A repeat of the same key returns the existing
  * row and only fills in a missing delivery — an opt-in gained later still gets its send.
  */
 export const notify = internalZodMutation({
   args: NotifyMutationArgsSchema,
   returns: NotifyMutationReturnsSchema,
-  handler: async (ctx, { notification, telegramOptInAt }) => {
+  handler: async (ctx, { notification }) => {
     const known = await ctx.db
       .query('userNotifications')
       .withIndex('by_user_and_dedupe_key', (index) =>
@@ -50,10 +49,22 @@ export const notify = internalZodMutation({
       .unique();
     const notificationId =
       known?._id ?? (await ctx.db.insert('userNotifications', { ...notification, readAt: null }));
-    if (telegramOptInAt !== null) await reserveDelivery(ctx, notificationId, notification.userId);
+    if (await hasOptedInChannel(ctx, notification.userId))
+      await reserveDelivery(ctx, notificationId, notification.userId);
     return notificationId;
   },
 });
+
+/** A `userMessageChannels` row for the channel, opted in and never opted out. */
+async function hasOptedInChannel(ctx: MutationCtx, userId: GenericId<'users'>) {
+  const channel = await ctx.db
+    .query('userMessageChannels')
+    .withIndex('by_user_and_channel', (index) =>
+      index.eq('userId', userId).eq('channel', 'telegram'),
+    )
+    .unique();
+  return channel !== null && channel.optOutAt === null;
+}
 
 /** Reserves the Telegram delivery once (outbox pattern); a second call finds it and stops. */
 async function reserveDelivery(

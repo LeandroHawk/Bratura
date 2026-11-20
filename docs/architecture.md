@@ -118,7 +118,7 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 | document read | not on the call notice: a `callNoticeDocuments` row per file read (the notice, its amendments, categories and criteria, picked by link text or file name), its Markdown, hash and cost | `documents.ts`, run by hand | Firecrawl `/scrape` | **now** |
 | extracted and classified | not on the call notice: a `callNoticeExtractions` row per call (whether it is a call for creators or noise, amounts per project and total, applicant types, residence, art forms, required documents, evaluation criteria, the close as written), each value with the source passage that proves it or dropped | `extraction.ts`, run by hand, through `model/llm/`; each value checked by `model/callNoticeExtraction/verify.ts` | the read documents' Markdown | **now** |
 | matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
-| notified | not on the call notice: a `userNotifications` row (the web inbox) plus a `notificationDeliveries` row per opted-in send, so a reminder never goes twice | `userNotifications.ts` and `notificationDeliveries.ts` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
+| notified | not on the call notice: a `userNotifications` row (the web inbox) plus a `notificationDeliveries` row per opted-in send (the opt-in on `userMessageChannels`), so a reminder never goes twice | `userNotifications.ts`, `userMessageChannels.ts` and `notificationDeliveries.ts` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
 
 - **A source kind decides only how a call notice is listed.** From "document read" on, every call
   notice follows the same path, whichever kind listed it. A `newsSite` lists nothing: it is a
@@ -129,9 +129,10 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 - **A structured date beats an extracted one**: when the Mapas API gives the registration window,
   it stays; a different date in the PDF is kept as a flagged divergence, not a replacement (user,
   2026-11-14).
-- **Telegram and e-mail are channels of "notified"**, each behind `model/<channel>/`; they read
-  what the stages stored and never compute (`docs/integrations/telegram.md`). Who writes and reads
-  each part, folder by folder: `docs/contracts.md` §4.
+- **Message channels are consumers of "notified"** (Telegram today, WhatsApp planned, e-mail
+  later), each behind `model/<channel>/`; they read what the stages stored and never compute
+  (`docs/integrations/telegram.md`). Who writes and reads each part, folder by folder:
+  `docs/contracts.md` §4.
 - **Creator-facing lists show only call notices classified as calls for creators**; the noise stays
   stored, for the admin review.
 
@@ -248,6 +249,11 @@ flow.
   comes first; revisit after the demo works).
 - **Validation messages in two languages**: "text lives in the Zod declaration" meets "copy exists
   in pt-BR and en" at the first form.
+- **The helpers that repeat**: a claim with a lease, a loop with a time budget, a run summary
+  (`{done, failed, left, stoppedBy}`) and an HTTP error carrying a status now exist in the send
+  outbox for the fourth time across ingestion, documents, extraction and deliveries. They are
+  candidates for `lib/` the day a fifth door needs them — before that, copying keeps each door
+  readable alone.
 - **Enforcement**: these rules are prose. The ones visible in the syntax (a section importing
   another, `primitives` importing `entities`) become lint rules when they first break.
 

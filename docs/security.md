@@ -36,8 +36,8 @@ from steering the LLM. Shapes and ports are in `docs/contracts.md`.
   sign-up link only.
 - **Paid or limited calls never run per user request.** Gemini and Firecrawl run in batch ingestion;
   a user action reads what is stored. Public queries are paginated, never an unbounded `collect()`.
-- **Messages out need opt-in** (`telegramOptInAt`) and stop on `/parar` or a blocked bot (403);
-  e-mail alerts the same.
+- **Messages out need opt-in** (a `userMessageChannels` row: destination, `optInAt`, `optOutAt`)
+  and stop on `/parar` or a blocked bot (a 403 writes `optOutAt`); e-mail alerts the same.
 
 ## 3. Prompt injection
 
@@ -130,4 +130,8 @@ Known gaps, in no order; add yours:
 - Rate limiter: `convex-helpers`' `rateLimit` (no new dependency) or the Convex component?
 - Uploads: do we need a malware or content check for portfolio files before showing them on a
   public page (`/p/{slug}`)?
-- Account deletion and data export (LGPD) for creators.
+- Account deletion and data export (LGPD) for creators: deleting a user must also clean
+  `userNotifications`, `notificationDeliveries` and `userMessageChannels` — the four tables that
+  carry their data.
+- Owner checks: today's `notify`, `sendPendingDeliveries` and friends are internal; when login
+  lands and they become public, each must confirm the caller owns the `userId` it touches.
