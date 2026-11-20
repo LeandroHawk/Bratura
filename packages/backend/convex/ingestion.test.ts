@@ -110,9 +110,21 @@ describe('ingestMapasCulturaisInstance', () => {
     expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
   });
 
-  test('records every open call notice and closes the run with its counts', async () => {
+  test('records every call notice of the year, closed ones too, and closes the run with its counts', async () => {
     const { t, sourceId } = await withSource();
-    const fetchMock = mapasAnswers([mapasOpportunity(), mapasOpportunity({ id: 99 })]);
+    const closedInJanuary = {
+      date: '2026-01-10 23:59:00.000000',
+      timezone_type: 3,
+      timezone: 'Etc/GMT+3',
+    };
+    const fetchMock = mapasAnswers([
+      mapasOpportunity(),
+      mapasOpportunity({
+        id: 99,
+        registrationFrom: { ...closedInJanuary, date: '2026-01-02 00:01:00.000000' },
+        registrationTo: closedInJanuary,
+      }),
+    ]);
 
     expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
       'succeeded',
@@ -121,7 +133,13 @@ describe('ingestMapasCulturaisInstance', () => {
     const asked = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(asked.origin + asked.pathname).toBe('https://mapa.cultura.gov.br/api/opportunity/find');
     expect(asked.searchParams.get('@select')).not.toContain('owner');
-    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(2);
+    const recorded = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(
+      recorded.map(({ externalId, registrationCloses }) => [externalId, registrationCloses?.at]),
+    ).toEqual([
+      ['4321', Date.UTC(2026, 10, 16, 2, 59)],
+      ['99', Date.UTC(2026, 0, 11, 2, 59)],
+    ]);
     expect(await runsOf(t)).toMatchObject([
       { status: 'succeeded', callNoticesSeen: 2, callNoticesNew: 2, callNoticesRejected: 0 },
     ]);
