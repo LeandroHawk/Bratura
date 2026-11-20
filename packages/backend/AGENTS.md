@@ -76,6 +76,13 @@ pnpm exec convex run documents:readPendingDocuments '{"creditCeiling":200}'
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10}'
 ```
 
+A call closed when first seen is in neither queue; read and extract a sample picked by hand:
+
+```bash
+pnpm exec convex run documents:readChosenCallNotices '{"callNoticeIds":["…"],"creditCeiling":200}'
+pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10,"callNoticeIds":["…"]}'
+```
+
 Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `LLM_API_KEY`) live
 **only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
 it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).

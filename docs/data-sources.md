@@ -150,12 +150,22 @@ GET https://{host}/api/opportunity/find
   ?@select=id,name,shortDescription,registrationFrom,registrationTo,singleUrl
   &@files=(rules,downloads):url
   &registrationFrom=LTE({today})
-  &registrationTo=GTE({today})
-  &@order=registrationTo ASC
+  &registrationTo=GTE({year}-01-01)
+  &@order=registrationTo ASC,id ASC
+  &@limit=250&@page={1, 2, …}
 ```
 
-- Always an explicit `@select`: `@select=*` returned non-JSON. `{today}` is `YYYY-MM-DD`. **Never
-  `owner`**: it can be a private person, and nothing of it is used.
+- Always an explicit `@select`: `@select=*` returned non-JSON. `{today}` is `YYYY-MM-DD` and
+  `{year}` its year, both in São Paulo. **Never `owner`**: it can be a private person, and nothing
+  of it is used.
+- **Every call of the year, closed ones too** (user, 2026-11-20): the year's volume is a product
+  number. A call closed when first seen is recorded, and read only in a sample picked by hand
+  (`docs/integrations/firecrawl.md`). Ceará on 2026-11-20: 37 open, 588 closing from 1 January on
+  (1.55 MB in one answer), 2,476 in all. Pages of 250 (`@page` from 1, verified on Ceará), the id
+  breaking ties, until a short page; each page is capped at 2 MB, and past 8 full pages the run
+  fails. A source read from Brazil pays 1 credit a page.
+- An opportunity with no `registrationTo` never comes: `GTE` leaves nulls out (Ceará had none of
+  2,476). An open-ended one carries a far close (`2111-01-01`) and comes, as before.
 - Dates come as `{ "date": "2026-11-15 23:59:00.000000", "timezone": "Etc/GMT+3", … }`: a wall clock
   in that zone. The zone is a place (`America/Recife`) or a fixed offset (`Etc/GMT+3` is UTC−3: POSIX
   inverts the sign); `Intl.supportedValuesOf` omits the latter, `Intl.DateTimeFormat` reads both.
