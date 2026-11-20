@@ -2,7 +2,12 @@ import { convexTest } from 'convex-test';
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
-import { documentReadingLeaseMs, documentsCheckedPerQuery } from './documents';
+import type { Id } from './_generated/dataModel';
+import {
+  documentReadingLeaseMs,
+  documentsCheckedPerQuery,
+  documentTextsMovedPerRunBytes,
+} from './documents';
 import { chosenCallNoticesMax, isClosedAsOf } from './model/callNoticeDocuments/selection';
 import schema from './schema';
 import { cearaMapasSource, federalMapasSource, piedadePnabSource } from './model/sources/registry';
@@ -68,6 +73,9 @@ async function withCallNotice(documentUrls?: string[]) {
 
 const documentsOf = (t: ReturnType<typeof convexTest>) =>
   t.run((ctx) => ctx.db.query('callNoticeDocuments').collect());
+
+const textsOf = (t: ReturnType<typeof convexTest>) =>
+  t.run((ctx) => ctx.db.query('callNoticeDocumentTexts').collect());
 
 function firecrawlAnswersPerUrl(answer: (url: string) => Response) {
   const fetchMock = vi.fn<typeof fetch>(async (_input, init) =>
@@ -148,7 +156,12 @@ describe('readPendingDocuments', () => {
       { url: mainNotice, role: 'callNotice', status: 'read' },
       { url: categories, role: 'categories', status: 'read' },
     ]);
-    expect(stored[0]).toMatchObject({ markdown: `# ${mainNotice}`, creditsUsed: 2 });
+    expect(stored[0]).toMatchObject({ creditsUsed: 2 });
+    expect(stored[0]).not.toHaveProperty('markdown');
+    expect(await textsOf(t)).toMatchObject([
+      { callNoticeDocumentId: stored[0]?._id, markdown: `# ${mainNotice}` },
+      { callNoticeDocumentId: stored[1]?._id, markdown: `# ${categories}` },
+    ]);
 
     expect(await readPending(t)).toMatchObject({ read: 0, left: 0 });
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -402,7 +415,9 @@ describe('readPendingDocuments', () => {
       expect(await readPending(t)).toMatchObject({ read: 1, failed: 0, creditsUsed: 4 });
       const [stored] = await documentsOf(t);
       expect(stored).toMatchObject({ status: 'read', creditsUsed: 4 });
-      expect(stored?.status === 'read' && stored.markdown).toContain('inscricoes ate 23/11/2026');
+      const [text] = await textsOf(t);
+      expect(text).toMatchObject({ callNoticeDocumentId: stored?._id });
+      expect(text?.markdown).toContain('inscricoes ate 23/11/2026');
       expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
         'https://api.firecrawl.dev/v2/scrape',
         mainNotice,
@@ -532,5 +547,149 @@ describe('readChosenCallNotices', () => {
         creditCeiling: 100,
       }),
     ).rejects.toThrow(/callNoticeIds/);
+  });
+});
+
+describe('callNoticeDocumentTexts', () => {
+  const read = (callNoticeId: Id<'callNotices'>, markdown: string, url = mainNotice) => ({
+    callNoticeId,
+    url,
+    role: 'callNotice' as const,
+    markdown,
+    markdownHash: 'a'.repeat(64),
+    creditsUsed: 1,
+  });
+
+  test('a read keeps one text row, replaced by a new read of the same document', async () => {
+    const { t, callNoticeId } = await withCallNotice([mainNotice]);
+    await t.mutation(internal.documents.recordDocumentRead, read(callNoticeId, '# Primeira'));
+    await t.mutation(internal.documents.recordDocumentRead, read(callNoticeId, '# Segunda'));
+    const [document] = await documentsOf(t);
+    expect(await textsOf(t)).toMatchObject([
+      { callNoticeDocumentId: document?._id, markdown: '# Segunda' },
+    ]);
+  });
+
+  test('a read replaced by a failure loses its text: a text row is always of a read', async () => {
+    const { t, callNoticeId } = await withCallNotice([mainNotice]);
+    await t.mutation(internal.documents.recordDocumentRead, read(callNoticeId, '# Edital'));
+    await t.mutation(internal.documents.recordDocumentFailure, {
+      callNoticeId,
+      url: mainNotice,
+      role: 'callNotice',
+      failure: 'providerError',
+      creditsUsed: null,
+    });
+    expect(await documentsOf(t)).toMatchObject([{ status: 'failed' }]);
+    expect(await textsOf(t)).toEqual([]);
+  });
+
+  test('the reading queue never reads a text: it fits where one text would not', async () => {
+    const t = convexTest({ schema, modules, transactionLimits: { bytesRead: 64 * 1024 } });
+    const callNoticeId = await addCallNotice(t, { documentUrls: [mainNotice, categories] });
+    await t.mutation(
+      internal.documents.recordDocumentRead,
+      read(callNoticeId, 'x'.repeat(300_000)),
+    );
+    expect(
+      (await t.action(internal.documents.listDocumentsToRead, {})).map(({ url }) => url),
+    ).toEqual([categories]);
+    // The limit does catch a text read: extraction reads it, and fails under it.
+    await expect(t.query(internal.extraction.getExtractionInput, { callNoticeId })).rejects.toThrow(
+      /bytes/i,
+    );
+  });
+});
+
+describe('moveDocumentTextsToOwnTable', () => {
+  /** A read row as stored before `callNoticeDocumentTexts`: the text on the row itself. */
+  const unmigrated = (callNoticeId: Id<'callNotices'>, url: string, markdown: string) => ({
+    callNoticeId,
+    url,
+    role: 'callNotice' as const,
+    status: 'read' as const,
+    markdown,
+    markdownHash: 'a'.repeat(64),
+    readAt: Date.now(),
+    creditsUsed: 1,
+  });
+  const move = (t: ReturnType<typeof convexTest>) =>
+    t.mutation(internal.documents.moveDocumentTextsToOwnTable, {});
+
+  test('moves each text to its own row, unsets the old field, and is idempotent', async () => {
+    const { t, callNoticeId } = await withCallNotice();
+    await t.run(async (ctx) => {
+      await ctx.db.insert('callNoticeDocuments', unmigrated(callNoticeId, mainNotice, '# A'));
+      await ctx.db.insert('callNoticeDocuments', unmigrated(callNoticeId, categories, '# B'));
+      await ctx.db.insert('callNoticeDocuments', {
+        callNoticeId,
+        url: `${documentBase}/anexo-ii-criterios.pdf`,
+        role: 'criteria',
+        status: 'failed',
+        failedAt: Date.now(),
+        failure: 'noText',
+        creditsUsed: 1,
+      });
+    });
+    expect(await move(t)).toEqual({ moved: 2, done: true });
+    const documents = await documentsOf(t);
+    for (const document of documents) expect(document).not.toHaveProperty('markdown');
+    expect(await textsOf(t)).toMatchObject([
+      { callNoticeDocumentId: documents[0]?._id, markdown: '# A' },
+      { callNoticeDocumentId: documents[1]?._id, markdown: '# B' },
+    ]);
+    expect(await move(t)).toEqual({ moved: 0, done: true });
+    expect(await textsOf(t)).toHaveLength(2);
+  });
+
+  test('moves a bounded batch per run and ends', async () => {
+    const { t, callNoticeId } = await withCallNotice();
+    const textBytes = 800_000;
+    const rows = Math.ceil(documentTextsMovedPerRunBytes / textBytes) + 2;
+    await t.run(async (ctx) => {
+      for (let index = 0; index < rows; index++)
+        await ctx.db.insert(
+          'callNoticeDocuments',
+          unmigrated(callNoticeId, `${documentBase}/edital-${index}.pdf`, 'x'.repeat(textBytes)),
+        );
+    });
+    const runs = [];
+    for (let run = 0; run < rows; run++) {
+      const result = await move(t);
+      runs.push(result);
+      if (result.done) break;
+    }
+    const firstBatch = Math.ceil(documentTextsMovedPerRunBytes / textBytes);
+    expect(runs).toEqual([
+      { moved: firstBatch, done: false },
+      { moved: rows - firstBatch, done: true },
+    ]);
+    expect(await textsOf(t)).toHaveLength(rows);
+  });
+
+  test('extraction reads an unmigrated row from the row itself, a migrated one from its table', async () => {
+    const { t, callNoticeId } = await withCallNotice();
+    await t.run((ctx) =>
+      ctx.db.insert('callNoticeDocuments', unmigrated(callNoticeId, mainNotice, '# Antigo')),
+    );
+    await t.mutation(internal.documents.recordDocumentRead, {
+      callNoticeId,
+      url: categories,
+      role: 'categories',
+      markdown: '# Novo',
+      markdownHash: 'b'.repeat(64),
+      creditsUsed: 1,
+    });
+    const input = async () =>
+      (await t.query(internal.extraction.getExtractionInput, { callNoticeId })).map(
+        ({ url, markdown }) => ({ url, markdown }),
+      );
+    const expected = [
+      { url: categories, markdown: '# Novo' },
+      { url: mainNotice, markdown: '# Antigo' },
+    ];
+    expect(await input()).toEqual(expected);
+    await move(t);
+    expect(await input()).toEqual(expected);
   });
 });
