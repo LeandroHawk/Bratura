@@ -143,7 +143,7 @@ function baseUrlOf(page: string, pageUrl: string) {
 /** What titles a section besides an `<h1-6>`: the source's `documentsUnderHeadings` options. */
 type OtherHeadings = Pick<
   Extract<OfficialPageSource['discovery'], { hops: 'documentsUnderHeadings' }>,
-  'headingClass' | 'boldParagraphIsHeading'
+  'headingClass' | 'headingEndsAtFirstLink' | 'boldParagraphIsHeading'
 >;
 
 /**
@@ -153,12 +153,15 @@ type OtherHeadings = Pick<
  * names only an action takes the first text between it and the item before, else that link's label.
  * An element of `headingClass` is a heading too: accordions title their items with a button or
  * an in-page link (Recife `accordion-toggle`, Spcine `x-acc-header`), never an `<h1-6>`. So is a
- * paragraph that opens in bold, with `boldParagraphIsHeading` (RS Sedac).
+ * paragraph that opens in bold, with `boldParagraphIsHeading` (RS Sedac). With
+ * `headingEndsAtFirstLink`, a `headingClass` element is titled by its text before its first link.
+ * A link opened inside another ends it, as a browser's parser does: Campo Grande's Fundac
+ * (2026-11-20) wraps its call cards' links in a block link, whose `</a>` would swallow them.
  */
 function* headingsAndLinksOf(
   html: string,
   pageUrl: string,
-  { headingClass, boldParagraphIsHeading }: OtherHeadings = {},
+  { headingClass, headingEndsAtFirstLink, boldParagraphIsHeading }: OtherHeadings = {},
 ) {
   const page = withoutCode(html);
   const baseUrl = baseUrlOf(page, pageUrl);
@@ -174,7 +177,7 @@ function* headingsAndLinksOf(
   let previousLinkLabel = '';
   for (const match of page.matchAll(
     new RegExp(
-      `${otherHeading}|<a\\b[^>]*?\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+))[^>]*>([\\s\\S]*?)</a>|<(h[1-6])\\b[^>]*>`,
+      `${otherHeading}|<a\\b[^>]*?\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+))[^>]*>([\\s\\S]*?)(?:</a>|(?=<a\\b))|<(h[1-6])\\b[^>]*>`,
       'gi',
     ),
   )) {
@@ -189,7 +192,12 @@ function* headingsAndLinksOf(
       );
       previousEnd = heading?.end ?? match.index + tag.length;
       previousLinkLabel = '';
-      yield { heading: plainLabel(heading?.inner ?? '') };
+      const inner = heading?.inner ?? '';
+      const title =
+        otherHeadingTag && headingClass && headingEndsAtFirstLink
+          ? inner.split(/<a\b/i, 1)[0]!
+          : inner;
+      yield { heading: plainLabel(title) };
       continue;
     }
     previousEnd = match.index + tag.length;

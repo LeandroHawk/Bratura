@@ -112,6 +112,13 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     headingClass: cssClassName.optional(),
     /**
+     * A `headingClass` element's title is its text before its first link: a table row titles its
+     * call and also holds the notice's link and a status (FCMS, 2026-11-20: `<tr
+     * class="consulta-row">` … "Acessar proposta Em andamento"), which would rename the call on
+     * every status change.
+     */
+    headingEndsAtFirstLink: z.boolean().optional(),
+    /**
      * A paragraph that opens in bold titles each call, where the page has no heading or class for
      * it (RS Sedac: `<p><strong>EDITAL SEDAC nº 38/2026 FAC RS ECOSSISTEMAS…</strong></p>`, then
      * a summary and a link reading only "EDITAL"). Ignored with `headingClass`.

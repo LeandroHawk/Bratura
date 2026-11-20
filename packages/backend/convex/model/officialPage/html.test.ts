@@ -12,6 +12,16 @@ describe('linksOfHtml', () => {
     ]);
   });
 
+  test('a link opened inside another closes it, as a browser does (Campo Grande)', () => {
+    const html = `<a class="wp-block-nwe-link" href="/sectur/plano/"><figure><a href="/fundac/fmic-2026/"><img alt=""></a></figure></a>
+      <a href="/e.pdf">PDF</a>`;
+    expect(linksOfHtml(html, page)).toEqual([
+      { url: 'https://www.ba.gov.br/sectur/plano/', label: '' },
+      { url: 'https://www.ba.gov.br/fundac/fmic-2026/', label: '' },
+      { url: 'https://www.ba.gov.br/e.pdf', label: 'PDF' },
+    ]);
+  });
+
   test('resolves relative links, decodes the text and keeps page order', () => {
     const html = `
       <a href="/fundacaocultural/edital-0222026-apoio">EDITAL 022/2026 &ndash; <b>APOIO</b>&nbsp;A ESPETÁCULOS</a>
@@ -252,6 +262,32 @@ describe('sectionsOfHtml', () => {
         heading: 'EDITAL SEDAC nº 38/2026 FAC RS ECOSSISTEMAS CULTURAIS',
         links: [{ url: 'https://www.procultura.rs.gov.br/upload/e38.pdf', label: 'EDITAL' }],
         text: 'A Secretaria da Cultura torna público o Edital. EDITAL',
+      },
+    ]);
+  });
+
+  test("a heading-class table row is titled by its text before its first link when asked: FCMS", () => {
+    const page = 'https://www.fundacaodecultura.ms.gov.br/informativos/consultas/';
+    const html = [
+      '<tr class="consulta-row"><td><strong></strong></td><td>Prêmio Guadakan de cinema</td>',
+      '<td><a href="/wp-content/uploads/2026/10/Guadakan.pdf">Acessar proposta</a><br> Em andamento</td></tr>',
+      '<tr><td>*Observação: <a href="/wp-content/uploads/2026/10/Anexos.docx">Anexos</a></td></tr>',
+    ].join('');
+    const options = { headingClass: 'consulta-row', headingEndsAtFirstLink: true };
+    expect(sectionsOfHtml(html, page, options)).toEqual([
+      {
+        heading: 'Prêmio Guadakan de cinema',
+        links: [
+          {
+            url: 'https://www.fundacaodecultura.ms.gov.br/wp-content/uploads/2026/10/Guadakan.pdf',
+            label: 'Acessar proposta',
+          },
+          {
+            url: 'https://www.fundacaodecultura.ms.gov.br/wp-content/uploads/2026/10/Anexos.docx',
+            label: 'Anexos',
+          },
+        ],
+        text: 'Acessar proposta Em andamento *Observação: Anexos',
       },
     ]);
   });
