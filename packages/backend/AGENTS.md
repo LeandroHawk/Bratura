@@ -15,7 +15,8 @@ convex/
   sources.ts      the sources the team registers and ingestion reads
   callNotices.ts  the call notice's only writer
   ingestion.ts    the daily schedule, one action per source kind, the run lease (`ingestionRuns`)
-  documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments`
+  documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments` and
+                  its text, `callNoticeDocumentTexts`
   pdfText.ts      "use node": a PDF's text layer read on its source's host (the parser needs Node)
   whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
   extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
@@ -82,6 +83,13 @@ After deploying `closedWhenFirstSeen` (the queue's index), set it on older rows,
 pnpm exec convex run callNotices:backfillClosedWhenFirstSeen '{}'
 ```
 
+After deploying `callNoticeDocumentTexts`, move each read document's Markdown into it, until
+`done` (about 4 MB a run); a follow-up PR removes the old `markdown` field and its fallback:
+
+```bash
+pnpm exec convex run documents:moveDocumentTextsToOwnTable '{}'
+```
+
 A call closed when first seen is in neither queue; read and extract a sample picked by hand:
 
 ```bash
@@ -127,6 +135,9 @@ Studio lists for the key's project) and `LLM_API_KEY`.
 - **A module that schedules or calls its own functions writes its handlers' return types**
   (`ingestion.ts`, `model/ingestion/runSourceIngestion.ts`): without them TypeScript cannot type the generated API and turns all of `internal`
   into `any`, silently disabling every `Id` check in the package.
+- **A big field nobody decides on gets its own table** (`callNoticeDocumentTexts`): Convex reads
+  whole rows, so a text beside a status makes every queue pay for it (`docs/architecture.md`, The
+  database is Convex).
 - **Args are an object**, even with one field (`registerSource({ slug })`); an entity that is a
   union goes under a key (`{ source }`).
 

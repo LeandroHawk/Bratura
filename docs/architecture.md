@@ -115,7 +115,7 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 | --- | --- | --- | --- | --- |
 | listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion.ts`, one action per source kind | Mapas API (`model/mapasCulturais/`, daily cron); an official page by plain fetch of its listing and call pages (`model/officialPage/`), through Firecrawl from Brazil for a source that answers only from there | **now** |
 | seen | `tracking` (first and last seen, closed when first seen) | the server, on every write | the clock; the close and `resultPosted` as listed | **now** |
-| document read | not on the call notice: a `callNoticeDocuments` row per file read (the notice, its amendments, categories and criteria, picked by link text or file name), its Markdown, hash and cost | `documents.ts`, run by hand | Firecrawl `/scrape` | **now** |
+| document read | not on the call notice: a `callNoticeDocuments` row per file read (the notice, its amendments, categories and criteria, picked by link text or file name), its hash and cost; its Markdown in a `callNoticeDocumentTexts` row of its own | `documents.ts`, run by hand | Firecrawl `/scrape` | **now** |
 | extracted and classified | not on the call notice: a `callNoticeExtractions` row per call (whether it is a call for creators or noise, amounts per project and total, applicant types, residence, art forms, requirements (kind, who is asked, at registration or after selection), eligibility rules, quotas, evaluation criteria, the close as written), each value with the source passage that proves it or dropped | `extraction.ts`, run by hand, through `model/llm/`; each value checked by `model/callNoticeExtraction/verify.ts` | the read documents' Markdown | **now** |
 | matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
 | alerted | not on the call notice: an `alerts` row per message sent (creator, call notice, template, channel, status), so a reminder never goes twice | `alerts.ts` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
@@ -146,8 +146,15 @@ typed `Id` with indexes, serializable ACID transactions, and full-text and vecto
 are ever needed. What it lacks, and the answer here:
 
 - **No SQL joins or aggregates**: a count is a counter kept by the writer, not a scan.
-- **1 MiB per document**: a call document's Markdown stays in its row (the largest measured: 54k
+- **1 MiB per document**: a call document's Markdown fits one row (the largest measured: 54k
   characters); one past 900k is stored as a failed read, and File Storage comes if one ever is.
+- **A query reads whole rows**, and the free plan allows 1 GB of Database I/O a month: **a big
+  field that is not read to decide lives in a table of its own**. On 2026-11-20 Database I/O stood
+  at 1.67 GB, 98% reads: each document's Markdown (~17 MB over 525 rows) sat in the row both
+  queues page through to pick by status and hash. It now lives in `callNoticeDocumentTexts`, read by
+  index for one call's extraction only. The move runs by hand
+  (`documents:moveDocumentTextsToOwnTable`, until `done`); a follow-up PR then removes the old
+  `markdown` field and the fallback that reads it (`textOfReadDocument`).
 - **Per function: 16 MiB read or written, 32,000 documents scanned, 1 s of user code** in queries
   and mutations: ingestion works in batches. Actions run up to 10 min (Node) or 30 min.
 - **No unique constraint**: uniqueness is one mutation doing "look up by index → insert". Serializable
