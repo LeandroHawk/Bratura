@@ -47,17 +47,45 @@ describe('verifyExtractionAnswer', () => {
   });
 
   test('a quote the model retyped is replaced by the source passage it stands for', () => {
-    const { requiredDocuments } = verify({
-      requiredDocuments: [
+    const { requirements } = verify({
+      requirements: [
         {
-          value: 'Certidão federal',
+          kind: 'taxAndLaborClearance',
+          detail: 'Certidão federal',
+          appliesTo: null,
+          stage: 'afterSelection',
           quote: 'II - certidao negativa de debitos relativos a creditos tributarios federais;',
         },
       ],
     });
-    expect(requiredDocuments[0]?.quote).toBe(
+    expect(requirements[0]?.quote).toBe(
       'II – certidão negativa de débitos relativos a créditos tributários federais;',
     );
+  });
+
+  test('a kind or group outside the list is kept as "other"; a wrong applicant type is refused', () => {
+    const quote = 'II – certidão negativa de débitos relativos a créditos tributários federais;';
+    const verified = verify({
+      requirements: [
+        { kind: 'trajectory', detail: 'Certidão', appliesTo: [], stage: 'later', quote },
+        { kind: 'identity', detail: 'Certidão', appliesTo: ['alien'], stage: null, quote },
+      ],
+      eligibilityRules: [{ kind: 'registryPrerequisite', detail: 'Residência', quote }],
+      quotas: [{ group: 'afroBrazilian', share: null, quote }],
+    });
+    expect(verified).toMatchObject({
+      requirements: [{ kind: 'other', appliesTo: null, stage: null }],
+      eligibilityRules: [{ kind: 'other' }],
+      quotas: [{ group: 'other', share: null }],
+      valuesRefused: 1,
+    });
+  });
+
+  test('a quota share its quote does not write is refused', () => {
+    const quote =
+      'Pode se inscrever qualquer agente cultural que reside no município de Reriutaba.';
+    const verified = verify({ quotas: [{ group: 'black', share: '20%', quote }] });
+    expect(verified).toMatchObject({ quotas: [], valuesRefused: 1 });
   });
 
   test('a number or date its quote does not say is refused', () => {
