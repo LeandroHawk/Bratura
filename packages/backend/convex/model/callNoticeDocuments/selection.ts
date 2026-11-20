@@ -10,8 +10,9 @@ import { plainText } from '../../lib/text';
 // the listing alone. Measured on 254 real files (2026-11-14): `docs/integrations/firecrawl.md`.
 
 /**
- * The closes worth reading, for the close-date index: those `callNoticeDeadline` calls `open`.
- * A call with no close date (`notInformed`) is read too, found apart.
+ * The closes read first, for the close-date index: those `callNoticeDeadline` calls `open`. A call
+ * with no close date (`notInformed`) comes next, then closed calls, read for what calls ask (user,
+ * 2026-11-20), each found apart.
  */
 export const readableRegistrationCloses = (now: number) => ({
   from: now,
@@ -43,15 +44,14 @@ const laterStepTitlePattern = /^\s*((formulario de )?recurso|contrarrazoes|fase 
 
 type CallNoticeToScreen = Pick<CallNotice, 'title' | 'documentUrls' | 'registrationCloses'>;
 
-export type ReasonToSkipReadingDocuments = 'closed' | 'openEnded' | 'notACallTitle' | 'noDocuments';
+export type ReasonToSkipReadingDocuments = 'openEnded' | 'notACallTitle' | 'noDocuments';
 
 /** Why a call notice's documents are not worth credits, or `null` to read them. */
 export function reasonToSkipReadingDocuments(
   { title, documentUrls, registrationCloses }: CallNoticeToScreen,
   now: number,
 ): ReasonToSkipReadingDocuments | null {
-  const deadline = callNoticeDeadline({ registrationCloses }, now);
-  if (deadline === 'closed' || deadline === 'openEnded') return deadline;
+  if (callNoticeDeadline({ registrationCloses }, now) === 'openEnded') return 'openEnded';
   const plainTitle = plainText(title);
   if (notACallTitlePattern.test(plainTitle) || laterStepTitlePattern.test(plainTitle)) {
     return 'notACallTitle';

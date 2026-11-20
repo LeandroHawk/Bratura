@@ -36,8 +36,8 @@ describe('reasonToSkipReadingDocuments', () => {
     expect(reason({ registrationCloses: null })).toBeNull();
   });
 
-  test('a closed call is skipped', () => {
-    expect(reason({ registrationCloses: closingIn(-1) })).toBe('closed');
+  test('a closed call is read too: what it asked still counts', () => {
+    expect(reason({ registrationCloses: closingIn(-1) })).toBeNull();
   });
 
   test("Mapas's no-deadline sentinel and other closes past one year are skipped", () => {

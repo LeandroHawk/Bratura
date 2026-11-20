@@ -75,10 +75,11 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   portfolio is scored: only there). **Never** results, rankings or lists of applicants (personal
   data, ruled out by either name), nor the forms an applicant fills in. A call whose notice no name
   identifies is left for the admin review. Rules: `model/callNoticeDocuments/selection.ts`.
-- **A call whose own page says registration closed is not read.** An official page that prints its
-  close in a registration sentence ("inscrições … até 25 de novembro de 2026") gives the call its
-  `registrationCloses` for free (`model/officialPage/registrationClose.ts`), and a closed call is
-  skipped like a Mapas one. A close written without its year is not used (Secec-RJ prints 11 of 13
+- **A closed call is read last.** An official page that prints its close in a registration
+  sentence ("inscrições … até 25 de novembro de 2026") gives the call its `registrationCloses` for
+  free (`model/officialPage/registrationClose.ts`), so a closed call waits behind every open one.
+  Until 2026-11-20 it was not read at all; the user reversed that for product research, with
+  credits to spare. A close written without its year is not used (Secec-RJ prints 11 of 13
   so). Measured 2026-11-18 on the 106 calls of the 40 sources read without Firecrawl: 30 print it,
   17 already closed; the 11 the LLM had extracted all matched; and 281 of 5,608 credits read had
   gone to calls their page showed closed.

@@ -96,8 +96,9 @@ const SelectCallNoticesToExtractQueryArgsSchema = z.object({
 const CallNoticesToExtractSchema = z.array(documentId('callNotices'));
 
 /**
- * Of the call notices these read documents belong to, the open ones never extracted or extracted
- * from other documents or an older prompt. Calls closing soonest first.
+ * Of the call notices these read documents belong to, those never extracted or extracted from
+ * other documents or an older prompt. Open calls closing soonest first, closed ones last (read for
+ * what calls ask, user 2026-11-20); a call with no real deadline (`openEnded`) never.
  */
 export const selectCallNoticesToExtract = internalZodQuery({
   args: SelectCallNoticesToExtractQueryArgsSchema,
@@ -111,12 +112,12 @@ export const selectCallNoticesToExtract = internalZodQuery({
       byCallNotice.set(document.callNoticeId, documents);
     }
 
-    const toExtract: { callNoticeId: Id<'callNotices'>; closesAt: number }[] = [];
+    const toExtract: { callNoticeId: Id<'callNotices'>; closesAt: number; closed: boolean }[] = [];
     for (const [callNoticeId, documents] of byCallNotice) {
       if (!documents.some(({ role }) => role === 'callNotice')) continue;
       const callNotice = await ctx.db.get(callNoticeId);
       const deadline = callNotice && callNoticeDeadline(callNotice, now);
-      if (deadline !== 'open' && deadline !== 'notInformed') continue;
+      if (!deadline || deadline === 'openEnded') continue;
       const extracted = await ctx.db
         .query('callNoticeExtractions')
         .withIndex('by_call_notice', (index) => index.eq('callNoticeId', callNoticeId))
@@ -128,10 +129,17 @@ export const selectCallNoticesToExtract = internalZodQuery({
       toExtract.push({
         callNoticeId,
         closesAt: callNotice!.registrationCloses?.at ?? Number.MAX_SAFE_INTEGER,
+        closed: deadline === 'closed',
       });
     }
     return toExtract
-      .sort((a, b) => a.closesAt - b.closesAt)
+      .sort((a, b) =>
+        a.closed === b.closed
+          ? a.closed
+            ? b.closesAt - a.closesAt
+            : a.closesAt - b.closesAt
+          : Number(a.closed) - Number(b.closed),
+      )
       .map(({ callNoticeId }) => callNoticeId);
   },
 });

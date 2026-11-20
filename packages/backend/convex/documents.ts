@@ -103,6 +103,13 @@ export const listDocumentsWorthReading = internalZodQuery({
       .query('callNotices')
       .withIndex('by_registration_closes', (index) => index.eq('registrationCloses.at', undefined))
       .collect();
+    const closedLatestFirst = await ctx.db
+      .query('callNotices')
+      .withIndex('by_registration_closes', (index) =>
+        index.gte('registrationCloses.at', 0).lt('registrationCloses.at', from),
+      )
+      .order('desc')
+      .collect();
 
     const filesDisallowedBySource = new Map<Id<'sources'>, boolean>();
     const filesDisallowed = async (sourceId: Id<'sources'>) => {
@@ -117,7 +124,7 @@ export const listDocumentsWorthReading = internalZodQuery({
     };
 
     const worthReading: DocumentToRead[] = [];
-    for (const callNotice of [...closingSoonestFirst, ...withoutCloseDate]) {
+    for (const callNotice of [...closingSoonestFirst, ...withoutCloseDate, ...closedLatestFirst]) {
       if (reasonToSkipReadingDocuments(callNotice, now) !== null) continue;
       if (await filesDisallowed(callNotice.sourceId)) continue;
       for (const { url, role } of documentsWorthReading(

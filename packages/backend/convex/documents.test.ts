@@ -165,7 +165,7 @@ describe('readPendingDocuments', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  test('reads the calls closing soonest first, then those with no close date', async () => {
+  test('reads the calls closing soonest first, then those with no close date, then closed ones', async () => {
     const t = convexTest(schema, modules);
     const urlOf = (id: string) =>
       `https://mapacultural.secult.ce.gov.br/files/opportunity/${id}/edital.pdf`;
@@ -174,6 +174,8 @@ describe('readPendingDocuments', () => {
       ['undated', null],
       ['sooner', in9Days()],
       ['noDeadline', { ...in9Days(), at: Date.UTC(2111, 0, 1) }],
+      ['closedLongAgo', { ...in9Days(), at: Date.now() - 30 * day }],
+      ['closedYesterday', { ...in9Days(), at: Date.now() - day }],
     ] as const) {
       await addCallNotice(t, { externalId, registrationCloses, documentUrls: [urlOf(externalId)] });
     }
@@ -182,6 +184,8 @@ describe('readPendingDocuments', () => {
       urlOf('sooner'),
       urlOf('later'),
       urlOf('undated'),
+      urlOf('closedYesterday'),
+      urlOf('closedLongAgo'),
     ]);
   });
 
