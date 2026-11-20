@@ -23,8 +23,7 @@ export const readableRegistrationCloses = (now: number) => ({
 
 /**
  * The order both queues work in, reading and extraction: open calls closing soonest first (they
- * matter most to an alert), then calls with no close date, then closed ones, latest closed first,
- * read for what calls ask (user, 2026-11-20).
+ * matter most to an alert), then calls with no close date, then closed ones, latest closed first.
  */
 export const queueOrder = (now: number) => {
   type Closing = Pick<CallNotice, 'registrationCloses'>;
