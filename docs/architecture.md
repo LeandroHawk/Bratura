@@ -114,7 +114,7 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 | stage | what it adds | writer | where it comes from | when |
 | --- | --- | --- | --- | --- |
 | listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion.ts`, one action per source kind | Mapas API (`model/mapasCulturais/`, daily cron); an official page by plain fetch of its listing and call pages (`model/officialPage/`), through Firecrawl from Brazil for a source that answers only from there | **now** |
-| seen | `tracking` (first and last seen) | the server, on every write | the clock | **now** |
+| seen | `tracking` (first and last seen, closed when first seen) | the server, on every write | the clock; the close and `resultPosted` as listed | **now** |
 | document read | not on the call notice: a `callNoticeDocuments` row per file read (the notice, its amendments, categories and criteria, picked by link text or file name), its Markdown, hash and cost | `documents.ts`, run by hand | Firecrawl `/scrape` | **now** |
 | extracted and classified | not on the call notice: a `callNoticeExtractions` row per call (whether it is a call for creators or noise, amounts per project and total, applicant types, residence, art forms, requirements (kind, who is asked, at registration or after selection), eligibility rules, quotas, evaluation criteria, the close as written), each value with the source passage that proves it or dropped | `extraction.ts`, run by hand, through `model/llm/`; each value checked by `model/callNoticeExtraction/verify.ts` | the read documents' Markdown | **now** |
 | matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
@@ -131,7 +131,8 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
   2026-11-14). The close an official page prints in its own registration sentence ("inscrições …
   até 25 de novembro de 2026", `model/officialPage/registrationClose.ts`) counts as given by the source too
   (user, 2026-11-18). A closed call is still read and extracted, last, if it was open when first
-  seen; one closed on arrival is recorded only: `docs/integrations/firecrawl.md`.
+  seen; one closed on arrival (by its close, or a result an official page already posts) is
+  recorded only: `docs/integrations/firecrawl.md`.
 - **WhatsApp and e-mail are channels of "alerted"**, behind the channel adapter in `model/`; they read
   what the stages stored and never compute (`docs/integrations/whatsapp.md`). Who writes and reads
   each part, folder by folder: `docs/contracts.md` §4.
