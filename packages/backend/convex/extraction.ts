@@ -1,3 +1,4 @@
+import type { CallNotice } from '@bratura/shared/entities/call-notice/entity';
 import { callNoticeDeadline } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import { ReadCallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-document/entity';
 import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
@@ -13,6 +14,7 @@ import {
   extractionPromptVersion,
   extractionTextFromDocuments,
 } from './model/callNoticeExtraction/prompt';
+import { queueOrder } from './model/callNoticeDocuments/selection';
 import { verifyExtractionAnswer } from './model/callNoticeExtraction/verify';
 import { generateJson } from './model/llm/generateJson';
 
@@ -96,8 +98,9 @@ const SelectCallNoticesToExtractQueryArgsSchema = z.object({
 const CallNoticesToExtractSchema = z.array(documentId('callNotices'));
 
 /**
- * Of the call notices these read documents belong to, the open ones never extracted or extracted
- * from other documents or an older prompt. Calls closing soonest first.
+ * Of the call notices these read documents belong to, those never extracted or extracted from
+ * other documents or an older prompt, in `queueOrder`; a call with no real deadline (`openEnded`)
+ * never.
  */
 export const selectCallNoticesToExtract = internalZodQuery({
   args: SelectCallNoticesToExtractQueryArgsSchema,
@@ -111,12 +114,14 @@ export const selectCallNoticesToExtract = internalZodQuery({
       byCallNotice.set(document.callNoticeId, documents);
     }
 
-    const toExtract: { callNoticeId: Id<'callNotices'>; closesAt: number }[] = [];
+    const toExtract: (Pick<CallNotice, 'registrationCloses'> & {
+      callNoticeId: Id<'callNotices'>;
+    })[] = [];
     for (const [callNoticeId, documents] of byCallNotice) {
       if (!documents.some(({ role }) => role === 'callNotice')) continue;
       const callNotice = await ctx.db.get(callNoticeId);
       const deadline = callNotice && callNoticeDeadline(callNotice, now);
-      if (deadline !== 'open' && deadline !== 'notInformed') continue;
+      if (!deadline || deadline === 'openEnded') continue;
       const extracted = await ctx.db
         .query('callNoticeExtractions')
         .withIndex('by_call_notice', (index) => index.eq('callNoticeId', callNoticeId))
@@ -125,14 +130,9 @@ export const selectCallNoticesToExtract = internalZodQuery({
         extracted?.promptVersion === extractionPromptVersion &&
         extracted.documentHashes.join() === sortedHashes(documents).join();
       if (isCurrent) continue;
-      toExtract.push({
-        callNoticeId,
-        closesAt: callNotice!.registrationCloses?.at ?? Number.MAX_SAFE_INTEGER,
-      });
+      toExtract.push({ callNoticeId, registrationCloses: callNotice!.registrationCloses });
     }
-    return toExtract
-      .sort((a, b) => a.closesAt - b.closesAt)
-      .map(({ callNoticeId }) => callNoticeId);
+    return toExtract.sort(queueOrder(now)).map(({ callNoticeId }) => callNoticeId);
   },
 });
 

@@ -143,9 +143,11 @@ describe('extractPendingCallNotices', () => {
     expect(await extractPending(t)).toMatchObject({ extracted: 1 });
   });
 
-  test('a closed call is not extracted', async () => {
-    const { t } = await withReadCallNotice(-1);
-    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);
+  test('a closed call is extracted too: what it asked still counts', async () => {
+    const { t, callNoticeId } = await withReadCallNotice(-1);
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
+      callNoticeId,
+    ]);
   });
 
   test('a call notice whose document is past the first page of read documents is listed', async () => {

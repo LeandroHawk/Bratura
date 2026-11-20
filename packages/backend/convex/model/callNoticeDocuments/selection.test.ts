@@ -4,6 +4,7 @@ import {
   callNoticeDocumentRole,
   documentsWorthReading,
   postsResult,
+  queueOrder,
   reasonToSkipReadingDocuments,
 } from './selection';
 
@@ -36,8 +37,8 @@ describe('reasonToSkipReadingDocuments', () => {
     expect(reason({ registrationCloses: null })).toBeNull();
   });
 
-  test('a closed call is skipped', () => {
-    expect(reason({ registrationCloses: closingIn(-1) })).toBe('closed');
+  test('a closed call is read too: what it asked still counts', () => {
+    expect(reason({ registrationCloses: closingIn(-1) })).toBeNull();
   });
 
   test("Mapas's no-deadline sentinel and other closes past one year are skipped", () => {
@@ -389,5 +390,22 @@ describe('documentsWorthReading', () => {
       { url: `${mg}?download=1`, role: 'callNotice' },
       { url: `${mg}?download=2`, role: 'criteria' },
     ]);
+  });
+});
+
+describe('queueOrder', () => {
+  test('open calls closing soonest first, then undated ones, then closed ones, latest closed first', () => {
+    const calls = {
+      closedLongAgo: closingIn(-30 * day),
+      undated: null,
+      later: closingIn(30 * day),
+      closedYesterday: closingIn(-day),
+      sooner: closingIn(day),
+    };
+    const ordered = Object.entries(calls)
+      .map(([name, registrationCloses]) => ({ name, registrationCloses }))
+      .sort(queueOrder(now))
+      .map(({ name }) => name);
+    expect(ordered).toEqual(['sooner', 'later', 'undated', 'closedYesterday', 'closedLongAgo']);
   });
 });
