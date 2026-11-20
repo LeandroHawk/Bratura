@@ -1,4 +1,8 @@
-import { instantFromPlainDateTimeInZone } from '@bratura/shared/primitives/code/calendar/calendar';
+import {
+  instantFromPlainDateTimeInZone,
+  plainDateInSaoPaulo,
+} from '@bratura/shared/primitives/code/calendar/calendar';
+import type { CallNotice } from '@bratura/shared/entities/call-notice/entity';
 import { CallNoticeDocumentUrlSchema } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
 import type { OfficialPageSource } from '@bratura/shared/entities/source/kinds/official-page/variant';
 import { plainText } from '../../lib/text';
@@ -36,7 +40,10 @@ type CallPagesListedAsJson = NonNullable<CallPageSource['discovery']['callPagesL
 /** An official page whose listing links each call's documents under a heading naming it. */
 type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderHeadings' } };
 
-const currentYear = () => new Date().getUTCFullYear();
+/** A São Paulo year, as Mapas' "closing since 1 January" (`mapasCulturais/client.ts`). */
+const yearInSaoPaulo = (instant: number) => Number(plainDateInSaoPaulo(instant).slice(0, 4));
+
+const currentYear = () => yearInSaoPaulo(Date.now());
 
 /** This year and last (`linksInRecentYears`, `linksUnderRecentYearHeadings`). */
 const recentYears = () => [currentYear(), currentYear() - 1];
@@ -52,8 +59,8 @@ const callPagesBudgetMs = 5 * 60_000;
 
 /**
  * A call whose page or listing already posts results is past its registration (Bahia, 2026-11-15:
- * 25 of 28 pages; the 3 without were the newest, 2 open). It is not recorded: reading it would pay
- * for a closed call.
+ * 25 of 28 pages; the 3 without were the newest, 2 open). It is recorded for the year's volume as
+ * `resultPostedWhenFirstSeen`, which keeps it out of the read and extraction queues.
  */
 const hasPublishedResult = (documents: PageLink[]) =>
   documents.some(({ url, label }) => postsResult(url, label));
@@ -135,11 +142,34 @@ export const fileNameAsLabel = (url: string) =>
 /** Whether a document is a call's notice, by its link text and file name. */
 const isNotice = ({ url, label }: PageLink) => callNoticeDocumentRole(url, label) === 'callNotice';
 
-/** Whether every year a text names (`2025`, `05/2019`, `2015_Edital`) is before `year`. */
+/** The years a text names (`2025`, `05/2019`, `2015_Edital`). */
+const yearsNamedIn = (text: string) =>
+  [...text.matchAll(/(?<!\d)20\d{2}(?!\d)/g)].map(([named]) => Number(named));
+
+/** Whether every year a text names is before `year`. */
 function namesOnlyYearsBefore(text: string, year: number) {
-  const years = [...text.matchAll(/(?<!\d)20\d{2}(?!\d)/g)].map(([named]) => Number(named));
+  const years = yearsNamedIn(text);
   return years.length > 0 && Math.max(...years) < year;
 }
+
+/**
+ * Whether a call with a result posted is an earlier year's, left out so a listing's history (Rio
+ * Branco's JSON back to 2020, the PNAB platform's first cycle) is not recorded as this year's: by
+ * the close its page prints, else by every year its title, URL, listing year and notices name. One
+ * naming no year is kept. Never applied to a call with no result: a credenciamento of 2025 is open.
+ */
+function isEarlierYearsClosedCall(
+  registrationCloses: CallNotice['registrationCloses'],
+  { texts, listingYear }: { texts: string[]; listingYear?: number | undefined },
+) {
+  if (registrationCloses) return yearInSaoPaulo(registrationCloses.at) < currentYear();
+  const years = [...texts.flatMap(yearsNamedIn), ...(listingYear ? [listingYear] : [])];
+  return years.length > 0 && Math.max(...years) < currentYear();
+}
+
+/** The texts naming a call's notices: link text and file name (`lpg-edital-012-2023.pdf`). */
+const noticeTextsOf = (documents: PageLink[]) =>
+  documents.filter(isNotice).map(({ url, label }) => `${label} ${fileNameAsLabel(url)}`);
 
 /**
  * A call whose title names no year can still hold only old notices (Paraná, 2026-11-15: "Edital
@@ -288,19 +318,17 @@ const subfoldersLinkedBelow = ({ html, url }: FetchedPage) =>
 
 /**
  * The links in a call's `subfolders` (Porto Velho files most documents, results included, one
- * folder each; FJA-RN, notices and annexes apart). Stops at the first result posted, on the call
- * page or below: the call is dropped anyway, and Porto Velho's 002/2026 holds 18 subfolders.
- * Throws past `deadline`: a call cut short could miss its result and pay for a closed call.
+ * folder each; FJA-RN, notices and annexes apart), every one even past a result: a results folder
+ * listed before the notice's would leave a closed call with no notice, so not recorded. Throws
+ * past `deadline`: a call cut short could miss its result and pay for a closed call.
  */
 async function linksInSubfolders(
   subfolders: PageLink[],
-  links: PageLink[],
   source: CallPageSource,
   { spacingMs, deadline }: { spacingMs: number; deadline: number },
 ) {
   const found: PageLink[] = [];
   for (const subfolder of subfolders) {
-    if (hasPublishedResult(documentLinksOf([...links, ...found], source.documentUrlParts))) break;
     if (Date.now() > deadline) throw new Error('Subfolders left unread for lack of time');
     await pause(spacingMs);
     const page = await fetchPageHtml(subfolder.url, source.listingUrl, source);
@@ -444,7 +472,7 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         : callFilesInSubfolders
           ? subfoldersLinkedBelow(fetched)
           : [];
-      page.push(...(await linksInSubfolders(subfolders, page, source, { spacingMs, deadline })));
+      page.push(...(await linksInSubfolders(subfolders, source, { spacingMs, deadline })));
       heading = callPageTitleClass
         ? textOfClass(fetched.html, callPageTitleClass)
         : headingOfHtml(fetched.html);
@@ -466,12 +494,11 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         )
       : linked;
     const name = callTitleOnCallPage ? heading || label : label;
-    const kept = callDocumentsWorthRecording(documents, name);
+    const worth = callDocumentsWorthRecording(documents, name);
+    if (!worth) continue;
+    const { kept, resultPosted } = worth;
     // The page itself, kept, is its notice (`withPageAsNotice`).
-    if (
-      !kept ||
-      (needsNotice && !kept.some((document) => document.url === url || isNotice(document)))
-    )
+    if (needsNotice && !kept.some((document) => document.url === url || isNotice(document)))
       continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),
@@ -482,16 +509,19 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         ? heading || numberedNotice?.label
         : name;
     if (!title) continue;
+    const listingYear = yearByUrl?.get(url);
+    const registrationCloses = registrationClosePrintedIn(pageText, source.timeZone, listingYear);
+    const texts = [title, label, new URL(url).pathname, ...noticeTextsOf(kept)];
+    if (resultPosted && isEarlierYearsClosedCall(registrationCloses, { texts, listingYear })) {
+      continue;
+    }
     calls.push({
       externalId: url,
       title,
       officialUrl: url,
       documents: kept,
-      registrationCloses: registrationClosePrintedIn(
-        pageText,
-        source.timeZone,
-        yearByUrl?.get(url),
-      ),
+      registrationCloses,
+      ...resultPostedField(resultPosted),
     });
   }
   return calls;
@@ -545,15 +575,15 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 }
 
 /**
- * A call's documents worth recording, whatever shape the page has: some, no result posted (unless
- * its `title` names a credenciamento), not every notice from before last year. Its newest notice
- * only; `null` when not worth it.
+ * A call's documents worth recording, whatever shape the page has: some, not every notice from
+ * before last year. Its newest notice only, and whether a result is posted (never for a
+ * credenciamento, by its `title`); `null` when not worth it.
  */
 function callDocumentsWorthRecording(documents: PageLink[], title = '') {
   if (documents.length === 0) return null;
-  if (hasPublishedResult(documents) && !staysOpenAfterAResult(title)) return null;
   if (noticesNameOnlyYearsBeforeLastYear(documents)) return null;
-  return withNewestNoticeOnly(documents);
+  const resultPosted = hasPublishedResult(documents) && !staysOpenAfterAResult(title);
+  return { kept: withNewestNoticeOnly(documents), resultPosted };
 }
 
 /**
@@ -561,10 +591,14 @@ function callDocumentsWorthRecording(documents: PageLink[], title = '') {
  * under "Legislação"); a call page is one by its URL, recorded without one for the admin review.
  */
 function listedCallDocuments(documents: PageLink[], title?: string) {
-  const kept = callDocumentsWorthRecording(documents, title);
-  const notice = kept?.find(isNotice);
-  return kept && notice ? { kept, notice } : null;
+  const worth = callDocumentsWorthRecording(documents, title);
+  const notice = worth?.kept.find(isNotice);
+  return worth && notice ? { ...worth, notice } : null;
 }
+
+/** The flag a call with a result posted is recorded with (`closedWhenFirstSeen`). */
+const resultPostedField = (resultPosted: boolean) =>
+  resultPosted ? { resultPostedWhenFirstSeen: true } : {};
 
 /**
  * One hop: the listing's documents, grouped by the call their link names, an unnumbered one going
@@ -590,14 +624,17 @@ export function callsOfDocumentsOnListing(
     if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
     const recorded = listedCallDocuments(callDocuments);
     if (!recorded || !titleIsKept(source, recorded.notice.label)) return [];
+    const texts = noticeTextsOf(recorded.kept);
+    // A listing of bare files printed no close (12 calls measured, 2026-11-18).
+    if (recorded.resultPosted && isEarlierYearsClosedCall(null, { texts })) return [];
     return [
       {
         externalId: key,
         title: recorded.notice.label,
         officialUrl: source.listingUrl,
         documents: recorded.kept,
-        // A listing of bare files printed no close (12 calls measured, 2026-11-18).
         registrationCloses: null,
+        ...resultPostedField(recorded.resultPosted),
       },
     ];
   });
@@ -620,13 +657,17 @@ export function callsOfDocumentsUnderHeadings(
     if (!heading || !titleIsKept(source, heading) || titleNamesAPastCall(heading)) return [];
     const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts), heading);
     if (!recorded) return [];
+    const registrationCloses = registrationClosePrintedIn(text, source.timeZone);
+    const texts = [heading, ...noticeTextsOf(recorded.kept)];
+    if (recorded.resultPosted && isEarlierYearsClosedCall(registrationCloses, { texts })) return [];
     return [
       {
         externalId: heading,
         title: heading,
         officialUrl: source.listingUrl,
         documents: recorded.kept,
-        registrationCloses: registrationClosePrintedIn(text, source.timeZone),
+        registrationCloses,
+        ...resultPostedField(recorded.resultPosted),
       },
     ];
   });
