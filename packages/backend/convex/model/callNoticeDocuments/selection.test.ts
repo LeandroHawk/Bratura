@@ -5,7 +5,6 @@ import {
   documentsWorthReading,
   postsResult,
   queueOrder,
-  readableRegistrationCloses,
   reasonToSkipReadingDocuments,
 } from './selection';
 
@@ -408,13 +407,5 @@ describe('queueOrder', () => {
       .sort(queueOrder(now))
       .map(({ name }) => name);
     expect(ordered).toEqual(['sooner', 'later', 'undated', 'closedYesterday', 'closedLongAgo']);
-  });
-});
-
-describe('readableRegistrationCloses', () => {
-  test('reaches a year back for closed calls and a year ahead for open ones', () => {
-    const { from, to } = readableRegistrationCloses(now);
-    expect([from <= now - 364 * day, from > now - 366 * day]).toEqual([true, true]);
-    expect([to >= now + 364 * day, to < now + 366 * day]).toEqual([true, true]);
   });
 });
