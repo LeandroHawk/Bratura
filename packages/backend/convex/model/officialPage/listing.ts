@@ -5,8 +5,9 @@ import { cutToTextLength } from '../../lib/text';
 import type { OfficialPageCall } from './payload';
 
 /**
- * An official page's call in the call notice's terms. The page prints no window the reader can
- * trust (Bahia's dates are often the activity's), so both ends are `null` until extraction.
+ * An official page's call in the call notice's terms. Only the close is read from the page, from a
+ * registration sentence ("inscrições … até"): its other dates are often the activity's (Bahia), and
+ * no page measured printed an opening apart from its close.
  */
 export function callNoticeListingFromOfficialPageCall(
   sourceId: Id<'sources'>,
@@ -24,6 +25,6 @@ export function callNoticeListingFromOfficialPageCall(
       label ? [{ url, label: cutToTextLength(label, 'long') }] : [],
     ),
     registrationOpens: null,
-    registrationCloses: null,
+    registrationCloses: call.registrationCloses,
   };
 }

@@ -2,6 +2,7 @@ import { convexTest } from 'convex-test';
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
+import { readDocumentKeysPageSize } from './extraction';
 import schema from './schema';
 import { federalMapasSource } from './model/sources/registry';
 import { modules } from './test.setup';
@@ -11,7 +12,7 @@ const notice = 'https://mapacultural.secult.ce.gov.br/files/opportunity/8498/edi
 const markdown =
   'O valor total deste edital é de **R$ 160.000,00**.\nInscrições até 20 de novembro de 2026.';
 
-async function withReadCallNotice(closesInDays = 9) {
+async function withReadCallNotice(closesInDays = 9, amendmentsReadBefore = 0) {
   const t = convexTest(schema, modules);
   const sourceId = await t.run((ctx) => ctx.db.insert('sources', federalMapasSource));
   const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
@@ -27,6 +28,19 @@ async function withReadCallNotice(closesInDays = 9) {
       timeZone: ianaTimeZone.parse('America/Fortaleza'),
       precision: 'minute',
     },
+  });
+  await t.run(async (ctx) => {
+    for (let index = 0; index < amendmentsReadBefore; index++)
+      await ctx.db.insert('callNoticeDocuments', {
+        callNoticeId,
+        url: `${notice}?amendment=${index}`,
+        role: 'amendment',
+        status: 'read',
+        markdown,
+        markdownHash: 'b'.repeat(64),
+        readAt: Date.now(),
+        creditsUsed: 1,
+      });
   });
   await t.mutation(internal.documents.recordDocumentRead, {
     callNoticeId,
@@ -129,8 +143,17 @@ describe('extractPendingCallNotices', () => {
     expect(await extractPending(t)).toMatchObject({ extracted: 1 });
   });
 
-  test('a closed call is not extracted', async () => {
-    const { t } = await withReadCallNotice(-1);
-    expect(await t.query(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);
+  test('a closed call is extracted too: what it asked still counts', async () => {
+    const { t, callNoticeId } = await withReadCallNotice(-1);
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
+      callNoticeId,
+    ]);
+  });
+
+  test('a call notice whose document is past the first page of read documents is listed', async () => {
+    const { t, callNoticeId } = await withReadCallNotice(9, readDocumentKeysPageSize);
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
+      callNoticeId,
+    ]);
   });
 });

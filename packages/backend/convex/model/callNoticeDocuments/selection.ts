@@ -9,30 +9,73 @@ import { plainText } from '../../lib/text';
 // Which calls and which of their files are worth Firecrawl credits, decided before any read, from
 // the listing alone. Measured on 254 real files (2026-11-14): `docs/integrations/firecrawl.md`.
 
+/** How long a closed call stays readable: older ones stay out, so the scan stops growing. */
+const closedCallReadableForMs = 365 * 24 * 60 * 60 * 1000;
+
 /**
- * The closes worth reading, for the close-date index: those `callNoticeDeadline` calls `open`.
- * A call with no close date (`notInformed`) is read too, found apart.
+ * The closes worth reading, for the close-date index: open ones (up to `openEnded`) and those that
+ * closed in the last year. A call with no close date is read too, found apart.
  */
 export const readableRegistrationCloses = (now: number) => ({
-  from: now,
+  from: now - closedCallReadableForMs,
   to: now + openEndedRegistrationAfterMs,
 });
 
-/** Mapas titles of drafts and tests, compared without accents or case. */
-const draftTitlePattern = /\b(teste|em construcao)\b/;
+/**
+ * The order both queues work in, reading and extraction: open calls closing soonest first (they
+ * matter most to an alert), then calls with no close date, then closed ones, latest closed first.
+ */
+export const queueOrder = (now: number) => {
+  type Closing = Pick<CallNotice, 'registrationCloses'>;
+  const rank = ({ registrationCloses }: Closing) =>
+    registrationCloses === null ? 1 : registrationCloses.at < now ? 2 : 0;
+  return (a: Closing, b: Closing) => {
+    const byRank = rank(a) - rank(b);
+    if (byRank !== 0 || a.registrationCloses === null || b.registrationCloses === null) {
+      return byRank;
+    }
+    const soonestFirst = a.registrationCloses.at - b.registrationCloses.at;
+    return rank(a) === 2 ? -soonestFirst : soonestFirst;
+  };
+};
+
+/**
+ * Titles that are no call, compared without accents or case: drafts and tests, the accountability
+ * a call's winners file (Maringá, 2026-11-17: "Prestação de Contas - FOMENTO…", open to 01/12 with
+ * the old notice attached) or a foundation's management contract (Clóvis Salgado, 2026-11-18:
+ * "Contrato de Gestão" under its calls, its purchasing "Regulamento" read as a notice), an
+ * election (Spcine: "Edital de Eleição de Representantes dos Funcionários"; Santa Luzia: "ELEIÇÃO
+ * DOS MEMBROS REPRESENTANTES…", "…DOS CONSELHEIROS…"), a council meeting's sign-up (Santa Luzia,
+ * monthly: "INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO…"), a consultant hire under a cooperation
+ * project or a market survey (IPHAN, 2026-11-18: "Projeto 914BRZ4027 Edital nº 67/2026: Perfil
+ * Gestão", "Consulta Preliminar de Mercado (RFI)"), a temporary staff hire (FCP-PA, 2026-11-18:
+ * "PROCESSO SELETIVO SIMPLIFICADO - BIBLIOTECAS USINAS DA PAZ").
+ */
+const notACallTitlePattern =
+  /\b(teste|em construcao|prestacao de contas|contrato de gestao|eleicao d[aeo]s? (membros|conselheir\w*|representantes)|inscricao para participa\w* (em|na|no|de) reuniao|projeto \d{3}brz\d+|consulta preliminar de mercado|processo seletivo simplificado)\b/;
+
+/**
+ * A later step of a call, opened as an item of its own with the call's documents attached: its
+ * appeal (Mapas federal, 2026-11-18: "Recurso - Edital Intercâmbio…", 18 credits read; Pernambuco:
+ * "Formulário de Recurso…"; Santa Luzia: "CONTRARRAZÕES…", "Fase Avaliação Preliminar…"). Only at
+ * the start: "captação de recursos" names a call.
+ */
+const laterStepTitlePattern = /^\s*((formulario de )?recurso|contrarrazoes|fase (de )?avaliacao)\b/;
 
 type CallNoticeToScreen = Pick<CallNotice, 'title' | 'documentUrls' | 'registrationCloses'>;
 
-export type ReasonToSkipReadingDocuments = 'closed' | 'openEnded' | 'draftTitle' | 'noDocuments';
+export type ReasonToSkipReadingDocuments = 'openEnded' | 'notACallTitle' | 'noDocuments';
 
 /** Why a call notice's documents are not worth credits, or `null` to read them. */
 export function reasonToSkipReadingDocuments(
   { title, documentUrls, registrationCloses }: CallNoticeToScreen,
   now: number,
 ): ReasonToSkipReadingDocuments | null {
-  const deadline = callNoticeDeadline({ registrationCloses }, now);
-  if (deadline === 'closed' || deadline === 'openEnded') return deadline;
-  if (draftTitlePattern.test(plainText(title))) return 'draftTitle';
+  if (callNoticeDeadline({ registrationCloses }, now) === 'openEnded') return 'openEnded';
+  const plainTitle = plainText(title);
+  if (notACallTitlePattern.test(plainTitle) || laterStepTitlePattern.test(plainTitle)) {
+    return 'notACallTitle';
+  }
   if (documentUrls.length === 0) return 'noDocuments';
   return null;
 }
@@ -57,22 +100,39 @@ const personalDataName = new RegExp(
 const noticeWords = 'edital|chamada|chamamento|convocatoria';
 
 /**
+ * What a notice's name may start with before its word (in `nameOf` terms): a number ("0.", "01-"),
+ * a roman numeral, or its SEI document number ("sei-9911864-edital-6-1.pdf", Maringá, 2026-11-17).
+ */
+const noticeNamePrefix = '(\\d+[-_.]*|i+-|sei-\\d+-)?';
+
+/**
  * Name rules, first match wins; `null` is never read: forms are what an applicant fills in, not the
- * rules, and procurement or notices about a call are not the call.
+ * rules, and procurement or notices about a call are not the call. A contract signed without a call
+ * ("inexigibilidade", Funesc's "TERMO INEX CHAMAMENTO PUBLICO", 2026-11-17) is procurement too.
  */
 const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   ['callNotice', /consolidacao/],
-  // A notice republished whole with its changes (Minas Gerais: "Edital FEC 02/2026 - Retificado").
-  ['callNotice', new RegExp(`^(${noticeWords})(?!.*anexo).*(retificad|consolidad)`)],
+  // A notice republished whole with its changes (Minas Gerais: "Edital FEC 02/2026 - Retificado";
+  // Secec-RJ, 2026-11-19: "Edital – com retificações").
+  [
+    'callNotice',
+    new RegExp(
+      `^${noticeNamePrefix}(${noticeWords})(?!.*anexo).*(retificad|com-retificacoes|consolidad)`,
+    ),
+  ],
   [
     'amendment',
     /errata|aditivo|adendo|prorrogacao|reabertura|retifica|cronograma-(atualizado|alterado|retificado)/,
   ],
   // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
-  ['callNotice', new RegExp(`^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo)`)],
+  // A council's resolution can be the rules (São Bernardo, Natal on Mapas, 2026-11-17).
+  [
+    'callNotice',
+    new RegExp(`^${noticeNamePrefix}(${noticeWords}|regulamento|resolucao)(?!.*anexo)`),
+  ],
   [
     null,
-    /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao/,
+    /formulario|declaracao|modelo|ficha|relatorio|plano-de-trabalho|planilha|termo-de|minuta|carta|dados-bancarios|autorizacao|portaria|comunicado|justificativa|faq|pregao|inexigib|(^|-)inex-/,
   ],
   ['criteria', /criterio|pontuacao|avaliacao/],
   ['categories', /categoria|vaga/],
@@ -81,7 +141,7 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
   [
     'callNotice',
     new RegExp(
-      `^(\\d+[-_.]*|i+-)?(${noticeWords}|regulamento)(?!.*anexo-?(\\d|[ivx]+([-.]|$))|.*editave)`,
+      `^${noticeNamePrefix}(${noticeWords}|regulamento)(?!.*anexo-?(\\d|[ivx]+([-.]|$))|.*editave)`,
     ),
   ],
 ];
@@ -119,19 +179,26 @@ export function fileNameOf(url: string) {
   }
 }
 
+/** A link text naming an annex ("Anexo II", "Anexo I - Categorias"). */
+const annexLabel = /^anexo(-|$)/;
+
 /**
  * What a document is to its call, from its link's text when the source gives one, else its file
  * name; `null` when it is not worth reading. Personal data in either one rules it out.
  */
 export function callNoticeDocumentRole(url: string, label?: string): CallNoticeDocumentRole | null {
+  const labelName = label ? nameOf(label) : '';
   const named = [
-    { name: label ? nameOf(label) : '', rules: labelRoles },
+    { name: labelName, rules: labelRoles },
     { name: nameOf(fileNameOf(url)), rules: documentRoleByName },
   ].filter(({ name }) => name);
   if (named.length === 0 || named.some(({ name }) => personalDataName.test(name))) return null;
   for (const { name, rules } of named) {
     const rule = rules.find(([, pattern]) => pattern.test(name));
-    if (rule) return rule[0];
+    if (!rule) continue;
+    // Itaperuna (2026-11-18) serves every file as `edital_arquivo.php`: "Anexo II" is no notice.
+    if (rule[0] === 'callNotice' && annexLabel.test(labelName)) return null;
+    return rule[0];
   }
   return null;
 }
@@ -153,15 +220,17 @@ export function postsResult(url: string, label?: string) {
 
 /**
  * The documents of a call worth reading, with their role. None when nothing identifies the call
- * notice itself: annexes alone are not read, and the call waits for the admin review.
+ * notice itself: annexes alone are not read, and the call waits for the admin review. The call's
+ * own page, listed as a document, is its notice: only a source whose page is the notice lists it.
  */
 export function documentsWorthReading(
   documentUrls: string[],
   documentLabels: { url: string; label: string }[] = [],
+  officialUrl?: string,
 ) {
   const labelOf = new Map(documentLabels.map(({ url, label }) => [url, label]));
   const withRoles = documentUrls.flatMap((url) => {
-    const role = callNoticeDocumentRole(url, labelOf.get(url));
+    const role = url === officialUrl ? 'callNotice' : callNoticeDocumentRole(url, labelOf.get(url));
     return role ? [{ url, role }] : [];
   });
   return withRoles.some(({ role }) => role === 'callNotice') ? withRoles : [];

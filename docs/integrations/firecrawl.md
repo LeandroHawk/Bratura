@@ -36,9 +36,12 @@ The team's draft of this flow also stored an embedding per call; matching is rul
 1. **PDF → Markdown.** `/scrape` detects a PDF by its URL and returns clean Markdown. The main use.
 2. **Not for finding calls on official pages.** Their listings are server-rendered HTML (5 of 5
    measured on 2026-11-15: PR, BA, Rio, MG, MA), so a plain fetch finds the call pages and document
-   links for free (`officialPage` source: `discovery`, `documentUrlParts`). `/map` (1 credit per
-   call) stays the option for a site that renders its list with JavaScript. For one section,
-   `/crawl` with `includePaths` and `limit`.
+   links for free (`officialPage` source: `discovery`, `documentUrlParts`). A site that renders its
+   list with JavaScript usually fills it from a JSON request, read for free too
+   (`callPagesListedAsJson`, Rio Branco 2026-11-18), and folders a button opens can be served at a
+   URL too (`callsFiledInYearFolders`, Porto Velho's `?folder=N`), and a gov.br Volto page keeps its
+   listing and file links in the state it embeds (`window.__data`, IPHAN); `/map` (1 credit per call) stays
+   the option when there is none. For one section, `/crawl` with `includePaths` and `limit`.
 3. **New calls and amendments.** `changeTracking` (`git-diff` mode) says what changed since the last
    scrape: an unchanged page spends no Gemini call; an amended deadline triggers a new extraction and
    an alert ("o prazo mudou").
@@ -72,6 +75,14 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   portfolio is scored: only there). **Never** results, rankings or lists of applicants (personal
   data, ruled out by either name), nor the forms an applicant fills in. A call whose notice no name
   identifies is left for the admin review. Rules: `model/callNoticeDocuments/selection.ts`.
+- **A closed call is read last, and not a year after it closed.** An official page that prints its
+  close in a registration sentence ("inscrições … até 25 de novembro de 2026") gives the call its
+  `registrationCloses` for free (`model/officialPage/registrationClose.ts`). Until 2026-11-20 a
+  closed call was not read at all; the user reversed that for product research, with credits to
+  spare. A close written without its year is not used (Secec-RJ prints 11 of 13
+  so). Measured 2026-11-18 on the 106 calls of the 40 sources read without Firecrawl: 30 print it,
+  17 already closed; the 11 the LLM had extracted all matched; and 281 of 5,608 credits read had
+  gone to calls their page showed closed.
 - **Every measured number here is Mapas Culturais, mostly Ceará** (2026-11-14): file names,
   Markdown from its PDFs, the `2111` sentinel, extraction accuracy. A new source (another Mapas
   instance, a city's own site, a scanned PDF) is measured on a sample before it is trusted; its
@@ -83,7 +94,7 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   `formats: ['rawHtml']` and `location: { country: 'BR' }` returned Pernambuco's and Sergipe's Mapas
   API JSON intact in 2–3 s and Ponta Grossa's listing in 6 s, while without the location Firecrawl
   failed like Convex. For those sources the daily ingestion fetches the listing (and each call page)
-  through Firecrawl, 1 credit per page per day: 4 sources on 2026-11-17, about 4 credits a day.
+  through Firecrawl, 1 credit per page per day: 6 sources on 2026-11-17 (São Bernardo and Maringá added), about 6 credits a day.
   Those reads ask `maxAge: 0` (the default cache would answer a listing up to two days old), keep
   the caller's timeout (30 s a page, 60 s for Mapas; Firecrawl's own `timeout` is 10 s shorter so
   its error arrives first), are spaced 6.5 s apart and retried once after a 429, as document reads

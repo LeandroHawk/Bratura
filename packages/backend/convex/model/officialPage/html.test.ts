@@ -28,6 +28,84 @@ describe('linksOfHtml', () => {
     ]);
   });
 
+  test("resolves relative links against the page's <base href> (Erechim), an in-page anchor against the page (Funarte)", () => {
+    const html = `<base href="https://www.pmerechim.rs.gov.br//">
+      <a href="#conteudo">Ir para o Conteúdo</a>
+      <a href="pagina/1848/pnab---edital-n-022026">PNAB - Edital nº 02/2026</a>`;
+    expect(linksOfHtml(html, 'https://www.pmerechim.rs.gov.br/pagina/1846/2026')).toEqual([
+      { url: 'https://www.pmerechim.rs.gov.br/pagina/1846/2026', label: 'Ir para o Conteúdo' },
+      {
+        url: 'https://www.pmerechim.rs.gov.br//pagina/1848/pnab---edital-n-022026',
+        label: 'PNAB - Edital nº 02/2026',
+      },
+    ]);
+  });
+
+  test("reads the links a Volto page keeps only in its state: listing items by getURL or an absolute @id, text-block links; a relative @id is not a page's URL", () => {
+    const state = {
+      content: {
+        data: {
+          items: [
+            {
+              '@id': 'https://www.gov.br/museudoindio/pt-br/editais/credenciamento',
+              title: 'Credenciamento',
+            },
+          ],
+          blocks: {
+            b1: {
+              '@type': 'slate',
+              value: [
+                {
+                  type: 'h2',
+                  children: [
+                    { text: '' },
+                    {
+                      type: 'link',
+                      data: {
+                        url: 'https://www.gov.br/iphan/pt-br/x/edital.pdf/@@display-file/file',
+                      },
+                      children: [{ text: 'Edital ' }],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+      querystringsearch: {
+        subrequests: {
+          block1: {
+            items: [
+              {
+                '@id': '/pt-br/abertos/premio',
+                getURL: 'https://www.gov.br/iphan/pt-br/abertos/premio',
+                title: 'Prêmio 2026',
+              },
+              { '@id': '/pt-br/abertos/sem-url', title: 'Sem URL absoluta' },
+            ],
+          },
+        },
+      },
+    };
+    const html = `<a href="/iphan/pt-br/assuntos">Assuntos</a><p>Carregando</p>
+      <script>window.__data=${JSON.stringify(state).replace('"items":[', '"loading":undefined,"items":[')};</script>`;
+    expect(linksOfHtml(html, 'https://www.gov.br/iphan/pt-br/abertos')).toEqual([
+      { url: 'https://www.gov.br/iphan/pt-br/assuntos', label: 'Assuntos' },
+      {
+        url: 'https://www.gov.br/museudoindio/pt-br/editais/credenciamento',
+        label: 'Credenciamento',
+      },
+      { url: 'https://www.gov.br/iphan/pt-br/abertos/premio', label: 'Prêmio 2026' },
+      { url: 'https://www.gov.br/iphan/pt-br/x/edital.pdf/@@display-file/file', label: 'Edital' },
+    ]);
+  });
+
+  test('a page whose state is not JSON keeps its HTML links', () => {
+    const html = '<a href="/a">A</a><script>window.__data={broken;</script>';
+    expect(linksOfHtml(html, page)).toEqual([{ url: 'https://www.ba.gov.br/a', label: 'A' }]);
+  });
+
   test('drops other schemes, fragments, scripts and comments; one entry per URL', () => {
     const html = `
       <a href="mailto:x@ba.gov.br">mail</a><a href="javascript:void(0)">js</a>
@@ -42,6 +120,31 @@ describe('linksOfHtml', () => {
     const html = '<a href="/download?a=1&amp;b=2">Sele&#231;&#xE3;o P&Uacute;BLICA N&ordm; 03</a>';
     expect(linksOfHtml(html, page)).toEqual([
       { url: 'https://www.ba.gov.br/download?a=1&b=2', label: 'Seleção PÚBLICA Nº 03' },
+    ]);
+  });
+
+  test("an icon link is named by its aria-label (Palmas), never by its title tooltip (Salvador's share icon)", () => {
+    const html = [
+      '<a class="orgao-arquivo-visualizar" href="/e.pdf" title="Visualizar PDF Edital 05/2026"',
+      ' aria-label="Visualizar PDF Edital  05/2026"><i class="bi bi-eye"></i></a>',
+      '<a class="link-compartilhar" title="Copiar link!" href="/edital-x/"><i></i></a>',
+      '<a href="/edital-x/">Edital X</a>',
+    ].join('');
+    expect(linksOfHtml(html, page)).toEqual([
+      { url: 'https://www.ba.gov.br/e.pdf', label: 'Visualizar PDF Edital 05/2026' },
+      { url: 'https://www.ba.gov.br/edital-x/', label: 'Edital X' },
+    ]);
+  });
+
+  test('a link labelled only by its date takes the title linked after it (Sesi MG news)', () => {
+    const post = '/sesi-cultura/noticias/sesi-em-cena-2026/';
+    const html = [
+      `<a href="${post}">14/07/2026</a><a href="${post}">SESI Cultura MG lança chamamento</a>`,
+      '<a href="/agenda/">10/07/2026</a>',
+    ].join('');
+    expect(linksOfHtml(html, page)).toEqual([
+      { url: `https://www.ba.gov.br${post}`, label: 'SESI Cultura MG lança chamamento' },
+      { url: 'https://www.ba.gov.br/agenda/', label: '10/07/2026' },
     ]);
   });
 });
@@ -102,10 +205,16 @@ describe('headingOfHtml', () => {
     expect(headingOfHtml(page)).toBe('Edital 09');
     expect(headingOfHtml('<title>Edital 09 – FGM</title><p>sem título</p>')).toBe('');
   });
+
+  test("a logo's empty <h1> is skipped (Secult-RN Mais Cultura)", () => {
+    const page =
+      '<h1> <a href="/" title="Mais Cultura RN"> </a> </h1><h1>Bloco V: Edital 17/2026</h1>';
+    expect(headingOfHtml(page)).toBe('Bloco V: Edital 17/2026');
+  });
 });
 
 describe('sectionsOfHtml', () => {
-  test('each link goes under the heading above it, once; a link above every heading goes nowhere', () => {
+  test('each link goes under the heading above it, once, with the text between; what is above every heading goes nowhere', () => {
     const page = 'https://cultura.jundiai.sp.gov.br/editais-e-regulamentos/';
     const html = [
       '<a href="/decreto.pdf">Decreto</a><h1>Editais</h1>',
@@ -113,15 +222,36 @@ describe('sectionsOfHtml', () => {
       '<h2>ENCERRADOS</h2><h1>CORTE <em>AFRO</em></h1><a href="/c.pdf">Edital</a>',
     ].join('');
     expect(sectionsOfHtml(html, page)).toEqual([
-      { heading: 'Editais', links: [] },
+      { heading: 'Editais', links: [], text: '' },
       {
         heading: 'BLOCOS DE CARNAVAL',
         links: [{ url: 'https://cultura.jundiai.sp.gov.br/b.pdf', label: 'PDF' }],
+        text: 'Período PDF Edital',
       },
-      { heading: 'ENCERRADOS', links: [] },
+      { heading: 'ENCERRADOS', links: [], text: '' },
       {
         heading: 'CORTE AFRO',
         links: [{ url: 'https://cultura.jundiai.sp.gov.br/c.pdf', label: 'Edital' }],
+        text: 'Edital',
+      },
+    ]);
+  });
+
+  test('a paragraph that opens in bold titles a section when asked: RS Sedac', () => {
+    const page = 'https://cultura.rs.gov.br/editais-2026-sedac';
+    const html = [
+      '<p><strong>-------------</strong></p>',
+      '<p><strong>EDITAL SEDAC nº 38/2026 FAC RS ECOSSISTEMAS CULTURAIS</strong></p>',
+      '<p>A Secretaria da Cultura torna público o Edital.</p>',
+      '<p><a href="https://www.procultura.rs.gov.br/upload/e38.pdf"><strong>EDITAL</strong></a></p>',
+    ].join('');
+    expect(sectionsOfHtml(html, page)).toEqual([]);
+    expect(sectionsOfHtml(html, page, { boldParagraphIsHeading: true })).toEqual([
+      { heading: '-------------', links: [], text: '' },
+      {
+        heading: 'EDITAL SEDAC nº 38/2026 FAC RS ECOSSISTEMAS CULTURAIS',
+        links: [{ url: 'https://www.procultura.rs.gov.br/upload/e38.pdf', label: 'EDITAL' }],
+        text: 'A Secretaria da Cultura torna público o Edital. EDITAL',
       },
     ]);
   });
@@ -136,11 +266,17 @@ describe('sectionsOfHtml', () => {
       '<a href="./documentos/games.pdf">EDITAL</a>',
       '<a class="accordion-toggle-icon" href="#x">não é título</a>',
     ].join('');
-    expect(sectionsOfHtml(html, page, 'accordion-toggle').map(({ heading }) => heading)).toEqual([
-      '2026',
-      'RECIFE É DE CINEMA',
-    ]);
-    expect(sectionsOfHtml(html, page, 'x-acc-header')).toEqual([
+    expect(
+      sectionsOfHtml(html, page, { headingClass: 'accordion-toggle' }).map(
+        ({ heading }) => heading,
+      ),
+    ).toEqual(['2026', 'RECIFE É DE CINEMA']);
+    expect(
+      sectionsOfHtml(html, page, { headingClass: 'x-acc-header' }).map(({ heading, links }) => ({
+        heading,
+        links,
+      })),
+    ).toEqual([
       {
         heading: '2026',
         links: [

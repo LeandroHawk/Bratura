@@ -97,7 +97,7 @@ With pieces this project will need (none exists yet):
 | piece                                        | mentions        | decides about     | lives in                                 |
 | -------------------------------------------- | --------------- | ----------------- | ---------------------------------------- |
 | `MeiStatusEnum`                              | —               | MEI registration  | `primitives/external/mei-status/`        |
-| `CallRequirementEnum` (MEI, SICAB, CCMEI…)   | MEI, SICAB      | what a call asks  | `entities/call-notice/enums/`            |
+| `RequirementKindEnum` (CNPJ/MEI, SICAB…)     | MEI, SICAB      | what a call asks  | `entities/call-notice/enums/` (exists)   |
 | "is this creator eligible for this call?"    | MEI, the call   | a **match**       | backend `matching/`, not `shared`        |
 
 The naive rule, "it goes where the value it names lives", is wrong: the eligibility check names

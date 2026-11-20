@@ -2,9 +2,9 @@ import { convexTest } from 'convex-test';
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
-import { documentReadingLeaseMs } from './documents';
+import { documentReadingLeaseMs, documentsCheckedPerQuery } from './documents';
 import schema from './schema';
-import { cearaMapasSource, federalMapasSource } from './model/sources/registry';
+import { cearaMapasSource, federalMapasSource, piedadePnabSource } from './model/sources/registry';
 import { modules } from './test.setup';
 
 const day = 24 * 60 * 60 * 1000;
@@ -165,7 +165,7 @@ describe('readPendingDocuments', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  test('reads the calls closing soonest first, then those with no close date', async () => {
+  test('reads open calls, then undated ones, then those closed within a year', async () => {
     const t = convexTest(schema, modules);
     const urlOf = (id: string) =>
       `https://mapacultural.secult.ce.gov.br/files/opportunity/${id}/edital.pdf`;
@@ -174,15 +174,56 @@ describe('readPendingDocuments', () => {
       ['undated', null],
       ['sooner', in9Days()],
       ['noDeadline', { ...in9Days(), at: Date.UTC(2111, 0, 1) }],
+      ['closedOverAYearAgo', { ...in9Days(), at: Date.now() - 400 * day }],
+      ['closedYesterday', { ...in9Days(), at: Date.now() - day }],
     ] as const) {
       await addCallNotice(t, { externalId, registrationCloses, documentUrls: [urlOf(externalId)] });
     }
-    const pending = await t.query(internal.documents.listDocumentsToRead, {});
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
     expect(pending.map(({ url }) => url)).toEqual([
       urlOf('sooner'),
       urlOf('later'),
       urlOf('undated'),
+      urlOf('closedYesterday'),
     ]);
+  });
+
+  test('a document past the first batch checked is still listed, the read ones before it not', async () => {
+    const t = convexTest(schema, modules);
+    const urls = Array.from(
+      { length: documentsCheckedPerQuery + 1 },
+      (_, index) => `${documentBase}/edital-${index}.pdf`,
+    );
+    const callNoticeId = await addCallNotice(t, { documentUrls: urls });
+    for (const url of urls.slice(0, documentsCheckedPerQuery)) {
+      await t.mutation(internal.documents.recordDocumentRead, {
+        callNoticeId,
+        url,
+        role: 'callNotice',
+        markdown: '# Edital',
+        markdownHash: 'a'.repeat(64),
+        creditsUsed: 1,
+      });
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url)).toEqual([urls.at(-1)]);
+  });
+
+  test('lists no document of a source whose robots.txt disallows its files', async () => {
+    const t = convexTest(schema, modules);
+    const sourceId = await t.run((ctx) => ctx.db.insert('sources', piedadePnabSource));
+    await t.mutation(internal.callNotices.recordCallNotice, {
+      sourceId,
+      externalId: 'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      title: 'EDITAL TERMO DE EXECUÇÃO CULTURAL PNAB - CICLO 2',
+      summary: null,
+      officialUrl:
+        'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      documentUrls: ['https://www.piedade.sp.gov.br/imgeditor/file/003%20-%20Edital.pdf'],
+      registrationOpens: null,
+      registrationCloses: null,
+    });
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
   });
 
   test('stops at the credit ceiling and leaves the rest for the next run', async () => {
@@ -251,7 +292,7 @@ describe('readPendingDocuments', () => {
     const document = { callNoticeId, url: mainNotice, role: 'callNotice' as const };
     expect(await t.mutation(internal.documents.reserveDocumentRead, document)).toBe(true);
     expect(await t.mutation(internal.documents.reserveDocumentRead, document)).toBe(false);
-    expect(await t.query(internal.documents.listDocumentsToRead, {})).toEqual([]);
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
 
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Date.now() + documentReadingLeaseMs);

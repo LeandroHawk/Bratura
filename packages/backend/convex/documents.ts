@@ -9,13 +9,14 @@ import { CallNoticeDocumentIdentityFields } from '@bratura/shared/entities/call-
 import { SourceAccessFields } from '@bratura/shared/entities/source/fragments/access/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server';
 import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
 import { requiredEnv } from './lib/env';
 import { sha256Hex } from './lib/sha256';
 import {
   documentsWorthReading,
+  queueOrder,
   readableRegistrationCloses,
   reasonToSkipReadingDocuments,
 } from './model/callNoticeDocuments/selection';
@@ -79,20 +80,20 @@ const knownDocument = (
 const DocumentToReadSchema = CallNoticeDocumentIdentityFields;
 type DocumentToRead = z.infer<typeof DocumentToReadSchema>;
 
-const ListDocumentsToReadQueryArgsSchema = z.object({});
-const ListDocumentsToReadQueryReturnsSchema = z.array(DocumentToReadSchema);
+const ListDocumentsWorthReadingQueryArgsSchema = z.object({});
+const DocumentListSchema = z.array(DocumentToReadSchema);
 
 /**
- * The documents worth reading that still need a read, the calls closing soonest first (they matter
- * most to an alert). Only calls in the readable window are scanned, through the close-date index.
+ * The documents worth reading of the calls in the readable window, read or not, in `queueOrder`,
+ * through the close-date index. None of a source whose robots.txt disallows its files.
  */
-export const listDocumentsToRead = internalZodQuery({
-  args: ListDocumentsToReadQueryArgsSchema,
-  returns: ListDocumentsToReadQueryReturnsSchema,
+export const listDocumentsWorthReading = internalZodQuery({
+  args: ListDocumentsWorthReadingQueryArgsSchema,
+  returns: DocumentListSchema,
   handler: async (ctx): Promise<DocumentToRead[]> => {
     const now = Date.now();
     const { from, to } = readableRegistrationCloses(now);
-    const closingSoonestFirst = await ctx.db
+    const withCloseDate = await ctx.db
       .query('callNotices')
       .withIndex('by_registration_closes', (index) =>
         index.gte('registrationCloses.at', from).lte('registrationCloses.at', to),
@@ -102,20 +103,84 @@ export const listDocumentsToRead = internalZodQuery({
       .query('callNotices')
       .withIndex('by_registration_closes', (index) => index.eq('registrationCloses.at', undefined))
       .collect();
+    const callNotices = [...withCloseDate, ...withoutCloseDate].sort(queueOrder(now));
 
-    const toRead: DocumentToRead[] = [];
-    for (const callNotice of [...closingSoonestFirst, ...withoutCloseDate]) {
+    const filesDisallowedBySource = new Map<Id<'sources'>, boolean>();
+    const filesDisallowed = async (sourceId: Id<'sources'>) => {
+      if (!filesDisallowedBySource.has(sourceId)) {
+        const source = await ctx.db.get(sourceId);
+        filesDisallowedBySource.set(
+          sourceId,
+          source?.kind === 'officialPage' && source.filesDisallowedByRobots === true,
+        );
+      }
+      return filesDisallowedBySource.get(sourceId)!;
+    };
+
+    const worthReading: DocumentToRead[] = [];
+    for (const callNotice of callNotices) {
       if (reasonToSkipReadingDocuments(callNotice, now) !== null) continue;
+      if (await filesDisallowed(callNotice.sourceId)) continue;
       for (const { url, role } of documentsWorthReading(
         callNotice.documentUrls,
         callNotice.documentLabels,
+        callNotice.officialUrl,
       )) {
-        const document = { callNoticeId: callNotice._id, url, role };
-        if (needsRead(await knownDocument(ctx, document), now)) toRead.push(document);
+        worthReading.push({ callNoticeId: callNotice._id, url, role });
       }
     }
-    return toRead;
+    return worthReading;
   },
+});
+
+/**
+ * Documents checked per query: a read one carries its Markdown (up to 900 kB, so 15 stay under
+ * Convex's 16 MiB read limit); one query that checked them all read 14 MB on 2026-11-19.
+ */
+export const documentsCheckedPerQuery = 15;
+
+const SelectDocumentsNeedingReadQueryArgsSchema = z.object({
+  documents: DocumentListSchema.max(documentsCheckedPerQuery),
+});
+
+/** Of these documents, those never read, failed for a passing reason, or reserved too long. */
+export const selectDocumentsNeedingRead = internalZodQuery({
+  args: SelectDocumentsNeedingReadQueryArgsSchema,
+  returns: DocumentListSchema,
+  handler: async (ctx, { documents }): Promise<DocumentToRead[]> => {
+    const now = Date.now();
+    const needingRead: DocumentToRead[] = [];
+    for (const document of documents) {
+      if (needsRead(await knownDocument(ctx, document), now)) needingRead.push(document);
+    }
+    return needingRead;
+  },
+});
+
+/** The documents worth reading that still need a read, checked a few per query, in their order. */
+async function documentsToRead(ctx: ActionCtx): Promise<DocumentToRead[]> {
+  const worthReading: DocumentToRead[] = await ctx.runQuery(
+    internal.documents.listDocumentsWorthReading,
+    {},
+  );
+  const toRead: DocumentToRead[] = [];
+  for (let start = 0; start < worthReading.length; start += documentsCheckedPerQuery) {
+    const needingRead: DocumentToRead[] = await ctx.runQuery(
+      internal.documents.selectDocumentsNeedingRead,
+      { documents: worthReading.slice(start, start + documentsCheckedPerQuery) },
+    );
+    toRead.push(...needingRead);
+  }
+  return toRead;
+}
+
+const ListDocumentsToReadActionArgsSchema = z.object({});
+
+/** What `readPendingDocuments` would read, in its order; by hand, to see the queue first. */
+export const listDocumentsToRead = internalZodAction({
+  args: ListDocumentsToReadActionArgsSchema,
+  returns: DocumentListSchema,
+  handler: (ctx): Promise<DocumentToRead[]> => documentsToRead(ctx),
 });
 
 // The only writer of `callNoticeDocuments` --------------------------------------------------------
@@ -282,10 +347,7 @@ export const readPendingDocuments = internalZodAction({
   returns: ReadPendingDocumentsActionReturnsSchema,
   handler: async (ctx, { creditCeiling }): Promise<ReadPendingDocumentsResult> => {
     const apiKey = requiredEnv('FIRECRAWL_API_KEY');
-    const pending: DocumentToRead[] = await ctx.runQuery(
-      internal.documents.listDocumentsToRead,
-      {},
-    );
+    const pending = await documentsToRead(ctx);
     const startedAt = Date.now();
     const result: ReadPendingDocumentsResult = {
       read: 0,

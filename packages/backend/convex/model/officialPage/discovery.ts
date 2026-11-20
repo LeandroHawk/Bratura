@@ -5,25 +5,41 @@ import { plainText } from '../../lib/text';
 import { callNoticeDocumentRole, fileNameOf, postsResult } from '../callNoticeDocuments/selection';
 import { firecrawlRequestSpacingMs } from '../firecrawl/client';
 import { isOnSourceHost } from '../sourceHost/fetchOnSourceHost';
-import { fetchPageHtml, type FetchedPage } from './client';
+import { fetchListingJson, fetchPageHtml, type FetchedPage } from './client';
 import {
+  folderLinksOfHtml,
   headingOfHtml,
   linksOfHtml,
   onePerUrl,
   sectionsOfHtml,
   textOfClass,
+  textOfHtml,
   titleOfHtml,
   type PageLink,
 } from './html';
-import type { OfficialPageCall } from './payload';
+import { JsonListedCallSchema, type OfficialPageCall } from './payload';
+import { registrationClosePrintedIn } from './registrationClose';
+
+/** Whether a call's title holds one of the source's `callTitleParts`, when it has any. */
+const titleIsKept = ({ callTitleParts }: OfficialPageSource, title: string) =>
+  !callTitleParts || callTitleParts.some((part) => plainText(title).includes(plainText(part)));
+
+/** Whether `url` is inside the folder `folderUrl` names (`…/edital-x/anexos` in `…/edital-x`). */
+const isBelowFolder = (url: string, folderUrl: string) =>
+  url !== folderUrl && url.startsWith(`${folderUrl.replace(/\/$/, '')}/`);
 
 /** An official page whose listing links one page per call. */
 type CallPageSource = OfficialPageSource & { discovery: { hops: 'callPage' } };
+
+type CallPagesListedAsJson = NonNullable<CallPageSource['discovery']['callPagesListedAsJson']>;
 
 /** An official page whose listing links each call's documents under a heading naming it. */
 type HeadingsSource = OfficialPageSource & { discovery: { hops: 'documentsUnderHeadings' } };
 
 const currentYear = () => new Date().getUTCFullYear();
+
+/** This year and last (`linksInRecentYears`, `linksUnderRecentYearHeadings`). */
+const recentYears = () => [currentYear(), currentYear() - 1];
 
 /** Between two call pages of one site: a public office's server, not a crawl. */
 const callPageSpacingMs = 1_000;
@@ -42,8 +58,44 @@ const callPagesBudgetMs = 5 * 60_000;
 const hasPublishedResult = (documents: PageLink[]) =>
   documents.some(({ url, label }) => postsResult(url, label));
 
+/**
+ * A credenciamento stays open to new entrants while it is valid (Lei 14.133, art. 79): the list of
+ * those accredited so far closes nothing (Museu do Índio, 2026-11-18: Edital 90008/2025, open for 5
+ * years, "lista 1" posted).
+ */
+const staysOpenAfterAResult = (title: string) => /\bcredenciamento\b/.test(plainText(title));
+
+/**
+ * A Plone file's page (`…/edital.pdf/view`, Funesc and gov.br, 2026-11-17) is HTML around the file;
+ * the file itself answers at the same URL without `/view`.
+ */
+const withoutFileViewPage = (link: PageLink): PageLink => {
+  const url = new URL(link.url);
+  if (url.search || !/\/[^/]+\.[a-z0-9]+\/view$/i.test(url.pathname)) return link;
+  url.pathname = url.pathname.slice(0, -'/view'.length);
+  return { ...link, url: url.href };
+};
+
+/**
+ * The PNAB platform (BA, PI, AM, AP, TO, Macapá; 2026-11-17) links every file as "Baixar", at
+ * `/lerarquivo/<base64 path>/<base64 title>`: the title it carries names the file ("ANEXO 1 -
+ * FORMULÁRIO…", "RESULTADO FINAL…"), so it is the label. Without it no annex or result is known.
+ */
+function withTitleItsUrlCarries(link: PageLink): PageLink {
+  const encoded = /^\/lerarquivo\/[^/]+\/([A-Za-z0-9+/=]+)$/.exec(new URL(link.url).pathname)?.[1];
+  if (!encoded) return link;
+  try {
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+    const title = new TextDecoder('utf-8', { fatal: true }).decode(bytes).trim();
+    return title ? { ...link, label: title } : link;
+  } catch {
+    return link;
+  }
+}
+
+/** A page's document links, each file once: a page may link it both as the file and its `/view`. */
 function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
-  return links.filter(
+  return onePerUrl(links.map((link) => withTitleItsUrlCarries(withoutFileViewPage(link)))).filter(
     ({ url }) =>
       documentUrlParts.some((part) => url.includes(part)) &&
       CallNoticeDocumentUrlSchema.safeParse(url).success,
@@ -57,8 +109,18 @@ function documentLinksOf(links: PageLink[], documentUrlParts: string[]) {
 const isNumberedBeforeLastYear = (callNumber: CallNumber | null) =>
   callNumber !== null && callNumber.year < currentYear() - 1;
 
-/** A link text or file name that names such a call. */
-const namesACallBeforeLastYear = (name: string) => isNumberedBeforeLastYear(callNumberOf(name));
+/**
+ * Whether a title (a heading, a call page's link text) names a past call. Numbered, by the
+ * numbered rule (last year's stay: a credenciamento 08/2025 is open to 2049). Unnumbered, it names
+ * an edition, past when every year it names is ("CICLO NATALINO 2025", Spcine's "05/2019 |
+ * EDITAL…", Rio Branco's "Fundo Municipal de Cultura 2023 - Arte"): Recife (2026-11-17) lists 196
+ * calls since 2019 and Spcine 57 since 2015, with no date on the page, each kept one a read.
+ */
+function titleNamesAPastCall(title: string) {
+  const callNumber = callNumberOf(title);
+  if (callNumber) return isNumberedBeforeLastYear(callNumber);
+  return namesOnlyYearsBefore(title, currentYear());
+}
 
 /**
  * `lpg-edital-012-2023.pdf` as `lpg edital 012/2023`, a label `callNumberOf` reads. A chain stays
@@ -98,18 +160,30 @@ function noticesNameOnlyYearsBeforeLastYear(documents: PageLink[]) {
 
 /**
  * A listing link that names no call, only an action (2026-11-15: Salvador links every call page as
- * "Clique aqui!", Estância as "Acessar"). The call page's own heading names the call instead, or,
- * with no `<h1>` (Estância), a notice whose name carries a call number ("EDITAL 022/2026 – …").
+ * "Clique aqui!", Estância as "Acessar"; 2026-11-18: Balsas "Mais informações", Coronel Fabriciano
+ * "Ver edital", Itaperuna "Ver edital e inscrever-se"). The call page's own heading names the call
+ * instead, or, with no `<h1>` (Estância), a notice whose name carries a call number.
  */
-const namesNoCall = (label: string) => /^(clique aqui|acessar)[\s!.]*$/.test(plainText(label));
+const namesNoCall = (label: string) =>
+  /^(clique aqui|acessar|mais informacoes|ver edital( e inscrever-se)?)[\s!.]*$/.test(
+    plainText(label),
+  );
+
+/**
+ * A listing card saying registration is over (2026-11-18: Secult-RN Mais Cultura "Inscrições
+ * encerradas" on all 47 PNAB cards, FCP-PA "Situação: Encerrada"): its page is never opened.
+ */
+const saysRegistrationClosed = (label: string) =>
+  /\b(inscricoes encerradas|situacao: encerrada)\b/.test(plainText(label));
 
 /**
  * A call page whose own text is the notice (Badesc, 2026-11-17: the rules in the post, applications
  * on Google Forms, no file). The page goes first as its notice when no linked file is one and its
- * title names a call; a menu page under the same path ("AGENDAMENTO") does not.
+ * title names a call (or the source takes any title); a menu page under the same path
+ * ("AGENDAMENTO") does not.
  */
-function withPageAsNotice(documents: PageLink[], page: PageLink) {
-  if (documents.some(isNotice) || !isNotice(page)) return documents;
+function withPageAsNotice(documents: PageLink[], page: PageLink, whateverItsTitle: boolean) {
+  if (documents.some(isNotice) || !(whateverItsTitle || isNotice(page))) return documents;
   if (!CallNoticeDocumentUrlSchema.safeParse(page.url).success) return documents;
   return [page, ...documents];
 }
@@ -151,48 +225,211 @@ function withHttpsOnHost(link: PageLink, sourceUrl: string): PageLink {
   return isOnSourceHost(url.href, sourceUrl) ? { ...link, url: url.href } : link;
 }
 
+/**
+ * A link text cut short with "..." (FJA-RN, 2026-11-18: "CHAMADA PÚBLICA Nº 002_2026 ARTISTAS,
+ * GR...") as the whole name its URL's last segment spells, when that segment starts with the text.
+ */
+function withUntruncatedLabel(link: PageLink): PageLink {
+  const shown = /^(.*\S)\s*(\.{3}|…)$/.exec(link.label)?.[1];
+  if (!shown) return link;
+  // The link text is already spaced (`plainLabel`); a folder name can hold two spaces in a row.
+  const segment = fileNameOf(link.url.replace(/\/$/, '')).replace(/\s+/g, ' ').trim();
+  return plainText(segment).startsWith(plainText(shown)) ? { ...link, label: segment } : link;
+}
+
+/**
+ * A JSON listing's calls as the links an HTML listing would print (`callPagesListedAsJson`), each
+ * title spaced as a link text is: an item with no id or no text title is skipped.
+ */
+function callPageLinksOfJsonListing(
+  items: unknown[],
+  { callPagePath, titleField }: CallPagesListedAsJson,
+  listingUrl: string,
+): PageLink[] {
+  return items.flatMap((item) => {
+    const listed = JsonListedCallSchema.safeParse(item);
+    const title: unknown = listed.success ? listed.data[titleField] : undefined;
+    if (!listed.success || typeof title !== 'string') return [];
+    const path = callPagePath.replace('{id}', encodeURIComponent(String(listed.data.id)));
+    return [{ url: new URL(path, listingUrl).href, label: title.replace(/\s+/g, ' ').trim() }];
+  });
+}
+
+const pause = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+/**
+ * What this year's and last year's folders or pages among `yearLinks` (each named by its year
+ * alone) link to, read with `linksOf`: in January a call opened in December still sits in last
+ * year's. Older years are not opened (Porto Velho keeps them back to 2019).
+ */
+async function linksInRecentYears(
+  yearLinks: PageLink[],
+  linksOf: (html: string, pageUrl: string) => PageLink[],
+  source: CallPageSource,
+  spacingMs: number,
+) {
+  const years = recentYears().map(String);
+  const found: PageLink[] = [];
+  for (const year of yearLinks) {
+    if (!years.includes(year.label) || !isOnSourceHost(year.url, source.listingUrl)) continue;
+    await pause(spacingMs);
+    const page = await fetchPageHtml(year.url, source.listingUrl, source);
+    found.push(...linksOf(page.html, page.url));
+  }
+  return found;
+}
+
+/**
+ * The folders a call page links under its own path (`callFilesInSubfolders`: FJA-RN's "PUBLICAÇÕES
+ * CHAMADA 01_26", "ANEXOS PARA INSCRIÇÃO…"); breadcrumbs and menus sit above it.
+ */
+const subfoldersLinkedBelow = ({ html, url }: FetchedPage) =>
+  linksOfHtml(html, url).filter((link) => isBelowFolder(link.url, url));
+
+/**
+ * The links in a call's `subfolders` (Porto Velho files most documents, results included, one
+ * folder each; FJA-RN, notices and annexes apart). Stops at the first result posted, on the call
+ * page or below: the call is dropped anyway, and Porto Velho's 002/2026 holds 18 subfolders.
+ * Throws past `deadline`: a call cut short could miss its result and pay for a closed call.
+ */
+async function linksInSubfolders(
+  subfolders: PageLink[],
+  links: PageLink[],
+  source: CallPageSource,
+  { spacingMs, deadline }: { spacingMs: number; deadline: number },
+) {
+  const found: PageLink[] = [];
+  for (const subfolder of subfolders) {
+    if (hasPublishedResult(documentLinksOf([...links, ...found], source.documentUrlParts))) break;
+    if (Date.now() > deadline) throw new Error('Subfolders left unread for lack of time');
+    await pause(spacingMs);
+    const page = await fetchPageHtml(subfolder.url, source.listingUrl, source);
+    found.push(...linksOfHtml(page.html, page.url));
+  }
+  return found;
+}
+
+/**
+ * The links under the listing's headings naming this or last year alone
+ * (`callPagesUnderYearHeadings`), and each one's year by its call page's `https:` URL; a link under
+ * two keeps the newer.
+ */
+function linksUnderRecentYearHeadings({ html, url }: FetchedPage) {
+  const yearByUrl = new Map<string, number>();
+  const links: PageLink[] = [];
+  for (const { heading, links: sectionLinks } of sectionsOfHtml(html, url)) {
+    const year = Number(heading);
+    if (!recentYears().includes(year)) continue;
+    for (const link of sectionLinks) {
+      const pageUrl = withHttpsOnHost(link, url).url;
+      if (yearByUrl.has(pageUrl)) continue;
+      yearByUrl.set(pageUrl, year);
+      links.push(link);
+    }
+  }
+  return { links, yearByUrl };
+}
+
+/**
+ * The listing's links, from its HTML or, for `callPagesListedAsJson`, its JSON; with
+ * `callsFiledInYearFolders` or `callPagesOnYearPages`, those of its recent years' folders or pages
+ * too; with `callPagesUnderYearHeadings`, only those under its recent years' headings, and the
+ * year each is under.
+ */
+async function linksOfCallPageListing(
+  source: CallPageSource,
+  spacingMs: number,
+): Promise<{ links: PageLink[]; url: string; yearByUrl?: Map<string, number> }> {
+  const { callPagesListedAsJson, callsFiledInYearFolders, callPagesOnYearPages } = source.discovery;
+  if (callPagesListedAsJson) {
+    const items = await fetchListingJson(source.listingUrl, source);
+    const links = callPageLinksOfJsonListing(items, callPagesListedAsJson, source.listingUrl);
+    return { links, url: source.listingUrl };
+  }
+  const listing = await fetchPageHtml(source.listingUrl, source.listingUrl, source);
+  if (source.discovery.callPagesUnderYearHeadings) {
+    return { ...linksUnderRecentYearHeadings(listing), url: listing.url };
+  }
+  const links = linksOfHtml(listing.html, listing.url);
+  if (callsFiledInYearFolders) {
+    const yearFolders = folderLinksOfHtml(listing.html, listing.url);
+    links.push(...(await linksInRecentYears(yearFolders, folderLinksOfHtml, source, spacingMs)));
+  }
+  if (callPagesOnYearPages)
+    links.push(...(await linksInRecentYears(links, linksOfHtml, source, spacingMs)));
+  return { links, url: listing.url };
+}
+
 /** Two hops: the listing's call pages, each read for its own documents. */
 export async function callsOfCallPages(source: CallPageSource): Promise<OfficialPageCall[]> {
-  // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart.
-  const spacingMs = source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs;
-  const pageIsTheNotice = source.discovery.callPageIsTheNotice === true;
-  const { callPagePublishedAtClass } = source.discovery;
-  const { html, url: listingUrl } = await fetchPageHtml(
-    source.listingUrl,
-    source.listingUrl,
-    source,
+  // Through Firecrawl, call pages keep to its rate limit; on the site itself, a second apart; both
+  // at least the site's crawl delay.
+  const spacingMs = Math.max(
+    source.answersOnlyFromBrazil ? firecrawlRequestSpacingMs : callPageSpacingMs,
+    (source.discovery.crawlDelaySeconds ?? 0) * 1_000,
   );
-  const listing = linksOfHtml(html, listingUrl);
+  const {
+    callPageIsTheNotice,
+    callPageIsTheNoticeWhateverItsTitle,
+    callPagePublishedAtClass,
+    callPageTitleClass,
+    callTitleOnCallPage,
+    callsFiledInYearFolders,
+    callFilesInSubfolders,
+  } = source.discovery;
+  const pageIsTheNotice =
+    callPageIsTheNotice === true || callPageIsTheNoticeWhateverItsTitle === true;
+  // A page with no notice is no call where the page is the notice ("MATERIAIS EDUCATIVOS") or the
+  // source says so (`callPageNeedsNotice`: folders of courses and plans).
+  const needsNotice = pageIsTheNotice || source.discovery.callPageNeedsNotice === true;
+  const {
+    links: listing,
+    url: listingUrl,
+    yearByUrl,
+  } = await linksOfCallPageListing(source, spacingMs);
   /**
-   * A document the listing links too is the site's frame, not the call's (Funarte, 2026-11-15:
-   * every page links an internal "Edital No. 409/2025"). Without this, it is each call's notice.
+   * A link printed the same on the listing and a call page is the site's frame, not the call's
+   * (Funarte, 2026-11-15: every page links an internal "Edital No. 409/2025"). Compared as printed:
+   * the Câmara's listing links its call's own notice as `…pdf/view`, the call page as `….pdf`.
    */
-  const frameDocumentUrls = new Set(
-    documentLinksOf(listing, source.documentUrlParts).map(({ url }) => url),
-  );
+  const frameUrls = new Set(listing.map(({ url }) => url));
   const callPages = onePerUrl(
-    listing.map((link) => withHttpsOnHost(link, source.listingUrl)),
+    listing.map((link) => withUntruncatedLabel(withHttpsOnHost(link, source.listingUrl))),
   ).filter(
     ({ url, label }) =>
-      label &&
-      !namesACallBeforeLastYear(label) &&
+      // An image card links with no text (Guarabira): its page names it.
+      (label || callTitleOnCallPage) &&
+      titleIsKept(source, label) &&
+      !titleNamesAPastCall(label) &&
+      !saysRegistrationClosed(label) &&
       url !== source.listingUrl &&
       url !== listingUrl &&
       source.discovery.callPageUrlParts.some((part) => url.includes(part)) &&
       isOnSourceHost(url, source.listingUrl) &&
       !source.documentUrlParts.some((part) => url.includes(part)),
   );
+  /**
+   * A page inside another call page's folder is part of that call, not one of its own (Funesc,
+   * 2026-11-17: "Audições OSJPB - Peças de confronto" under its orchestra call, which posts results
+   * the sub-page does not). Measured on the 20 `callPage` listings: only Funesc has any (2 of 67).
+   * The site's root is no call's folder: the PNAB platform links its home and calls at root slugs.
+   */
+  const isInsideAnotherCallPage = (url: string) =>
+    callPages.some((other) => new URL(other.url).pathname !== '/' && isBelowFolder(url, other.url));
+  const ownCallPages = callPages.filter(({ url }) => !isInsideAnotherCallPage(url));
   const calls: OfficialPageCall[] = [];
-  const startedAt = Date.now();
-  for (const [index, { url, label }] of callPages.entries()) {
-    if (Date.now() - startedAt > callPagesBudgetMs) {
-      console.warn('Call pages left unread for lack of time', callPages.length - index);
+  const deadline = Date.now() + callPagesBudgetMs;
+  for (const [index, { url, label }] of ownCallPages.entries()) {
+    if (Date.now() > deadline) {
+      console.warn('Call pages left unread for lack of time', ownCallPages.length - index);
       break;
     }
-    if (index > 0) await new Promise((done) => setTimeout(done, spacingMs));
+    // The first one too: the listing was the site's last page.
+    await pause(spacingMs);
     let page: PageLink[];
     let heading: string;
     let pageTitle: string;
+    let pageText: string;
     try {
       const fetched = await fetchPageHtml(url, source.listingUrl, source);
       if (
@@ -202,31 +439,60 @@ export async function callsOfCallPages(source: CallPageSource): Promise<Official
         continue;
       }
       page = linksOfHtml(fetched.html, fetched.url);
-      heading = headingOfHtml(fetched.html);
+      const subfolders = callsFiledInYearFolders
+        ? folderLinksOfHtml(fetched.html, fetched.url)
+        : callFilesInSubfolders
+          ? subfoldersLinkedBelow(fetched)
+          : [];
+      page.push(...(await linksInSubfolders(subfolders, page, source, { spacingMs, deadline })));
+      heading = callPageTitleClass
+        ? textOfClass(fetched.html, callPageTitleClass)
+        : headingOfHtml(fetched.html);
       pageTitle = heading || titleOfHtml(fetched.html);
+      pageText = textOfHtml(fetched.html);
     } catch (error) {
       console.warn('Call page not read', url, String(error));
       continue;
     }
-    const linked = documentLinksOf(page, source.documentUrlParts).filter(
-      ({ url }) => !frameDocumentUrls.has(url),
+    const linked = documentLinksOf(
+      page.filter(({ url }) => !frameUrls.has(url)),
+      source.documentUrlParts,
     );
     const documents = pageIsTheNotice
-      ? withPageAsNotice(linked, { url, label: pageTitle })
+      ? withPageAsNotice(
+          linked,
+          { url, label: pageTitle },
+          callPageIsTheNoticeWhateverItsTitle === true,
+        )
       : linked;
-    const kept = callDocumentsWorthRecording(documents);
-    // Where the page is the notice, a page with none is no call ("MATERIAIS EDUCATIVOS").
-    if (!kept || (pageIsTheNotice && !kept.some(isNotice))) continue;
+    const name = callTitleOnCallPage ? heading || label : label;
+    const kept = callDocumentsWorthRecording(documents, name);
+    // The page itself, kept, is its notice (`withPageAsNotice`).
+    if (
+      !kept ||
+      (needsNotice && !kept.some((document) => document.url === url || isNotice(document)))
+    )
+      continue;
     const numberedNotice = kept.find(
       (document) => isNotice(document) && callNumberOf(document.label),
     );
     const title = pageIsTheNotice
-      ? pageTitle || label
-      : namesNoCall(label)
+      ? pageTitle || name
+      : namesNoCall(name)
         ? heading || numberedNotice?.label
-        : label;
+        : name;
     if (!title) continue;
-    calls.push({ externalId: url, title, officialUrl: url, documents: kept });
+    calls.push({
+      externalId: url,
+      title,
+      officialUrl: url,
+      documents: kept,
+      registrationCloses: registrationClosePrintedIn(
+        pageText,
+        source.timeZone,
+        yearByUrl?.get(url),
+      ),
+    });
   }
   return calls;
 }
@@ -279,11 +545,13 @@ function withNewestNoticeOnly(documents: PageLink[]) {
 }
 
 /**
- * A call's documents worth recording, whatever shape the page has: some, no result posted, not
- * every notice from before last year. Its newest notice only; `null` when not worth it.
+ * A call's documents worth recording, whatever shape the page has: some, no result posted (unless
+ * its `title` names a credenciamento), not every notice from before last year. Its newest notice
+ * only; `null` when not worth it.
  */
-function callDocumentsWorthRecording(documents: PageLink[]) {
-  if (documents.length === 0 || hasPublishedResult(documents)) return null;
+function callDocumentsWorthRecording(documents: PageLink[], title = '') {
+  if (documents.length === 0) return null;
+  if (hasPublishedResult(documents) && !staysOpenAfterAResult(title)) return null;
   if (noticesNameOnlyYearsBeforeLastYear(documents)) return null;
   return withNewestNoticeOnly(documents);
 }
@@ -292,8 +560,8 @@ function callDocumentsWorthRecording(documents: PageLink[]) {
  * On a listing a notice is what makes documents a call (Ponta Grossa, 2026-11-15: two decrees
  * under "Legislação"); a call page is one by its URL, recorded without one for the admin review.
  */
-function listedCallDocuments(documents: PageLink[]) {
-  const kept = callDocumentsWorthRecording(documents);
+function listedCallDocuments(documents: PageLink[], title?: string) {
+  const kept = callDocumentsWorthRecording(documents, title);
   const notice = kept?.find(isNotice);
   return kept && notice ? { kept, notice } : null;
 }
@@ -321,28 +589,18 @@ export function callsOfDocumentsOnListing(
   return [...byCall].flatMap(([key, { callNumber, documents: callDocuments }]) => {
     if (callNumber.kind === 'pregao' || isNumberedBeforeLastYear(callNumber)) return [];
     const recorded = listedCallDocuments(callDocuments);
-    if (!recorded) return [];
+    if (!recorded || !titleIsKept(source, recorded.notice.label)) return [];
     return [
       {
         externalId: key,
         title: recorded.notice.label,
         officialUrl: source.listingUrl,
         documents: recorded.kept,
+        // A listing of bare files printed no close (12 calls measured, 2026-11-18).
+        registrationCloses: null,
       },
     ];
   });
-}
-
-/**
- * Whether a heading titles a past call. Numbered, by the numbered rule (last year's stay: a
- * credenciamento 08/2025 is open to 2049). Unnumbered, it names an edition, past when every year
- * it names is ("CICLO NATALINO 2025", Spcine's "05/2019 | EDITAL…"): Recife (2026-11-17) lists 196
- * calls since 2019 and Spcine 57 since 2015, with no date on the page, each kept one a read.
- */
-function headingNamesAPastCall(heading: string) {
-  const callNumber = callNumberOf(heading);
-  if (callNumber) return isNumberedBeforeLastYear(callNumber);
-  return namesOnlyYearsBefore(heading, currentYear());
 }
 
 /** An accordion's indicator glyph before the title ("▸ 07/2026 | …"). */
@@ -356,11 +614,11 @@ export function callsOfDocumentsUnderHeadings(
   source: HeadingsSource,
   { html, url }: FetchedPage,
 ): OfficialPageCall[] {
-  const { headingClass } = source.discovery;
-  return sectionsOfHtml(html, url, headingClass).flatMap(({ heading: rawHeading, links }) => {
+  const { discovery } = source;
+  return sectionsOfHtml(html, url, discovery).flatMap(({ heading: rawHeading, links, text }) => {
     const heading = withoutLeadingSymbols(rawHeading);
-    if (!heading || headingNamesAPastCall(heading)) return [];
-    const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts));
+    if (!heading || !titleIsKept(source, heading) || titleNamesAPastCall(heading)) return [];
+    const recorded = listedCallDocuments(documentLinksOf(links, source.documentUrlParts), heading);
     if (!recorded) return [];
     return [
       {
@@ -368,6 +626,7 @@ export function callsOfDocumentsUnderHeadings(
         title: heading,
         officialUrl: source.listingUrl,
         documents: recorded.kept,
+        registrationCloses: registrationClosePrintedIn(text, source.timeZone),
       },
     ];
   });
