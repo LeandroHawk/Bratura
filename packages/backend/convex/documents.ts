@@ -16,6 +16,7 @@ import { requiredEnv } from './lib/env';
 import { sha256Hex } from './lib/sha256';
 import {
   documentsWorthReading,
+  queueOrder,
   readableRegistrationCloses,
   reasonToSkipReadingDocuments,
 } from './model/callNoticeDocuments/selection';
@@ -83,9 +84,8 @@ const ListDocumentsWorthReadingQueryArgsSchema = z.object({});
 const DocumentListSchema = z.array(DocumentToReadSchema);
 
 /**
- * The documents worth reading of the calls in the readable window, read or not, the calls closing
- * soonest first (they matter most to an alert), through the close-date index. None of a source
- * whose robots.txt disallows its files.
+ * The documents worth reading of the calls in the readable window, read or not, in `queueOrder`,
+ * through the close-date index. None of a source whose robots.txt disallows its files.
  */
 export const listDocumentsWorthReading = internalZodQuery({
   args: ListDocumentsWorthReadingQueryArgsSchema,
@@ -93,7 +93,7 @@ export const listDocumentsWorthReading = internalZodQuery({
   handler: async (ctx): Promise<DocumentToRead[]> => {
     const now = Date.now();
     const { from, to } = readableRegistrationCloses(now);
-    const closingSoonestFirst = await ctx.db
+    const withCloseDate = await ctx.db
       .query('callNotices')
       .withIndex('by_registration_closes', (index) =>
         index.gte('registrationCloses.at', from).lte('registrationCloses.at', to),
@@ -103,13 +103,7 @@ export const listDocumentsWorthReading = internalZodQuery({
       .query('callNotices')
       .withIndex('by_registration_closes', (index) => index.eq('registrationCloses.at', undefined))
       .collect();
-    const closedLatestFirst = await ctx.db
-      .query('callNotices')
-      .withIndex('by_registration_closes', (index) =>
-        index.gte('registrationCloses.at', 0).lt('registrationCloses.at', from),
-      )
-      .order('desc')
-      .collect();
+    const callNotices = [...withCloseDate, ...withoutCloseDate].sort(queueOrder(now));
 
     const filesDisallowedBySource = new Map<Id<'sources'>, boolean>();
     const filesDisallowed = async (sourceId: Id<'sources'>) => {
@@ -124,7 +118,7 @@ export const listDocumentsWorthReading = internalZodQuery({
     };
 
     const worthReading: DocumentToRead[] = [];
-    for (const callNotice of [...closingSoonestFirst, ...withoutCloseDate, ...closedLatestFirst]) {
+    for (const callNotice of callNotices) {
       if (reasonToSkipReadingDocuments(callNotice, now) !== null) continue;
       if (await filesDisallowed(callNotice.sourceId)) continue;
       for (const { url, role } of documentsWorthReading(

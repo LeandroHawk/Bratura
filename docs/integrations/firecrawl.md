@@ -77,7 +77,8 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   identifies is left for the admin review. Rules: `model/callNoticeDocuments/selection.ts`.
 - **A closed call is read last.** An official page that prints its close in a registration
   sentence ("inscrições … até 25 de novembro de 2026") gives the call its `registrationCloses` for
-  free (`model/officialPage/registrationClose.ts`), so a closed call waits behind every open one.
+  free (`model/officialPage/registrationClose.ts`), so a closed call waits behind every open one,
+  and one closed over a year ago is not read.
   Until 2026-11-20 it was not read at all; the user reversed that for product research, with
   credits to spare. A close written without its year is not used (Secec-RJ prints 11 of 13
   so). Measured 2026-11-18 on the 106 calls of the 40 sources read without Firecrawl: 30 print it,

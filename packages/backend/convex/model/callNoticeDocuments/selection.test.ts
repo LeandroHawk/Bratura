@@ -4,6 +4,8 @@ import {
   callNoticeDocumentRole,
   documentsWorthReading,
   postsResult,
+  queueOrder,
+  readableRegistrationCloses,
   reasonToSkipReadingDocuments,
 } from './selection';
 
@@ -389,5 +391,30 @@ describe('documentsWorthReading', () => {
       { url: `${mg}?download=1`, role: 'callNotice' },
       { url: `${mg}?download=2`, role: 'criteria' },
     ]);
+  });
+});
+
+describe('queueOrder', () => {
+  test('open calls closing soonest first, then undated ones, then closed ones, latest closed first', () => {
+    const calls = {
+      closedLongAgo: closingIn(-30 * day),
+      undated: null,
+      later: closingIn(30 * day),
+      closedYesterday: closingIn(-day),
+      sooner: closingIn(day),
+    };
+    const ordered = Object.entries(calls)
+      .map(([name, registrationCloses]) => ({ name, registrationCloses }))
+      .sort(queueOrder(now))
+      .map(({ name }) => name);
+    expect(ordered).toEqual(['sooner', 'later', 'undated', 'closedYesterday', 'closedLongAgo']);
+  });
+});
+
+describe('readableRegistrationCloses', () => {
+  test('reaches a year back for closed calls and a year ahead for open ones', () => {
+    const { from, to } = readableRegistrationCloses(now);
+    expect([from <= now - 364 * day, from > now - 366 * day]).toEqual([true, true]);
+    expect([to >= now + 364 * day, to < now + 366 * day]).toEqual([true, true]);
   });
 });

@@ -9,15 +9,36 @@ import { plainText } from '../../lib/text';
 // Which calls and which of their files are worth Firecrawl credits, decided before any read, from
 // the listing alone. Measured on 254 real files (2026-11-14): `docs/integrations/firecrawl.md`.
 
+/** How long a closed call stays readable: older ones stay out, so the scan stops growing. */
+const closedCallReadableForMs = 365 * 24 * 60 * 60 * 1000;
+
 /**
- * The closes read first, for the close-date index: those `callNoticeDeadline` calls `open`. A call
- * with no close date (`notInformed`) comes next, then closed calls, read for what calls ask (user,
- * 2026-11-20), each found apart.
+ * The closes worth reading, for the close-date index: open ones (up to `openEnded`) and those that
+ * closed in the last year. A call with no close date is read too, found apart.
  */
 export const readableRegistrationCloses = (now: number) => ({
-  from: now,
+  from: now - closedCallReadableForMs,
   to: now + openEndedRegistrationAfterMs,
 });
+
+/**
+ * The order both queues work in, reading and extraction: open calls closing soonest first (they
+ * matter most to an alert), then calls with no close date, then closed ones, latest closed first,
+ * read for what calls ask (user, 2026-11-20).
+ */
+export const queueOrder = (now: number) => {
+  type Closing = Pick<CallNotice, 'registrationCloses'>;
+  const rank = ({ registrationCloses }: Closing) =>
+    registrationCloses === null ? 1 : registrationCloses.at < now ? 2 : 0;
+  return (a: Closing, b: Closing) => {
+    const byRank = rank(a) - rank(b);
+    if (byRank !== 0 || a.registrationCloses === null || b.registrationCloses === null) {
+      return byRank;
+    }
+    const soonestFirst = a.registrationCloses.at - b.registrationCloses.at;
+    return rank(a) === 2 ? -soonestFirst : soonestFirst;
+  };
+};
 
 /**
  * Titles that are no call, compared without accents or case: drafts and tests, the accountability
