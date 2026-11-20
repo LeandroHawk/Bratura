@@ -79,11 +79,11 @@ Return one JSON object with exactly these keys:
      // period or a step of the schedule is not a rule.
      // EligibilityKind: "minimumAge", "maximumAge", "residenceTime" (minimum time living or
      // working in the place), "careerStage" (first work, emerging, newcomers only),
-     // "minimumExperience" (years of cultural activity), "priorAwardExclusion" (winners of
-     // earlier calls barred), "publicServantExclusion", "conflictOfInterest" (kinship, staff,
-     // reviewers and their relatives), "maxProposalsPerApplicant", "awardLimit" (at most N awards
-     // in this call, cycle or year), "workRestriction" (the work must be unpublished, new, not
-     // exhibited before, of a given length or format), "themeRestriction" (themes or
+     // "minimumExperience" (years of cultural activity), "awardRestriction" (winners of
+     // earlier calls barred, or at most N awards in this call, cycle or year),
+     // "publicServantExclusion", "conflictOfInterest" (kinship, staff, reviewers and their
+     // relatives), "maxProposalsPerApplicant", "workRestriction" (the work must be unpublished,
+     // new, not exhibited before, of a given length or format), "themeRestriction" (themes or
      // manifestations accepted or barred), "organizationRequirement" (an organization's years
      // of existence, capacity, network; consortia barred), "counterpart" (contrapartida the
      // selected must give), "other". "residenceTime" only when a minimum time is stated; a place
