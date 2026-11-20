@@ -2,11 +2,8 @@ import { convexTest } from 'convex-test';
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
-import {
-  chosenCallNoticesMax,
-  documentReadingLeaseMs,
-  documentsCheckedPerQuery,
-} from './documents';
+import { documentReadingLeaseMs, documentsCheckedPerQuery } from './documents';
+import { chosenCallNoticesMax, isClosedAsOf } from './model/callNoticeDocuments/selection';
 import schema from './schema';
 import { cearaMapasSource, federalMapasSource, piedadePnabSource } from './model/sources/registry';
 import { modules } from './test.setup';
@@ -28,7 +25,7 @@ type CallNoticeOptions = {
   registrationCloses?: ReturnType<typeof in9Days> | null;
   /** When ingestion first found the call; now when absent. */
   firstSeenAt?: number;
-  resultPostedWhenFirstSeen?: boolean;
+  resultPosted?: boolean;
 };
 
 async function addCallNotice(
@@ -38,7 +35,7 @@ async function addCallNotice(
     externalId = '8498',
     registrationCloses = in9Days(),
     firstSeenAt,
-    resultPostedWhenFirstSeen,
+    resultPosted,
   }: CallNoticeOptions = {},
 ) {
   const sourceId =
@@ -53,9 +50,13 @@ async function addCallNotice(
     documentUrls,
     registrationOpens: null,
     registrationCloses,
-    ...(resultPostedWhenFirstSeen !== undefined && { resultPostedWhenFirstSeen }),
+    ...(resultPosted !== undefined && { resultPosted }),
   });
-  if (firstSeenAt !== undefined) await t.run((ctx) => ctx.db.patch(callNoticeId, { firstSeenAt }));
+  // As if first recorded then: the flag `recordCallNotice` stores is the rule at that moment.
+  if (firstSeenAt !== undefined) {
+    const closedWhenFirstSeen = isClosedAsOf({ registrationCloses }, firstSeenAt);
+    await t.run((ctx) => ctx.db.patch(callNoticeId, { firstSeenAt, closedWhenFirstSeen }));
+  }
   return callNoticeId;
 }
 
@@ -227,19 +228,54 @@ describe('readPendingDocuments', () => {
   test('leaves out a call listed with a result already posted, though it prints no close', async () => {
     const t = convexTest(schema, modules);
     const urlOf = (id: string) => `${documentBase}/${id}/edital.pdf`;
-    for (const [externalId, resultPostedWhenFirstSeen] of [
+    for (const [externalId, resultPosted] of [
       ['resultPosted', true],
       ['noResult', false],
     ] as const) {
       await addCallNotice(t, {
         externalId,
         registrationCloses: null,
-        resultPostedWhenFirstSeen,
+        resultPosted,
         documentUrls: [urlOf(externalId)],
       });
     }
     const pending = await t.action(internal.documents.listDocumentsToRead, {});
     expect(pending.map(({ url }) => url)).toEqual([urlOf('noResult')]);
+  });
+
+  test('reads the stored flag, not the close: flagged rows stay out, rows from before the flag are judged by their close', async () => {
+    const t = convexTest(schema, modules);
+    const urlOf = (id: string) => `${documentBase}/${id}/edital.pdf`;
+    const closedYesterday = { ...in9Days(), at: Date.now() - day };
+    const stored = [
+      ['flaggedOpenByClose', in9Days(), true],
+      ['unflaggedClosedByClose', closedYesterday, false],
+      ['legacyOpen', in9Days(), undefined],
+      ['legacyClosed', closedYesterday, undefined],
+    ] as const;
+    for (const [externalId, registrationCloses, closedWhenFirstSeen] of stored) {
+      const callNoticeId = await addCallNotice(t, {
+        externalId,
+        registrationCloses,
+        documentUrls: [urlOf(externalId)],
+      });
+      await t.run((ctx) => ctx.db.patch(callNoticeId, { closedWhenFirstSeen }));
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url).sort()).toEqual(
+      [urlOf('legacyOpen'), urlOf('unflaggedClosedByClose')].sort(),
+    );
+  });
+
+  test('a call found closed comes back to the queue when its close is extended', async () => {
+    const t = convexTest(schema, modules);
+    const closedYesterday = { ...in9Days(), at: Date.now() - day };
+    await addCallNotice(t, { registrationCloses: closedYesterday, documentUrls: [mainNotice] });
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
+    await addCallNotice(t, { registrationCloses: in9Days(), documentUrls: [mainNotice] });
+    expect(
+      (await t.action(internal.documents.listDocumentsToRead, {})).map(({ url }) => url),
+    ).toEqual([mainNotice]);
   });
 
   test('a document past the first batch checked is still listed, the read ones before it not', async () => {

@@ -76,6 +76,12 @@ pnpm exec convex run documents:readPendingDocuments '{"creditCeiling":200}'
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10}'
 ```
 
+After deploying `closedWhenFirstSeen` (the queue's index), set it on older rows, until `done`:
+
+```bash
+pnpm exec convex run callNotices:backfillClosedWhenFirstSeen '{}'
+```
+
 A call closed when first seen is in neither queue; read and extract a sample picked by hand:
 
 ```bash

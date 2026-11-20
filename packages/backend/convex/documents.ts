@@ -14,8 +14,8 @@ import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server';
 import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
 import { requiredEnv } from './lib/env';
 import { sha256Hex } from './lib/sha256';
-import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import {
+  ChosenCallNoticeIdsSchema,
   closedWhenFirstSeen,
   documentsWorthReading,
   queueOrder,
@@ -123,8 +123,10 @@ async function documentsWorthReadingOf(
 const ListDocumentsWorthReadingQueryArgsSchema = z.object({});
 
 /**
- * The documents worth reading of the calls in the readable window, through the close-date index,
- * in `queueOrder`; none of a call closed when first seen (`closedWhenFirstSeen`).
+ * The documents worth reading of the calls in the readable window, in `queueOrder`: through the
+ * index on `closedWhenFirstSeen`, so a call closed when first seen is never loaded (a year of them
+ * would pass the 8 MiB a query reads). A row from before the flag (`undefined`, until the backfill
+ * runs) is read and checked by `closedWhenFirstSeen`.
  */
 export const listDocumentsWorthReading = internalZodQuery({
   args: ListDocumentsWorthReadingQueryArgsSchema,
@@ -132,29 +134,34 @@ export const listDocumentsWorthReading = internalZodQuery({
   handler: async (ctx): Promise<DocumentToRead[]> => {
     const now = Date.now();
     const { from, to } = readableRegistrationCloses(now);
-    const withCloseDate = await ctx.db
-      .query('callNotices')
-      .withIndex('by_registration_closes', (index) =>
-        index.gte('registrationCloses.at', from).lte('registrationCloses.at', to),
-      )
-      .collect();
-    const withoutCloseDate = await ctx.db
-      .query('callNotices')
-      .withIndex('by_registration_closes', (index) => index.eq('registrationCloses.at', undefined))
-      .collect();
-    const callNotices = [...withCloseDate, ...withoutCloseDate]
-      .filter((callNotice) => !closedWhenFirstSeen(callNotice))
-      .sort(queueOrder(now));
-    return documentsWorthReadingOf(ctx, callNotices, now);
+    const callNotices: Doc<'callNotices'>[] = [];
+    for (const closed of [false, undefined]) {
+      const byFlag = 'by_closed_when_first_seen_and_registration_closes';
+      callNotices.push(
+        ...(await ctx.db
+          .query('callNotices')
+          .withIndex(byFlag, (index) =>
+            index
+              .eq('closedWhenFirstSeen', closed)
+              .gte('registrationCloses.at', from)
+              .lte('registrationCloses.at', to),
+          )
+          .collect()),
+        ...(await ctx.db
+          .query('callNotices')
+          .withIndex(byFlag, (index) =>
+            index.eq('closedWhenFirstSeen', closed).eq('registrationCloses.at', undefined),
+          )
+          .collect()),
+      );
+    }
+    callNotices.sort(queueOrder(now));
+    // A flagged row is kept out by the index alone; only one from before the flag is judged here.
+    const unflaggedOpen = (callNotice: Doc<'callNotices'>) =>
+      callNotice.closedWhenFirstSeen !== undefined || !closedWhenFirstSeen(callNotice);
+    return documentsWorthReadingOf(ctx, callNotices.filter(unflaggedOpen), now);
   },
 });
-
-/** Call notices picked by hand per run: a sample of those closed when first seen. */
-export const chosenCallNoticesMax = 50;
-export const ChosenCallNoticeIdsSchema = z
-  .array(documentId('callNotices'))
-  .min(1)
-  .max(chosenCallNoticesMax);
 
 const ListChosenDocumentsWorthReadingQueryArgsSchema = z.object({
   callNoticeIds: ChosenCallNoticeIdsSchema,

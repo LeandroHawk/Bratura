@@ -145,15 +145,20 @@ describe('extractPendingCallNotices', () => {
 
   test('a call seen open and closed since is extracted too: what it asked still counts', async () => {
     const { t, callNoticeId } = await withReadCallNotice(-1);
-    await t.run((ctx) => ctx.db.patch(callNoticeId, { firstSeenAt: Date.now() - 10 * day }));
+    await t.run((ctx) =>
+      ctx.db.patch(callNoticeId, {
+        firstSeenAt: Date.now() - 10 * day,
+        closedWhenFirstSeen: false,
+      }),
+    );
     expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
       callNoticeId,
     ]);
   });
 
-  test('a call listed with a result already posted is extracted only when picked by hand', async () => {
+  test('a call stored as closed when first seen (a result posted, no close) is extracted only when picked by hand', async () => {
     const { t, callNoticeId } = await withReadCallNotice();
-    await t.run((ctx) => ctx.db.patch(callNoticeId, { resultPostedWhenFirstSeen: true }));
+    await t.run((ctx) => ctx.db.patch(callNoticeId, { closedWhenFirstSeen: true }));
     expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);
     expect(
       await t.action(internal.extraction.listCallNoticesToExtract, {

@@ -7,7 +7,6 @@ import { z } from 'zod';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import type { ActionCtx } from './_generated/server';
-import { ChosenCallNoticeIdsSchema } from './documents';
 import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
 import { requiredEnv } from './lib/env';
 import {
@@ -15,7 +14,11 @@ import {
   extractionPromptVersion,
   extractionTextFromDocuments,
 } from './model/callNoticeExtraction/prompt';
-import { closedWhenFirstSeen, queueOrder } from './model/callNoticeDocuments/selection';
+import {
+  ChosenCallNoticeIdsSchema,
+  closedWhenFirstSeen,
+  queueOrder,
+} from './model/callNoticeDocuments/selection';
 import { verifyExtractionAnswer } from './model/callNoticeExtraction/verify';
 import { generateJson } from './model/llm/generateJson';
 

@@ -3,7 +3,9 @@ import { describe, expect, test } from 'vitest';
 import {
   callNoticeDocumentRole,
   closedWhenFirstSeen,
+  closedWhenFirstSeenToStore,
   documentsWorthReading,
+  isClosedAsOf,
   postsResult,
   queueOrder,
   reasonToSkipReadingDocuments,
@@ -411,39 +413,77 @@ describe('queueOrder', () => {
   });
 });
 
-describe('closedWhenFirstSeen', () => {
+describe('isClosedAsOf', () => {
   test('a call found after its close, never one found open nor one with no close', () => {
+    expect(isClosedAsOf({ registrationCloses: closingIn(-day) }, now)).toBe(true);
+    expect(isClosedAsOf({ registrationCloses: closingIn(-day) }, now - 2 * day)).toBe(false);
+    expect(isClosedAsOf({ registrationCloses: null }, now)).toBe(false);
+  });
+
+  test('a call with a result posted, even with no close or a later one', () => {
+    for (const registrationCloses of [null, closingIn(day)]) {
+      expect(isClosedAsOf({ registrationCloses, resultPosted: true }, now)).toBe(true);
+      expect(isClosedAsOf({ registrationCloses, resultPosted: false }, now)).toBe(false);
+    }
+  });
+});
+
+describe('closedWhenFirstSeen', () => {
+  test('reads the stored flag, whatever the close says', () => {
+    const stored = { registrationCloses: closingIn(-day), firstSeenAt: now };
+    expect(closedWhenFirstSeen({ ...stored, closedWhenFirstSeen: false })).toBe(false);
+    expect(
+      closedWhenFirstSeen({ ...stored, registrationCloses: null, closedWhenFirstSeen: true }),
+    ).toBe(true);
+  });
+
+  test('a row from before the flag, by its close alone', () => {
     expect(closedWhenFirstSeen({ registrationCloses: closingIn(-day), firstSeenAt: now })).toBe(
       true,
     );
-    expect(
-      closedWhenFirstSeen({ registrationCloses: closingIn(-day), firstSeenAt: now - 2 * day }),
-    ).toBe(false);
     expect(closedWhenFirstSeen({ registrationCloses: null, firstSeenAt: now })).toBe(false);
   });
+});
 
-  test('a close moved past the day it was first seen (an extension) makes it readable', () => {
-    expect(closedWhenFirstSeen({ registrationCloses: closingIn(day), firstSeenAt: now })).toBe(
+describe('closedWhenFirstSeenToStore', () => {
+  const known = (closedWhenFirstSeen?: boolean) => ({
+    registrationCloses: closingIn(-day),
+    firstSeenAt: now - 10 * day,
+    ...(closedWhenFirstSeen !== undefined && { closedWhenFirstSeen }),
+  });
+
+  test('a new call: the rule at this moment', () => {
+    expect(closedWhenFirstSeenToStore({ registrationCloses: closingIn(-day) }, null, now)).toBe(
+      true,
+    );
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: null, resultPosted: true }, null, now),
+    ).toBe(true);
+    expect(closedWhenFirstSeenToStore({ registrationCloses: closingIn(day) }, null, now)).toBe(
       false,
     );
   });
 
-  test('a call listed with a result already posted, even with no close or a later one', () => {
-    for (const registrationCloses of [null, closingIn(day)]) {
-      expect(
-        closedWhenFirstSeen({
-          registrationCloses,
-          firstSeenAt: now,
-          resultPostedWhenFirstSeen: true,
-        }),
-      ).toBe(true);
-      expect(
-        closedWhenFirstSeen({
-          registrationCloses,
-          firstSeenAt: now,
-          resultPostedWhenFirstSeen: false,
-        }),
-      ).toBe(false);
-    }
+  test('one found open stays so, closed since or posting a result: it is read last', () => {
+    const closedNow = { registrationCloses: closingIn(-20 * day), resultPosted: true };
+    expect(closedWhenFirstSeenToStore(closedNow, known(false), now)).toBe(false);
+  });
+
+  test('one found closed reopens when its close moves past the day it was found, unless a result is posted', () => {
+    const extended = { registrationCloses: closingIn(day) };
+    expect(closedWhenFirstSeenToStore(extended, known(true), now)).toBe(false);
+    expect(closedWhenFirstSeenToStore({ ...extended, resultPosted: true }, known(true), now)).toBe(
+      true,
+    );
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: closingIn(-20 * day) }, known(true), now),
+    ).toBe(true);
+  });
+
+  test('a row from before the flag: by its close alone, a result posted since not counted', () => {
+    const open = { ...known(), registrationCloses: closingIn(day) };
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: null, resultPosted: true }, open, now),
+    ).toBe(false);
   });
 });

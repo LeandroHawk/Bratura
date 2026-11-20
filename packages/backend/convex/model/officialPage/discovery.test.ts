@@ -145,7 +145,7 @@ describe('callsOfCallPages', () => {
           },
         ],
         registrationCloses: null,
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
     ]);
   });
@@ -273,7 +273,7 @@ describe('callsOfCallPages', () => {
           },
         ],
         registrationCloses: null,
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
     ]);
   });
@@ -400,10 +400,7 @@ describe('callsOfCallPages', () => {
       ].join(''),
     });
     expect(
-      (await callsOf(paraFcpSource)).map(({ title, resultPostedWhenFirstSeen }) => [
-        title,
-        resultPostedWhenFirstSeen,
-      ]),
+      (await callsOf(paraFcpSource)).map(({ title, resultPosted }) => [title, resultPosted]),
     ).toEqual([['Edital Semear 2026', true]]);
   });
 
@@ -747,7 +744,7 @@ describe('callsOfCallPages', () => {
           },
         ],
         registrationCloses: null,
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
       {
         externalId: `${site}/site/edital-documento/31`,
@@ -765,7 +762,7 @@ describe('callsOfCallPages', () => {
           timeZone: rioBrancoCulturaSource.timeZone,
           precision: 'day',
         },
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
     ]);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
@@ -880,7 +877,7 @@ describe('callsOfCallPages', () => {
           },
         ],
         registrationCloses: null,
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
     ]);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
@@ -964,7 +961,7 @@ describe('callsOfCallPages', () => {
           },
         ],
         registrationCloses: null,
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
     ]);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
@@ -998,13 +995,11 @@ describe('callsOfCallPages', () => {
     });
 
     expect(
-      (await callsOf(museuDoIndioCallsSource)).map(
-        ({ title, documents, resultPostedWhenFirstSeen }) => [
-          title,
-          documents.length,
-          resultPostedWhenFirstSeen,
-        ],
-      ),
+      (await callsOf(museuDoIndioCallsSource)).map(({ title, documents, resultPosted }) => [
+        title,
+        documents.length,
+        resultPosted,
+      ]),
     ).toEqual([
       ['Credenciamento Associações Culturais', 2, undefined],
       ['Uso de Espaços', 2, true],
@@ -1353,7 +1348,7 @@ describe('callsOfDocumentsOnListing', () => {
           { url: url(5055), label: 'Resultado FEC e Edital atualizado - Edital 01' },
         ],
         registrationCloses: null,
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
     ]);
   });
@@ -1442,7 +1437,7 @@ describe('callsOfDocumentsUnderHeadings', () => {
           },
         ],
         registrationCloses: null,
-        resultPostedWhenFirstSeen: true,
+        resultPosted: true,
       },
     ]);
   });

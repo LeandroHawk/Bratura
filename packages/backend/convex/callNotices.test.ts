@@ -58,21 +58,33 @@ describe('recordCallNotice', () => {
     expect(stored[0]?.title).toBe('Edital de Difusão Cultural 2026 (retificado)');
   });
 
-  test('whether a result was posted is kept from the first read: one found open stays queued', async () => {
+  test('stores whether the call was closed when first seen: an open one stays open, a closed one reopens on an extension', async () => {
     const { t, sourceId } = await withSource();
-    const resultPostedOf = async (externalId: string) =>
+    const flagOf = async (externalId: string) =>
       (await t.run((ctx) => ctx.db.query('callNotices').collect())).find(
         (stored) => stored.externalId === externalId,
-      )?.resultPostedWhenFirstSeen;
+      )?.closedWhenFirstSeen;
     const open = listing(sourceId);
-    await t.mutation(recordCallNotice, { ...open, resultPostedWhenFirstSeen: false });
-    await t.mutation(recordCallNotice, { ...open, resultPostedWhenFirstSeen: true });
-    expect(await resultPostedOf(open.externalId)).toBe(false);
+    await t.mutation(recordCallNotice, open);
+    await t.mutation(recordCallNotice, { ...open, resultPosted: true });
+    expect(await flagOf(open.externalId)).toBe(false);
 
-    const closed = { ...listing(sourceId), externalId: '4322' };
-    await t.mutation(recordCallNotice, { ...closed, resultPostedWhenFirstSeen: true });
+    const withResult = { ...listing(sourceId), externalId: '4322', resultPosted: true };
+    await t.mutation(recordCallNotice, withResult);
+    expect(await flagOf('4322')).toBe(true);
+
+    const closed = {
+      ...listing(sourceId),
+      externalId: '4323',
+      registrationCloses: inFortaleza(Date.now() - 1000, 'minute'),
+    };
     await t.mutation(recordCallNotice, closed);
-    expect(await resultPostedOf(closed.externalId)).toBe(true);
+    expect(await flagOf('4323')).toBe(true);
+    await t.mutation(recordCallNotice, {
+      ...closed,
+      registrationCloses: listing(sourceId).registrationCloses,
+    });
+    expect(await flagOf('4323')).toBe(false);
   });
 
   test('tracking comes from the server, never from the caller', async () => {
@@ -140,5 +152,39 @@ describe('recordCallNotice', () => {
         sourceId: callNoticeId,
       }),
     ).rejects.toThrow(/sourceId|Validator|table/i);
+  });
+});
+
+describe('backfillClosedWhenFirstSeen', () => {
+  test('sets the flag on rows recorded before it, by their close, through its index', async () => {
+    const { t, sourceId } = await withSource();
+    const now = Date.now();
+    const row = (externalId: string, closesAt: number | null) => ({
+      ...listing(sourceId),
+      externalId,
+      registrationOpens: null,
+      registrationCloses: closesAt === null ? null : inFortaleza(closesAt, 'minute'),
+      firstSeenAt: now,
+      lastSeenAt: now,
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.insert('callNotices', row('closed', now - 1000));
+      await ctx.db.insert('callNotices', row('open', now + 1000));
+      await ctx.db.insert('callNotices', row('undated', null));
+    });
+    expect(await t.mutation(internal.callNotices.backfillClosedWhenFirstSeen, {})).toEqual({
+      updated: 3,
+      done: true,
+    });
+    const stored = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(Object.fromEntries(stored.map((s) => [s.externalId, s.closedWhenFirstSeen]))).toEqual({
+      closed: true,
+      open: false,
+      undated: false,
+    });
+    expect(await t.mutation(internal.callNotices.backfillClosedWhenFirstSeen, {})).toEqual({
+      updated: 0,
+      done: true,
+    });
   });
 });

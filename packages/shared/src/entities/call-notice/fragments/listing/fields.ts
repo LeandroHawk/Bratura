@@ -59,7 +59,7 @@ export const CallNoticeListingFields = z.object({
   /** The text of each document's link, where the source gives one apart from the file name (an
    * official page: "Edital FEC 02/2026 - Retificado em 10/11/26"). Absent for Mapas Culturais. */
   documentLabels: z.array(CallNoticeDocumentLabelSchema).max(callNoticeDocumentUrlsMax).optional(),
-  /** An official page already posted a result (closed, often with no close printed) when the call
-   * was first listed; a known call keeps its first value. Absent for Mapas Culturais. */
-  resultPostedWhenFirstSeen: z.boolean().optional(),
+  /** An official page posts a result for it (closed, often with no close printed). Absent for
+   * Mapas Culturais. Feeds the tracking's `closedWhenFirstSeen`. */
+  resultPosted: z.boolean().optional(),
 });

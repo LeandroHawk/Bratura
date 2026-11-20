@@ -60,7 +60,7 @@ const callPagesBudgetMs = 5 * 60_000;
 /**
  * A call whose page or listing already posts results is past its registration (Bahia, 2026-11-15:
  * 25 of 28 pages; the 3 without were the newest, 2 open). It is recorded for the year's volume as
- * `resultPostedWhenFirstSeen`, which keeps it out of the read and extraction queues.
+ * `resultPosted`, which keeps it out of the read and extraction queues.
  */
 const hasPublishedResult = (documents: PageLink[]) =>
   documents.some(({ url, label }) => postsResult(url, label));
@@ -597,8 +597,7 @@ function listedCallDocuments(documents: PageLink[], title?: string) {
 }
 
 /** The flag a call with a result posted is recorded with (`closedWhenFirstSeen`). */
-const resultPostedField = (resultPosted: boolean) =>
-  resultPosted ? { resultPostedWhenFirstSeen: true } : {};
+const resultPostedField = (resultPosted: boolean) => (resultPosted ? { resultPosted: true } : {});
 
 /**
  * One hop: the listing's documents, grouped by the call their link names, an unnumbered one going

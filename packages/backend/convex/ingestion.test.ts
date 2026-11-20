@@ -238,7 +238,7 @@ describe('the run lease', () => {
 describe('ingestOfficialPage', () => {
   const docs = 'https://cultura.ma.gov.br/uploads/secma/docs';
 
-  test('records each call the listing names, with its documents and their link text', async () => {
+  test('records each call the listing names, with its documents and their link text; one posting a result as closed when first seen', async () => {
     vi.useFakeTimers({ now: Date.UTC(2026, 10, 15) });
     const html = [
       `<a href="${docs}/EDITAL_CHAMAMENTO_04_2026.pdf">EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA</a>`,
@@ -267,6 +267,14 @@ describe('ingestOfficialPage', () => {
           },
         ],
         registrationCloses: null,
+        closedWhenFirstSeen: false,
+      },
+      {
+        externalId: 'selecao 3/2026',
+        title: 'EDITAL DE SELEÇÃO PÚBLICA Nº 03/2026',
+        registrationCloses: null,
+        resultPosted: true,
+        closedWhenFirstSeen: true,
       },
     ]);
   });

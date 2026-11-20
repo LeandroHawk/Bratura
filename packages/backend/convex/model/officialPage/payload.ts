@@ -14,7 +14,7 @@ import { z } from 'zod';
 export const OfficialPageCallSchema = CallNoticeListingFields.pick({
   externalId: true,
   officialUrl: true,
-  resultPostedWhenFirstSeen: true,
+  resultPosted: true,
 })
   .extend({
     title: z.string(),
