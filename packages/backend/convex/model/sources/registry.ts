@@ -2608,13 +2608,16 @@ export const rioGrandeDoSulSedacCallsSource = {
  * São Luís-MA's Secult (Instar, read as Piedade): its page links one page per call. Robots
  * disallows the root `/editais/` and `/portal/download/`, where the files sit: linked, never read.
  * Measured 2026-11-19: 6 calls, mostly festivities (Feira do Livro, Réveillon 2027) and a
- * reviewers' credenciamento. Terms: "reprodução não comercial" only for the news area.
+ * reviewers' credenciamento. Terms: "reprodução não comercial" only for the news area. Answers
+ * HTTP 403 to Convex (US East) and 200 from Brazil (2026-11-20, Firecrawl `location: BR`, 1
+ * credit): read through Firecrawl from Brazil.
  */
 export const saoLuisSecultCallsSource = {
   kind: 'officialPage',
   slug: 'sao-luis-secult',
   name: 'São Luís — Secult',
   isActive: true,
+  answersOnlyFromBrazil: true,
   robotsCheckedOn: '2026-11-19',
   termsCheckedOn: '2026-11-19',
   listingUrl:
