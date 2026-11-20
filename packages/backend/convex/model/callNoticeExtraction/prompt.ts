@@ -39,8 +39,9 @@ Return one JSON object with exactly these keys:
      // even when the notice lists dozens. Go through EVERY section before answering: registration
      // (inscrição), qualification (habilitação), contracting and payment (contratação), and each
      // annex; a list repeated for each applicant type gives one item per type, each with its own
-     // quote. Missing a section is the worst error. "detail": what
-     // the notice asks, in its own words, with any condition (minimum years, validity, format).
+     // quote. Missing a section is the worst error.
+     // "detail": what the notice asks, in its own words, with any condition (minimum years,
+     // validity, format).
      // "appliesTo": the applicant types it is asked from when the notice limits it ("se for
      // coletivo sem CNPJ" -> ["collectiveWithoutCnpj"]), null when it is asked from everyone.
      // "stage": "registration" when sent to apply; "afterSelection" when asked only from
@@ -54,25 +55,26 @@ Return one JSON object with exactly these keys:
      //   activity), "curriculum" (CV, artistic history), "workSamples" (video, audio, photos,
      //   links to the work), "technicalRider", "educationProof" (diploma, enrollment,
      //   certificate), "priorParticipationProof" (earlier editions or cycles);
-     //  project: "projectProposal" (work plan, proposal, synopsis, logline, script, director's statement,
-     //   lesson or course plan, programming, briefing, schedule), "budget"
-     //   (budget, cost sheet, application plan), "teamList" (technical sheet, team),
-     //   "letterOfConsent" (consent of a venue, institution or invited professional);
-     //  "workRights" (registration of the work, intellectual property or usage authorization,
-     //   exclusivity contract with the artist), "agreementTerm" (execution term, contract or
-     //   commitment the selected sign);
+     //  project: "projectProposal" (work plan, proposal, synopsis, logline, script, director's
+     //   statement, lesson or course plan, programming, briefing, schedule), "budget" (budget,
+     //   cost sheet, application plan), "teamList" (technical sheet, team), "letterOfConsent"
+     //   (consent of a venue, institution or invited professional), "workRights" (registration
+     //   of the work, intellectual property or usage authorization, exclusivity contract with
+     //   the artist), "agreementTerm" (execution term, contract or commitment the selected sign);
      //  group and organization: "groupRepresentation" (a collective's representation
      //   declaration), "cnpjOrMei" (CNPJ card, CCMEI), "organizationRecords" (bylaws, minutes,
      //   social contract, list of directors), "institutionalCapacity" (facilities, technical
      //   capacity), "taxAndLaborClearance" (certidões negativas, FGTS, INSS);
      //  declarations and forms: "registrationForm", "affirmativeActionDeclaration"
-     //   (self-declaration for quotas, or its proof: medical report, community belonging letter), "noImpedimentDeclaration" (not a public servant, no kinship
-     //   or conflict, no minors employed, not barred from contracting), "truthfulnessDeclaration" (truth, awareness, acceptance of the notice),
-     //   "imageRightsAuthorization", "federalQuestionnaire" (MinC's IN questionnaire),
-     //   "healthDeclaration" (health or physical fitness);
-     //  prerequisites: "registryPrerequisite" (a prior cultural, municipal or business registry), "artisanCredential"
-     //   (SICAB, SUTACO), "incentiveProjectApproval" (PRONAC, Salic, Rouanet),
-     //   "invitationOrEventProof";
+     //   (self-declaration for quotas, or its proof: medical report, community belonging
+     //   letter), "noImpedimentDeclaration" (not a public servant, no kinship or conflict, no
+     //   minors employed, not barred from contracting), "truthfulnessDeclaration" (truth,
+     //   awareness, acceptance of the notice), "imageRightsAuthorization",
+     //   "federalQuestionnaire" (MinC's IN questionnaire), "healthDeclaration" (health or
+     //   physical fitness);
+     //  prerequisites: "registryPrerequisite" (a prior cultural, municipal or business
+     //   registry), "artisanCredential" (SICAB, SUTACO), "incentiveProjectApproval" (PRONAC,
+     //   Salic, Rouanet), "invitationOrEventProof";
      //  "other". Use ONLY these kinds, spelled exactly.
   "eligibilityRules": [ { "kind": EligibilityKind, "detail": string, "quote": string } ],
      // every rule on WHO or WHAT may apply that is not a document: one item per rule. A date, a
