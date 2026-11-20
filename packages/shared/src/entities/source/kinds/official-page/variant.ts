@@ -112,7 +112,8 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     headingClass: cssClassName.optional(),
     /**
-     * A `headingClass` element's title is its text before its first link: a table row titles its
+     * A heading other than `<h1-6>` (`headingClass`, `boldParagraphIsHeading`) is titled by its
+     * text before its first link: a table row titles its
      * call and also holds the notice's link and a status (FCMS, 2026-11-20: `<tr
      * class="consulta-row">` … "Acessar proposta Em andamento"), which would rename the call on
      * every status change.

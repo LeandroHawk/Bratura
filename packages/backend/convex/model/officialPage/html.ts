@@ -154,7 +154,8 @@ type OtherHeadings = Pick<
  * An element of `headingClass` is a heading too: accordions title their items with a button or
  * an in-page link (Recife `accordion-toggle`, Spcine `x-acc-header`), never an `<h1-6>`. So is a
  * paragraph that opens in bold, with `boldParagraphIsHeading` (RS Sedac). With
- * `headingEndsAtFirstLink`, a `headingClass` element is titled by its text before its first link.
+ * `headingEndsAtFirstLink`, a heading other than `<h1-6>` is titled by its text before its first
+ * link.
  * A link opened inside another ends it, as a browser's parser does: Campo Grande's Fundac
  * (2026-11-20) wraps its call cards' links in a block link, whose `</a>` would swallow them.
  */
