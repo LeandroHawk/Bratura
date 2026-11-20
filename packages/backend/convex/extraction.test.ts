@@ -148,6 +148,23 @@ describe('extractPendingCallNotices', () => {
     expect(await extractPending(t)).toMatchObject({ extracted: 1 });
   });
 
+  test('a call whose input cannot be built is skipped and counted; the run goes on to the next', async () => {
+    const { t, callNoticeId: broken } = await withReadCallNotice(2);
+    await withReadCallNotice(9, 0, t);
+    // A read document left with no text anywhere (an out-of-band edit): its call comes first.
+    await t.run(async (ctx) => {
+      const documents = await ctx.db.query('callNoticeDocuments').collect();
+      const document = documents.find((stored) => stored.callNoticeId === broken)!;
+      const texts = await ctx.db.query('callNoticeDocumentTexts').collect();
+      const text = texts.find((stored) => stored.callNoticeDocumentId === document._id)!;
+      await ctx.db.delete(text._id);
+    });
+    modelAnswers({});
+    expect(await extractPending(t)).toMatchObject({ extracted: 1, failed: 1, left: 0 });
+    const extracted = await extractionsOf(t);
+    expect(extracted.map(({ callNoticeId }) => callNoticeId)).not.toContain(broken);
+  });
+
   test('a call seen open and closed since is extracted too: what it asked still counts', async () => {
     const { t, callNoticeId } = await withReadCallNotice(-1);
     await t.run((ctx) =>
