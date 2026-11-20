@@ -1276,20 +1276,24 @@ export const clovisSalgadoFoundationSource = {
 } satisfies Source;
 
 /**
- * Mato Grosso do Sul's culture foundation (FCMS), "Consultas": a table, one row per call, the name
- * in "Assunto" and the file linked as "Acessar proposta". Off (measured 2026-11-18): the menu's
- * `<script>` is never closed, so the table is script text to the reader (and to a browser); and
- * a row-per-call listing has no reader. 8 rows, 2 "Em andamento" (Prêmio Guadakan, 26/2026).
+ * Mato Grosso do Sul's culture foundation (FCMS), "Consultas": a table, one `consulta-row` per
+ * call, the name in "Assunto", the file linked as "Acessar proposta" beside the status, then an
+ * "Observação" row with annexes and results. Off on 2026-11-18 (the menu's `<script>` was never
+ * closed); closed since, so read by its rows (2026-11-20: 4 calls, 7 of 8 rows readable).
  */
 export const matoGrossoDoSulFcmsSource = {
   kind: 'officialPage',
   slug: 'fcms-consultas',
   name: 'FCMS — consultas de editais',
-  isActive: false,
-  robotsCheckedOn: '2026-11-18',
-  termsCheckedOn: '2026-11-18',
+  isActive: true,
+  robotsCheckedOn: '2026-11-20',
+  termsCheckedOn: '2026-11-20',
   listingUrl: 'https://www.fundacaodecultura.ms.gov.br/informativos/consultas/',
-  discovery: { hops: 'documentsOnListing' },
+  discovery: {
+    hops: 'documentsUnderHeadings',
+    headingClass: 'consulta-row',
+    headingEndsAtFirstLink: true,
+  },
   documentUrlParts: ['/wp-content/uploads/'],
   timeZone: ianaTimeZone.parse('America/Campo_Grande'),
 } satisfies Source;
@@ -1950,19 +1954,25 @@ export const florianopolisFranklinCascaesSource = {
 } satisfies Source;
 
 /**
- * Campo Grande Fundac: `/fundac/` redirected to tourism (2026-11-16) and failed once, then answered
- * in 4 s (2026-11-18); its parts are unmeasured. Applications are on `maiscultura-editais`. Off
- * until measured.
+ * Campo Grande Fundac (MS capital): image cards with no text, one per call page ("FMIC 2026"),
+ * each titled in a `wp-block-post-title` heading, files on its CDN. The cards sit inside a block
+ * link, read since links close each other (2026-11-20: 6 calls of 2026). Applications are on
+ * `maiscultura-editais`. Robots allow all; no terms page; the CDN's `robots.txt` is 404.
  */
 export const campoGrandeFundacSource = {
   kind: 'officialPage',
   slug: 'campo-grande-fundac',
   name: 'Campo Grande — Fundac',
-  isActive: false,
-  robotsCheckedOn: '2026-11-16',
-  termsCheckedOn: '2026-11-16',
+  isActive: true,
+  robotsCheckedOn: '2026-11-20',
+  termsCheckedOn: '2026-11-20',
   listingUrl: 'https://www.campogrande.ms.gov.br/fundac/',
-  discovery: { hops: 'callPage', callPageUrlParts: ['-2026/', '/edital-'] },
+  discovery: {
+    hops: 'callPage',
+    callPageUrlParts: ['-2026/', '/edital-'],
+    callTitleOnCallPage: true,
+    callPageTitleClass: 'wp-block-post-title',
+  },
   documentUrlParts: ['cdn.campogrande.ms.gov.br'],
   timeZone: ianaTimeZone.parse('America/Campo_Grande'),
 } satisfies Source;
