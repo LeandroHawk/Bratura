@@ -46,7 +46,9 @@ The team's draft of this flow also stored an embedding per call; matching is rul
    scrape: an unchanged page spends no Gemini call; an amended deadline triggers a new extraction and
    an alert ("o prazo mudou").
 4. **Provenance.** Store with each call notice the `sourceUrl`, `scrapedAt`, the Markdown hash and
-   the verbatim quote per extracted field.
+   the verbatim quote per extracted field. The Markdown itself goes to `callNoticeDocumentTexts`,
+   one row per read document, apart from the small row the queues read (`docs/architecture.md`,
+   The database is Convex).
 5. **Long batches without hitting Convex action limits.** Async `/batch/scrape` or `/crawl` with a
    **webhook** (`page`, `completed`) into a Convex HTTP action in `http.ts`. This postpones the
    `apps/crawler` worker of `docs/architecture.md` §1.

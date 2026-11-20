@@ -1,11 +1,15 @@
 import {
-  callNoticeDocumentMarkdownMax,
   FailedCallNoticeDocumentSchema,
   ReadCallNoticeDocumentSchema,
   type CallNoticeDocument,
   type CallNoticeDocumentFailure,
 } from '@bratura/shared/entities/call-notice-document/entity';
 import { CallNoticeDocumentIdentityFields } from '@bratura/shared/entities/call-notice-document/fragments/identity/fields';
+import {
+  callNoticeDocumentMarkdownMax,
+  CallNoticeDocumentTextSchema,
+  type CallNoticeDocumentText,
+} from '@bratura/shared/entities/call-notice-document-text/entity';
 import { SourceAccessFields } from '@bratura/shared/entities/source/fragments/access/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
@@ -31,9 +35,9 @@ import {
 } from './model/firecrawl/client';
 
 // Reading call notices' documents as Markdown, by hand: what is left to read, the reservation and
-// the result (the only writer of `callNoticeDocuments`), and the read loop. Which calls and files
-// are worth credits: `model/callNoticeDocuments/selection.ts`. Return types are written out: this
-// module calls its own functions through `internal`.
+// the result (the only writer of `callNoticeDocuments` and `callNoticeDocumentTexts`), and the read
+// loop. Which calls and files are worth credits: `model/callNoticeDocuments/selection.ts`. Return
+// types are written out: this module calls its own functions through `internal`.
 
 /**
  * Failures that would repeat at the same cost (an image-only PDF has no text however often it is
@@ -186,8 +190,8 @@ export const listChosenDocumentsWorthReading = internalZodQuery({
 });
 
 /**
- * Documents checked per query: a read one carries its Markdown (up to 900 kB, so 15 stay under
- * Convex's 16 MiB read limit); one query that checked them all read 14 MB on 2026-11-19.
+ * Documents checked per query: a row not yet moved by `moveDocumentTextsToOwnTable` carries its
+ * Markdown (up to 900 kB, so 15 stay under Convex's 16 MiB read limit).
  */
 export const documentsCheckedPerQuery = 15;
 
@@ -243,14 +247,53 @@ export const listDocumentsToRead = internalZodAction({
   handler: (ctx): Promise<DocumentToRead[]> => documentsToRead(ctx),
 });
 
-// The only writer of `callNoticeDocuments` --------------------------------------------------------
+// The only writer of `callNoticeDocuments` and `callNoticeDocumentTexts` --------------------------
 
-/** The read itself goes to the URL as listed today: only that one carries a valid nonce. */
-async function replaceDocument(ctx: MutationCtx, listed: CallNoticeDocument) {
+const storedText = (ctx: QueryCtx, callNoticeDocumentId: Id<'callNoticeDocuments'>) =>
+  ctx.db
+    .query('callNoticeDocumentTexts')
+    .withIndex('by_call_notice_document', (index) =>
+      index.eq('callNoticeDocumentId', callNoticeDocumentId),
+    )
+    .unique();
+
+/**
+ * A read document's text, for the one reader that needs it (extraction): from its own table, or
+ * from the row itself while `moveDocumentTextsToOwnTable` has not moved it.
+ */
+export async function textOfReadDocument(
+  ctx: QueryCtx,
+  document: Doc<'callNoticeDocuments'> & { status: 'read' },
+): Promise<string> {
+  if (document.markdown !== undefined) return document.markdown;
+  const text = await storedText(ctx, document._id);
+  if (!text) throw new Error(`Read document ${document._id} has no text`);
+  return text.markdown;
+}
+
+async function replaceText(ctx: MutationCtx, text: CallNoticeDocumentText) {
+  const known = await storedText(ctx, text.callNoticeDocumentId);
+  if (known) await ctx.db.replace(known._id, text);
+  else await ctx.db.insert('callNoticeDocumentTexts', text);
+}
+
+/**
+ * The read itself goes to the URL as listed today: only that one carries a valid nonce. A read
+ * replaced by any other status loses its text, so a text row always belongs to a read document.
+ */
+async function replaceDocument(
+  ctx: MutationCtx,
+  listed: CallNoticeDocument,
+): Promise<Id<'callNoticeDocuments'>> {
   const document = { ...listed, url: documentKeyUrl(listed.url) };
   const known: Doc<'callNoticeDocuments'> | null = await knownDocument(ctx, document);
-  if (known) await ctx.db.replace(known._id, document);
-  else await ctx.db.insert('callNoticeDocuments', document);
+  if (!known) return ctx.db.insert('callNoticeDocuments', document);
+  await ctx.db.replace(known._id, document);
+  if (known.status === 'read' && document.status !== 'read') {
+    const text = await storedText(ctx, known._id);
+    if (text) await ctx.db.delete(text._id);
+  }
+  return known._id;
 }
 
 const ReserveDocumentReadMutationArgsSchema = DocumentToReadSchema;
@@ -274,15 +317,21 @@ export const reserveDocumentRead = internalZodMutation({
 const RecordDocumentReadMutationArgsSchema = ReadCallNoticeDocumentSchema.omit({
   status: true,
   readAt: true,
-});
+  markdown: true,
+}).extend(CallNoticeDocumentTextSchema.pick({ markdown: true }).shape);
 const RecordDocumentReadMutationReturnsSchema = z.null();
 
-/** Stores a reserved document's Markdown. */
+/** Stores a reserved document as read, and its Markdown in `callNoticeDocumentTexts`. */
 export const recordDocumentRead = internalZodMutation({
   args: RecordDocumentReadMutationArgsSchema,
   returns: RecordDocumentReadMutationReturnsSchema,
-  handler: async (ctx, document) => {
-    await replaceDocument(ctx, { ...document, status: 'read', readAt: Date.now() });
+  handler: async (ctx, { markdown, ...document }) => {
+    const callNoticeDocumentId = await replaceDocument(ctx, {
+      ...document,
+      status: 'read',
+      readAt: Date.now(),
+    });
+    await replaceText(ctx, { callNoticeDocumentId, markdown });
     return null;
   },
 });
@@ -300,6 +349,44 @@ export const recordDocumentFailure = internalZodMutation({
   handler: async (ctx, document) => {
     await replaceDocument(ctx, { ...document, status: 'failed', failedAt: Date.now() });
     return null;
+  },
+});
+
+/**
+ * Text moved per run, in UTF-8 bytes: the run reads and writes about this much (one row may pass it
+ * by 900 kB), far under a mutation's 16 MiB.
+ */
+export const documentTextsMovedPerRunBytes = 4 * 1024 * 1024;
+
+const MoveDocumentTextsToOwnTableMutationArgsSchema = z.object({});
+const MoveDocumentTextsToOwnTableMutationReturnsSchema = z.object({
+  moved: z.int().nonnegative(),
+  done: z.boolean(),
+});
+
+/**
+ * Moves read documents' Markdown from their row to `callNoticeDocumentTexts`, a batch per run.
+ * Once after deploying the table; run again until `done`:
+ * `pnpm exec convex run documents:moveDocumentTextsToOwnTable '{}'`.
+ */
+export const moveDocumentTextsToOwnTable = internalZodMutation({
+  args: MoveDocumentTextsToOwnTableMutationArgsSchema,
+  returns: MoveDocumentTextsToOwnTableMutationReturnsSchema,
+  handler: async (ctx) => {
+    let moved = 0;
+    let bytesMoved = 0;
+    const read = ctx.db
+      .query('callNoticeDocuments')
+      .withIndex('by_status', (index) => index.eq('status', 'read'));
+    for await (const document of read) {
+      if (document.status !== 'read' || document.markdown === undefined) continue;
+      if (bytesMoved >= documentTextsMovedPerRunBytes) return { moved, done: false };
+      await replaceText(ctx, { callNoticeDocumentId: document._id, markdown: document.markdown });
+      await ctx.db.patch(document._id, { markdown: undefined });
+      bytesMoved += new TextEncoder().encode(document.markdown).byteLength;
+      moved += 1;
+    }
+    return { moved, done: true };
   },
 });
 

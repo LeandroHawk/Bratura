@@ -1,12 +1,14 @@
 import type { CallNotice } from '@bratura/shared/entities/call-notice/entity';
 import { callNoticeDeadline } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import { ReadCallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-document/entity';
+import { CallNoticeDocumentTextSchema } from '@bratura/shared/entities/call-notice-document-text/entity';
 import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
 import type { ActionCtx } from './_generated/server';
+import { textOfReadDocument } from './documents';
 import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
 import { requiredEnv } from './lib/env';
 import {
@@ -54,8 +56,8 @@ const ReadDocumentKeySchema = ReadCallNoticeDocumentSchema.pick({
 type ReadDocumentKey = z.infer<typeof ReadDocumentKeySchema>;
 
 /**
- * Rows per page of read documents. Each row carries its Markdown (up to 900 kB), and one query
- * that read them all hit Convex's 16 MiB read limit; the bytes cap below keeps a page under it.
+ * Rows per page of read documents. A row not yet moved by `moveDocumentTextsToOwnTable` carries its
+ * Markdown (up to 900 kB); the bytes cap below keeps a page under Convex's 16 MiB read limit.
  */
 export const readDocumentKeysPageSize = 100;
 const readDocumentKeysPageBytes = 8 * 1024 * 1024;
@@ -68,7 +70,7 @@ const ListReadDocumentKeysPageQueryReturnsSchema = z.object({
 });
 type ReadDocumentKeysPage = z.infer<typeof ListReadDocumentKeysPageQueryReturnsSchema>;
 
-/** One page of read documents, without their Markdown: what the queue needs to pick. */
+/** One page of read documents' keys: what the queue needs to pick, never their text. */
 export const listReadDocumentKeysPage = internalZodQuery({
   args: ListReadDocumentKeysPageQueryArgsSchema,
   returns: ListReadDocumentKeysPageQueryReturnsSchema,
@@ -178,11 +180,13 @@ export const listCallNoticesToExtract = internalZodAction({
 
 const GetExtractionInputQueryArgsSchema = z.object({ callNoticeId: documentId('callNotices') });
 const GetExtractionInputQueryReturnsSchema = z.array(
-  ReadCallNoticeDocumentSchema.pick({ url: true, role: true, markdown: true, markdownHash: true }),
+  ReadCallNoticeDocumentSchema.pick({ url: true, role: true, markdownHash: true }).extend(
+    CallNoticeDocumentTextSchema.pick({ markdown: true }).shape,
+  ),
 );
 type ExtractionInput = z.infer<typeof GetExtractionInputQueryReturnsSchema>;
 
-/** A call notice's read documents, what its extraction reads. */
+/** A call notice's read documents with their text, what its extraction reads: this call's only. */
 export const getExtractionInput = internalZodQuery({
   args: GetExtractionInputQueryArgsSchema,
   returns: GetExtractionInputQueryReturnsSchema,
@@ -191,18 +195,13 @@ export const getExtractionInput = internalZodQuery({
       .query('callNoticeDocuments')
       .withIndex('by_call_notice_and_url', (index) => index.eq('callNoticeId', callNoticeId))
       .collect();
-    return documents.flatMap((document) =>
-      document.status === 'read'
-        ? [
-            {
-              url: document.url,
-              role: document.role,
-              markdown: document.markdown,
-              markdownHash: document.markdownHash,
-            },
-          ]
-        : [],
-    );
+    const input: ExtractionInput = [];
+    for (const document of documents) {
+      if (document.status !== 'read') continue;
+      const { url, role, markdownHash } = document;
+      input.push({ url, role, markdownHash, markdown: await textOfReadDocument(ctx, document) });
+    }
+    return input;
   },
 });
 
