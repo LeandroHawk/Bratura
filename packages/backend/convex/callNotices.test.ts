@@ -87,6 +87,41 @@ describe('recordCallNotice', () => {
     expect(await flagOf('4323')).toBe(false);
   });
 
+  test('a closed call does not reopen when one run misses its close or its result', async () => {
+    const { t, sourceId } = await withSource();
+    const rowOf = async (externalId: string) =>
+      (await t.run((ctx) => ctx.db.query('callNotices').collect())).find(
+        (stored) => stored.externalId === externalId,
+      );
+
+    const withResult = {
+      ...listing(sourceId),
+      externalId: '5001',
+      registrationCloses: null,
+      resultPosted: true,
+    };
+    await t.mutation(recordCallNotice, withResult);
+    await t.mutation(recordCallNotice, { ...withResult, resultPosted: undefined });
+    expect((await rowOf('5001'))?.closedWhenFirstSeen).toBe(true);
+    expect((await rowOf('5001'))?.resultPosted).toBeUndefined();
+
+    const closedByDate = {
+      ...listing(sourceId),
+      externalId: '5002',
+      registrationCloses: inFortaleza(Date.now() - 1000, 'minute'),
+    };
+    await t.mutation(recordCallNotice, closedByDate);
+    await t.mutation(recordCallNotice, { ...closedByDate, registrationCloses: null });
+    expect((await rowOf('5002'))?.closedWhenFirstSeen).toBe(true);
+
+    await t.mutation(recordCallNotice, {
+      ...closedByDate,
+      registrationCloses: listing(sourceId).registrationCloses,
+      resultPosted: true,
+    });
+    expect((await rowOf('5002'))?.closedWhenFirstSeen).toBe(true);
+  });
+
   test('tracking comes from the server, never from the caller', async () => {
     const { t, sourceId } = await withSource();
     await expect(

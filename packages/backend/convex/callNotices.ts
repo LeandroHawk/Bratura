@@ -39,7 +39,14 @@ export const recordCallNotice = internalZodMutation({
       .unique();
     const closed = closedWhenFirstSeenToStore(listing, known, now);
     if (known) {
-      await ctx.db.patch(known._id, { ...listing, closedWhenFirstSeen: closed, lastSeenAt: now });
+      // `resultPosted` spelled out: a listing without it clears a stale `true` (patch keeps a key
+      // the caller leaves out).
+      await ctx.db.patch(known._id, {
+        ...listing,
+        resultPosted: listing.resultPosted,
+        closedWhenFirstSeen: closed,
+        lastSeenAt: now,
+      });
       return { callNoticeId: known._id, isNew: false };
     }
     const callNoticeId = await ctx.db.insert('callNotices', {

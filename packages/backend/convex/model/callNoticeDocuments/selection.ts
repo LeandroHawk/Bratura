@@ -77,8 +77,10 @@ export const closedWhenFirstSeen = ({
 
 /**
  * What `recordCallNotice` stores for a call as listed now: the rule on a new one; on a known one,
- * open when first seen stays so (it is read last once closed), closed is checked again, so a close
- * moved past `firstSeenAt` with no result reopens it.
+ * open when first seen stays so (it is read last once closed); closed stays so until the listing
+ * shows an extension — a close past `firstSeenAt` and no result. A close or a result missing from
+ * one run (a page edited, a subfolder that failed to load) never reopens it: that would spend
+ * credits on a call that is still closed.
  */
 export function closedWhenFirstSeenToStore(
   listing: ClosingAsListed,
@@ -87,12 +89,11 @@ export function closedWhenFirstSeenToStore(
 ) {
   if (!known) return isClosedAsOf(listing, now);
   if (!closedWhenFirstSeen(known)) return false;
-  return isClosedAsOf(
-    known.closedWhenFirstSeen === true
-      ? listing
-      : { registrationCloses: listing.registrationCloses },
-    known.firstSeenAt,
-  );
+  const extended =
+    listing.registrationCloses !== null &&
+    listing.registrationCloses.at >= known.firstSeenAt &&
+    listing.resultPosted !== true;
+  return !extended;
 }
 
 /**
