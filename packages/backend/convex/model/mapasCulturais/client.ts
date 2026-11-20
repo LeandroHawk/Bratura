@@ -7,18 +7,24 @@ import { fetchJsonListOnSourceHost } from '../sourceHost/fetchOnSourceHost';
  */
 const mapasTimeoutMs = 60_000;
 /**
- * Past this, no list of open calls (the largest measured, Pernambuco's, is 108 KB, 2026-11-15).
+ * Past this, no page of opportunities (Ceará's whole year in one answer was 1.55 MB, 2026-11-20).
  * Low on purpose: the body, its text and its parsed objects share the runtime's 64 MiB.
  */
 const mapasMaxBytes = 2_000_000;
+/** Opportunities per page: about 0.7 MB at Ceará's 2.6 kB each, well under `mapasMaxBytes`. */
+export const mapasPageSize = 250;
+/** Past this many full pages the instance is not what we measured (Ceará: 588 in 2026). */
+const mapasMaxPages = 8;
 
 /**
- * The opportunities whose registration is open on `now` (a São Paulo day), as raw JSON: each is
- * parsed by the caller, so one malformed entry does not discard the others. On the instance's
- * own host only (`fetchOnSourceHost`). Throws when the instance does not answer, redirects off its
- * host, answers an error, something other than JSON, more than `mapasMaxBytes`, or no list.
+ * The opportunities open for registration on `now` (a São Paulo day) or closed since 1 January of
+ * its year, as raw JSON, page by page until a short one: each is parsed by the caller, so one
+ * malformed entry does not discard the others. One with no close is left out by Mapas itself (a
+ * comparison with null), as before; an open-ended one carries a far close (2111) and comes. On the
+ * instance's own host only (`fetchOnSourceHost`). Throws when a page fails as that does, and past
+ * `mapasMaxPages`.
  */
-export async function fetchOpenMapasOpportunities(
+export async function fetchMapasOpportunitiesClosingThisYearOrLater(
   baseUrl: string,
   now: number,
   access: SourceAccess = {},
@@ -31,13 +37,22 @@ export async function fetchOpenMapasOpportunities(
   );
   url.searchParams.set('@files', '(rules,downloads):url');
   url.searchParams.set('registrationFrom', `LTE(${today})`);
-  url.searchParams.set('registrationTo', `GTE(${today})`);
-  url.searchParams.set('@order', 'registrationTo ASC');
+  url.searchParams.set('registrationTo', `GTE(${today.slice(0, 4)}-01-01)`);
+  // The id breaks ties, so a page boundary between equal closes neither repeats nor skips one.
+  url.searchParams.set('@order', 'registrationTo ASC,id ASC');
+  url.searchParams.set('@limit', String(mapasPageSize));
 
-  return await fetchJsonListOnSourceHost(
-    url.href,
-    baseUrl,
-    { timeoutMs: mapasTimeoutMs, maxBytes: mapasMaxBytes },
-    access,
-  );
+  const opportunities: unknown[] = [];
+  for (let page = 1; page <= mapasMaxPages; page++) {
+    url.searchParams.set('@page', String(page));
+    const entries = await fetchJsonListOnSourceHost(
+      url.href,
+      baseUrl,
+      { timeoutMs: mapasTimeoutMs, maxBytes: mapasMaxBytes },
+      access,
+    );
+    opportunities.push(...entries);
+    if (entries.length < mapasPageSize) return opportunities;
+  }
+  throw new Error(`${new URL(baseUrl).host} listed over ${mapasMaxPages} pages of opportunities`);
 }

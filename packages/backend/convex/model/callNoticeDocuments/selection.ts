@@ -4,6 +4,8 @@ import {
   openEndedRegistrationAfterMs,
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import type { CallNoticeDocumentRole } from '@bratura/shared/entities/call-notice-document/fragments/identity/fields';
+import { documentId } from '@bratura/shared/primitives/code/id/fields';
+import { z } from 'zod';
 import { plainText } from '../../lib/text';
 
 // Which calls and which of their files are worth Firecrawl credits, decided before any read, from
@@ -38,6 +40,61 @@ export const queueOrder = (now: number) => {
     return rank(a) === 2 ? -soonestFirst : soonestFirst;
   };
 };
+
+/** Call notices picked by hand per run: a sample of those closed when first seen. */
+export const chosenCallNoticesMax = 50;
+export const ChosenCallNoticeIdsSchema = z
+  .array(documentId('callNotices'))
+  .min(1)
+  .max(chosenCallNoticesMax);
+
+type ClosingAsListed = Pick<CallNotice, 'registrationCloses' | 'resultPosted'>;
+
+/**
+ * The rule: a call already closed at `firstSeenAt`, by its close or a result posted. Such a call is
+ * recorded for the year's numbers and never queued for credits (reading, extraction) unless picked
+ * by hand; `recordCallNotice` stores it on the row (`closedWhenFirstSeenToStore`).
+ */
+export const isClosedAsOf = (
+  { registrationCloses, resultPosted }: ClosingAsListed,
+  firstSeenAt: number,
+) => resultPosted === true || (registrationCloses !== null && registrationCloses.at < firstSeenAt);
+
+type ClosedWhenFirstSeenStored = Pick<
+  CallNotice,
+  'registrationCloses' | 'firstSeenAt' | 'closedWhenFirstSeen'
+>;
+
+/**
+ * Whether a row is closed when first seen: its stored flag; a row from before the flag, by its
+ * close alone (it was tracked before results were recorded, maybe while open).
+ */
+export const closedWhenFirstSeen = ({
+  registrationCloses,
+  firstSeenAt,
+  closedWhenFirstSeen: stored,
+}: ClosedWhenFirstSeenStored) => stored ?? isClosedAsOf({ registrationCloses }, firstSeenAt);
+
+/**
+ * What `recordCallNotice` stores for a call as listed now: the rule on a new one; on a known one,
+ * open when first seen stays so (it is read last once closed); closed stays so until the listing
+ * shows an extension — a close past `firstSeenAt` and no result. A close or a result missing from
+ * one run (a page edited, a subfolder that failed to load) never reopens it: that would spend
+ * credits on a call that is still closed.
+ */
+export function closedWhenFirstSeenToStore(
+  listing: ClosingAsListed,
+  known: ClosedWhenFirstSeenStored | null,
+  now: number,
+) {
+  if (!known) return isClosedAsOf(listing, now);
+  if (!closedWhenFirstSeen(known)) return false;
+  const extended =
+    listing.registrationCloses !== null &&
+    listing.registrationCloses.at >= known.firstSeenAt &&
+    listing.resultPosted !== true;
+  return !extended;
+}
 
 /**
  * Titles that are no call, compared without accents or case: drafts and tests, the accountability

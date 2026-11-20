@@ -13,7 +13,10 @@ export default defineSchema({
     .index('by_is_active', ['isActive']),
   callNotices: defineTable(zodToConvex(CallNoticeSchema))
     .index('by_source_and_external_id', ['sourceId', 'externalId'])
-    .index('by_registration_closes', ['registrationCloses.at']),
+    .index('by_closed_when_first_seen_and_registration_closes', [
+      'closedWhenFirstSeen',
+      'registrationCloses.at',
+    ]),
   callNoticeDocuments: defineTable(zodToConvex(CallNoticeDocumentSchema))
     .index('by_call_notice_and_url', ['callNoticeId', 'url'])
     .index('by_status', ['status']),

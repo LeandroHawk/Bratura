@@ -1070,9 +1070,11 @@ export const londrinaMapasSource = {
 } satisfies Source;
 
 /**
- * The PNAB platform several states run (one build; vendor not named): its listing of open calls
- * only, each a page at a root slug ("Acessar") titled by its `<h1>`, files at `/lerarquivo/…`.
- * Measured 2026-11-17: 0 open on all six (~44 calls in 2026), the next wave is PNAB Ciclo 3.
+ * The PNAB platform several states run (one build; vendor not named): its whole listing
+ * (`situacao=todos`; `abertos` until 2026-11-20), each a page at a root slug ("Acessar") titled by
+ * its `<h1>`, files at `/lerarquivo/…`. Measured 2026-11-17: 0 open on all six (~44 calls in 2026),
+ * the next wave is PNAB Ciclo 3. On 2026-11-20 the whole listings gave 49 calls (2 before), 42 with
+ * a result, 64 earlier-cycle ones left out by year; 201 pages a day for the six (69 before).
  * Menu pages are fetched too; the two with files (Amapá's "Material de apoio", Bahia's
  * "Transparência") are recorded with no notice, never read.
  */
@@ -1092,9 +1094,9 @@ const pnabPlatformSource = ({
     slug,
     name,
     isActive: true,
-    robotsCheckedOn: '2026-11-17',
+    robotsCheckedOn: '2026-11-20',
     termsCheckedOn: '2026-11-17',
-    listingUrl: `https://${host}/editais?situacao=abertos`,
+    listingUrl: `https://${host}/editais?situacao=todos`,
     discovery: { hops: 'callPage', callPageUrlParts: [`${host}/`] },
     documentUrlParts: ['/lerarquivo/'],
     timeZone: ianaTimeZone.parse(timeZone),
@@ -1497,7 +1499,7 @@ export const espiritoSantoSecultCallPagesSource = {
 /**
  * Balsas' culture office (MA): one page per call (`cultura_editais.php?id=N`), linked as "Mais
  * informações", its `<h1>` the call ("EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026 - ENCERRADO"); its
- * window ("11/09/2026 - 02/10/2026") is no close the reader parses, so a call drops by its result.
+ * window ("11/09/2026 - 02/10/2026") is no close the reader parses, so its result closes a call.
  * The listing also names the artists of the city's register: only call pages are followed.
  * `robots.txt` keeps `/anexo/`, `/arquivos/` from all and bars some engines by name; no terms.
  */

@@ -3,6 +3,7 @@ import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fie
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
 import { documentReadingLeaseMs, documentsCheckedPerQuery } from './documents';
+import { chosenCallNoticesMax, isClosedAsOf } from './model/callNoticeDocuments/selection';
 import schema from './schema';
 import { cearaMapasSource, federalMapasSource, piedadePnabSource } from './model/sources/registry';
 import { modules } from './test.setup';
@@ -22,6 +23,9 @@ type CallNoticeOptions = {
   documentUrls?: string[];
   externalId?: string;
   registrationCloses?: ReturnType<typeof in9Days> | null;
+  /** When ingestion first found the call; now when absent. */
+  firstSeenAt?: number;
+  resultPosted?: boolean;
 };
 
 async function addCallNotice(
@@ -30,6 +34,8 @@ async function addCallNotice(
     documentUrls = [mainNotice, categories, `${documentBase}/resultado-final.pdf`],
     externalId = '8498',
     registrationCloses = in9Days(),
+    firstSeenAt,
+    resultPosted,
   }: CallNoticeOptions = {},
 ) {
   const sourceId =
@@ -44,7 +50,13 @@ async function addCallNotice(
     documentUrls,
     registrationOpens: null,
     registrationCloses,
+    ...(resultPosted !== undefined && { resultPosted }),
   });
+  // As if first recorded then: the flag `recordCallNotice` stores is the rule at that moment.
+  if (firstSeenAt !== undefined) {
+    const closedWhenFirstSeen = isClosedAsOf({ registrationCloses }, firstSeenAt);
+    await t.run((ctx) => ctx.db.patch(callNoticeId, { firstSeenAt, closedWhenFirstSeen }));
+  }
   return callNoticeId;
 }
 
@@ -177,7 +189,12 @@ describe('readPendingDocuments', () => {
       ['closedOverAYearAgo', { ...in9Days(), at: Date.now() - 400 * day }],
       ['closedYesterday', { ...in9Days(), at: Date.now() - day }],
     ] as const) {
-      await addCallNotice(t, { externalId, registrationCloses, documentUrls: [urlOf(externalId)] });
+      await addCallNotice(t, {
+        externalId,
+        registrationCloses,
+        documentUrls: [urlOf(externalId)],
+        firstSeenAt: Date.now() - 500 * day,
+      });
     }
     const pending = await t.action(internal.documents.listDocumentsToRead, {});
     expect(pending.map(({ url }) => url)).toEqual([
@@ -186,6 +203,79 @@ describe('readPendingDocuments', () => {
       urlOf('undated'),
       urlOf('closedYesterday'),
     ]);
+  });
+
+  test('leaves out a call first seen after its close; one seen open, closed since, stays', async () => {
+    const t = convexTest(schema, modules);
+    const urlOf = (id: string) => `${documentBase}/${id}/edital.pdf`;
+    const closedYesterday = { ...in9Days(), at: Date.now() - day };
+    for (const [externalId, registrationCloses, firstSeenAt] of [
+      ['closedWhenFirstSeen', closedYesterday, Date.now()],
+      ['seenOpenClosedSince', closedYesterday, Date.now() - 10 * day],
+      ['open', in9Days(), Date.now()],
+    ] as const) {
+      await addCallNotice(t, {
+        externalId,
+        registrationCloses,
+        firstSeenAt,
+        documentUrls: [urlOf(externalId)],
+      });
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url)).toEqual([urlOf('open'), urlOf('seenOpenClosedSince')]);
+  });
+
+  test('leaves out a call listed with a result already posted, though it prints no close', async () => {
+    const t = convexTest(schema, modules);
+    const urlOf = (id: string) => `${documentBase}/${id}/edital.pdf`;
+    for (const [externalId, resultPosted] of [
+      ['resultPosted', true],
+      ['noResult', false],
+    ] as const) {
+      await addCallNotice(t, {
+        externalId,
+        registrationCloses: null,
+        resultPosted,
+        documentUrls: [urlOf(externalId)],
+      });
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url)).toEqual([urlOf('noResult')]);
+  });
+
+  test('reads the stored flag, not the close: flagged rows stay out, rows from before the flag are judged by their close', async () => {
+    const t = convexTest(schema, modules);
+    const urlOf = (id: string) => `${documentBase}/${id}/edital.pdf`;
+    const closedYesterday = { ...in9Days(), at: Date.now() - day };
+    const stored = [
+      ['flaggedOpenByClose', in9Days(), true],
+      ['unflaggedClosedByClose', closedYesterday, false],
+      ['legacyOpen', in9Days(), undefined],
+      ['legacyClosed', closedYesterday, undefined],
+    ] as const;
+    for (const [externalId, registrationCloses, closedWhenFirstSeen] of stored) {
+      const callNoticeId = await addCallNotice(t, {
+        externalId,
+        registrationCloses,
+        documentUrls: [urlOf(externalId)],
+      });
+      await t.run((ctx) => ctx.db.patch(callNoticeId, { closedWhenFirstSeen }));
+    }
+    const pending = await t.action(internal.documents.listDocumentsToRead, {});
+    expect(pending.map(({ url }) => url).sort()).toEqual(
+      [urlOf('legacyOpen'), urlOf('unflaggedClosedByClose')].sort(),
+    );
+  });
+
+  test('a call found closed comes back to the queue when its close is extended', async () => {
+    const t = convexTest(schema, modules);
+    const closedYesterday = { ...in9Days(), at: Date.now() - day };
+    await addCallNotice(t, { registrationCloses: closedYesterday, documentUrls: [mainNotice] });
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
+    await addCallNotice(t, { registrationCloses: in9Days(), documentUrls: [mainNotice] });
+    expect(
+      (await t.action(internal.documents.listDocumentsToRead, {})).map(({ url }) => url),
+    ).toEqual([mainNotice]);
   });
 
   test('a document past the first batch checked is still listed, the read ones before it not', async () => {
@@ -351,5 +441,96 @@ describe('readPendingDocuments', () => {
       expect(await readPending(t)).toMatchObject({ read: 0, failed: 1 });
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('readChosenCallNotices', () => {
+  beforeEach(() => {
+    vi.stubEnv('FIRECRAWL_API_KEY', 'fc-key');
+    vi.stubGlobal('setTimeout', (resolve: () => void) => resolve());
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  const closedLastMonth = () => ({ ...in9Days(), at: Date.now() - 30 * day });
+
+  test('reads a chosen call closed when first seen, through the same rules, and no other', async () => {
+    const t = convexTest(schema, modules);
+    const chosen = await addCallNotice(t, { registrationCloses: closedLastMonth() });
+    await addCallNotice(t, {
+      externalId: 'notChosen',
+      registrationCloses: closedLastMonth(),
+      documentUrls: [`${documentBase}/notChosen/edital.pdf`],
+    });
+    const fetchMock = firecrawlAnswersPerUrl((url) => scraped(`# ${url}`, 2));
+    expect(await t.action(internal.documents.listDocumentsToRead, {})).toEqual([]);
+
+    const readChosen = () =>
+      t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: [chosen],
+        creditCeiling: 100,
+      });
+    expect(await readChosen()).toEqual({
+      read: 2,
+      failed: 0,
+      creditsUsed: 4,
+      left: 0,
+      stoppedBy: 'nothingLeft',
+    });
+    expect((await documentsOf(t)).map(({ url, status }) => ({ url, status }))).toEqual([
+      { url: mainNotice, status: 'read' },
+      { url: categories, status: 'read' },
+    ]);
+    expect(await readChosen()).toMatchObject({ read: 0, left: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('stops at the credit ceiling, as the queue does', async () => {
+    const t = convexTest(schema, modules);
+    const chosen = await addCallNotice(t, { registrationCloses: closedLastMonth() });
+    firecrawlAnswersPerUrl(() => scraped('# Edital', 2));
+    expect(
+      await t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: [chosen],
+        creditCeiling: 1,
+      }),
+    ).toMatchObject({ read: 1, left: 1, stoppedBy: 'creditCeiling' });
+  });
+
+  test("reads nothing of a chosen call whose source's robots.txt disallows its files", async () => {
+    const t = convexTest(schema, modules);
+    const sourceId = await t.run((ctx) => ctx.db.insert('sources', piedadePnabSource));
+    const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
+      sourceId,
+      externalId: 'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      title: 'EDITAL TERMO DE EXECUÇÃO CULTURAL PNAB - CICLO 2',
+      summary: null,
+      officialUrl:
+        'https://www.piedade.sp.gov.br/edital-termo-de-execucao-cultural-pnab---ciclo-2/',
+      documentUrls: ['https://www.piedade.sp.gov.br/imgeditor/file/003%20-%20Edital.pdf'],
+      registrationOpens: null,
+      registrationCloses: closedLastMonth(),
+    });
+    const fetchMock = firecrawlAnswersPerUrl(() => scraped('# Edital', 2));
+    expect(
+      await t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: [callNoticeId],
+        creditCeiling: 100,
+      }),
+    ).toMatchObject({ read: 0, left: 0, stoppedBy: 'nothingLeft' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('takes at most 50 call notices a run', async () => {
+    const t = convexTest(schema, modules);
+    const chosen = await addCallNotice(t);
+    await expect(
+      t.action(internal.documents.readChosenCallNotices, {
+        callNoticeIds: Array(chosenCallNoticesMax + 1).fill(chosen),
+        creditCeiling: 100,
+      }),
+    ).rejects.toThrow(/callNoticeIds/);
   });
 });

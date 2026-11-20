@@ -31,6 +31,15 @@ describe('callNoticeListingFromMapasOpportunity', () => {
     expect(listingOf({ registrationTo }).registrationCloses?.at).toBe(at);
   });
 
+  test('keeps a call that closed before it was listed: the year counts every call', () => {
+    const registrationTo = { date: '2026-01-10 23:59:00.000000', timezone: 'Etc/GMT+3' };
+    const registrationFrom = { date: '2026-01-02 00:01:00.000000', timezone: 'Etc/GMT+3' };
+    expect(listingOf({ registrationFrom, registrationTo })).toMatchObject({
+      externalId: '4321',
+      registrationCloses: { at: Date.UTC(2026, 0, 11, 2, 59) },
+    });
+  });
+
   test('keeps midnight as 00:00 of that day, the minute Mapas closes its form', () => {
     const registrationTo = { date: '2026-11-15 00:00:00.000000', timezone: 'Etc/GMT+3' };
     expect(listingOf({ registrationTo }).registrationCloses?.at).toBe(Date.UTC(2026, 10, 15, 3));

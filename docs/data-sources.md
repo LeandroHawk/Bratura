@@ -150,12 +150,22 @@ GET https://{host}/api/opportunity/find
   ?@select=id,name,shortDescription,registrationFrom,registrationTo,singleUrl
   &@files=(rules,downloads):url
   &registrationFrom=LTE({today})
-  &registrationTo=GTE({today})
-  &@order=registrationTo ASC
+  &registrationTo=GTE({year}-01-01)
+  &@order=registrationTo ASC,id ASC
+  &@limit=250&@page={1, 2, …}
 ```
 
-- Always an explicit `@select`: `@select=*` returned non-JSON. `{today}` is `YYYY-MM-DD`. **Never
-  `owner`**: it can be a private person, and nothing of it is used.
+- Always an explicit `@select`: `@select=*` returned non-JSON. `{today}` is `YYYY-MM-DD` and
+  `{year}` its year, both in São Paulo. **Never `owner`**: it can be a private person, and nothing
+  of it is used.
+- **Every call of the year, closed ones too** (user, 2026-11-20): the year's volume is a product
+  number. A call closed when first seen is recorded, and read only in a sample picked by hand
+  (`docs/integrations/firecrawl.md`). Ceará on 2026-11-20: 37 open, 588 closing from 1 January on
+  (1.55 MB in one answer), 2,476 in all. Pages of 250 (`@page` from 1, verified on Ceará), the id
+  breaking ties, until a short page; each page is capped at 2 MB, and past 8 full pages the run
+  fails. A source read from Brazil pays 1 credit a page.
+- An opportunity with no `registrationTo` never comes: `GTE` leaves nulls out (Ceará had none of
+  2,476). An open-ended one carries a far close (`2111-01-01`) and comes, as before.
 - Dates come as `{ "date": "2026-11-15 23:59:00.000000", "timezone": "Etc/GMT+3", … }`: a wall clock
   in that zone. The zone is a place (`America/Recife`) or a fixed offset (`Etc/GMT+3` is UTC−3: POSIX
   inverts the sign); `Intl.supportedValuesOf` omits the latter, `Intl.DateTimeFormat` reads both.
@@ -183,6 +193,23 @@ Read by `ingestion:ingestOfficialPage` (`model/officialPage/`): the listing (HTM
 page fills itself from) and call pages are fetched on the listing's own host, so finding calls costs no credits (except a source that answers only from Brazil, above). Registering one means
 choosing its `discovery` and `documentUrlParts` from the site's real links (measured 2026-11-15 on
 the rows marked so below).
+
+- **Every call of the year, closed ones too** (user, 2026-11-20), as Mapas: a call whose page or
+  listing already posts a result is recorded with `resultPosted`, closed when first seen and
+  never read unless picked (`docs/integrations/firecrawl.md`); a credenciamento's list of the accredited closes
+  nothing. One of an earlier year is not recorded (by the close its page prints, else by every
+  year its title, URL, listing year and notices name), so a listing's history stays out: Rio
+  Branco's JSON back to 2020, the PNAB platform's first cycle. One naming no year is kept. A call
+  with no result keeps the older rules: last year's numbered calls stay (credenciamentos run for
+  years). A call folder is read whole (`callFilesInSubfolders`, year folders): a results folder
+  listed before the notice's would leave the call with no notice (Porto Velho 2026: two of four
+  calls list "RESULTADOS" first). Measured 2026-11-20 on the 88 active official pages: 234 calls
+  recorded before, 500 after (260 with a result, 177 of them printing no close; 97 earlier-year
+  ones left out, 50 of them Bahia PNAB's first cycle), 509 pages fetched a day before, 666 after.
+- **A listing of open calls only is replaced by the whole one** where the site has it (the PNAB
+  platform's `situacao=todos`, 2026-11-20). MinC, IPHAN and Salvador FGM file open and closed calls
+  in separate listings, and a call changes URL when it moves, so they stay on the open one;
+  Itaperuna's and Secec DF's listings already hold every call.
 
 | Source | URL | robots | terms |
 | --- | --- | --- | --- |
@@ -294,7 +321,7 @@ the rows marked so below).
 | São Luís-MA Secult (Instar; files never read, measured 2026-11-19; through Firecrawl from Brazil since 2026-11-20: HTTP 403 to Convex) | `https://www.saoluis.ma.gov.br/portal/secretarias/21/secretaria-municipal-de-cultura---secult`: a page per call under `/portal/editais/0/`, read as Piedade. 6 calls, mostly festivities and a reviewers' credenciamento | the root `/editais/` and `/portal/download/` (the files) disallowed: links kept, never read | "reprodução não comercial" for the news area only |
 | Catanduva-SP culture (Instar; files never read, measured 2026-11-19) | `https://www.catanduva.sp.gov.br/portal/secretarias/6/cultura`, read as Piedade. The artists' credenciamento 004/2026 (open to 08/2027) and the poetry contest 01/2026 | as São Luís | an LGPD text |
 | Cajazeiras-PB and Caicó-RN culture (SIASP; files never read, measured 2026-11-19) | `https://www.cajazeiras.pb.gov.br/secretaria.php?sec=71`, `https://www.caico.rn.gov.br/secretaria.php?sec=171`: a page per publication wrapping one PDF (title and date only, no close). Cajazeiras keeps titles with "chamamento" (its council election notices are not calls): FUMINC 01 and 02/2026; Caicó: 3 calls of 2026, none open | `/arquivos/` (the files) disallowed: links kept, never read | Cajazeiras a privacy page; Caicó none |
-| PNAB platform — Bahia, Piauí, Amazonas, Amapá, Tocantins, Macapá (measured 2026-11-17) | One build on six hosts (`bahiapnab.com.br`, `pnabpiaui.com.br`, `pnab.cultura.am.gov.br`, `pnabamapa.com.br`, `pnabtocantins.com.br`, `pnabmacapa.com.br`; vendor not named). Read from the listing of open calls (`/editais?situacao=abertos`), each call a page at a root slug linked as "Acessar", titled by its `<h1>`; every file is linked as "Baixar" at `/lerarquivo/<base64 path>/<base64 title>`, and the title it carries is the label (annexes and results are known by it). 0 open on all six (~44 calls in 2026, all with results by the full listing); the next wave is PNAB Ciclo 3. Menu pages with files ("Material de apoio", "Transparência") are recorded with no notice, never read. All six answer Convex | `Allow: /`, `Disallow: /vendor` on all | none published (terms URLs redirect home), 2026-11-17 |
+| PNAB platform — Bahia, Piauí, Amazonas, Amapá, Tocantins, Macapá (measured 2026-11-17) | One build on six hosts (`bahiapnab.com.br`, `pnabpiaui.com.br`, `pnab.cultura.am.gov.br`, `pnabamapa.com.br`, `pnabtocantins.com.br`, `pnabmacapa.com.br`; vendor not named). Read from the whole listing (`/editais?situacao=todos`, since 2026-11-20; `abertos` before), each call a page at a root slug linked as "Acessar", titled by its `<h1>`; every file is linked as "Baixar" at `/lerarquivo/<base64 path>/<base64 title>`, and the title it carries is the label (annexes and results are known by it). 0 open on all six (~44 calls in 2026, all with results by the full listing); the next wave is PNAB Ciclo 3. Menu pages with files ("Material de apoio", "Transparência") are recorded with no notice, never read. All six answer Convex | `Allow: /`, `Disallow: /vendor` on all | none published (terms URLs redirect home), 2026-11-17 |
 | Concultura Manaus PNAB Ciclo 2 (measured 2026-11-16) | `https://concultura.manaus.am.gov.br/pnab-ciclo-2`: one page per call (`/edital-0…`; Edital 001 is a `?page_id=…&preview=true` link and is missed). Editais 002–013/2026 all post results: nothing recorded that day | allows all | none published, 2026-11-16 |
 | Ponta Grossa SMC PNAB (measured 2026-11-15) | `https://cultura.pontagrossa.pr.gov.br/lei-aldir-blanc/`: one heading per call, every document linked as "clique aqui"; it times out from Convex (US East) and answers from Brazil, as Pernambuco: read through Firecrawl from Brazil since 2026-11-16 | allows (WordPress default, plus `/wp-content/uploads/wpforms/` disallowed) | none published, 2026-11-15 |
 | Paraná Seec (measured 2026-11-15) | `https://www.cultura.pr.gov.br/`: one page per call under `/Pagina/Edital-`, some renamed behind a same-host 301 | allows (Drupal default: `/core/`, `/user/`, `/search/` disallowed) | none published, 2026-11-15 |
