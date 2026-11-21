@@ -160,3 +160,9 @@ one would do, open the discussion in the PR or with the team. Known open points:
 
 - Port names: `bratura-portal` and `telegram`, or one folder per front (`web`, `telegram`)?
 - Whether `orgs/` becomes a third port (the organization panel) or stays inside the site.
+- When the team registers a source's state and level: add them to `sources` and bring back the
+  location filters (the portal DTOs carry no `state`, `city`, `coverage` or `opportunityKind`: no
+  stored field gives them).
+- When a list must be filtered by art form, applicant type, text or "amount informed": copy the
+  field to `matches` with its index (a search index for the title); never filter a whole list in
+  the browser.
