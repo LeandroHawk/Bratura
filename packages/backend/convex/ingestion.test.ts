@@ -5,7 +5,12 @@ import { internal } from './_generated/api';
 import { ingestionRunLeaseMs } from './ingestion';
 import { mapasOpportunity } from './model/mapasCulturais/mapasOpportunity.fixture';
 import schema from './schema';
-import { federalMapasSource, maranhaoSecmaSource } from './sources.fixture';
+import {
+  cearaMapasSource,
+  federalMapasSource,
+  maranhaoSecmaSource,
+  pernambucoMapasSource,
+} from './model/sources/registry';
 import { modules } from './test.setup';
 
 const newsSite: Source = {
@@ -19,14 +24,20 @@ const newsSite: Source = {
 };
 
 function mapasAnswers(body: unknown, status = 200) {
-  const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(body), { status }));
+  const fetchMock = vi.fn<typeof fetch>(
+    async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json' },
+      }),
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
 
 async function withSource(source: Source = federalMapasSource) {
   const t = convexTest(schema, modules);
-  const sourceId = await t.mutation(internal.sources.addSource, { source });
+  const sourceId = await t.run((ctx) => ctx.db.insert('sources', source));
   return { t, sourceId };
 }
 
@@ -36,6 +47,7 @@ const runsOf = (t: ReturnType<typeof convexTest>) =>
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('scheduleDailyIngestion', () => {
@@ -43,19 +55,16 @@ describe('scheduleDailyIngestion', () => {
     vi.useFakeTimers();
     mapasAnswers([mapasOpportunity()]);
     const t = convexTest(schema, modules);
-    const addSource = internal.sources.addSource;
-    await t.mutation(addSource, { source: federalMapasSource });
-    await t.mutation(addSource, {
-      source: {
-        ...federalMapasSource,
-        slug: 'mapas-ce',
-        baseUrl: 'https://mapacultural.secult.ce.gov.br',
-      },
+    await t.run(async (ctx) => {
+      for (const source of [
+        federalMapasSource,
+        cearaMapasSource,
+        { ...pernambucoMapasSource, isActive: false },
+        newsSite,
+      ]) {
+        await ctx.db.insert('sources', source);
+      }
     });
-    await t.mutation(addSource, {
-      source: { ...federalMapasSource, slug: 'mapas-off', isActive: false },
-    });
-    await t.mutation(addSource, { source: newsSite });
 
     expect(await t.action(internal.ingestion.scheduleDailyIngestion, {})).toBe(2);
     await t.finishAllScheduledFunctions(vi.runAllTimers);
@@ -66,9 +75,56 @@ describe('scheduleDailyIngestion', () => {
 });
 
 describe('ingestMapasCulturaisInstance', () => {
-  test('records every open call notice and closes the run with its counts', async () => {
+  test('an instance that answers only from Brazil is read through Firecrawl, never directly', async () => {
+    vi.stubEnv('FIRECRAWL_API_KEY', 'fc-key');
+    const { t, sourceId } = await withSource({
+      ...federalMapasSource,
+      answersOnlyFromBrazil: true,
+    });
+    const fetchMock = vi.fn<typeof fetch>(
+      async (_input, init) =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              rawHtml: JSON.stringify([mapasOpportunity()]),
+              metadata: {
+                url: String(JSON.parse(String(init?.body)).url),
+                statusCode: 200,
+                contentType: 'application/json',
+              },
+            },
+          }),
+        ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
+      'succeeded',
+    );
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      'https://api.firecrawl.dev/v2/scrape',
+    ]);
+    const asked = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { url: string };
+    expect(new URL(asked.url).origin).toBe('https://mapa.cultura.gov.br');
+    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
+  });
+
+  test('records every call notice of the year, closed ones too, and closes the run with its counts', async () => {
     const { t, sourceId } = await withSource();
-    const fetchMock = mapasAnswers([mapasOpportunity(), mapasOpportunity({ id: 99 })]);
+    const closedInJanuary = {
+      date: '2026-01-10 23:59:00.000000',
+      timezone_type: 3,
+      timezone: 'Etc/GMT+3',
+    };
+    const fetchMock = mapasAnswers([
+      mapasOpportunity(),
+      mapasOpportunity({
+        id: 99,
+        registrationFrom: { ...closedInJanuary, date: '2026-01-02 00:01:00.000000' },
+        registrationTo: closedInJanuary,
+      }),
+    ]);
 
     expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
       'succeeded',
@@ -77,7 +133,13 @@ describe('ingestMapasCulturaisInstance', () => {
     const asked = new URL(String(fetchMock.mock.calls[0]?.[0]));
     expect(asked.origin + asked.pathname).toBe('https://mapa.cultura.gov.br/api/opportunity/find');
     expect(asked.searchParams.get('@select')).not.toContain('owner');
-    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(2);
+    const recorded = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(
+      recorded.map(({ externalId, registrationCloses }) => [externalId, registrationCloses?.at]),
+    ).toEqual([
+      ['4321', Date.UTC(2026, 10, 16, 2, 59)],
+      ['99', Date.UTC(2026, 0, 11, 2, 59)],
+    ]);
     expect(await runsOf(t)).toMatchObject([
       { status: 'succeeded', callNoticesSeen: 2, callNoticesNew: 2, callNoticesRejected: 0 },
     ]);
@@ -176,7 +238,7 @@ describe('the run lease', () => {
 describe('ingestOfficialPage', () => {
   const docs = 'https://cultura.ma.gov.br/uploads/secma/docs';
 
-  test('records each call the listing names, with its documents and their link text', async () => {
+  test('records each call the listing names, with its documents and their link text; one posting a result as closed when first seen', async () => {
     vi.useFakeTimers({ now: Date.UTC(2026, 10, 15) });
     const html = [
       `<a href="${docs}/EDITAL_CHAMAMENTO_04_2026.pdf">EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA</a>`,
@@ -205,6 +267,14 @@ describe('ingestOfficialPage', () => {
           },
         ],
         registrationCloses: null,
+        closedWhenFirstSeen: false,
+      },
+      {
+        externalId: 'selecao 3/2026',
+        title: 'EDITAL DE SELEÇÃO PÚBLICA Nº 03/2026',
+        registrationCloses: null,
+        resultPosted: true,
+        closedWhenFirstSeen: true,
       },
     ]);
   });

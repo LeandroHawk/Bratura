@@ -1,6 +1,6 @@
 # packages/backend — Convex
 
-The backend: tables, ingestion, matching, alerts. It computes; the web and the WhatsApp bot display
+The backend: tables, ingestion, matching, alerts. It computes; the web and the Telegram bot display
 what it stores. Cross-folder reasoning stays in `docs/architecture.md`; how functions are declared
 in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 
@@ -8,26 +8,38 @@ in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 convex/
   schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
   crons.ts        the daily ingestion (09:00 UTC); deadline alerts later        } entry files:
-  http.ts         routes only (Nvoip inbound, Firecrawl webhooks: not yet)      } fixed names
+  http.ts         routes only (Telegram webhook, Firecrawl webhooks: not yet)   } fixed names
   lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts,
-                  sha256.ts, text.ts (plain text, cut to a ceiling): no functions
+                  sha256.ts, text.ts (plain text, cut to a ceiling), monthNames.ts: no functions
 
   sources.ts      the sources the team registers and ingestion reads
   callNotices.ts  the call notice's only writer
   ingestion.ts    the daily schedule, one action per source kind, the run lease (`ingestionRuns`)
-  documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments`
-  whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
+  documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments` and
+                  its text, `callNoticeDocumentTexts`
+  pdfText.ts      "use node": a PDF's text layer read on its source's host (the parser needs Node)
+  telegram.ts     Telegram through the Bot API                                  (skeleton)
   extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
-  portfolio.ts  matching.ts  alerts.ts  orgs.ts                                 (not yet)
+  userNotifications.ts        what to tell a user: the only writer of `userNotifications`
+  userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
+  notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
+  users.ts                    the user's only writer
+  portfolio.ts  matching.ts  orgs.ts                                            (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
     mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
-    officialPage/    client.ts (plain fetch), html.ts (links, headings), discovery.ts, payload.ts, listing.ts
+    officialPage/    client.ts (the page, via sourceHost/), html.ts (links, headings), discovery.ts, payload.ts, listing.ts,
+                     registrationClose.ts (the close a page prints)
+    sourceHost/      fetchOnSourceHost.ts: the only fetch whose URL a source's data chooses (its own host;
+                     through Firecrawl from Brazil for a source that answers only from there)
+    pdfText/         a PDF's text layer (unpdf), for a read Firecrawl answered nearly empty
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
-    nvoip/           client.ts, payload.ts
+    telegram/        sendMessage.ts (the only import), client.ts + payload.ts (the Bot API:
+                     getMe, sendMessage); the text is `shared/messages/user-notification`
+    sources/         registry.ts: every source the team checked, what `registerSource` copies
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
 ```
@@ -35,11 +47,12 @@ convex/
 **A root file is a door; `model/` is what the doors share** (Convex's "Best Practices": thin
 functions over plain helpers). A subject's functions and its table's `ctx.db` live in one root file,
 its tests beside it (`ingestion.ts` is the only writer of `ingestionRuns`). `model/` is named by
-what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `nvoip/`) or a loop several doors
+what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `telegram/`) or a loop several doors
 run (`ingestion/`). **A provider we may swap is named by what it does** (`llm/`): doors import one
 neutral function (`llm/generateJson.ts`), which alone picks the client and reads its key; a fixed
-one is named by itself (`mapasCulturais/` is the source). `nvoip/` gets its channel adapter with the
-first alert. A root file past ~6 functions becomes a folder of the same name, one file per door.
+one is named by itself (`mapasCulturais/` is the source). A channel is named by what it does and
+keeps its provider inside when it has one (`telegram/` talks to the Bot API directly). A root file
+past ~6 functions becomes a folder of the same name, one file per door.
 
 ## Running it
 
@@ -70,13 +83,33 @@ pnpm exec convex run documents:readPendingDocuments '{"creditCeiling":200}'
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10}'
 ```
 
-Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `LLM_API_KEY`) live
+After deploying `closedWhenFirstSeen` (the queue's index), set it on older rows, until `done`:
+
+```bash
+pnpm exec convex run callNotices:backfillClosedWhenFirstSeen '{}'
+```
+
+After deploying `callNoticeDocumentTexts`, move each read document's Markdown into it, until
+`done` (about 4 MB a run); a follow-up PR removes the old `markdown` field and its fallback:
+
+```bash
+pnpm exec convex run documents:moveDocumentTextsToOwnTable '{}'
+```
+
+A call closed when first seen is in neither queue; read and extract a sample picked by hand:
+
+```bash
+pnpm exec convex run documents:readChosenCallNotices '{"callNoticeIds":["…"],"creditCeiling":200}'
+pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10,"callNoticeIds":["…"]}'
+```
+
+Secrets (`FIRECRAWL_API_KEY`, `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`) live
 **only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
 it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).
 The LLM is configuration, not code: `LLM_BASE_URL` (any provider in the OpenAI chat format;
 Gemini's is `https://generativelanguage.googleapis.com/v1beta/openai`), `LLM_MODEL` (what AI
 Studio lists for the key's project) and `LLM_API_KEY`.
-`convex run whatsapp:checkNvoipCredentials '{}'` and `convex run extraction:checkLlmCredentials
+`convex run telegram:checkTelegramCredentials '{}'` and `convex run extraction:checkLlmCredentials
 '{}'` prove a key works (the second spends one free-tier call).
 
 ## Rules
@@ -90,7 +123,7 @@ Studio lists for the key's project) and `LLM_API_KEY`.
   its type is `Id<'table'>`, the table stores `v.id('table')`, and an id from the wrong table fails
   both `tsc` and the write. A natural key (`sources.slug`) is for people and seeds, never a reference.
 - **Outside input is parsed at the edge**, in the module that reads it, with a local Zod schema:
-  `payload.ts` beside the client in `model/` (Mapas, Firecrawl, Nvoip), webhooks in their subject's
+  `payload.ts` beside the client in `model/` (Mapas, Firecrawl, Telegram), webhooks in their subject's
   file, LLM output in `model/llm/`.
 - **Nothing is invented**: a field the source does not give is `null`.
 - **A write sends only its own fragments.** `recordCallNotice` takes the listing and the registration
@@ -100,7 +133,7 @@ Studio lists for the key's project) and `LLM_API_KEY`.
   path ("can only contain alphanumeric characters, underscores, or periods").
 - **An expected failure is `throw appError({ code })`** (`lib/appError.ts`), never a returned
   `success: false` (the mutation's writes would commit) and never a text. The builder throws
-  `invalidInput` with Zod's issues; `addSource` throws `conflict`. Codes and HTTP statuses:
+  `invalidInput` with Zod's issues; `registerSource` throws `notFound`. Codes and HTTP statuses:
   `docs/architecture.md`, Errors.
 - **Every `fetch` to the outside has a timeout** (`AbortSignal.timeout`), and every side effect
   outside Convex follows an idempotency pattern: `docs/architecture.md`, Idempotency and
@@ -108,10 +141,13 @@ Studio lists for the key's project) and `LLM_API_KEY`.
 - **A module that schedules or calls its own functions writes its handlers' return types**
   (`ingestion.ts`, `model/ingestion/runSourceIngestion.ts`): without them TypeScript cannot type the generated API and turns all of `internal`
   into `any`, silently disabling every `Id` check in the package.
-- **Args are an object.** An entity that is a union (`SourceSchema`) goes under a key:
-  `addSource({ source })`.
+- **A big field nobody decides on gets its own table** (`callNoticeDocumentTexts`): Convex reads
+  whole rows, so a text beside a status makes every queue pay for it (`docs/architecture.md`, The
+  database is Convex).
+- **Args are an object**, even with one field (`registerSource({ slug })`); an entity that is a
+  union goes under a key (`{ source }`).
 
-## The Zod bridge: what is checked where (tested in `sources.test.ts`, `callNotices.test.ts`)
+## The Zod bridge: what is checked where (tested in `callNotices.test.ts`)
 
 `zodToConvex` turns an entity into a Convex validator, which is **only a shape**: `slug` becomes
 `v.string()`, the regex is gone. Our builders (`lib/builders.ts`) close the gap:
@@ -135,5 +171,6 @@ Errors, invariants.
 `convex-test` runs the real functions against the real schema in memory, in the edge runtime
 (`vitest.config.ts`). `convex/test.setup.ts` lists the modules for it. A test sits next to the
 module it covers (`sources.test.ts`, `model/firecrawl/client.test.ts`); shared test data is a
-`*.fixture.ts` beside them (`sources.fixture.ts`). The Convex CLI skips any file name with two dots, so tests and
-fixtures never deploy.
+`*.fixture.ts` beside them (`model/mapasCulturais/mapasOpportunity.fixture.ts`); sources come
+from `model/sources/registry.ts`, the production list. The Convex CLI skips any file name with two
+dots, so tests and fixtures never deploy.

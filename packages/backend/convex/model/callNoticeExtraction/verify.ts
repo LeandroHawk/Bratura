@@ -4,6 +4,12 @@ import {
   type ArtForm,
   type CallNoticeExtraction,
 } from '@bratura/shared/entities/call-notice-extraction/entity';
+import { EligibilityRuleKindEnum } from '@bratura/shared/entities/call-notice/enums/eligibility-rule/enum';
+import { QuotaGroupEnum } from '@bratura/shared/entities/call-notice/enums/quota-group/enum';
+import {
+  RequirementKindEnum,
+  RequirementStageEnum,
+} from '@bratura/shared/entities/call-notice/enums/requirement/enum';
 import { requiredString, textLengths } from '@bratura/shared/primitives/code/string/fields';
 import { requiredAmountInCents } from '@bratura/shared/primitives/domain/money/fields';
 import { z } from 'zod';
@@ -76,7 +82,22 @@ const answerSchemas = {
   applicantTypes: quoted({ value: z.array(ApplicantTypeEnum).min(1) }),
   residenceRequirement: quoted({ value: requiredString('long') }),
   artForms: quoted({ value: ArtFormEnum }),
-  requiredDocuments: quoted({ value: requiredString('long') }),
+  // A kind or group outside the list becomes `other`: the quote still proves the item (about 1%
+  // of items on 30 calls, 2026-11-19). A wrong applicant type drops it: null would mean everyone.
+  requirements: quoted({
+    kind: RequirementKindEnum.catch('other'),
+    detail: requiredString('long'),
+    appliesTo: z.array(ApplicantTypeEnum).nullish(),
+    stage: RequirementStageEnum.nullish().catch(null),
+  }),
+  eligibilityRules: quoted({
+    kind: EligibilityRuleKindEnum.catch('other'),
+    detail: requiredString('long'),
+  }),
+  quotas: quoted({
+    group: QuotaGroupEnum.catch('other'),
+    share: requiredString('short').nullish(),
+  }),
   evaluationCriteria: quoted({
     criterion: requiredString('long'),
     maxPoints: z.number().nonnegative().nullish(),
@@ -147,7 +168,13 @@ export function verifyExtractionAnswer(answer: unknown, text: string): VerifiedE
   const artForms = checkedList(fields.artForms, answerSchemas.artForms, (f, q) =>
     artFormWords[f.value].some((word) => plain(q).includes(word)),
   );
-  const requiredDocuments = checkedList(fields.requiredDocuments, answerSchemas.requiredDocuments);
+  const requirements = checkedList(fields.requirements, answerSchemas.requirements);
+  const eligibilityRules = checkedList(fields.eligibilityRules, answerSchemas.eligibilityRules);
+  const quotas = checkedList(
+    fields.quotas,
+    answerSchemas.quotas,
+    (f, q) => !f.share || spaceless(q).includes(spaceless(f.share)),
+  );
   const evaluationCriteria = checkedList(
     fields.evaluationCriteria,
     answerSchemas.evaluationCriteria,
@@ -167,7 +194,15 @@ export function verifyExtractionAnswer(answer: unknown, text: string): VerifiedE
     artForms: artForms.filter(
       (form, index) => artForms.findIndex((other) => other.value === form.value) === index,
     ),
-    requiredDocuments,
+    requirements: requirements.map(({ kind, detail, appliesTo, stage, quote }) => ({
+      kind,
+      detail,
+      appliesTo: appliesTo?.length ? appliesTo : null,
+      stage: stage ?? null,
+      quote,
+    })),
+    eligibilityRules,
+    quotas: quotas.map(({ group, share, quote }) => ({ group, share: share ?? null, quote })),
     evaluationCriteria: evaluationCriteria.map(({ criterion, maxPoints, quote }) => ({
       criterion,
       maxPoints: maxPoints ?? null,

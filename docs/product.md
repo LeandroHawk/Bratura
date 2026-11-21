@@ -21,6 +21,10 @@ cultural MEI) who cannot afford a producer or a project consultant.
   activity; LinkedIn does not fit artisans; data the creator provides needs no scraping. The
   Instagram personal-account API is discontinued as far as known, so uploads are manual. Framed as
   proof for calls and fairs, not as marketing.
+- **Platform announcements stay** (decided 2026-11-18, text to be confirmed by Atilio in review):
+  beyond the call
+  alerts, Bratura itself can message a creator — a new source covered, a feature shipped — as a
+  `platformAnnouncement` notification, same inbox and same opted-in message channel.
 
 ## Competitors (checked 2026-11-07)
 
@@ -75,7 +79,7 @@ said and what it changed: one real sentence in the video is worth more than a sl
 
 Rouanet matchmaking; community-submitted fairs; more states; public pages per open call in plain
 Portuguese, indexable, as the main acquisition channel (Search Console only after a definitive
-domain); WhatsApp sign-up and portfolio.
+domain); Telegram sign-up and portfolio.
 
 **Rouanet facts for the pitch**: only companies under *lucro real* (up to 4% of income tax) and
 individuals filing the full declaration (up to 6%) can deduct; MEI and Simples cannot. A
@@ -95,7 +99,20 @@ Product ideas from anyone are welcome here. Open now:
   Brazil, then Latin America). Is internationalization a competition criterion?
 - The logo slogan "o seu país com mais cultura" versus the video's closing line ("Bratura. O
   dinheiro da cultura chegando em quem cria."): one, the other, or both?
-- A verified phone as the identity, without a password (`docs/integrations/whatsapp.md`).
+- A Telegram account as the identity, without a password (`docs/integrations/telegram.md`).
 - **AI crawlers**: blocked in `robots.txt` for now (2026-11-13), search engines allowed. Open:
   being found by AI search (ChatGPT, Perplexity, Claude) versus being used for training; the two can
   be split per crawler.
+- **How coverage scales after the competition** (2026-11-15). Today each source is measured and
+  registered by hand (robots, terms, reader mode, one PR): right until the 30/11 demo, as mapping
+  is done once. At company scale, in order of reach: (1) **integrations that cover many cities**:
+  municipal gazettes through state associations (~95% of cities under 100k publish only there) and
+  partnerships with the platform vendors (Mapas resellers, IPM, APPorte, the Ministry of Culture),
+  one feed each; (2) **an automatic discovery crawler** for the rest: IBGE city list → culture page
+  → robots read → try the reader modes already built (`callPage`, `documentsOnListing`, headings),
+  a person reviewing only the exceptions; (3) **a cheap LLM call inside the pipeline** for ambiguous
+  links ("call or notice?"), not an agent per source; (4) **terms read once per vendor or
+  platform**, not per city (one template blocks files in 9 cities of the 2026-11-15 sweep). The
+  cost moves from per-source engineering to compute plus negotiation. Firecrawl stays where it
+  pays: turning notice PDFs into text (`docs/integrations/firecrawl.md`). Pitch material for the
+  "next season" line.

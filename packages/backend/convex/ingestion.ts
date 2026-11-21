@@ -20,7 +20,7 @@ import {
   runSourceIngestion,
   type IngestionOutcome,
 } from './model/ingestion/runSourceIngestion';
-import { fetchOpenMapasOpportunities } from './model/mapasCulturais/client';
+import { fetchMapasOpportunitiesClosingThisYearOrLater } from './model/mapasCulturais/client';
 import { callNoticeListingFromMapasOpportunity } from './model/mapasCulturais/listing';
 import { MapasOpportunitySchema } from './model/mapasCulturais/payload';
 import { fetchOfficialPageCalls } from './model/officialPage/discovery';
@@ -75,13 +75,14 @@ export const scheduleDailyIngestion = internalZodAction({
 const IngestMapasCulturaisInstanceActionArgsSchema = z.object({ sourceId: documentId('sources') });
 const IngestMapasCulturaisInstanceActionReturnsSchema = IngestionOutcomeEnum;
 
-/** Reads one Mapas Culturais instance: its open opportunities, through its public JSON API. */
+/** Reads one Mapas Culturais instance: this year's opportunities, through its public JSON API. */
 export const ingestMapasCulturaisInstance = internalZodAction({
   args: IngestMapasCulturaisInstanceActionArgsSchema,
   returns: IngestMapasCulturaisInstanceActionReturnsSchema,
   handler: async (ctx, { sourceId }): Promise<IngestionOutcome> =>
     await runSourceIngestion(ctx, sourceId, 'mapasCulturaisInstance', {
-      fetchEntries: async (source) => await fetchOpenMapasOpportunities(source.baseUrl, Date.now()),
+      fetchEntries: async (source) =>
+        await fetchMapasOpportunitiesClosingThisYearOrLater(source.baseUrl, Date.now(), source),
       EntrySchema: MapasOpportunitySchema,
       listingFromEntry: callNoticeListingFromMapasOpportunity,
     }),
@@ -90,7 +91,10 @@ export const ingestMapasCulturaisInstance = internalZodAction({
 const IngestOfficialPageActionArgsSchema = z.object({ sourceId: documentId('sources') });
 const IngestOfficialPageActionReturnsSchema = IngestionOutcomeEnum;
 
-/** Reads one official page: its listing (and call pages) as plain HTML, never Firecrawl. */
+/**
+ * Reads one official page: its listing (HTML, or JSON) and call pages as plain fetches, through
+ * Firecrawl only for a source that answers only from Brazil.
+ */
 export const ingestOfficialPage = internalZodAction({
   args: IngestOfficialPageActionArgsSchema,
   returns: IngestOfficialPageActionReturnsSchema,

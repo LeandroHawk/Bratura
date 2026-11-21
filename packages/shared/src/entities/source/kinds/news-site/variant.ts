@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { requiredHttpsUrl } from '../../../../primitives/code/url/fields';
+import { SourceAccessFields } from '../../fragments/access/fields';
 import { SourceComplianceFields } from '../../fragments/compliance/fields';
 import { SourceIdentityFields } from '../../fragments/identity/fields';
 
@@ -11,5 +12,6 @@ export const NewsSiteSourceSchema = z.object({
   kind: z.literal('newsSite'),
   ...SourceIdentityFields.shape,
   ...SourceComplianceFields.shape,
+  ...SourceAccessFields.shape,
   siteUrl: requiredHttpsUrl,
 });

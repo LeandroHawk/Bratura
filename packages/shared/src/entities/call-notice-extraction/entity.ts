@@ -4,6 +4,9 @@ import { requiredSha256Hex } from '../../primitives/code/hash/fields';
 import { documentId } from '../../primitives/code/id/fields';
 import { requiredString } from '../../primitives/code/string/fields';
 import { requiredInstant } from '../../primitives/code/time/instant/fields';
+import { EligibilityRuleKindEnum } from '../call-notice/enums/eligibility-rule/enum';
+import { QuotaGroupEnum } from '../call-notice/enums/quota-group/enum';
+import { RequirementKindEnum, RequirementStageEnum } from '../call-notice/enums/requirement/enum';
 
 /** Who may apply, as call notices name them (pessoa física, MEI, empresa, coletivo, OSC). */
 export const ApplicantTypeEnum = z.enum([
@@ -70,7 +73,25 @@ export const CallNoticeExtractionSchema = z.object({
   /** Where applicants must live or work, as the quote writes it. */
   residenceRequirement: z.object({ value: label, quote }).nullable(),
   artForms: z.array(z.object({ value: ArtFormEnum, quote })),
-  requiredDocuments: z.array(z.object({ value: label, quote })),
+  /**
+   * Each document or proof the call asks, one per document: `appliesTo` null when everyone is
+   * asked, `stage` null when the notice does not say when.
+   */
+  requirements: z.array(
+    z.object({
+      kind: RequirementKindEnum,
+      detail: label,
+      appliesTo: z.array(ApplicantTypeEnum).min(1).nullable(),
+      stage: RequirementStageEnum.nullable(),
+      quote,
+    }),
+  ),
+  /** Rules on who or what may apply that are not documents (age, residence time, impediments). */
+  eligibilityRules: z.array(z.object({ kind: EligibilityRuleKindEnum, detail: label, quote })),
+  /** Places or money reserved for a group; `share` as the quote writes it ("20%", "3 vagas"). */
+  quotas: z.array(
+    z.object({ group: QuotaGroupEnum, share: requiredString('short').nullable(), quote }),
+  ),
   evaluationCriteria: z.array(
     z.object({ criterion: label, maxPoints: z.number().nonnegative().nullable(), quote }),
   ),

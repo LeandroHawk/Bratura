@@ -1,12 +1,35 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
+  badescCultureSource,
   bahiaFuncebSource,
+  balsasCultureSource,
+  tocantinsPnabPlatformSource,
+  chamberOfDeputiesCultureSource,
+  erechimPnabSource,
+  estanciaCultureCallsSource,
   funarteCallsSource,
+  guarabiraPnabSource,
+  indaiatubaPnabSource,
+  itaperunaCultureSource,
+  paraFcpSource,
+  rioGrandeDoNorteAudiovisualSource,
   maranhaoSecmaSource,
+  museuDoIndioCallsSource,
   jundiaiCultureSource,
+  palmasFcpSource,
   paranaSeecSource,
+  portoAlegreCultureSource,
+  portoVelhoFunculturalSource,
+  recifeCultureSource,
+  rioGrandeDoNorteFjaSource,
+  rioBrancoCulturaSource,
+  rioDeJaneiroSececCallsSource,
   salvadorFgmSource,
-} from '../../sources.fixture';
+  sesiSpCultureSource,
+  sescRoraimaArtistCredentialingSource,
+  ufuProexcCultureSource,
+  transArtistsCallsSource,
+} from '../sources/registry';
 import {
   callNumberOf,
   callsOfCallPages,
@@ -91,7 +114,7 @@ describe('callsOfCallPages', () => {
     return await calls;
   }
 
-  test('keeps a call page with its documents, the page as its id and official link', async () => {
+  test('keeps a call page with its documents, the page as its id and official link; one posting a result as closed', async () => {
     siteAnswers();
     expect(await callsOf(bahiaFuncebSource)).toEqual([
       {
@@ -108,11 +131,50 @@ describe('callsOfCallPages', () => {
             label: 'ANEXO I - DETALHAMENTO DO OBJETO.pdf',
           },
         ],
+        registrationCloses: null,
+      },
+      {
+        externalId: 'https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio',
+        title: 'EDITAL 022/2026 - APOIO A ESPETÁCULOS',
+        officialUrl: 'https://www.ba.gov.br/fundacaocultural/edital-0222026-apoio',
+        documents: [
+          { url: `https://www.ba.gov.br${files}/2026-07/EDITAL.pdf`, label: 'EDITAL DE APOIO.pdf' },
+          {
+            url: `https://www.ba.gov.br${files}/2026-10/PORTARIA%20269.pdf`,
+            label: 'PORTARIA 269_2026 - RESULTADO FINAL.pdf',
+          },
+        ],
+        registrationCloses: null,
+        resultPosted: true,
       },
     ]);
   });
 
-  test('skips a call that posts results, one numbered before last year, and other hosts unfetched', async () => {
+  test('a call page the listing calls void is never opened (Várzea Grande)', async () => {
+    const listing = 'https://www.varzeagrande.mt.gov.br/arquivos/5513';
+    const fetchMock = siteAnswers({
+      [listing]: [
+        a('/arquivos/5514', 'Edital Nº 001/2026 - CIRCULARTE - (ANULADO)'),
+        a('/arquivos/5550', 'Edital Nº 003/2026 - CIRCUITO CULTURAL VG'),
+      ].join(''),
+      'https://www.varzeagrande.mt.gov.br/arquivos/5550': a(
+        '/storage/Arquivos/f1.pdf',
+        'Edital nº 003/2026 - CIRCUITO CULTURAL VG',
+      ),
+    });
+    const calls = await callsOf({
+      ...bahiaFuncebSource,
+      listingUrl: listing,
+      discovery: { hops: 'callPage', callPageUrlParts: ['/arquivos/'] },
+      documentUrlParts: ['/storage/Arquivos/'],
+    });
+    expect(calls.map(({ title }) => title)).toEqual(['Edital Nº 003/2026 - CIRCUITO CULTURAL VG']);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain(
+      'https://www.varzeagrande.mt.gov.br/arquivos/5514',
+    );
+  });
+
+  test('opens a call posting results; one numbered before last year and other hosts are not fetched', async () => {
     const fetchMock = siteAnswers();
     await callsOf(bahiaFuncebSource);
     expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
@@ -159,6 +221,99 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
+  test("a page inside another call page's folder is part of that call, not a call (Funesc)", async () => {
+    const listing = 'https://funesc.pb.gov.br/editais';
+    const call = `${listing}/edital-selecao-de-musicos-bolsistas-2026`;
+    const inside = `${call}/audicoes-pecas-de-confronto`;
+    const source = {
+      ...chamberOfDeputiesCultureSource,
+      listingUrl: listing,
+      discovery: { hops: 'callPage' as const, callPageUrlParts: ['funesc.pb.gov.br/editais/'] },
+    };
+    siteAnswers({
+      [listing]: a(call, 'Edital Seleção de músicos bolsistas 2026') + a(inside, 'Audições'),
+      [call]: a(`${call}/edital-001_2026.pdf`, 'Edital 001/2026'),
+      [inside]: a(`${call}/edital-001_2026.pdf`, 'Edital 001/2026'),
+    });
+    expect((await callsOf(source)).map(({ externalId }) => externalId)).toEqual([call]);
+  });
+
+  test('the PNAB platform: calls at root slugs beside its home, each file titled by its link (Tocantins)', async () => {
+    const site = 'https://pnabtocantins.com.br';
+    const base64 = (text: string) => btoa(String.fromCharCode(...new TextEncoder().encode(text)));
+    const file = (id: number, title: string) =>
+      `${site}/lerarquivo/${base64(`upload/edital_documento/25/edital-25-documento-${id}.pdf`)}/${base64(title)}`;
+    const notice = file(371, 'EDITAL Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS');
+    const annex = file(372, 'ANEXO 1 - FORMULÁRIO DE INSCRIÇÃO');
+    const categories = file(380, 'ANEXO 9 - CATEGORIAS E VAGAS');
+    siteAnswers({
+      [tocantinsPnabPlatformSource.listingUrl]: [
+        a(`${site}/`, 'Início'),
+        a(`${site}/faq`, 'FAQ'),
+        a(`${site}/fomento-cultura-urbana`, 'Acessar'),
+        a(`${site}/fomento-povo-indigena`, 'Acessar'),
+      ].join(''),
+      [`${site}/`]: a(`${site}/fomento-cultura-urbana`, 'Acessar'),
+      [`${site}/faq`]: '<h1>Dúvidas</h1>',
+      [`${site}/fomento-cultura-urbana`]:
+        '<h1>EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS</h1>' +
+        [
+          a(notice, 'Baixar Edital em PDF'),
+          a(notice, 'Baixar'),
+          a(annex, 'Baixar'),
+          a(categories, 'Baixar'),
+        ].join(''),
+      [`${site}/fomento-povo-indigena`]:
+        '<h1>EDITAL Nº 05/2026 - POVOS INDÍGENAS</h1>' +
+        [
+          a(file(390, 'EDITAL Nº 05/2026 - POVOS INDÍGENAS'), 'Baixar'),
+          a(file(408, 'RESULTADO FINAL ETAPA DE AVALIAÇÃO'), 'Baixar'),
+        ].join(''),
+    });
+    expect(await callsOf(tocantinsPnabPlatformSource)).toEqual([
+      {
+        externalId: `${site}/fomento-cultura-urbana`,
+        title: 'EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS',
+        officialUrl: `${site}/fomento-cultura-urbana`,
+        documents: [
+          { url: notice, label: 'EDITAL Nº 02/2026 - CULTURAS URBANAS E PERIFÉRICAS' },
+          { url: annex, label: 'ANEXO 1 - FORMULÁRIO DE INSCRIÇÃO' },
+          { url: categories, label: 'ANEXO 9 - CATEGORIAS E VAGAS' },
+        ],
+        registrationCloses: null,
+      },
+      {
+        externalId: `${site}/fomento-povo-indigena`,
+        title: 'EDITAL Nº 05/2026 - POVOS INDÍGENAS',
+        officialUrl: `${site}/fomento-povo-indigena`,
+        documents: [
+          {
+            url: file(390, 'EDITAL Nº 05/2026 - POVOS INDÍGENAS'),
+            label: 'EDITAL Nº 05/2026 - POVOS INDÍGENAS',
+          },
+          {
+            url: file(408, 'RESULTADO FINAL ETAPA DE AVALIAÇÃO'),
+            label: 'RESULTADO FINAL ETAPA DE AVALIAÇÃO',
+          },
+        ],
+        registrationCloses: null,
+        resultPosted: true,
+      },
+    ]);
+  });
+
+  test("a call's notice the listing links through its /view page is the call's, not the frame (Câmara)", async () => {
+    const listing = chamberOfDeputiesCultureSource.listingUrl;
+    const page = `${listing}/edital-2026`;
+    const notice = `${listing}/EditaldeSeleoCultural012026.pdf`;
+    siteAnswers({
+      [listing]: a(page, 'Abertura Edital 2026/2027') + a(`${notice}/view`, 'Edital 01/2026'),
+      [page]: a(notice, 'Edital de Seleção Cultural 01/2026'),
+    });
+    const [call] = await callsOf(chamberOfDeputiesCultureSource);
+    expect(call?.documents.map(({ url }) => url)).toEqual([notice]);
+  });
+
   test('a "Clique aqui!" link names no call: the call page\'s own heading does (Salvador)', async () => {
     const site = 'https://fgm.salvador.ba.gov.br';
     const uploads = `${site}/wp-content/uploads/2026/10`;
@@ -180,6 +335,99 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
+  test('"Mais informações" names no call: the call page\'s <h1> does (Balsas)', async () => {
+    const site = 'https://www.balsas.ma.gov.br';
+    siteAnswers({
+      [balsasCultureSource.listingUrl]: a('cultura_editais.php?id=6', 'Mais informações'),
+      [`${site}/cultura_editais.php?id=6`]: [
+        '<h1>EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026</h1>',
+        a(
+          'cultura/editais/6/30/EDITAL_DE_CHAMAMENTO_PUBLICO_Nm_022026.PDF',
+          'EDITAL DE CHAMAMENTO',
+        ),
+      ].join(''),
+    });
+    const calls = await callsOf(balsasCultureSource);
+    expect(calls.map(({ title }) => title)).toEqual(['EDITAL DE CHAMAMENTO PÚBLICO Nº 02/2026']);
+  });
+
+  test('the call is named by `callPageTitleClass`; a `.php?id=` handler is a document (Itaperuna)', async () => {
+    const system = 'https://prefeituraitaperuna.com.br/sistema-inscricoes/public';
+    const file = (id: number, label: string) => a(`edital_arquivo.php?id=${id}`, label);
+    siteAnswers({
+      [itaperunaCultureSource.listingUrl]: a('edital.php?e=edital01', 'Ver edital e inscrever-se'),
+      [`${system}/edital.php?e=edital01`]: [
+        '<h1>Formulário de Inscrição — Pessoa Física</h1>',
+        '<p class="texto-secundario">Edital de Chamamento Público nº 01/2026 — Vinicius Batista</p>',
+        file(19, 'Anexo II'),
+        file(94, 'Edital'),
+      ].join(''),
+    });
+    const [call] = await callsOf(itaperunaCultureSource);
+    expect(call?.title).toBe('Edital de Chamamento Público nº 01/2026 — Vinicius Batista');
+    expect(call?.documents).toEqual([
+      { url: `${system}/edital_arquivo.php?id=19`, label: 'Anexo II' },
+      { url: `${system}/edital_arquivo.php?id=94`, label: 'Edital' },
+    ]);
+  });
+
+  test('a card saying registration is over is not opened; an open one is titled by its page (RN)', async () => {
+    const site = 'https://maiscultura.rn.gov.br';
+    const card = (id: number, title: string, status: string) =>
+      a(`/editais/editais/${id}/`, `<h3>${title}</h3><p>Fomentar projetos.</p><p>${status}</p>`);
+    siteAnswers({
+      [rioGrandeDoNorteAudiovisualSource.listingUrl]: [
+        card(139, 'Bloco V: Edital 18/2026', 'Inscrições encerradas'),
+        card(142, 'Edital de Fomento ao Audiovisual 20/2026', 'Inscrições até 7 de Dezembro'),
+      ].join(''),
+      [`${site}/editais/editais/142/`]: [
+        '<h1>Edital de Fomento ao Audiovisual 20/2026</h1>',
+        a(
+          'https://nyc3.digitaloceanspaces.com/repo/seletar/media/editais/142/1._Edital.PDF',
+          'Edital',
+        ),
+      ].join(''),
+    });
+    const calls = await callsOf(rioGrandeDoNorteAudiovisualSource);
+    expect(calls.map(({ title }) => title)).toEqual(['Edital de Fomento ao Audiovisual 20/2026']);
+    expect(fetch).not.toHaveBeenCalledWith(`${site}/editais/editais/139/`, expect.anything());
+  });
+
+  test('an image card with no text opens its call page, titled by `callPageTitleClass` (Guarabira)', async () => {
+    const page =
+      'https://guarabira.pb.gov.br/publicacoes/editais-lei-aldair-blanc-2026/edital-05-x';
+    siteAnswers({
+      [guarabiraPnabSource.listingUrl]: a(page, '<img src="/edital-05.jpeg">'),
+      [page]: [
+        '<h1>Prefeitura de Guarabira (PB)</h1>',
+        '<h3 class="f1-l-3 cl2">Edital 05 - Fomento à Música</h3>',
+        a(
+          '/storage/content/publicacoes/editais-lei-aldair-blanc-2026/7100/arquivos/x.pdf',
+          'EDITAL_05',
+        ),
+      ].join(''),
+    });
+    const calls = await callsOf(guarabiraPnabSource);
+    expect(calls.map(({ title }) => title)).toEqual(['Edital 05 - Fomento à Música']);
+  });
+
+  test("a card's modality is not the call's name: a credenciamento's word on the card keeps no result open: recorded closed (FCP-PA)", async () => {
+    siteAnswers({
+      [paraFcpSource.listingUrl]: a(
+        '/edital/44',
+        'Abertura: h Modalidade: Edital de Credenciamento <h5>Edital Semear 2026</h5>',
+      ),
+      'https://fcp.pa.gov.br/edital/44': [
+        '<h1>Edital Semear 2026</h1>',
+        a('/midias/anexos/44_edital_001-2026_semear.pdf', 'Clique aqui'),
+        a('/midias/anexos/44_2026.05.13.doe_lista_final_de_avaliacao.pdf', 'Resolução Final'),
+      ].join(''),
+    });
+    expect(
+      (await callsOf(paraFcpSource)).map(({ title, resultPosted }) => [title, resultPosted]),
+    ).toEqual([['Edital Semear 2026', true]]);
+  });
+
   test('a notice in two formats is kept once; a call page with no notice still is a call (Salvador, Paraná)', async () => {
     const ba = 'https://www.ba.gov.br/fundacaocultural';
     siteAnswers({
@@ -198,6 +446,27 @@ describe('callsOfCallPages', () => {
     expect(calls.map(({ documents }) => documents.map(({ url }) => url.split('/').pop()))).toEqual([
       ['EDITAL-N-092026-ATELIE.pdf', 'ANEXO-I-CRONOGRAMA.docx'],
       ['ANEXO-I-PLANO.pdf'],
+    ]);
+  });
+
+  test('an "Acessar" link on a page with no <h1>: its numbered notice names the call (Estância)', async () => {
+    const site = 'https://editalcultural.estancia.se.gov.br';
+    const download = (id: number, name: string) =>
+      `<p><strong>${name}</strong></p>${a(`/Arquivos/DownloadArquivos/?id=${id}`, 'Baixar')}`;
+    siteAnswers({
+      [estanciaCultureCallsSource.listingUrl]: [
+        a('/Editais/Details/53', 'Acessar'),
+        a('/Editais/Details/45', 'Acessar'),
+        a('/Editais/Details/51', 'Acessar'),
+      ].join(''),
+      [`${site}/Editais/Details/53`]:
+        '<h3>Publicação do Edital</h3>' + download(70, 'EDITAL 022/2026 – CULTURAS DA MINHA TERRA'),
+      [`${site}/Editais/Details/45`]: download(55, 'Plano de Aplicação dos Recursos (PAR)'),
+      [`${site}/Editais/Details/51`]: download(61, 'Resultado Final da Seleção do Edital 004-2026'),
+    });
+    const calls = await callsOf(estanciaCultureCallsSource);
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      ['EDITAL 022/2026 – CULTURAS DA MINHA TERRA', [`${site}/Arquivos/DownloadArquivos/?id=70`]],
     ]);
   });
 
@@ -225,7 +494,10 @@ describe('callsOfCallPages', () => {
     };
     const calls = await callsOf(everyPage);
     expect(fetchMock).toHaveBeenCalledTimes(3); // the listing and 2 of its 3 call pages
-    expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
+    expect(calls.map(({ title }) => title)).toEqual([
+      'EDITAL 027/2026 - SALA DO CORO',
+      'EDITAL 022/2026 - APOIO A ESPETÁCULOS',
+    ]);
   });
 
   test("after a redirect, a page's relative links resolve against where it landed", async () => {
@@ -282,6 +554,714 @@ describe('callsOfCallPages', () => {
     const calls = await callsOf(everyPage);
     expect(calls.map(({ title }) => title)).toEqual(['EDITAL 027/2026 - SALA DO CORO']);
   });
+
+  test('where the page is the notice (Badesc): the page goes first, titled by its h1 or <title>; a page with no notice, or whose title names none, is no call; a linked notice keeps the page out', async () => {
+    const site = 'https://fundacaoculturalbadesc.com';
+    const post = `${site}/chamada-publica-2/chamada-publica-1a-exposicao-individual-espaco-paulo-gaiad/`;
+    siteAnswers({
+      [badescCultureSource.listingUrl]: [
+        a(post, 'Chamada Pública 1ª Exposição Individual … Leia [+]'),
+        a(
+          `${site}/chamada-publica-2/confira-os-selecionados-da-chamada-publica/`,
+          'Confira os selecionados',
+        ),
+        a(`${site}/chamada-publica-2/materiais-educativos`, 'MATERIAIS EDUCATIVOS'),
+        a(`${site}/edital`, 'EDITAL'),
+        a(`${site}/chamada-publica-2/chamada-musical/`, 'Chamada Musical'),
+      ].join(''),
+      [`${site}/chamada-publica-2/chamada-musical/`]: [
+        '<h1>Chamada Pública Badesc Musical 2027</h1>',
+        a(`${site}/wp-content/uploads/2026/11/Edital-Musical-2027.pdf`, 'Edital'),
+      ].join(''),
+      [post]:
+        '<h1>Chamada Pública Espaço Paulo Gaiad 2027</h1><a href="https://forms.gle/x">inscrição</a>',
+      [`${site}/chamada-publica-2/confira-os-selecionados-da-chamada-publica/`]: '<h1>Confira</h1>',
+      [`${site}/chamada-publica-2/materiais-educativos`]: a(
+        `${site}/wp-content/uploads/jogo.pdf`,
+        'Jogo',
+      ),
+      [`${site}/edital`]: [
+        '<title>EDITAL DE EXPOSIÇÕES FERNANDO BECK 2027 - Fundação Cultural Badesc</title>',
+        a(`${site}/wp-content/uploads/2025/10/Inventario.pdf`, 'clique aqui'),
+      ].join(''),
+    });
+    const calls = await callsOf(badescCultureSource);
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      ['Chamada Pública Espaço Paulo Gaiad 2027', [post]],
+      [
+        'EDITAL DE EXPOSIÇÕES FERNANDO BECK 2027',
+        [`${site}/edital`, `${site}/wp-content/uploads/2025/10/Inventario.pdf`],
+      ],
+      // A page that links its notice keeps the file, not itself.
+      [
+        'Chamada Pública Badesc Musical 2027',
+        [`${site}/wp-content/uploads/2026/11/Edital-Musical-2027.pdf`],
+      ],
+    ]);
+  });
+
+  test('news as calls (Porto Alegre): a post over a year old is skipped, one with no date kept; a prize or open registration in the title names the call', async () => {
+    const news = 'https://prefeitura.poa.br/smc/noticias';
+    const published = (date: string) =>
+      `<div class="field field--name-field-noticia-data-no-calendario field--item">${date}</div>`;
+    siteAnswers({
+      [portoAlegreCultureSource.listingUrl]: [
+        a(`${news}/premio-musica-2026`, 'Leia Mais'),
+        a(`${news}/teatros-2026`, 'Leia Mais'),
+        a(`${news}/premio-literatura-30`, 'Leia Mais'),
+        a(`${news}/sem-data`, 'Leia Mais'),
+      ].join(''),
+      [`${news}/premio-musica-2026`]: [
+        '<title>Abertas as inscrições para o Prêmio Açorianos de Música 2026 | Prefeitura</title>',
+        published('17/10/2026 04:42'),
+        a('https://forms.gle/x', 'link'),
+      ].join(''),
+      [`${news}/teatros-2026`]: [
+        '<title>Começam nesta segunda-feira as inscrições para ocupação dos teatros | Prefeitura</title>',
+        published('05/01/2026 06:10'),
+      ].join(''),
+      [`${news}/premio-literatura-30`]: [
+        '<title>Abertas inscrições para 30ª edição do Prêmio Açorianos de Literatura | Prefeitura</title>',
+        published('11/12/2024 08:43'),
+      ].join(''),
+      [`${news}/sem-data`]: '<title>Prêmio Açorianos de Dança | Prefeitura</title>',
+    });
+    const calls = await callsOf(portoAlegreCultureSource);
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      [
+        'Abertas as inscrições para o Prêmio Açorianos de Música 2026',
+        [`${news}/premio-musica-2026`],
+      ],
+      [
+        'Começam nesta segunda-feira as inscrições para ocupação dos teatros',
+        [`${news}/teatros-2026`],
+      ],
+      ['Prêmio Açorianos de Dança', [`${news}/sem-data`]],
+    ]);
+  });
+
+  test("an http link to the source's own host is fetched as https, once; another host's is not (Sesi SP)", async () => {
+    const page = 'www.sesisp.org.br/cultura/sesi-sp-abre-inscricoes-bachiana';
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    const fetchMock = siteAnswers({
+      [sesiSpCultureSource.listingUrl]: [
+        a(`http://${page}`, 'Processo Seletivo Bachiana Jovem'),
+        a(`https://${page}`, 'Processo Seletivo Bachiana Jovem'),
+        a('http://outro.org.br/cultura/sesi-sp-x', 'Outro'),
+      ].join(''),
+      [`https://${page}`]: a(media, 'Confira o regulamento aqui'),
+    });
+    const calls = await callsOf(sesiSpCultureSource);
+    expect(calls.map(({ externalId, documents }) => [externalId, documents])).toEqual([
+      [`https://${page}`, [{ url: media, label: 'Confira o regulamento aqui' }]],
+    ]);
+    expect(fetchMock.mock.calls.map(([url]) => String(url))).toEqual([
+      sesiSpCultureSource.listingUrl,
+      `https://${page}`,
+    ]);
+  });
+
+  test('a frame document linked as http on the listing and on a call page is still the frame', async () => {
+    const page = 'www.sesisp.org.br/cultura/sesi-sp-abre-inscricoes-bachiana';
+    const frame = a('http://www.sesisp.org.br/cultura/edital-geral.pdf', 'Edital geral');
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    siteAnswers({
+      [sesiSpCultureSource.listingUrl]: frame + a(`http://${page}`, 'Bachiana Jovem'),
+      [`https://${page}`]: frame + a(media, 'Confira o regulamento aqui'),
+    });
+    const frameAsDocument = {
+      ...sesiSpCultureSource,
+      documentUrlParts: [...sesiSpCultureSource.documentUrlParts, '/cultura/edital-geral'],
+    };
+    const [call] = await callsOf(frameAsDocument);
+    expect(call?.documents.map(({ url }) => url)).toEqual([media]);
+  });
+
+  test("a JSON listing (Rio Branco): each item a call page by its id, titled by its field; a past edition not opened, last year's closed one not recorded unless it closed this year; the close the page prints", async () => {
+    const site = 'https://cultura.riobranco.ac.gov.br';
+    const listing = [
+      { id: 43, titulo: ' Edital 10/2026 -  Pequenos Apoios - Música ', status_edital: '1' },
+      { id: 42, titulo: 'Edital 09/2026 - Patrimônio Cultural' },
+      { id: 30, titulo: 'Edital 05/2025 - Teatro' },
+      { id: 31, titulo: 'Edital 07/2025 - Dança' },
+      { id: 6, titulo: 'Fundo Municipal de Cultura 2023 - Povos Originários' },
+      { id: 7, titulo: null },
+      { id: '', titulo: 'Id vazio' },
+      { titulo: 'Sem id' },
+    ];
+    const html = (body: string) =>
+      new Response(body, { headers: { 'content-type': 'text/html; charset=UTF-8' } });
+    const answers: Record<string, () => Response> = {
+      [rioBrancoCulturaSource.listingUrl]: () => Response.json(listing),
+      [`${site}/site/edital-documento/43`]: () =>
+        html(
+          [
+            '<p>Data de Início das Inscrições: 01/12/2026 Data de Término das Inscrições: 20/12/2026</p>',
+            a(
+              `${site}/site/edital-documento/download/800`,
+              'Edital 10/2026 - Pequenos Apoios - Música',
+            ),
+            a(`${site}/site/edital-documento/download/801`, 'Anexo nº 05 - Planilha de Categorias'),
+          ].join(''),
+        ),
+      [`${site}/site/edital-documento/42`]: () =>
+        html(
+          [
+            a(`${site}/site/edital-documento/download/703`, 'Edital 09/2026 - Patrimônio Cultural'),
+            a(`${site}/site/edital-documento/download/740`, 'RESULTADO FINAL - EDITAL 09/2026'),
+          ].join(''),
+        ),
+      [`${site}/site/edital-documento/30`]: () =>
+        html(
+          [
+            a(`${site}/site/edital-documento/download/500`, 'Edital 05/2025 - Teatro'),
+            a(`${site}/site/edital-documento/download/530`, 'RESULTADO FINAL - EDITAL 05/2025'),
+          ].join(''),
+        ),
+      [`${site}/site/edital-documento/31`]: () =>
+        html(
+          [
+            '<p>Data de Término das Inscrições: 10/01/2026</p>',
+            a(`${site}/site/edital-documento/download/600`, 'Edital 07/2025 - Dança'),
+            a(`${site}/site/edital-documento/download/630`, 'RESULTADO FINAL - EDITAL 07/2025'),
+          ].join(''),
+        ),
+    };
+    const fetchMock = vi.fn<typeof fetch>(
+      async (input) => answers[String(input)]?.() ?? new Response('', { status: 404 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await callsOf(rioBrancoCulturaSource)).toEqual([
+      {
+        externalId: `${site}/site/edital-documento/43`,
+        title: 'Edital 10/2026 - Pequenos Apoios - Música',
+        officialUrl: `${site}/site/edital-documento/43`,
+        documents: [
+          {
+            url: `${site}/site/edital-documento/download/800`,
+            label: 'Edital 10/2026 - Pequenos Apoios - Música',
+          },
+          {
+            url: `${site}/site/edital-documento/download/801`,
+            label: 'Anexo nº 05 - Planilha de Categorias',
+          },
+        ],
+        registrationCloses: {
+          at: Date.UTC(2026, 11, 21, 4, 59, 59),
+          timeZone: rioBrancoCulturaSource.timeZone,
+          precision: 'day',
+        },
+      },
+      {
+        externalId: `${site}/site/edital-documento/42`,
+        title: 'Edital 09/2026 - Patrimônio Cultural',
+        officialUrl: `${site}/site/edital-documento/42`,
+        documents: [
+          {
+            url: `${site}/site/edital-documento/download/703`,
+            label: 'Edital 09/2026 - Patrimônio Cultural',
+          },
+          {
+            url: `${site}/site/edital-documento/download/740`,
+            label: 'RESULTADO FINAL - EDITAL 09/2026',
+          },
+        ],
+        registrationCloses: null,
+        resultPosted: true,
+      },
+      {
+        externalId: `${site}/site/edital-documento/31`,
+        title: 'Edital 07/2025 - Dança',
+        officialUrl: `${site}/site/edital-documento/31`,
+        documents: [
+          { url: `${site}/site/edital-documento/download/600`, label: 'Edital 07/2025 - Dança' },
+          {
+            url: `${site}/site/edital-documento/download/630`,
+            label: 'RESULTADO FINAL - EDITAL 07/2025',
+          },
+        ],
+        registrationCloses: {
+          at: Date.UTC(2026, 0, 11, 4, 59, 59),
+          timeZone: rioBrancoCulturaSource.timeZone,
+          precision: 'day',
+        },
+        resultPosted: true,
+      },
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      rioBrancoCulturaSource.listingUrl,
+      `${site}/site/edital-documento/43`,
+      `${site}/site/edital-documento/42`,
+      `${site}/site/edital-documento/30`,
+      `${site}/site/edital-documento/31`,
+    ]);
+  });
+
+  test('folders that need a notice (Palmas): a folder of courses is no call; an icon link named by its aria-label is the notice', async () => {
+    const site = 'https://www.palmas.to.gov.br';
+    const page = `${site}/core/orgao/fundacao-cultural/`;
+    const icon = (file: string, name: string) =>
+      `<a class="orgao-arquivo-visualizar" href="/media/arquivo/pagina_arquivo/${file}" aria-label="Visualizar PDF ${name}"><i class="bi bi-eye"></i></a>`;
+    siteAnswers({
+      [palmasFcpSource.listingUrl]: [
+        a('?arquivo_pasta=8ea2#arquivos-documentos', 'EDITAL Nº 05/2026/FCP - 10º SALÃO PALMENSE'),
+        a('?arquivo_pasta=84b4#arquivos-documentos', 'Cursos de Iniciação Artística - 2026'),
+      ].join(''),
+      [`${page}?arquivo_pasta=8ea2`]: icon('edital_10_SALAO.pdf', 'Edital Nº 05/2026/FCP'),
+      [`${page}?arquivo_pasta=84b4`]: icon('Grade_de_Cursos.pdf', 'Grade de Cursos 2026'),
+    });
+
+    expect(await callsOf(palmasFcpSource)).toEqual([
+      {
+        externalId: `${page}?arquivo_pasta=8ea2`,
+        title: 'EDITAL Nº 05/2026/FCP - 10º SALÃO PALMENSE',
+        officialUrl: `${page}?arquivo_pasta=8ea2`,
+        documents: [
+          {
+            url: `${site}/media/arquivo/pagina_arquivo/edital_10_SALAO.pdf`,
+            label: 'Visualizar PDF Edital Nº 05/2026/FCP',
+          },
+        ],
+        registrationCloses: null,
+      },
+    ]);
+  });
+
+  /** Porto Velho's Funcultural: folders a Livewire button opens, served at `?folder=N`. */
+  const portoVelhoSite = 'https://funcultural.portovelho.ro.gov.br';
+  const folder = (id: number) => `${portoVelhoSite}/arquivos?folder=${id}`;
+  const button = (id: number, name: string) =>
+    `<button wire:click="selectFolder(${id})" class="flex"><svg><path d="M1"/></svg>` +
+    `<div><span class="text-sm">${name}</span><span class="text-xs">Descrição da pasta</span></div></button>`;
+
+  test('year folders (Porto Velho): this and last year opened, each call a folder titled by its button, files in it or in every subfolder below, a results folder first too; a folder with no notice is no call', async () => {
+    const file = (name: string) => a(`${portoVelhoSite}/uploads/arquivos/${name}.pdf`, name);
+    const fetchMock = siteAnswers({
+      [portoVelhoFunculturalSource.listingUrl]: [
+        a(`${portoVelhoSite}/arquivos/lista/33997?editais`, 'Editais'),
+        button(88673, '2026'),
+        button(71932, '2025'),
+        button(33999, '2019'),
+        button(59545, 'EDITAIS e ANEXOS - LEI PAULO GUSTAVO'),
+      ].join(''),
+      [folder(88673)]: [
+        button(99327, 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026/FUNCULTURAL'),
+        button(90593, 'EDITAL DE CHAMAMENTO PÚBLICO - SIMPLIFICADO N.º 003/2026/FUNCULTURAL'),
+      ].join(''),
+      [folder(71932)]: button(79491, 'Termos de Inexigibilidade de Licitações'),
+      [folder(99327)]: [
+        button(99619, 'ERRATAS (RETIFICAÇÕES)'),
+        file('EDITAL DE CHAMAMENTO PÚBLICO N.º 004-FUNCULTURAL-2026'),
+        file('ANEXO VIII - CRONOGRAMA'),
+      ].join(''),
+      [folder(99619)]: file('PRIMEIRA ERRATA (RETIFICAÇÃO) PRAZOS'),
+      [folder(90593)]: [
+        button(91729, 'RESULTADOS'),
+        button(90604, 'EDITAL DE CHAMAMENTO PÚBLICO SIMPLIFICADO N.º 003/2026'),
+      ].join(''),
+      [folder(91729)]: file('RESULTADO FINAL CONCURSO DE QUADRILHAS'),
+      [folder(90604)]: file('EDITAL SIMPLIFICADO N.º 003-2026'),
+      [folder(79491)]: file('TERMO DE INEXIGIBILIDADE DE LICITAÇÃO Nº 003-2025'),
+    });
+
+    expect(await callsOf(portoVelhoFunculturalSource)).toEqual([
+      {
+        externalId: folder(99327),
+        title: 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026/FUNCULTURAL',
+        officialUrl: folder(99327),
+        documents: [
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/EDITAL%20DE%20CHAMAMENTO%20P%C3%9ABLICO%20N.%C2%BA%20004-FUNCULTURAL-2026.pdf`,
+            label: 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004-FUNCULTURAL-2026',
+          },
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/ANEXO%20VIII%20-%20CRONOGRAMA.pdf`,
+            label: 'ANEXO VIII - CRONOGRAMA',
+          },
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/PRIMEIRA%20ERRATA%20(RETIFICA%C3%87%C3%83O)%20PRAZOS.pdf`,
+            label: 'PRIMEIRA ERRATA (RETIFICAÇÃO) PRAZOS',
+          },
+        ],
+        registrationCloses: null,
+      },
+      {
+        externalId: folder(90593),
+        title: 'EDITAL DE CHAMAMENTO PÚBLICO - SIMPLIFICADO N.º 003/2026/FUNCULTURAL',
+        officialUrl: folder(90593),
+        documents: [
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/RESULTADO%20FINAL%20CONCURSO%20DE%20QUADRILHAS.pdf`,
+            label: 'RESULTADO FINAL CONCURSO DE QUADRILHAS',
+          },
+          {
+            url: `${portoVelhoSite}/uploads/arquivos/EDITAL%20SIMPLIFICADO%20N.%C2%BA%20003-2026.pdf`,
+            label: 'EDITAL SIMPLIFICADO N.º 003-2026',
+          },
+        ],
+        registrationCloses: null,
+        resultPosted: true,
+      },
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      portoVelhoFunculturalSource.listingUrl,
+      folder(88673),
+      folder(71932),
+      folder(99327),
+      folder(99619),
+      folder(90593),
+      folder(91729),
+      folder(90604),
+      folder(79491),
+    ]);
+  });
+
+  test("year pages (Erechim): this and last year's pages opened for their call pages, older years and the menu not; a call with a result posted is recorded closed", async () => {
+    const site = 'https://www.pmerechim.rs.gov.br/';
+    const base = '<base href="https://www.pmerechim.rs.gov.br//">';
+    const uploads = (name: string) => a(`uploads/paginas/${name}.pdf`, `${name}.pdf`);
+    const openCall = 'pagina/1848/pnab---edital-n-082026';
+    const callWithResult = 'pagina/1847/pnab---edital-n-072026';
+    const yearLinks = [
+      a('pagina/1863/2025', '2025'),
+      a('pagina/1729/2024', '2024'),
+      a('pagina/1846/2026', '2026'),
+    ];
+    const fetchMock = siteAnswers({
+      [erechimPnabSource.listingUrl]: [
+        base,
+        a('pagina/200/ouvidoria', 'Ouvidoria'),
+        ...yearLinks,
+      ].join(''),
+      [`${site}/pagina/1863/2025`]: [base, ...yearLinks, uploads('Extrato do PAR')].join(''),
+      [`${site}/pagina/1846/2026`]: [
+        base,
+        ...yearLinks,
+        a(openCall, 'PNAB - Edital nº 08/2026 - Cultura Viva'),
+        a(callWithResult, 'PNAB - Edital nº 07/2026 - Fomento'),
+      ].join(''),
+      [`${site}/${openCall}`]: [
+        base,
+        uploads('Edital Cultura Viva 08-2026'),
+        uploads('Anexo 01 - Categorias'),
+      ].join(''),
+      [`${site}/${callWithResult}`]: [
+        base,
+        uploads('Edital de Chamamento Público nº 07-2026 - PNAB'),
+        uploads('Ata da Etapa de Seleção - resultado final - Edital 07-2026'),
+      ].join(''),
+    });
+
+    expect(await callsOf(erechimPnabSource)).toEqual([
+      {
+        externalId: `${site}/${openCall}`,
+        title: 'PNAB - Edital nº 08/2026 - Cultura Viva',
+        officialUrl: `${site}/${openCall}`,
+        documents: [
+          {
+            url: `${site}/uploads/paginas/Edital%20Cultura%20Viva%2008-2026.pdf`,
+            label: 'Edital Cultura Viva 08-2026.pdf',
+          },
+          {
+            url: `${site}/uploads/paginas/Anexo%2001%20-%20Categorias.pdf`,
+            label: 'Anexo 01 - Categorias.pdf',
+          },
+        ],
+        registrationCloses: null,
+      },
+      {
+        externalId: `${site}/${callWithResult}`,
+        title: 'PNAB - Edital nº 07/2026 - Fomento',
+        officialUrl: `${site}/${callWithResult}`,
+        documents: [
+          {
+            url: `${site}/uploads/paginas/Edital%20de%20Chamamento%20P%C3%BAblico%20n%C2%BA%2007-2026%20-%20PNAB.pdf`,
+            label: 'Edital de Chamamento Público nº 07-2026 - PNAB.pdf',
+          },
+          {
+            url: `${site}/uploads/paginas/Ata%20da%20Etapa%20de%20Sele%C3%A7%C3%A3o%20-%20resultado%20final%20-%20Edital%2007-2026.pdf`,
+            label: 'Ata da Etapa de Seleção - resultado final - Edital 07-2026.pdf',
+          },
+        ],
+        registrationCloses: null,
+        resultPosted: true,
+      },
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      erechimPnabSource.listingUrl,
+      `${site}/pagina/1863/2025`,
+      `${site}/pagina/1846/2026`,
+      `${site}/${openCall}`,
+      `${site}/${callWithResult}`,
+    ]);
+  });
+
+  test('a credenciamento stays after its list of the accredited is posted; another call with a result is recorded closed (Museu do Índio)', async () => {
+    const site = 'https://www.gov.br/museudoindio/pt-br/acesso-a-informacao/editais';
+    const file = (name: string, label: string) => a(`${site}/x/${name}/@@display-file/file`, label);
+    siteAnswers({
+      [museuDoIndioCallsSource.listingUrl]: [
+        a(`${site}/credenciamento-associacoes-culturais`, 'Credenciamento Associações Culturais'),
+        a(`${site}/uso-de-espacos`, 'Uso de Espaços'),
+      ].join(''),
+      [`${site}/credenciamento-associacoes-culturais`]: [
+        file('edital-de-credenciamento', 'Edital'),
+        file(
+          'listadecredenciados_11.pdf',
+          'Edital 90008/2025 - Resultado do credenciamento / lista 1',
+        ),
+      ].join(''),
+      [`${site}/uso-de-espacos`]: [
+        file('sei-edital.pdf', 'Edital'),
+        file('sei-resultado-1.pdf', 'Resultado 1'),
+      ].join(''),
+    });
+
+    expect(
+      (await callsOf(museuDoIndioCallsSource)).map(({ title, documents, resultPosted }) => [
+        title,
+        documents.length,
+        resultPosted,
+      ]),
+    ).toEqual([
+      ['Credenciamento Associações Culturais', 2, undefined],
+      ['Uso de Espaços', 2, true],
+    ]);
+  });
+
+  test("a title filter and the site's crawl delay (UFU): only the calls open to anyone opened, each page 10 s after the last", async () => {
+    const site = 'https://editais.ufu.br';
+    const notice = (name: string) =>
+      a(`${site}/sites/editais.ufu.br/files/${name}.pdf`, `${name}.pdf`);
+    const fetchMock = siteAnswers({
+      [ufuProexcCultureSource.listingUrl]: [
+        a('/node/2', 'Apresentação'),
+        a(
+          '/node/6742',
+          'EDITAL PROEXC 18_UFU_PROEXC_2026_Processo Seletivo de Profissionais_ APEC_Práxis',
+        ),
+        a(
+          '/node/6739',
+          'EDITAL PROEXC 14_UFU_PROEXC_2026_Bolsistas de Extensão_Projeto Salve Elas',
+        ),
+        a(
+          '/node/6741',
+          'EDITAL PROEXC 17_UFU_PROEXC_2026_PROCESSO SELETIVO DE PROFISSIONAIS_Saberes',
+        ),
+      ].join(''),
+      [`${site}/node/6742`]: notice('EDITAL PROEXC 18_Processo Seletivo de Profissionais'),
+      [`${site}/node/6741`]: [
+        notice('EDITAL PROEXC 17_Processo Seletivo de Profissionais'),
+        notice('Resultado Final_EDITAL PROEXC 17'),
+      ].join(''),
+    });
+
+    const calls = callsOfCallPages(ufuProexcCultureSource);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the listing; its first call page waits 10 s
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.runAllTimersAsync();
+    expect((await calls).map(({ externalId }) => externalId)).toEqual([
+      `${site}/node/6742`,
+      `${site}/node/6741`,
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      ufuProexcCultureSource.listingUrl,
+      `${site}/node/6742`,
+      `${site}/node/6741`,
+    ]);
+  });
+
+  test('the page the notice whatever its title (TransArtists): a title naming no call, the close an English deadline', async () => {
+    const news = 'https://www.transartists.org/en/news';
+    const post = (title: string, text: string) =>
+      [
+        `<h1>${title}</h1>`,
+        `<img src="/sites/default/files/2026-10/main01.jpg">`,
+        a('/sites/default/files/2026-10/main01.jpg', 'Image'),
+        `<p>${text}</p>`,
+        a('https://www.arcus-project.com/en/open-call/', 'Apply here'),
+      ].join('');
+    siteAnswers({
+      [transArtistsCallsSource.listingUrl]: [
+        a('/en/deadlines', 'Upcoming Deadlines'),
+        a(`${news}/traces-art-science-energypolis`, 'TRACES Art &amp; Science @ Energypolis'),
+        a(`${news}/open-call-arcus`, 'Open Call Arcus'),
+      ].join(''),
+      [`${news}/traces-art-science-energypolis`]: post(
+        'TRACES Art &amp; Science @ Energypolis',
+        'The application deadline is 22 November 2026, 23:59 Swiss time (CET).',
+      ),
+      [`${news}/open-call-arcus`]: post(
+        'Open Call Arcus',
+        'The application is online, with a deadline: October 30, 2026, 11:59 pm.',
+      ),
+    });
+    const calls = callsOfCallPages(transArtistsCallsSource);
+    await vi.runAllTimersAsync();
+    const closesOn = (at?: number) => at && new Date(at).toISOString().slice(0, 10);
+    expect(
+      (await calls).map(({ title, documents, registrationCloses }) => [
+        title,
+        documents.map(({ url }) => url),
+        closesOn(registrationCloses?.at),
+      ]),
+    ).toEqual([
+      [
+        'TRACES Art & Science @ Energypolis',
+        [`${news}/traces-art-science-energypolis`],
+        '2026-11-22',
+      ],
+      ['Open Call Arcus', [`${news}/open-call-arcus`], '2026-10-30'],
+    ]);
+  });
+
+  test('call folders holding folders (FJA-RN): a cut link text named by its folder, files one level below, every one past a result; the breadcrumb not opened', async () => {
+    const listing = rioGrandeDoNorteFjaSource.listingUrl;
+    const openFolder = `${listing}CHAMADA%20P%C3%9ABLICA%20N%C2%BA%20003_2027%20%20ARTISTAS%20E%20COLETIVOS/`;
+    const closedFolder = `${listing}CHAMADA%20P%C3%9ABLICA%20N%C2%BA%20001_2026%20ARTISTAS/`;
+    const file = (name: string) =>
+      a(
+        `https://www.cultura.rn.gov.br/wp-json/nextcloud/v1/download?filePath=FJA%2F${encodeURIComponent(name)}`,
+        name,
+      );
+    const breadcrumb = a(
+      'https://www.cultura.rn.gov.br/documentos/Editais%20Culturais/',
+      'Editais Culturais',
+    );
+    const fetchMock = siteAnswers({
+      [listing]: [
+        breadcrumb,
+        a(openFolder, 'CHAMADA PÚBLICA Nº 003_2027  ARTISTAS E C...'),
+        a(closedFolder, 'CHAMADA PÚBLICA Nº 001_2026 ARTISTAS'),
+      ].join(''),
+      [openFolder]: [
+        breadcrumb,
+        a(`${openFolder}PUBLICA%C3%87%C3%95ES/`, 'PUBLICAÇÕES'),
+        a(`${openFolder}ANEXOS/`, 'ANEXOS'),
+      ].join(''),
+      [`${openFolder}PUBLICA%C3%87%C3%95ES/`]: file('EDITAL DE CHAMADA PÚBLICA 003_2027.pdf'),
+      [`${openFolder}ANEXOS/`]: file('ANEXO I - CATEGORIAS.pdf'),
+      [closedFolder]: [
+        a(`${closedFolder}PUBLICA%C3%87%C3%95ES/`, 'PUBLICAÇÕES'),
+        a(`${closedFolder}ANEXOS/`, 'ANEXOS'),
+      ].join(''),
+      [`${closedFolder}PUBLICA%C3%87%C3%95ES/`]: [
+        file('edital de chamada publica 001 2026 fja.pdf'),
+        file('PORTARIA 143_2026 RESULTADO FINAL DA ETAPA II.pdf'),
+      ].join(''),
+      [`${closedFolder}ANEXOS/`]: file('ANEXO I - FORMULARIO.pdf'),
+    });
+
+    expect(
+      (await callsOf(rioGrandeDoNorteFjaSource)).map(({ title, documents }) => [
+        title,
+        documents.map(({ label }) => label),
+      ]),
+    ).toEqual([
+      [
+        'CHAMADA PÚBLICA Nº 003_2027 ARTISTAS E COLETIVOS',
+        ['EDITAL DE CHAMADA PÚBLICA 003_2027.pdf', 'ANEXO I - CATEGORIAS.pdf'],
+      ],
+      [
+        'CHAMADA PÚBLICA Nº 001_2026 ARTISTAS',
+        [
+          'edital de chamada publica 001 2026 fja.pdf',
+          'PORTARIA 143_2026 RESULTADO FINAL DA ETAPA II.pdf',
+          'ANEXO I - FORMULARIO.pdf',
+        ],
+      ],
+    ]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      listing,
+      openFolder,
+      `${openFolder}PUBLICA%C3%87%C3%95ES/`,
+      `${openFolder}ANEXOS/`,
+      closedFolder,
+      `${closedFolder}PUBLICA%C3%87%C3%95ES/`,
+      `${closedFolder}ANEXOS/`,
+    ]);
+  });
+
+  test('a call folder whose subfolders run past the 5 min is skipped, not recorded without them (Porto Velho)', async () => {
+    const pagesOfSite: Record<string, string> = {
+      [portoVelhoFunculturalSource.listingUrl]: button(88673, '2026'),
+      [folder(88673)]: button(99327, 'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026'),
+      [folder(99327)]: [
+        a(
+          `${portoVelhoSite}/uploads/arquivos/EDITAL-004-2026.pdf`,
+          'EDITAL DE CHAMAMENTO PÚBLICO N.º 004/2026',
+        ),
+        button(99619, 'ERRATAS'),
+        button(99613, 'RESULTADOS'),
+      ].join(''),
+      [folder(99619)]: a(`${portoVelhoSite}/uploads/arquivos/ERRATA.pdf`, 'ERRATA'),
+    };
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      if (String(input) === folder(99619)) await new Promise((done) => setTimeout(done, 400_000));
+      return new Response(pagesOfSite[String(input)] ?? '', {
+        headers: { 'content-type': 'text/html' },
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await callsOf(portoVelhoFunculturalSource)).toEqual([]);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain(folder(99613));
+  });
+
+  test("year headings (Secec-RJ): only this and last year's calls, a close with no year in its heading's; last year's with a result not recorded", async () => {
+    const site = 'https://cultura.rj.gov.br';
+    const uploads = `${site}/wp-content/uploads/2026/02`;
+    const fetchMock = siteAnswers({
+      [rioDeJaneiroSececCallsSource.listingUrl]: [
+        '<h1>Editais</h1>',
+        a('http://cultura.rj.gov.br/desenvolve-cultura/', 'Sistema Desenvolve Cultura'),
+        '<h3>2026</h3>',
+        a('http://cultura.rj.gov.br/por-tras-da-cena/', 'Por Trás da Cena'),
+        a('http://cultura.rj.gov.br/cultura-e-fe/', 'Cultura e Fé'),
+        '<h3>2025</h3>',
+        a('http://cultura.rj.gov.br/mobilidades/', 'Mobilidades'),
+        a('http://cultura.rj.gov.br/viva-cultura/', 'Viva Cultura'),
+        '<h3>2024</h3>',
+        a('http://cultura.rj.gov.br/ie-meu-mestre/', 'Iê Meu Mestre'),
+      ].join(''),
+      [`${site}/por-tras-da-cena/`]:
+        '<p>As inscrições terão início às 9h do dia 18 de maio e seguem abertas até as 18h do dia 8 de junho</p>' +
+        a(`${uploads}/Edital-Por-Tras-da-Cena.pdf`, 'Edital'),
+      [`${site}/cultura-e-fe/`]:
+        '<p>A reabertura das inscrições está prevista para ocorrer de 03 de novembro a 1º de dezembro de 2026</p>' +
+        a(`${uploads}/Edital-Cultura-e-Fe.pdf`, 'Edital – com retificações'),
+      [`${site}/mobilidades/`]:
+        '<p>As inscrições ficam abertas até as 18h do dia 27 de fevereiro</p>' +
+        a(`${uploads}/Edital-Mobilidades.pdf`, 'Edital'),
+      [`${site}/viva-cultura/`]:
+        a(`${uploads}/Edital-Viva-Cultura.pdf`, 'Edital') +
+        a(`${uploads}/Resultado-Final.pdf`, 'Resultado Final'),
+    });
+
+    const closesByTitle = Object.fromEntries(
+      (await callsOf(rioDeJaneiroSececCallsSource)).map(({ title, registrationCloses }) => [
+        title,
+        registrationCloses?.at,
+      ]),
+    );
+    expect(closesByTitle).toStrictEqual({
+      'Por Trás da Cena': Date.UTC(2026, 5, 9, 2, 59, 59),
+      'Cultura e Fé': Date.UTC(2026, 11, 2, 2, 59, 59),
+      Mobilidades: Date.UTC(2025, 1, 28, 2, 59, 59),
+    });
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      rioDeJaneiroSececCallsSource.listingUrl,
+      `${site}/por-tras-da-cena/`,
+      `${site}/cultura-e-fe/`,
+      `${site}/mobilidades/`,
+      `${site}/viva-cultura/`,
+    ]);
+  });
 });
 
 describe('callNumberOf', () => {
@@ -297,6 +1277,10 @@ describe('callNumberOf', () => {
     ['EDITAL DE SELEÇÃO PÚBLICA Nº 001/2026 – SECMA', { kind: 'selecao', number: 1, year: 2026 }],
     ['EDITAL DE CHAMAMENTO PÚBLICO Nº 006.2024', { kind: 'chamamento', number: 6, year: 2024 }],
     ['PREGÃO ELETRÔNICO 044-2025 - SECMA', { kind: 'pregao', number: 44, year: 2025 }],
+    [
+      'SELEÇÃO FINAL - EDITAL N 004.2026 – PREMIAÇÃO DE PONTOS DE CULTURA',
+      { kind: 'edital', number: 4, year: 2026 },
+    ],
   ])('%s → %o', (label, number) => {
     expect(callNumberOf(label)).toEqual(number);
   });
@@ -348,12 +1332,30 @@ describe('callsOfDocumentsOnListing', () => {
     a(`${mg}?download=4900`, 'Edital FEC 01/2026 - Afromineiridades'),
     a(`${mg}?download=5055`, 'Resultado FEC e Edital atualizado - Edital 01'),
     a(`${mg}?download=3000`, 'Edital FEC 03/2024 - Antigo'),
+    a(`${mg}?download=4000`, 'Edital FEC 05/2025 - Circulação'),
+    a(`${mg}?download=4100`, 'Resultado final - Edital FEC 05/2025'),
     a(`${mg}?download=3100`, 'PREGÃO ELETRÔNICO 044/2026 - ELEVADORES'),
     a('/editais/editais-pnab', 'Editais PNAB'),
   ].join('');
   const url = (id: number) => `https://www.secult.mg.gov.br${mg}?download=${id}`;
 
-  test('one call per number: its newest notice and its annexes, the listing as its link', () => {
+  test("a title filter (Sesc RR): the artists' credenciamento kept, the food vendors' left out", () => {
+    const uploads = 'https://www.sescrr.com.br/wp-content/uploads/2027/01';
+    const listing = [
+      a(`${uploads}/EMPRESAS.pdf`, 'EDITAL Nº 02/2027 – CREDENCIAMENTO DE EMPRESAS DE ALIMENTOS'),
+      a(
+        `${uploads}/ARTISTA-2027.pdf`,
+        'EDITAL Nº 03/2027 – CREDENCIAMENTO ARTÍSTICO – CULTURA SESC',
+      ),
+    ].join('');
+    const calls = callsOfDocumentsOnListing(sescRoraimaArtistCredentialingSource, {
+      html: listing,
+      url: sescRoraimaArtistCredentialingSource.listingUrl,
+    });
+    expect(calls.map(({ externalId }) => externalId)).toEqual(['edital 3/2027']);
+  });
+
+  test("one call per number: its newest notice and its annexes, the listing as its link; one posting a result recorded closed, unless last year's", () => {
     expect(callsOfDocumentsOnListing(source, { html, url: source.listingUrl })).toEqual([
       {
         externalId: 'fec 6/2026',
@@ -363,8 +1365,49 @@ describe('callsOfDocumentsOnListing', () => {
           { url: url(5062), label: 'Edital FEC 06/2026 - Coreto - Retificado em 10/11/26' },
           { url: url(4833), label: 'Anexo I - Critérios de avaliação' },
         ],
+        registrationCloses: null,
+      },
+      {
+        externalId: 'fec 1/2026',
+        title: 'Edital FEC 01/2026 - Afromineiridades',
+        officialUrl: source.listingUrl,
+        documents: [
+          { url: url(4900), label: 'Edital FEC 01/2026 - Afromineiridades' },
+          { url: url(5055), label: 'Resultado FEC e Edital atualizado - Edital 01' },
+        ],
+        registrationCloses: null,
+        resultPosted: true,
       },
     ]);
+  });
+
+  test("a Plone file's /view page is read as the file it shows, each file once (Funesc)", () => {
+    const funesc = {
+      ...source,
+      slug: 'pb-funesc-editais',
+      listingUrl: 'https://funesc.pb.gov.br/editais/edital-panapana-2026',
+      documentUrlParts: ['.pdf'],
+    };
+    const file = `${funesc.listingUrl}/edital-012_2026-panapana-2026.pdf`;
+    const annex = `${funesc.listingUrl}/anexo-i-criterios.pdf`;
+    const listing = [
+      a(`${file}/view`, 'Edital 012/2026 - Panapaná 2026'),
+      a(`${annex}/view`, 'Anexo I - Critérios de avaliação'),
+      a(annex, 'Baixar'),
+    ].join('');
+    expect(
+      callsOfDocumentsOnListing(funesc, { html: listing, url: funesc.listingUrl })[0]?.documents,
+    ).toEqual([
+      { url: file, label: 'Edital 012/2026 - Panapaná 2026' },
+      { url: annex, label: 'Anexo I - Critérios de avaliação' },
+    ]);
+    const site = a('https://funesc.pb.gov.br/view', 'Edital 012/2026 - Panapaná 2026');
+    expect(
+      callsOfDocumentsOnListing(
+        { ...funesc, documentUrlParts: ['funesc.pb.gov.br'] },
+        { html: site, url: funesc.listingUrl },
+      )[0]?.documents,
+    ).toEqual([{ url: 'https://funesc.pb.gov.br/view', label: 'Edital 012/2026 - Panapaná 2026' }]);
   });
 });
 
@@ -373,7 +1416,7 @@ describe('callsOfDocumentsUnderHeadings', () => {
   const files = `${site}/wp-content/uploads/2026/11`;
   const html = [
     '<h1>Editais e Regulamentos</h1>',
-    `<h1>BLOCOS DE CARNAVAL DE RUA 2027</h1><p>Período de inscrições: 03/11 a 19/11</p>`,
+    `<h1>BLOCOS DE CARNAVAL DE RUA 2027</h1><p>Período de inscrições: de 03 de novembro a 19 de novembro de 2026</p>`,
     a(`${files}/Publicacao_edital-Blocos.pdf`, 'Imprensa'),
     a(`${files}/Edital_Blocos-de-Carnaval_2027.pdf`, 'PDF'),
     a(`${files}/ANEXO-I_-EDITAL-No-25_2026_Blocos.pdf`, 'Anexo I'),
@@ -382,11 +1425,14 @@ describe('callsOfDocumentsUnderHeadings', () => {
     a(`${files}/Publicacao_PROESC-2026_Inscritos.pdf`, 'Resultado Preliminar da Admissibilidade'),
     '<h1>FESTA LITERÁRIA</h1>',
     a(`${files}/Anexo-I-Autodeclaracao.pdf`, 'Anexo I'),
+    '<h1>Edital 09/2025 - Teatro</h1>',
+    a(`${files}/Edital-09-2025.pdf`, 'Edital'),
+    a(`${files}/Resultado-09-2025.pdf`, 'Resultado Final'),
     '<h2>ENCERRADOS</h2><h1>Edital 02/2023 - Bandas</h1>',
     a(`${files}/Edital-02-2023.pdf`, 'Edital'),
   ].join('');
 
-  test('one call per heading with a notice under it, the heading as its name and id; no result posted, none older', () => {
+  test("one call per heading with a notice under it, the heading as its name and id, the close its text prints; a result posted recorded closed unless last year's, none older", () => {
     const calls = callsOfDocumentsUnderHeadings(jundiaiCultureSource, {
       html,
       url: jundiaiCultureSource.listingUrl,
@@ -401,7 +1447,70 @@ describe('callsOfDocumentsUnderHeadings', () => {
           { url: `${files}/Edital_Blocos-de-Carnaval_2027.pdf`, label: 'PDF' },
           { url: `${files}/ANEXO-I_-EDITAL-No-25_2026_Blocos.pdf`, label: 'Anexo I' },
         ],
+        registrationCloses: {
+          at: Date.UTC(2026, 10, 20, 2, 59, 59),
+          timeZone: jundiaiCultureSource.timeZone,
+          precision: 'day',
+        },
       },
+      {
+        externalId: 'PROESC 2026',
+        title: 'PROESC 2026',
+        officialUrl: jundiaiCultureSource.listingUrl,
+        documents: [
+          { url: `${files}/EDITAL-No-24_2026-PROESC.pdf`, label: 'EDITAL' },
+          {
+            url: `${files}/Publicacao_PROESC-2026_Inscritos.pdf`,
+            label: 'Resultado Preliminar da Admissibilidade',
+          },
+        ],
+        registrationCloses: null,
+        resultPosted: true,
+      },
+    ]);
+  });
+});
+
+describe('callsOfDocumentsUnderHeadings: a title filter (Indaiatuba)', () => {
+  test('a heading naming no call is skipped, its files with it', () => {
+    const page = indaiatubaPnabSource.listingUrl;
+    const files = 'https://cultura.indaiatuba.sp.gov.br/application/views/pnab/anexos';
+    const html = [
+      '<h3>EDITAL DE CHAMAMENTO PÚBLICO PNAB 05/2026</h3>',
+      a(`${files}/PNAB02/EDITAL_CHAMAMENTO_PUBLICO_GERAL_PNAB_05.pdf`, 'Edital'),
+      '<h3>Anexos - Resoluções</h3>',
+      a(`${files}/PNAB02/RESOLUCAO.pdf`, 'Resolução'),
+    ].join('');
+    const calls = callsOfDocumentsUnderHeadings(indaiatubaPnabSource, { html, url: page });
+    expect(calls.map(({ title }) => title)).toEqual(['EDITAL DE CHAMAMENTO PÚBLICO PNAB 05/2026']);
+  });
+});
+
+describe('callsOfDocumentsUnderHeadings: an accordion with years of past calls (Recife)', () => {
+  const page = recifeCultureSource.listingUrl;
+  const files = 'https://www.culturarecife.com.br/public/documentos';
+  const item = (title: string, ...links: string[]) =>
+    `<a class="accordion-toggle" href="#x"><b>${title}</b></a>${links.join('')}`;
+  const html = [
+    item('▸ RECIFE É DE CINEMA', a('./documentos/138/Edital_Recife_e_de_Cinema.pdf', 'EDITAL')),
+    item('CICLO NATALINO 2026', a('./documentos/134/CONVOCATORIA.pdf', 'CONVOCATORIA')),
+    item('CICLO NATALINO 2025', a('./documentos/23/CONVOCATORIA.pdf', 'CONVOCATORIA')),
+    item(
+      'MULTILINGUAGENS - LEI PAULO GUSTAVO',
+      a('./documentos/67/EDITAL_LPG_2023.pdf', 'EDITAL MULTILINGUAGENS 2023'),
+    ),
+    item('CAPTADORES', a('./documentos/56/EDITAL-CAPTADORES-2025.pdf', 'Edital')),
+    item('EDITAL Nº 08/2025 - PARECERISTAS', a('./documentos/57/Edital.pdf', 'Edital')),
+    item('EDITAL Nº 03/2024 - BOLSAS', a('./documentos/58/Edital.pdf', 'Edital')),
+  ].join('');
+
+  test('drops a past edition, a numbered call before last year and a call whose notices name only years before last', () => {
+    const calls = callsOfDocumentsUnderHeadings(recifeCultureSource, { html, url: page });
+    expect(calls.map(({ title, documents }) => [title, documents.map(({ url }) => url)])).toEqual([
+      ['RECIFE É DE CINEMA', [`${files}/138/Edital_Recife_e_de_Cinema.pdf`]],
+      ['CICLO NATALINO 2026', [`${files}/134/CONVOCATORIA.pdf`]],
+      ['CAPTADORES', [`${files}/56/EDITAL-CAPTADORES-2025.pdf`]],
+      ['EDITAL Nº 08/2025 - PARECERISTAS', [`${files}/57/Edital.pdf`]],
     ]);
   });
 });

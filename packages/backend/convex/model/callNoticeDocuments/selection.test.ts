@@ -2,8 +2,12 @@ import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fie
 import { describe, expect, test } from 'vitest';
 import {
   callNoticeDocumentRole,
+  closedWhenFirstSeen,
+  closedWhenFirstSeenToStore,
   documentsWorthReading,
+  isClosedAsOf,
   postsResult,
+  queueOrder,
   reasonToSkipReadingDocuments,
 } from './selection';
 
@@ -36,8 +40,8 @@ describe('reasonToSkipReadingDocuments', () => {
     expect(reason({ registrationCloses: null })).toBeNull();
   });
 
-  test('a closed call is skipped', () => {
-    expect(reason({ registrationCloses: closingIn(-1) })).toBe('closed');
+  test('a closed call is read too: what it asked still counts', () => {
+    expect(reason({ registrationCloses: closingIn(-1) })).toBeNull();
   });
 
   test("Mapas's no-deadline sentinel and other closes past one year are skipped", () => {
@@ -48,10 +52,67 @@ describe('reasonToSkipReadingDocuments', () => {
     expect(reason({ registrationCloses: closingIn(300 * day) })).toBeNull();
   });
 
-  test('a draft or test title is skipped, whatever its case and accents', () => {
-    expect(reason({ title: 'TESTE EDITAL' })).toBe('draftTitle');
-    expect(reason({ title: 'Edital em construção' })).toBe('draftTitle');
+  test('a draft, test, accountability, management contract or staff election title is skipped, whatever its case and accents', () => {
+    expect(reason({ title: 'TESTE EDITAL' })).toBe('notACallTitle');
+    expect(reason({ title: 'Edital em construção' })).toBe('notACallTitle');
+    expect(reason({ title: 'Prestação de Contas - FOMENTO ANICETO MATTI 2024' })).toBe(
+      'notACallTitle',
+    );
+    expect(reason({ title: 'Contrato de Gestão' })).toBe('notACallTitle');
+    expect(
+      reason({
+        title: 'Exclusivo para Funcionários da Spcine | Edital de Eleição de Representantes',
+      }),
+    ).toBe('notACallTitle');
     expect(reason({ title: 'Edital de Teatro e Contestação' })).toBeNull();
+  });
+
+  test("a council election or meeting sign-up is skipped (Santa Luzia's Mapas)", () => {
+    for (const title of [
+      'ELEIÇÃO DOS MEMBROS REPRESENTANTES DA SOCIEDADE CIVIL NO CONSELHO MUNICIPAL',
+      'EDITAL DE ELEIÇÃO DOS CONSELHEIROS REPRESENTANTES DA SOCIEDADE CIVIL',
+      'INSCRIÇÃO PARA PARTICIPAÇÃO EM REUNIÃO DO CMPC (13/11/26)',
+      ' Inscrição para participação em Reunião extraordinária do CMPC',
+      'INSCRIÇÃO PARA PARTICIPAR DE REUNIÃO EXTRAORDINÁRIA DO CMPC (31/10/25)',
+    ]) {
+      expect(reason({ title })).toBe('notACallTitle');
+    }
+  });
+
+  test('a temporary staff hire is skipped (FCP-PA); a selection of artists is not', () => {
+    expect(
+      reason({ title: 'PROCESSO SELETIVO SIMPLIFICADO Nº 01/2026 - FCP DE 24 DE MARÇO DE 2026' }),
+    ).toBe('notACallTitle');
+    expect(reason({ title: 'Processo Seletivo de Profissionais' })).toBeNull();
+  });
+
+  test("a cooperation project's consultant hire or a market survey is skipped (IPHAN); its prizes are not", () => {
+    for (const title of [
+      'Projeto 914BRZ4027 Edital nº 67/2026: Perfil Gestão - Iphan/SEDE - Brasília/DF',
+      'PROJETO 914BRZ4018 EDITAL Nº 001/2025 - Perfil: 1/2025-CGNT-DEPAM – Porto Nacional/TO',
+      'EDITAL IPHAN Nº 11 - CONSULTA PRELIMINAR DE MERCADO (RFI) PARA REFINAMENTO DE DESAFIOS',
+    ]) {
+      expect(reason({ title })).toBe('notACallTitle');
+    }
+    expect(
+      reason({ title: 'Prêmio Mário de Andrade de Fotografias Etnográficas - Edição 2026' }),
+    ).toBeNull();
+  });
+
+  test("a call's appeal or review step opened as its own item is skipped; raising funds is a call", () => {
+    for (const title of [
+      'Recurso - Edital Intercâmbio Circulação Audiovisual 2026',
+      'Formulário de Recurso (Resultado 13/11/2026) - Credenciamento Nacional de Pareceristas',
+      'RECURSO - FASE SELEÇÃO - PNAB CICLO 2 - Edital 04/2026 - SUBSÍDIO A ESPAÇOS CULTURAIS',
+      'CONTRARRAZÕES, RECURSO DE MÉRITO E DILIGÊNCIA - ETAPA DE SELEÇÃO - PNAB CICLO 2',
+      'Fase Avaliação Preliminar - Edital Chamamento PNAB 01/2026 - Ritmos da Terra',
+    ]) {
+      expect(reason({ title })).toBe('notACallTitle');
+    }
+    expect(
+      reason({ title: 'BOMBINHAS - EDITAL 01/FMCB/2026 – CAPTAÇÃO DE RECURSOS VIA LEI ROUANET' }),
+    ).toBeNull();
+    expect(reason({ title: 'Edital de Recursos para a Cultura 2026' })).toBeNull();
   });
 
   test('a call without documents is skipped', () => {
@@ -99,6 +160,18 @@ describe('callNoticeDocumentRole', () => {
     expect(roleOf('edital-04-2026-projetos-termo-de-execucao-cultural.pdf')).toBe('callNotice');
     expect(roleOf('edital-06-2026-anexo-ii-formulario-de-inscricao.docx')).toBeNull();
     expect(roleOf('termo-de-execucao-cultural.pdf')).toBeNull();
+  });
+
+  test('a numbered annex named after its notice is not the notice; the notice with its annexes is', () => {
+    expect(roleOf('edital-flecha-anexo-3.pdf')).toBeNull();
+    expect(roleOf('edital-ocupa-mis-2026-anexo10.pdf')).toBeNull();
+    expect(roleOf('edital-003-anexo-vi-tec.pdf')).toBeNull();
+    expect(roleOf('edital-ciclo-de-saberes-anexo-i.pdf')).toBeNull();
+    expect(roleOf('edital-subsidio-cultural-anexo-1-cronograma.pdf')).toBeNull();
+    expect(roleOf('edital-de-fomento-anexos-editaveis.docx')).toBeNull();
+    expect(roleOf('edital-e-anexos-assinado.pdf')).toBe('callNotice');
+    expect(roleOf('001-edital-004-2026-smct-multilinguagens-com-anexos.pdf')).toBe('callNotice');
+    expect(roleOf('edital-conexoes-culturais-sem-anexos.pdf')).toBe('callNotice');
   });
 
   test('skips the forms an applicant fills in and what it cannot name', () => {
@@ -154,12 +227,63 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     expect(callNoticeDocumentRole(`${mg}?download=5062`)).toBeNull();
   });
 
+  test('a link named as an annex is no notice, though its file name says "edital" (Itaperuna)', () => {
+    const file = 'https://prefeituraitaperuna.com.br/sistema-inscricoes/public/edital_arquivo.php';
+    expect(callNoticeDocumentRole(`${file}?id=97`, 'Edital')).toBe('callNotice');
+    expect(callNoticeDocumentRole(`${file}?id=12`, 'Anexo II')).toBeNull();
+    expect(callNoticeDocumentRole(`${file}?id=93`, 'Anexo I')).toBeNull();
+    expect(callNoticeDocumentRole(`${file}?id=19`, 'Anexo I - Categorias')).toBe('categories');
+  });
+
+  test("a link's text ending in the notice's word is the notice; a word inside another is not (Sesi SP)", () => {
+    const media = 'https://cronos-media.sesisenaisp.org.br/api/media/1-0/files?file=arq_66.pdf';
+    expect(callNoticeDocumentRole(media, 'Acesse o edital')).toBe('callNotice');
+    expect(callNoticeDocumentRole(media, 'Confira o regulamento aqui')).toBe('callNotice');
+    expect(callNoticeDocumentRole(media, 'Editais encerrados')).toBeNull();
+    expect(callNoticeDocumentRole(media, 'Confira o resultado do edital')).toBeNull();
+    expect(callNoticeDocumentRole(media, 'Extrato do edital')).toBeNull();
+    expect(callNoticeDocumentRole(media, 'Extrato do Edital nº 01/2026')).toBeNull();
+  });
+
+  test('a rectified notice whose link names it is the notice, though its file name says "retificacao" (Spcine)', () => {
+    const file =
+      'https://spcine.com.br/wp-content/uploads/2026/10/EDITAL_01.2026_FSA_Producao_2aRetificacao.pdf';
+    expect(callNoticeDocumentRole(file, 'CLIQUE AQUI PARA BAIXAR O EDITAL')).toBe('callNotice');
+    expect(callNoticeDocumentRole(file)).toBe('amendment');
+  });
+
+  test("a link's text naming a prize or open registration is a notice; a form, extension or result about one is not", () => {
+    const poa = 'https://prefeitura.poa.br/smc/noticias/x';
+    expect(
+      callNoticeDocumentRole(poa, 'Abertas as inscrições para o Prêmio Açorianos de Música 2026'),
+    ).toBe('callNotice');
+    expect(callNoticeDocumentRole(poa, 'Ficha de inscrição do Prêmio Açorianos')).toBeNull();
+    expect(callNoticeDocumentRole(poa, 'Prorrogação das inscrições para o Prêmio')).toBe(
+      'amendment',
+    );
+    expect(callNoticeDocumentRole(poa, 'Resultado do Prêmio Açorianos de Dança')).toBeNull();
+    expect(callNoticeDocumentRole(poa, 'Anexo I - Prêmio Açorianos')).toBeNull();
+  });
+
   test('a notice republished with its changes is the notice; a new schedule is an amendment', () => {
     const mg = 'https://www.secult.mg.gov.br/download/category/15?download=5063';
     expect(
       callNoticeDocumentRole(mg, 'Edital FEC 01/2026 - Afromineiridades - Retificado em 10/11/26'),
     ).toBe('callNotice');
     expect(callNoticeDocumentRole(mg, 'CRONOGRAMA ATUALIZADO.pdf')).toBe('amendment');
+    const rj = 'http://cultura.rj.gov.br/wp-content/uploads/2026/02';
+    expect(
+      callNoticeDocumentRole(
+        `${rj}/Edital-Cultura-e-F%C3%A9_COm-Retifica%C3%A7%C3%B5es_26022025.pdf`,
+        'Edital – com retificações',
+      ),
+    ).toBe('callNotice');
+    expect(
+      callNoticeDocumentRole(
+        `${rj}/Cultura-e-F%C3%A9_Ret.-Anexo-09_DOERJ26022025.pdf`,
+        'Publicação de retificações',
+      ),
+    ).toBe('amendment');
   });
 
   test("accepts Paraná's underscores and skips what a page posts around the notice", () => {
@@ -174,6 +298,42 @@ describe('callNoticeDocumentRole on official pages (measured 2026-11-15)', () =>
     expect(
       callNoticeDocumentRole(`${ba}/x.pdf`, 'Portaria 270 - Convocação de suplentes'),
     ).toBeNull();
+  });
+
+  test('a notice may start with its SEI document number; a decree with one is still no notice (Maringá)', () => {
+    const mga = 'https://maringacultura.maringa.pr.gov.br/files/opportunity/912';
+    expect(callNoticeDocumentRole(`${mga}/sei-9911864-edital-6-1.pdf`)).toBe('callNotice');
+    expect(callNoticeDocumentRole(`${mga}/sei_179381701_edital_21-pdf`)).toBe('callNotice');
+    expect(callNoticeDocumentRole(`${mga}/sei_179379910_portaria_209-pdf`)).toBeNull();
+    expect(callNoticeDocumentRole(`${mga}/sei-9759096-notificacao-n-26.pdf`)).toBeNull();
+    expect(callNoticeDocumentRole(`${mga}/sei-9911864-edital-6-retificado.pdf`)).toBe('callNotice');
+  });
+
+  test("a council's resolution can be the rules; one annexed to them is not (São Bernardo, Natal)", () => {
+    const sbc = 'https://mapacultural.saobernardo.sp.gov.br/files/opportunity/292';
+    expect(callNoticeDocumentRole(`${sbc}/resolucao-sc-37-encontro-de-corais-04nov.pdf`)).toBe(
+      'callNotice',
+    );
+    const pe = 'https://www.mapacultural.pe.gov.br/files/opportunity/2491';
+    expect(
+      callNoticeDocumentRole(`${pe}/anexo-i-resolucao-cd-funcultura-01-2025-banco.pdf`),
+    ).toBeNull();
+  });
+
+  test('a contract signed without a call is procurement, though its text names a chamamento (Funesc)', () => {
+    const funesc = 'https://funesc.pb.gov.br/editais/ratificacoes';
+    expect(
+      callNoticeDocumentRole(
+        `${funesc}/termo-inex-chamamento-publico-fec-prc-2025-01160-termo-fomento-002-2025-arribaca.pdf`,
+        'TERMO INEX CHAMAMENTO PUBLICO -TERMO FOMENTO 002 2025 ARRIBACA',
+      ),
+    ).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${funesc}/x.pdf`, 'Ratificação de Inexigiblidade n° 154'),
+    ).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${funesc}/x.pdf`, 'Edital de Chamamento Público nº 004/2026'),
+    ).toBe('callNotice');
   });
 
   test('personal data in the file name rules out a link whose text looks like a notice', () => {
@@ -204,6 +364,20 @@ describe('documentsWorthReading', () => {
     ).toEqual([]);
   });
 
+  test("the call's own page listed as a document is its notice, whatever its link text (TransArtists)", () => {
+    const page = 'https://www.transartists.org/en/news/traces-art-science-energypolis';
+    expect(
+      documentsWorthReading([page], [{ url: page, label: 'TRACES Art & Science @ Energypolis' }]),
+    ).toEqual([]);
+    expect(
+      documentsWorthReading(
+        [page],
+        [{ url: page, label: 'TRACES Art & Science @ Energypolis' }],
+        page,
+      ),
+    ).toEqual([{ url: page, role: 'callNotice' }]);
+  });
+
   test("uses each document's link text when the listing carries one", () => {
     const mg = 'https://www.secult.mg.gov.br/download/category/15';
     expect(
@@ -219,5 +393,122 @@ describe('documentsWorthReading', () => {
       { url: `${mg}?download=1`, role: 'callNotice' },
       { url: `${mg}?download=2`, role: 'criteria' },
     ]);
+  });
+});
+
+describe('queueOrder', () => {
+  test('open calls closing soonest first, then undated ones, then closed ones, latest closed first', () => {
+    const calls = {
+      closedLongAgo: closingIn(-30 * day),
+      undated: null,
+      later: closingIn(30 * day),
+      closedYesterday: closingIn(-day),
+      sooner: closingIn(day),
+    };
+    const ordered = Object.entries(calls)
+      .map(([name, registrationCloses]) => ({ name, registrationCloses }))
+      .sort(queueOrder(now))
+      .map(({ name }) => name);
+    expect(ordered).toEqual(['sooner', 'later', 'undated', 'closedYesterday', 'closedLongAgo']);
+  });
+});
+
+describe('isClosedAsOf', () => {
+  test('a call found after its close, never one found open nor one with no close', () => {
+    expect(isClosedAsOf({ registrationCloses: closingIn(-day) }, now)).toBe(true);
+    expect(isClosedAsOf({ registrationCloses: closingIn(-day) }, now - 2 * day)).toBe(false);
+    expect(isClosedAsOf({ registrationCloses: null }, now)).toBe(false);
+  });
+
+  test('a call with a result posted, even with no close or a later one', () => {
+    for (const registrationCloses of [null, closingIn(day)]) {
+      expect(isClosedAsOf({ registrationCloses, resultPosted: true }, now)).toBe(true);
+      expect(isClosedAsOf({ registrationCloses, resultPosted: false }, now)).toBe(false);
+    }
+  });
+});
+
+describe('closedWhenFirstSeen', () => {
+  test('reads the stored flag, whatever the close says', () => {
+    const stored = { registrationCloses: closingIn(-day), firstSeenAt: now };
+    expect(closedWhenFirstSeen({ ...stored, closedWhenFirstSeen: false })).toBe(false);
+    expect(
+      closedWhenFirstSeen({ ...stored, registrationCloses: null, closedWhenFirstSeen: true }),
+    ).toBe(true);
+  });
+
+  test('a row from before the flag, by its close alone', () => {
+    expect(closedWhenFirstSeen({ registrationCloses: closingIn(-day), firstSeenAt: now })).toBe(
+      true,
+    );
+    expect(closedWhenFirstSeen({ registrationCloses: null, firstSeenAt: now })).toBe(false);
+  });
+});
+
+describe('closedWhenFirstSeenToStore', () => {
+  const known = (closedWhenFirstSeen?: boolean) => ({
+    registrationCloses: closingIn(-day),
+    firstSeenAt: now - 10 * day,
+    ...(closedWhenFirstSeen !== undefined && { closedWhenFirstSeen }),
+  });
+
+  test('a new call: the rule at this moment', () => {
+    expect(closedWhenFirstSeenToStore({ registrationCloses: closingIn(-day) }, null, now)).toBe(
+      true,
+    );
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: null, resultPosted: true }, null, now),
+    ).toBe(true);
+    expect(closedWhenFirstSeenToStore({ registrationCloses: closingIn(day) }, null, now)).toBe(
+      false,
+    );
+  });
+
+  test('one found open stays so, closed since or posting a result: it is read last', () => {
+    const closedNow = { registrationCloses: closingIn(-20 * day), resultPosted: true };
+    expect(closedWhenFirstSeenToStore(closedNow, known(false), now)).toBe(false);
+  });
+
+  test('one found closed reopens when its close moves past the day it was found, unless a result is posted', () => {
+    const extended = { registrationCloses: closingIn(day) };
+    expect(closedWhenFirstSeenToStore(extended, known(true), now)).toBe(false);
+    expect(closedWhenFirstSeenToStore({ ...extended, resultPosted: true }, known(true), now)).toBe(
+      true,
+    );
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: closingIn(-20 * day) }, known(true), now),
+    ).toBe(true);
+  });
+
+  test('a row from before the flag: by its close alone, a result posted since not counted', () => {
+    const open = { ...known(), registrationCloses: closingIn(day) };
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: null, resultPosted: true }, open, now),
+    ).toBe(false);
+  });
+});
+
+describe('the re-sweep sources (2026-11-20)', () => {
+  const files = 'https://piracicaba.sp.gov.br/wp-content/uploads/2026/04';
+  test('a notice published as its draft is the notice (Piracicaba), a contract draft is not', () => {
+    expect(
+      callNoticeDocumentRole(`${files}/Edital-1-2026-Selecao.pdf`, 'Minuta do Edital 1/2026'),
+    ).toBe('callNotice');
+    expect(
+      callNoticeDocumentRole(`${files}/a.pdf`, 'Anexo 5 – Minuta do Termo de Execução Cultural'),
+    ).toBeNull();
+    expect(callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Termo de Execução')).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Edital 01/2026 para consulta pública'),
+    ).toBeNull();
+  });
+
+  test('a "seleção final" posts a result (Santa Maria)', () => {
+    expect(
+      postsResult(
+        'https://www.santamaria.rs.gov.br/arquivos/baixar-arquivo/conteudo/D08-4874.pdf',
+        'SELEÇÃO FINAL - EDITAL N 004.2026 – PREMIAÇÃO DE PONTOS DE CULTURA',
+      ),
+    ).toBe(true);
   });
 });

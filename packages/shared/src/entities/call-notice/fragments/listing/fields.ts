@@ -9,15 +9,19 @@ const callNoticeDocumentExtensions = new Set(['pdf', 'doc', 'docx', 'odt', 'rtf'
 // Zod runs a refine even when `httpUrl` already failed, so an unparsable link must not throw here.
 function hasDocumentExtension(url: string) {
   if (!URL.canParse(url)) return false;
-  const fileName = new URL(url).pathname.split('/').pop() ?? '';
+  const { pathname, search } = new URL(url);
+  const fileName = pathname.split('/').pop() ?? '';
   if (!fileName.includes('.')) return true;
-  return callNoticeDocumentExtensions.has(fileName.split('.').pop()!.toLowerCase());
+  const extension = fileName.split('.').pop()!.toLowerCase();
+  if (extension === 'php' && search) return true;
+  return callNoticeDocumentExtensions.has(extension);
 }
 
 /**
  * A link to one of a call notice's text files. Ingestion filters a source's attachments with it.
- * A path with no extension passes: a download handler (`/download/category/15?download=5059`)
- * names the file only in its answer.
+ * A path with no extension passes, and a PHP script with a query: a download handler
+ * (`/download/category/15?download=5059`, `edital_arquivo.php?id=94`) names the file only in its
+ * answer.
  */
 export const CallNoticeDocumentUrlSchema = requiredHttpUrl.refine(hasDocumentExtension, {
   params: { message: 'notADocument' },
@@ -48,10 +52,14 @@ export const CallNoticeListingFields = z.object({
   summary: nullableString(),
   /** The page a creator opens to read and apply [`singleUrl`]. */
   officialUrl: requiredHttpUrl,
-  /** The text files the source attaches, in its order [`@files:downloads`]: the call notice and its
-   * annexes, media left out. Which one is the call notice is decided when documents are read. */
+  /** The text files the source attaches, in its order [`@files:rules` first, then
+   * `@files:downloads`]: the call notice and its annexes, media left out. Which one is the call
+   * notice is decided when documents are read. */
   documentUrls: z.array(CallNoticeDocumentUrlSchema).max(callNoticeDocumentUrlsMax),
   /** The text of each document's link, where the source gives one apart from the file name (an
    * official page: "Edital FEC 02/2026 - Retificado em 10/11/26"). Absent for Mapas Culturais. */
   documentLabels: z.array(CallNoticeDocumentLabelSchema).max(callNoticeDocumentUrlsMax).optional(),
+  /** An official page posts a result for it (closed, often with no close printed). Absent for
+   * Mapas Culturais. Feeds the tracking's `closedWhenFirstSeen`. */
+  resultPosted: z.boolean().optional(),
 });

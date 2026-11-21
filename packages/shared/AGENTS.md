@@ -5,7 +5,9 @@ product's concepts. It is the end-to-end level of "shared" (`docs/architecture.m
 belongs here only when it crosses the wire and has a consumer on the other side **today**.
 
 Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
-tables: `source`, `call-notice`, `call-notice-document`, `call-notice-extraction`, `ingestion-run`.
+tables: `source`, `call-notice`, `call-notice-document`, `call-notice-document-text`,
+`call-notice-extraction`, `ingestion-run`, `user`, `user-notification`, `notification-delivery`,
+`user-message-channel`.
 
 ⚠️ **`creator` and `portfolio-item` are here ahead of their tables**, with the portal DTOs of the
 call screens (`call-notice/dto/bratura-portal/`). Their only consumer today is the web, which keeps
@@ -21,7 +23,7 @@ src/
     fragments/                 a part of THIS entity (rules below)
     kinds/<kind>/variant.ts    one variant of an entity that is a union by kind (`source`)
     dto/<port>/<concept>/<query|mutation>.ts   args and returns of one function, per port
-                               (common/, bratura-portal/, whatsapp/: docs/contracts.md §2)
+                               (common/, bratura-portal/, telegram/: docs/contracts.md §2)
   primitives/                  no identity: two equal values are the same value
     code/  domain/  external/  → primitives/AGENTS.md
 ```
@@ -57,7 +59,7 @@ Two `callNotices` rows with the same title are not the same call; `'MEI' === 'ME
 - **A part of one entity is not a top-level thing.** The evidence quote attached to each
   extracted field has no table and is not a universal value: it is a fragment of the call notice.
 - **Planned tables** (`docs/plan.md`, What to build): `sources`, `callNotices`, `ingestionRuns`,
-  `creators`, `portfolioItems`, `matches`, `applicationKits`, `alerts`, `organizations`,
+  `creators`, `portfolioItems`, `matches`, `applicationKits`, `organizations`,
   `memberships`. Each becomes `entities/<kebab-name>/` when its table is written.
 
 ## Fields compose upwards, entities spread them
@@ -102,7 +104,7 @@ With pieces this project will need (none exists yet):
 | piece                                        | mentions        | decides about     | lives in                                 |
 | -------------------------------------------- | --------------- | ----------------- | ---------------------------------------- |
 | `MeiStatusEnum`                              | —               | MEI registration  | `primitives/external/mei-status/`        |
-| `CallRequirementEnum` (MEI, SICAB, CCMEI…)   | MEI, SICAB      | what a call asks  | `entities/call-notice/enums/`            |
+| `RequirementKindEnum` (CNPJ/MEI, SICAB…)     | MEI, SICAB      | what a call asks  | `entities/call-notice/enums/` (exists)   |
 | "is this creator eligible for this call?"    | MEI, the call   | a **match**       | backend `matching/`, not `shared`        |
 
 The naive rule, "it goes where the value it names lives", is wrong: the eligibility check names
@@ -163,6 +165,12 @@ and en copy: a Zod error map per locale (issue code and its numbers → text) an
 caught `appError`), with the reader's locale. Zod's built-in `pt` locale is not used: it is
 European Portuguese and reads like a log ("Demasiado grande: esperava que o texto tivesse <= 5
 caracteres"). The web applies it in `useContractForm` (`features/common/hooks/`).
+
+Notification copy lives here too: `messages/user-notification/` renders a `userNotification`
+into `{ title, body, link }` per kind and locale, from content `content.ts` builds once (the
+call's cleaned title, its official link, its close). The web inbox shows it; a channel only
+formats it. The map is typed `Record<UserNotification['kind'], …>`: a new kind without a
+message fails `tsc`.
 
 ## Naming
 
