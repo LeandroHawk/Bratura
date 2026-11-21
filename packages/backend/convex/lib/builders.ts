@@ -10,6 +10,7 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
+  query,
   type ActionCtx,
   type MutationCtx,
   type QueryCtx,
@@ -55,9 +56,24 @@ function parsedWithZod<Ctx, Args extends z.ZodObject, Returns extends z.ZodType>
   };
 }
 
-// Internal: callable from functions, crons, the CLI and the dashboard; auth comes with the first
-// public builder. The casts restate for callers what `parsedWithZod` enforces at run time:
-// TypeScript cannot carry Zod generics through Convex's validator inference.
+/**
+ * A read anyone may call from a browser, with no caller in `ctx`: a visible choice, never a missing
+ * check. Its handler reads only what a visitor may see, paginated or through a bounded index range
+ * (`docs/security.md` §2). The builders that resolve a caller (`creatorQuery`…) come with the
+ * sign-in.
+ */
+export const publicZodQuery = <Args extends z.ZodObject, Returns extends z.ZodType>(
+  definition: ZodFunction<QueryCtx, Args, Returns>,
+) =>
+  query(parsedWithZod(definition) as never) as RegisteredQuery<
+    'public',
+    CallerArgs<Args>,
+    Promise<z.output<Returns>>
+  >;
+
+// Internal: callable from functions, crons, the CLI and the dashboard. The casts restate for
+// callers what `parsedWithZod` enforces at run time: TypeScript cannot carry Zod generics through
+// Convex's validator inference.
 export const internalZodQuery = <Args extends z.ZodObject, Returns extends z.ZodType>(
   definition: ZodFunction<QueryCtx, Args, Returns>,
 ) =>

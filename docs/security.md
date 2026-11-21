@@ -27,7 +27,8 @@ from steering the LLM. Shapes and ports are in `docs/contracts.md`.
   portfolio items, file type and size checked before storage. The backend parses them, so the limit
   holds whatever the front sends.
 - **Rate limits per creator and per recipient** on writes and on the Telegram entry, declared
-  once in the public builders (`publicQuery`, `creatorMutation`…) when the first one is written.
+  once in the builders with a caller (`creatorMutation`…) when the first one is written. The one
+  public builder today (`publicZodQuery`) only reads, a bounded page or index range per call.
   `convex-helpers` (already a dependency) ships `rateLimit` (token bucket or fixed window), so no
   new dependency is needed; `@convex-dev/rate-limiter` stays an alternative for the team.
 - **The Telegram webhook trusts nothing**: it checks the `secret_token` header `setWebhook` is
