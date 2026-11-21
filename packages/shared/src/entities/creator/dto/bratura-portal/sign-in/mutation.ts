@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { SignUpMutationFromBraturaPortalArgsSchema } from '../sign-up/mutation';
+import { CreatorRegistrationFields } from '../../../fragments/registration/fields';
 
-/** What the sign-in sends: the two fields of the sign-up that prove who is coming back. */
-export const SignInMutationFromBraturaPortalArgsSchema =
-  SignUpMutationFromBraturaPortalArgsSchema.pick({ email: true, password: true });
+/** What the demo sign-in sends: the e-mail that names the account the browser keeps. */
+export const SignInMutationFromBraturaPortalArgsSchema = CreatorRegistrationFields.pick({
+  email: true,
+});
 
 export type SignInMutationFromBraturaPortalArgs = z.infer<
   typeof SignInMutationFromBraturaPortalArgsSchema

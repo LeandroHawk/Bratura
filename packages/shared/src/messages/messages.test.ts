@@ -7,13 +7,8 @@ import { parseWithMessages } from './messages';
 import { ptBRValidationMessages } from './pt-BR';
 
 const filled = {
-  fullName: 'Maria das Dores',
   email: 'maria@example.com',
-  nationality: 'Brasileira',
   applicantType: 'individual',
-  mobilePhone: '85987654321',
-  cpf: '52998224725',
-  cep: '63010010',
   state: 'CE',
   city: 'Juazeiro do Norte',
 };
@@ -30,10 +25,8 @@ describe('parseWithMessages', () => {
   });
 
   test('an empty field asks to be filled, whatever rule it broke first', () => {
-    expect(messagesOf({ ...filled, fullName: '  ', email: '', cpf: '', city: undefined })).toEqual({
-      fullName: ptBRValidationMessages.required,
+    expect(messagesOf({ ...filled, email: '', city: undefined })).toEqual({
       email: ptBRValidationMessages.required,
-      cpf: ptBRValidationMessages.required,
       city: ptBRValidationMessages.required,
     });
   });
@@ -43,10 +36,17 @@ describe('parseWithMessages', () => {
   });
 
   test('a rule of our own reads its text by key, in the reader’s language', () => {
-    expect(messagesOf({ ...filled, cpf: '12345678900' }).cpf).toBe(ptBRValidationMessages.rule.cpf);
-    expect(messagesOf({ ...filled, cpf: '12345678900' }, 'en').cpf).toBe(
-      enValidationMessages.rule.cpf,
-    );
+    const schema = z.object({
+      year: z.number().refine(() => false, validationMessage('yearInTheFuture')),
+    });
+    for (const [locale, messages] of [
+      ['pt-BR', ptBRValidationMessages],
+      ['en', enValidationMessages],
+    ] as const)
+      expect(parseWithMessages(schema, { year: 2100 }, locale)).toEqual({
+        success: false,
+        messageByPath: { year: messages.rule.yearInTheFuture },
+      });
   });
 
   test('a ceiling says its number', () => {
@@ -64,7 +64,7 @@ describe('parseWithMessages', () => {
   test('keys a nested failure by its dotted path, keeping the first issue', () => {
     const schema = z.object({ links: z.array(z.httpUrl()) }).refine(() => false, {
       path: ['links', 1],
-      ...validationMessage('confirmationDiffers'),
+      ...validationMessage('endsBeforeItStarts'),
     });
     const result = parseWithMessages(schema, { links: ['https://a.example', 'x'] }, 'en');
     expect(result).toEqual({

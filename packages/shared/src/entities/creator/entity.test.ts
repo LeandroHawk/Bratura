@@ -4,13 +4,8 @@ import { CreatorCulturalProfileFields } from './fragments/cultural-profile/field
 import { CreatorRegistrationFields } from './fragments/registration/fields';
 
 const registration = {
-  fullName: 'Maria das Dores',
   email: 'maria@example.com',
-  nationality: 'Brasileira',
   applicantType: 'individual',
-  mobilePhone: '85987654321',
-  cpf: '52998224725',
-  cep: '63010010',
   state: 'CE',
   city: 'Juazeiro do Norte',
 };

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { nullableString, requiredString } from '../../../../primitives/code/string/fields';
+import { requiredString } from '../../../../primitives/code/string/fields';
 import { PortfolioDocumentKindEnum } from '../../enums/document-kind/enum';
 import { AttachedFileSchema } from '../../../../primitives/domain/attached-file/fields';
 import { PortfolioItemIdentityFields } from '../../fragments/identity/fields';
@@ -15,7 +15,6 @@ export const DocumentPortfolioItemSchema = z.object({
   /** How the creator names it ("CCMEI 2026", "Conta de luz de março"). */
   description: requiredString(),
   /** The registry's number, for the kinds that have one (CNPJ, SICAB). */
-  registrationNumber: nullableString('short'),
   issuedOn: z.iso.date().nullable(),
   /** `null` for a paper that does not expire. */
   validUntil: z.iso.date().nullable(),

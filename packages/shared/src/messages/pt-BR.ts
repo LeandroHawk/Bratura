@@ -15,10 +15,6 @@ export const ptBRValidationMessages = {
   numberTooBig: (maximum: number) => `O maior valor aceito é ${maximum}.`,
   listTooLong: (maximum: number) => `Mantenha no máximo ${maximum} itens.`,
   rule: {
-    cpf: 'Digite um CPF válido, com os 11 números.',
-    cep: 'Digite o CEP com os 8 números.',
-    brazilianMobilePhone: 'Digite o celular com DDD, como (85) 98765-4321.',
-    confirmationDiffers: 'Os dois campos precisam ser iguais.',
     endsBeforeItStarts: 'O término não pode vir antes do início.',
     yearInTheFuture: 'Esse ano ainda não chegou.',
   } satisfies Record<ValidationMessageKey, string>,

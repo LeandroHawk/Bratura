@@ -7,16 +7,12 @@ import type { Creator } from '../entity';
  * the browser demo. Not a real person.
  */
 export const FICTIONAL_CREATOR: Creator = {
-  fullName: 'Maria das Dores Silva',
   email: 'maria@example.com',
-  nationality: 'Brasileira',
   applicantType: 'individual',
-  mobilePhone: '88987654321',
-  cpf: '52998224725',
-  cep: '63010010',
   state: 'CE',
   city: 'Juazeiro do Norte',
   profileImage: null,
+  fullName: 'Maria das Dores Silva',
   artisticName: 'Dona Maria Rendeira',
   biography:
     'Rendeira de bilro desde menina, aprendi o ofício com minha mãe e minha avó. Hoje ensino a renda para as jovens do bairro e vendo minhas peças nas feiras do Cariri.',
@@ -102,7 +98,6 @@ export const FICTIONAL_CREATOR_PORTFOLIO_ITEMS: PortfolioItem[] = [
     clientItemId: 'example-document-1',
     documentKind: 'identity',
     description: 'CPF',
-    registrationNumber: null,
     issuedOn: null,
     validUntil: null,
     file: { fileName: 'cpf.pdf', mediaType: 'application/pdf', sizeInBytes: 90_204 },
@@ -112,7 +107,6 @@ export const FICTIONAL_CREATOR_PORTFOLIO_ITEMS: PortfolioItem[] = [
     clientItemId: 'example-document-2',
     documentKind: 'proofOfResidence',
     description: 'Conta de luz',
-    registrationNumber: null,
     issuedOn: '2026-10-05',
     validUntil: null,
     file: { fileName: 'conta-de-luz.pdf', mediaType: 'application/pdf', sizeInBytes: 211_870 },
@@ -122,7 +116,6 @@ export const FICTIONAL_CREATOR_PORTFOLIO_ITEMS: PortfolioItem[] = [
     clientItemId: 'example-document-3',
     documentKind: 'artisanCredential',
     description: 'Carteira nacional do artesão (SICAB)',
-    registrationNumber: null,
     issuedOn: '2021-05-20',
     validUntil: '2025-05-20',
     file: { fileName: 'carteira-artesao.pdf', mediaType: 'application/pdf', sizeInBytes: 150_332 },

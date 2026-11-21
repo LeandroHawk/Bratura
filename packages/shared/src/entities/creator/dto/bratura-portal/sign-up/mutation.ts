@@ -1,15 +1,14 @@
 import { z } from 'zod';
+import { CreatorCulturalProfileFields } from '../../../fragments/cultural-profile/fields';
 import { CreatorRegistrationFields } from '../../../fragments/registration/fields';
 
-/** Long enough to resist guessing; capped so hashing it never becomes the expensive step. */
-export const requiredPassword = z.string().min(8).max(128);
-
 /**
- * What the sign-up sends: the creator's registration and the password, which the sign-in provider
- * keeps and no table stores.
+ * What the sign-up sends: the creator's registration and their main art form, which the profile
+ * keeps and matching reads. No password: until the sign-in provider exists (after 30/11) the
+ * account is a demo kept in the browser.
  */
 export const SignUpMutationFromBraturaPortalArgsSchema = CreatorRegistrationFields.extend({
-  password: requiredPassword,
+  mainCulturalArea: CreatorCulturalProfileFields.shape.mainCulturalArea.unwrap(),
 });
 
 export type SignUpMutationFromBraturaPortalArgs = z.infer<

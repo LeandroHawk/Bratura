@@ -81,7 +81,6 @@ const withDocument = (
       clientItemId: `test-${documentKind}`,
       documentKind,
       description: documentKind,
-      registrationNumber: null,
       issuedOn: null,
       validUntil,
       file: { fileName: 'paper.pdf', mediaType: 'application/pdf', sizeInBytes: 1 },

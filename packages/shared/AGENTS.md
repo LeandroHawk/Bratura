@@ -132,7 +132,7 @@ silently carries less than the row. Name a subset when the same list appears a s
   Re-describing a schema by hand on the front is how a sibling project ended up showing Zod's
   English default messages to Portuguese users.
 - **Messages in two languages**: a field carries no text, a rule of our own names its message
-  (`validationMessage('cpf')`), and `src/messages/` has the text per locale (Messages, below).
+  (`validationMessage('endsBeforeItStarts')`), and `src/messages/` has the text per locale (Messages, below).
 - **"If A then B exists"** → `z.discriminatedUnion` first. **"A compared with B"** (the
   registration window closes after it opens) → a `with…` function next to the entity that adds the
   `refine`, so both sides run one check (`withOrderedRegistrationWindow`). Never on the entity

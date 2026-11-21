@@ -18,6 +18,8 @@ export const culturalProfileListMax = 30;
 export const CreatorCulturalProfileFields = z.object({
   /** The profile photo or the group's logo. */
   profileImage: AttachedFileSchema.nullable(),
+  /** The name on their documents, for what the portfolio prints; never asked at sign-up. */
+  fullName: nullableString(),
   /** The artistic or trade name; `null` when they go by `fullName`. */
   artisticName: nullableString('medium'),
   biography: nullableString(),
