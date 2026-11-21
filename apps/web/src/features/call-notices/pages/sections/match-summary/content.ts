@@ -1,29 +1,25 @@
+import type { MatchClassification } from '@bratura/shared/entities/match/enums/classification/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
   title: 'Editais para você',
-  lead: (name: string) =>
-    `Cada edital conferido com o portfólio de ${name}, requisito a requisito.`,
-  mainArea: 'Área cultural principal',
-  lastAnalysis: 'Última análise',
+  lead: 'Cada edital para artistas conferido com um portfólio, item a item, pelo que o próprio edital diz.',
   counts: {
-    eligible: 'Elegíveis',
-    almostEligible: 'Quase elegíveis',
-    notEligible: 'Não elegíveis',
-  },
+    eligible: 'Abertos e elegíveis',
+    almostEligible: 'Abertos e quase elegíveis',
+    notEligible: 'Abertos e não elegíveis',
+  } satisfies Record<MatchClassification, string>,
 };
 
 export const MATCH_SUMMARY_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     title: 'Calls for you',
-    lead: (name) => `Every call checked against ${name}’s portfolio, requirement by requirement.`,
-    mainArea: 'Main cultural area',
-    lastAnalysis: 'Last analysis',
+    lead: 'Every call for artists checked against a portfolio, item by item, by what the call itself says.',
     counts: {
-      eligible: 'Eligible',
-      almostEligible: 'Almost eligible',
-      notEligible: 'Not eligible',
+      eligible: 'Open and eligible',
+      almostEligible: 'Open and almost eligible',
+      notEligible: 'Open and not eligible',
     },
   },
 };

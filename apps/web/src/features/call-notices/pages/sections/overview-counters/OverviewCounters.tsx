@@ -1,27 +1,20 @@
-import type { CallNoticeWithMatch } from '@bratura/shared/entities/call-notice/dto/bratura-portal/eligible-call-notices/query';
+import type { CallNoticeCounters } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-counters/query';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Heading } from '@bratura/ui';
 import { Counters } from '@/features/call-notices/pages/sections/common/Counters';
-import {
-  callNoticeStatus,
-  isNewCallNotice,
-} from '@/features/call-notices/pages/sections/common/filtering';
 import { OVERVIEW_COUNTERS_CONTENT } from './content';
 
-/** How many calls there are, by where each stands. */
+/** How many calls for creators there are, by where each stands, counted by the server. */
 export function OverviewCounters({
   locale,
-  callNotices,
+  counters,
   savedCount,
-  now,
 }: {
   locale: Locale;
-  callNotices: CallNoticeWithMatch[];
+  counters: CallNoticeCounters | null;
   savedCount: number;
-  now: number;
 }) {
   const content = OVERVIEW_COUNTERS_CONTENT[locale];
-  const statuses = callNotices.map((callNotice) => callNoticeStatus(callNotice, now));
 
   return (
     <div className="grid gap-5">
@@ -33,21 +26,9 @@ export function OverviewCounters({
       </div>
       <Counters
         counters={[
-          { label: content.counts.total, count: callNotices.length },
-          {
-            label: content.counts.open,
-            // Closing soon is still open.
-            count: statuses.filter((status) => status === 'open' || status === 'closingSoon')
-              .length,
-          },
-          {
-            label: content.counts.closingSoon,
-            count: statuses.filter((status) => status === 'closingSoon').length,
-          },
-          {
-            label: content.counts.isNew,
-            count: callNotices.filter((callNotice) => isNewCallNotice(callNotice, now)).length,
-          },
+          { label: content.counts.open, count: counters?.open ?? null },
+          { label: content.counts.closingSoon, count: counters?.closingSoon ?? null },
+          { label: content.counts.isNew, count: counters?.isNew ?? null },
           { label: content.counts.saved, count: savedCount },
         ]}
       />

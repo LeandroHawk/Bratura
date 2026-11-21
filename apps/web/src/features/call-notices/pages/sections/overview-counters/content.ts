@@ -2,9 +2,8 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
   title: 'Todos os editais',
-  lead: 'Tudo o que está na base do Bratura, sirva ou não para o seu perfil.',
+  lead: 'Os editais para artistas e grupos que o Bratura leu nas fontes oficiais, sirvam ou não para o seu perfil.',
   counts: {
-    total: 'Editais na base',
     open: 'Com inscrições abertas',
     closingSoon: 'Encerrando em breve',
     isNew: 'Novos nesta semana',
@@ -16,9 +15,8 @@ export const OVERVIEW_COUNTERS_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     title: 'All calls',
-    lead: 'Everything in Bratura’s database, whether or not it suits your profile.',
+    lead: 'The calls for artists and groups Bratura read from the official sources, whether or not they suit your profile.',
     counts: {
-      total: 'Calls in the database',
       open: 'Open for registration',
       closingSoon: 'Closing soon',
       isNew: 'New this week',

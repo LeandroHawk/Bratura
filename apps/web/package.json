@@ -12,8 +12,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@bratura/backend": "workspace:*",
     "@bratura/shared": "workspace:*",
     "@bratura/ui": "workspace:*",
+    "convex": "catalog:",
     "next": "^16.4.5",
     "react": "catalog:",
     "react-dom": "catalog:"

@@ -1,34 +1,34 @@
 'use client';
 
-import type { SavedCallNotice } from '@bratura/shared/entities/call-notice/dto/bratura-portal/saved-call-notice/mutation';
+import type { CallNoticeCard } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
 import type {
-  CallNoticeWithMatch,
-  MatchRequirement,
-  MatchRequirementStatus,
-} from '@bratura/shared/entities/call-notice/dto/bratura-portal/eligible-call-notices/query';
+  CallNoticeDetails as CallNoticeDetailsData,
+  MatchRequirementCheck,
+} from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-details/query';
+import type { SavedCallNotice as SavedCallNoticeRow } from '@bratura/shared/entities/call-notice/dto/bratura-portal/saved-call-notice/mutation';
+import type { MatchCheckStatus } from '@bratura/shared/entities/match/enums/check-status/enum';
+import { PortfolioDocumentKindEnum } from '@bratura/shared/entities/portfolio-item/enums/document-kind/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Badge, Button, ButtonLink, Checkbox, Dialog, Heading, type BadgeTone } from '@bratura/ui';
+import { Badge, ButtonLink, Checkbox, Dialog, Heading, type BadgeTone } from '@bratura/ui';
 import type { ReactNode } from 'react';
+import { useCallNoticeDetails } from '@/features/call-notices/data/useCallNoticeDetails';
 import { NewTabHint } from '@/features/common/components/NewTabHint';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { ROUTES } from '@/features/common/config/routes';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { setSavedCallNotice } from '@/features/common/data/demoStore';
 import { formattedAmountInCents, formattedDayOfInstant } from '@/features/common/utils/format';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
-import { CLASSIFICATION_TONE, STATUS_TONE } from './CallNoticeCard';
 import {
   artFormName,
-  askedText,
   CALL_NOTICE_LANGUAGE,
-  isAskedInTheCallsWording,
-  justificationText,
-  locationText,
+  callNoticeStatus,
+  CLASSIFICATION_TONE,
+  closeText,
+  STATUS_TONE,
 } from './callNoticeTexts';
 import { CALL_NOTICES_CONTENT } from './content';
-import type { CallNoticeStatus } from './filtering';
 
-const REQUIREMENT_TONE: Record<MatchRequirementStatus, BadgeTone> = {
+const CHECK_TONE: Record<MatchCheckStatus, BadgeTone> = {
   met: 'open',
   notMet: 'missing',
   needsConfirmation: 'soon',
@@ -36,218 +36,223 @@ const REQUIREMENT_TONE: Record<MatchRequirementStatus, BadgeTone> = {
 
 const LINK = 'rounded-sm font-semibold underline underline-offset-4 focus-ring';
 
-function guidanceText(requirement: MatchRequirement, locale: Locale) {
-  const { guidance } = CALL_NOTICES_CONTENT[locale].details;
-  if (requirement.status === 'met') return null;
-  if (requirement.kind === 'residence') return guidance.residence;
-  if (requirement.kind === 'applicantType') return guidance.applicantType;
-  if (requirement.kind === 'artForm')
-    return requirement.status === 'notMet' ? guidance.artForm : guidance.artFormToConfirm;
-  return requirement.documentKind === null
-    ? guidance.documentToConfirm
-    : guidance.documentMissing(CREATOR_LABELS[locale].documentKind[requirement.documentKind]);
+type SavedCallNotice = Pick<SavedCallNoticeRow, 'remindersOn'>;
+
+/** The call's own words, marked as a quotation in the call's language. */
+function Quote({ locale, children }: { locale: Locale; children: string }) {
+  return (
+    <p className="text-small text-muted-foreground">
+      {CALL_NOTICES_CONTENT[locale].details.quoteLabel}{' '}
+      <q lang={CALL_NOTICE_LANGUAGE}>{children}</q>
+    </p>
+  );
 }
 
-/**
- * Everything about one call, in a dialog: what it is, how it fits the portfolio requirement by
- * requirement, what the application needs, and the reminders.
- */
-export function CallNoticeDetails({
+function Section({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
+  return (
+    <section className="grid gap-3">
+      <div className="grid gap-1">
+        <Heading as="h3" size="item">
+          {title}
+        </Heading>
+        {lead && <p className="text-small text-muted-foreground">{lead}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+const CHECK_LIST = 'divide-y divide-border border-y border-border';
+
+/** The papers of one stage: what the call asks, its passage, and how the portfolio stands. */
+function RequirementList({
   locale,
-  callNotice,
-  status,
-  saved,
-  onClose,
+  title,
+  lead,
+  requirements,
 }: {
   locale: Locale;
-  callNotice: CallNoticeWithMatch;
-  status: CallNoticeStatus;
-  /** `null` while the call is not saved. */
-  saved: SavedCallNotice | null;
-  onClose: () => void;
+  title: string;
+  lead?: string;
+  requirements: MatchRequirementCheck[];
 }) {
+  const copy = CALL_NOTICES_CONTENT[locale].details;
+  const { documentKind } = CREATOR_LABELS[locale];
+  return (
+    <div className="grid gap-2">
+      <h4 className="font-display font-bold">{title}</h4>
+      {lead && <p className="text-small text-muted-foreground">{lead}</p>}
+      {requirements.length === 0 ? (
+        <p className="text-small text-muted-foreground">{copy.listNone}</p>
+      ) : (
+        <ul className={CHECK_LIST}>
+          {requirements.map((requirement, index) => {
+            const kind = PortfolioDocumentKindEnum.safeParse(requirement.kind);
+            const validity =
+              requirement.paperValidity && copy.paperValidity[requirement.paperValidity];
+            return (
+              <li key={`${requirement.kind}-${index}`} className="grid gap-1.5 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone={CHECK_TONE[requirement.status]}>
+                    {copy.paperStatus[requirement.status]}
+                  </Badge>
+                  <p className="font-semibold">
+                    {kind.success && kind.data !== 'other' && `${documentKind[kind.data]}: `}
+                    <span lang={CALL_NOTICE_LANGUAGE}>{requirement.detail}</span>
+                  </p>
+                </div>
+                <Quote locale={locale}>{requirement.quote}</Quote>
+                {validity && <p className="text-small">{validity}</p>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** What the details show once the server answered. */
+function DetailsBody({ locale, details }: { locale: Locale; details: CallNoticeDetailsData }) {
   const content = CALL_NOTICES_CONTENT[locale];
   const copy = content.details;
-  const { notInformed } = CREATOR_LABELS[locale];
-  const { match, extraction, registrationOpens, registrationCloses, callNoticeId } = callNotice;
-  const documents = match?.requirements.filter((requirement) => requirement.kind === 'document');
-  const day = (instant: { at: number } | null) =>
-    instant && formattedDayOfInstant(instant.at, locale);
+  const labels = CREATOR_LABELS[locale];
+  const { extraction, matchChecks, classification } = details;
+  const status = callNoticeStatus(details);
+  const notInformed = <span className="text-muted-foreground">{labels.notInformed}</span>;
+  const quoted = (text: string) => <span lang={CALL_NOTICE_LANGUAGE}>{text}</span>;
 
-  const about: [string, ReactNode][] = [
+  const about: [label: string, value: ReactNode, wide?: boolean][] = [
+    [content.card.organizer, quoted(details.organizer)],
     [
-      content.card.organizer,
-      callNotice.organizer && <span lang={CALL_NOTICE_LANGUAGE}>{callNotice.organizer}</span>,
+      content.card.opens,
+      details.registrationOpens && formattedDayOfInstant(details.registrationOpens.at, locale),
     ],
-    [
-      copy.summary,
-      callNotice.summary && <span lang={CALL_NOTICE_LANGUAGE}>{callNotice.summary}</span>,
-    ],
-    [
-      copy.opportunityKind,
-      callNotice.opportunityKind && content.opportunityKind[callNotice.opportunityKind],
-    ],
-    [
-      copy.artForms,
-      extraction?.artForms.map((artForm) => artFormName(artForm.value, locale)).join(', '),
-    ],
-    [content.card.location, locationText(callNotice, locale)],
-    [
-      copy.applicantTypes,
-      extraction?.applicantTypes?.value.map((type) => content.applicantType[type]).join(', '),
-    ],
-    [
-      copy.totalBudget,
-      extraction?.totalBudget &&
-        formattedAmountInCents(extraction.totalBudget.amountInCents, locale),
-    ],
-    [
-      copy.amountPerProject,
-      extraction?.amountsPerProject
-        .map(
-          (amount) => `${amount.category}: ${formattedAmountInCents(amount.amountInCents, locale)}`,
-        )
-        .join('; '),
-    ],
-    [content.card.published, formattedDayOfInstant(callNotice.firstSeenAt, locale)],
-    [content.card.opens, day(registrationOpens)],
-    [content.card.closes, day(registrationCloses)],
-    [
-      copy.criteria,
-      extraction?.evaluationCriteria.map((criterion) => criterion.criterion).join('; '),
-    ],
-    [copy.lastUpdated, formattedDayOfInstant(callNotice.lastSeenAt, locale)],
+    [copy.deadline, closeText(details, locale)],
+    [copy.lastUpdated, formattedDayOfInstant(details.lastSeenAt, locale)],
+    [copy.summary, details.summary && quoted(details.summary), true],
   ];
-
-  const setSaved = (change: Partial<SavedCallNotice> | null) =>
-    setSavedCallNotice(
-      callNoticeId,
-      change === null
-        ? null
-        : {
-            callNoticeId,
-            remindersOn: false,
-            notifiesByEmail: false,
-            notifiesByWhatsApp: false,
-            ...saved,
-            ...change,
-          },
+  if (extraction)
+    about.push(
+      [
+        copy.totalBudget,
+        extraction.totalBudget &&
+          formattedAmountInCents(extraction.totalBudget.amountInCents, locale),
+      ],
+      [
+        copy.artForms,
+        extraction.artForms.map(({ value }) => artFormName(value, locale)).join(', '),
+      ],
+      [
+        copy.applicantTypes,
+        extraction.applicantTypes?.value.map((type) => labels.applicantType[type]).join(', '),
+      ],
+      [
+        copy.residence,
+        extraction.residenceRequirement && quoted(extraction.residenceRequirement.value),
+      ],
     );
 
-  const documentList = (title: string, wanted: boolean) => {
-    const listed = documents?.filter((document) => (document.status === 'met') === wanted) ?? [];
-    return (
-      <div className="grid content-start gap-1.5">
-        <h4 className="font-display font-bold">{title}</h4>
-        {listed.length === 0 ? (
-          <p className="text-small text-muted-foreground">{copy.documentsNone}</p>
-        ) : (
-          <ul className="grid gap-1 text-small">
-            {listed.map((document) => (
-              <li key={document.asked}>
-                <span aria-hidden="true">{wanted ? '✓ ' : '○ '}</span>
-                <span lang={CALL_NOTICE_LANGUAGE}>{document.asked}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+  const labelByUrl = new Map(details.documentLabels?.map(({ url, label }) => [url, label]));
+  const requirementsOf = (afterSelection: boolean) =>
+    (matchChecks?.requirements ?? []).filter(
+      ({ stage }) => (stage === 'afterSelection') === afterSelection,
     );
-  };
 
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      title={callNotice.title}
-      titleLang={CALL_NOTICE_LANGUAGE}
-      closeLabel={copy.close}
-    >
-      <div className="grid gap-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={STATUS_TONE[status]}>{content.status[status]}</Badge>
-          {match ? (
-            <Badge tone={CLASSIFICATION_TONE[match.classification]}>
-              {content.classification[match.classification]}
-            </Badge>
-          ) : (
-            <span className="text-small text-muted-foreground">{content.notAnalyzed}</span>
-          )}
-        </div>
+    <div className="grid gap-8">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone={STATUS_TONE[status]}>{content.status[status]}</Badge>
+        {classification ? (
+          <Badge tone={CLASSIFICATION_TONE[classification]}>
+            {content.classification[classification]}
+          </Badge>
+        ) : (
+          <span className="text-small text-muted-foreground">{content.notAnalyzed}</span>
+        )}
+      </div>
 
-        <section className="grid gap-3">
-          <Heading as="h3" size="item">
-            {copy.aboutTitle}
-          </Heading>
-          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-            {about.map(([label, value]) => (
-              <div key={label} className={label === copy.summary ? 'sm:col-span-2' : ''}>
-                <dt className="text-caption font-semibold text-muted-foreground">{label}</dt>
-                <dd>{value || <span className="text-muted-foreground">{notInformed}</span>}</dd>
-              </div>
-            ))}
-          </dl>
-          <ul className="flex flex-wrap gap-x-5 gap-y-1 text-small">
-            <li>
-              <a href={callNotice.officialUrl} target="_blank" rel="noreferrer" className={LINK}>
-                {content.card.officialSource}
-                <NewTabHint locale={locale} />
-              </a>
-            </li>
-            {callNotice.documentUrls.map((url) => (
-              <li key={url}>
-                <a href={url} target="_blank" rel="noreferrer" className={LINK}>
-                  {copy.originalDocument}
-                  <NewTabHint locale={locale} />
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="grid gap-3">
-          <div className="grid gap-1">
-            <Heading as="h3" size="item">
-              {copy.eligibilityTitle}
-            </Heading>
-            <p className="text-small text-muted-foreground">
-              {copy.eligibilityLead}{' '}
-              {match && copy.analyzedOn(formattedDayOfInstant(match.analyzedAt, locale))}
-            </p>
+      <Section title={copy.aboutTitle}>
+        {details.resultPosted && <p>{copy.resultPosted}</p>}
+        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          {about.map(([label, value, wide]) => (
+            <div key={label} className={wide ? 'sm:col-span-2' : ''}>
+              <dt className="text-caption font-semibold text-muted-foreground">{label}</dt>
+              <dd>{value || notInformed}</dd>
+            </div>
+          ))}
+        </dl>
+        {extraction && extraction.amountsPerProject.length > 0 && (
+          <div className="grid gap-2">
+            <h4 className="font-display font-bold">{copy.amountPerProject}</h4>
+            <ul className={CHECK_LIST}>
+              {extraction.amountsPerProject.map((amount, index) => (
+                <li key={`amount-${index}`} className="grid gap-1 py-3">
+                  <p>
+                    <span className="font-semibold">
+                      {formattedAmountInCents(amount.amountInCents, locale)}
+                    </span>{' '}
+                    · {quoted(amount.category)}
+                  </p>
+                  <Quote locale={locale}>{amount.quote}</Quote>
+                </li>
+              ))}
+            </ul>
           </div>
-          <p>{justificationText(callNotice, locale)}</p>
-          {match && (
-            <ul className="divide-y divide-border border-y border-border">
-              {match.requirements.map((requirement) => {
-                const guidance = guidanceText(requirement, locale);
-                return (
-                  <li
-                    key={`${requirement.kind}-${requirement.asked}`}
-                    className="grid gap-1.5 py-3"
-                  >
+        )}
+        {extraction?.totalBudget && <Quote locale={locale}>{extraction.totalBudget.quote}</Quote>}
+        {extraction === null && <p>{copy.notRead}</p>}
+      </Section>
+
+      {extraction && matchChecks === null && <p>{copy.notCreatorCall}</p>}
+
+      {matchChecks && (
+        <Section title={copy.eligibilityTitle} lead={copy.eligibilityLead}>
+          {matchChecks.applicantType && (
+            <div className="grid gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={CHECK_TONE[matchChecks.applicantType.status]}>
+                  {copy.checkStatus[matchChecks.applicantType.status]}
+                </Badge>
+                <p className="font-semibold">{copy.applicantTypeTitle}</p>
+              </div>
+              <Quote locale={locale}>{matchChecks.applicantType.quote}</Quote>
+              {matchChecks.applicantType.status !== 'met' && (
+                <p className="text-small">{copy.applicantTypeToConfirm}</p>
+              )}
+            </div>
+          )}
+          {matchChecks.artFormStatus && matchChecks.artFormStatus !== 'met' && (
+            <p className="text-small">{copy.artFormToConfirm}</p>
+          )}
+          <RequirementList
+            locale={locale}
+            title={copy.toApplyTitle}
+            requirements={requirementsOf(false)}
+          />
+          <RequirementList
+            locale={locale}
+            title={copy.afterSelectionTitle}
+            lead={copy.afterSelectionLead}
+            requirements={requirementsOf(true)}
+          />
+          {matchChecks.eligibilityRules.length > 0 && (
+            <div className="grid gap-2">
+              <h4 className="font-display font-bold">{copy.rulesTitle}</h4>
+              <ul className={CHECK_LIST}>
+                {matchChecks.eligibilityRules.map((rule, index) => (
+                  <li key={`${rule.kind}-${index}`} className="grid gap-1.5 py-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={REQUIREMENT_TONE[requirement.status]}>
-                        {copy.requirementStatus[requirement.status]}
-                      </Badge>
+                      <Badge tone={CHECK_TONE[rule.status]}>{copy.checkStatus[rule.status]}</Badge>
                       <p className="font-semibold">
-                        {copy.requirementKind[requirement.kind]}:{' '}
-                        <span
-                          lang={
-                            isAskedInTheCallsWording(requirement) ? CALL_NOTICE_LANGUAGE : undefined
-                          }
-                        >
-                          {askedText(requirement, locale)}
-                        </span>
+                        {content.eligibilityRuleKind[rule.kind]}: {quoted(rule.detail)}
                       </p>
                     </div>
-                    <p className="text-small text-muted-foreground">
-                      {copy.quoteLabel} <q lang={CALL_NOTICE_LANGUAGE}>{requirement.quote}</q>
-                    </p>
-                    {guidance && <p className="text-small">{guidance}</p>}
+                    <Quote locale={locale}>{rule.quote}</Quote>
                   </li>
-                );
-              })}
-            </ul>
+                ))}
+              </ul>
+            </div>
           )}
           <div>
             <ButtonLink
@@ -258,71 +263,132 @@ export function CallNoticeDetails({
               {copy.updatePortfolio}
             </ButtonLink>
           </div>
-        </section>
+        </Section>
+      )}
 
-        <section className="grid gap-3">
-          <Heading as="h3" size="item">
-            {copy.preparationTitle}
-          </Heading>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {documentList(copy.documentsAvailable, true)}
-            {documentList(copy.documentsPending, false)}
-          </div>
-          <p>
-            <span className="font-semibold">{copy.deadline}:</span>{' '}
-            {day(registrationCloses) ?? notInformed}
-          </p>
-          <div className="grid justify-items-start gap-2 rounded-2xl border border-dashed border-muted-foreground p-4">
-            <h4 className="font-display font-bold">{copy.aiTitle}</h4>
-            <p id={`${callNoticeId}-ai`} className="text-small text-muted-foreground">
-              {copy.aiLead}
-            </p>
-            <Button size="sm" variant="ghost" disabled aria-describedby={`${callNoticeId}-ai`}>
-              {copy.generateMaterial}
-            </Button>
-          </div>
-          <div>
-            <ButtonLink size="sm" href={callNotice.officialUrl} target="_blank" rel="noreferrer">
-              {copy.officialPage}
-              <NewTabHint locale={locale} />
-            </ButtonLink>
-          </div>
-        </section>
+      {extraction && extraction.quotas.length > 0 && (
+        <Section title={copy.quotasTitle} lead={copy.quotasLead}>
+          <ul className={CHECK_LIST}>
+            {extraction.quotas.map((quota, index) => (
+              <li key={`${quota.group}-${index}`} className="grid gap-1 py-3">
+                <p className="font-semibold">
+                  {content.quotaGroup[quota.group]}
+                  {quota.share && (
+                    <>
+                      {' · '}
+                      {copy.quotaShare}: {quoted(quota.share)}
+                    </>
+                  )}
+                </p>
+                <Quote locale={locale}>{quota.quote}</Quote>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
 
-        <section className="grid gap-3">
-          <div className="grid gap-1">
-            <Heading as="h3" size="item">
-              {copy.alertsTitle}
-            </Heading>
-            <p className="text-small text-muted-foreground">{copy.alertsLead}</p>
-          </div>
+      {extraction && extraction.evaluationCriteria.length > 0 && (
+        <Section title={copy.criteria}>
+          <ul className={CHECK_LIST}>
+            {extraction.evaluationCriteria.map((criterion, index) => (
+              <li key={`criterion-${index}`} className="grid gap-1 py-3">
+                <p>
+                  {quoted(criterion.criterion)}
+                  {criterion.maxPoints !== null && ` · ${copy.maxPoints(criterion.maxPoints)}`}
+                </p>
+                <Quote locale={locale}>{criterion.quote}</Quote>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      <Section title={copy.annexesTitle}>
+        {details.documentUrls.length > 0 && (
+          <ul className="grid gap-1 text-small">
+            {details.documentUrls.map((url, index) => {
+              const label = labelByUrl.get(url);
+              return (
+                <li key={`annex-${index}`}>
+                  <a href={url} target="_blank" rel="noreferrer" className={LINK}>
+                    {label ? quoted(label) : copy.annex(index + 1)}
+                    <NewTabHint locale={locale} />
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <div className="grid justify-items-start gap-2 rounded-2xl border border-dashed border-muted-foreground p-4">
+          <h4 className="font-display font-bold">{copy.aiTitle}</h4>
+          <p className="text-small text-muted-foreground">{copy.aiLead}</p>
+        </div>
+        <div>
+          <ButtonLink size="sm" href={details.officialUrl} target="_blank" rel="noreferrer">
+            {copy.officialPage}
+            <NewTabHint locale={locale} />
+          </ButtonLink>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+/**
+ * Everything about one call: what the source says, how the profile fits it item by item with the
+ * call's passage, what to prepare for each stage, and whether to follow it. A call whose documents
+ * were not read shows its official link alone.
+ */
+export function CallNoticeDetails({
+  locale,
+  callNotice,
+  saved,
+  onSavedChange,
+  onClose,
+}: {
+  locale: Locale;
+  /** The card that was opened: its title heads the dialog while the details load. */
+  callNotice: CallNoticeCard;
+  saved: SavedCallNotice | null;
+  onSavedChange: (saved: SavedCallNotice | null) => void;
+  onClose: () => void;
+}) {
+  const copy = CALL_NOTICES_CONTENT[locale].details;
+  const details = useCallNoticeDetails(callNotice.callNoticeId);
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={callNotice.title}
+      titleLang={CALL_NOTICE_LANGUAGE}
+      closeLabel={copy.close}
+    >
+      <div className="grid gap-8">
+        {details ? (
+          <DetailsBody locale={locale} details={details} />
+        ) : (
+          <p role="status">{copy.loading}</p>
+        )}
+
+        <Section title={copy.alertsTitle} lead={copy.alertsLead}>
           <div className="grid gap-2">
             <Checkbox
               checked={saved !== null}
-              onChange={(event) => setSaved(event.target.checked ? {} : null)}
+              onChange={(event) =>
+                onSavedChange(event.target.checked ? { remindersOn: false } : null)
+              }
             >
               {copy.saveCall}
             </Checkbox>
             <Checkbox
               checked={saved?.remindersOn ?? false}
-              onChange={(event) => setSaved({ remindersOn: event.target.checked })}
+              onChange={(event) => onSavedChange({ remindersOn: event.target.checked })}
             >
               {copy.reminders}
             </Checkbox>
-            <Checkbox
-              checked={saved?.notifiesByEmail ?? false}
-              onChange={(event) => setSaved({ notifiesByEmail: event.target.checked })}
-            >
-              {copy.byEmail}
-            </Checkbox>
-            <Checkbox
-              checked={saved?.notifiesByWhatsApp ?? false}
-              onChange={(event) => setSaved({ notifiesByWhatsApp: event.target.checked })}
-            >
-              {copy.byWhatsApp}
-            </Checkbox>
           </div>
-        </section>
+        </Section>
       </div>
     </Dialog>
   );
