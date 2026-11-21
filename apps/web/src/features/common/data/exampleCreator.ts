@@ -96,7 +96,7 @@ export const EXAMPLE_PORTFOLIO_ITEMS: PortfolioItem[] = [
   {
     kind: 'document',
     clientItemId: 'example-document-1',
-    documentKind: 'cpf',
+    documentKind: 'identity',
     description: 'CPF',
     registrationNumber: null,
     issuedOn: null,
@@ -116,7 +116,7 @@ export const EXAMPLE_PORTFOLIO_ITEMS: PortfolioItem[] = [
   {
     kind: 'document',
     clientItemId: 'example-document-3',
-    documentKind: 'sicab',
+    documentKind: 'artisanCredential',
     description: 'Carteira nacional do artesão (SICAB)',
     registrationNumber: null,
     issuedOn: '2021-05-20',

@@ -1,18 +1,20 @@
-import { z } from 'zod';
+import type { z } from 'zod';
+import { RequirementKindEnum } from '../../../call-notice/enums/requirement/enum';
 
 /**
- * The papers call notices ask for: CPF, CNPJ, the MEI certificate (CCMEI), the artisan registry
- * (SICAB), proof of residence, proof of cultural experience, certificates, declarations.
+ * The papers a creator keeps, named by what a call asks for (`RequirementKindEnum`), so matching
+ * compares equal values instead of reading a description. The organization's kinds
+ * (`organizationRecords`, `groupRepresentation`) wait for organization profiles.
  */
-export const PortfolioDocumentKindEnum = z.enum([
-  'cpf',
-  'cnpj',
-  'ccmei',
-  'sicab',
+export const PortfolioDocumentKindEnum = RequirementKindEnum.extract([
+  'identity',
   'proofOfResidence',
-  'proofOfCulturalExperience',
-  'certificate',
-  'declaration',
+  'cnpjOrMei',
+  'taxAndLaborClearance',
+  'bankAccount',
+  'portfolioOrActivityProof',
+  'curriculum',
+  'artisanCredential',
   'other',
 ]);
 
