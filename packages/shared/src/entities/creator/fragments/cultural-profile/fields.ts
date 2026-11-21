@@ -32,6 +32,12 @@ export const CreatorCulturalProfileFields = z.object({
     .refine((year) => year <= new Date().getFullYear(), validationMessage('yearInTheFuture'))
     .nullable(),
   activityDescription: nullableString(),
+  // What the calls' most common rules ask (minimum age, time living in the place, public servants
+  // barred): optional, asked in the portfolio and never at sign-up; matching answers a rule with
+  // them and leaves it "to confirm" while `null`. No quota self-declaration is stored.
+  birthDate: z.iso.date().nullable(),
+  livesInCurrentPlaceSince: z.iso.date().nullable(),
+  isPublicServant: z.boolean().nullable(),
   /** The cities where they work, as they write them ("Juazeiro do Norte - CE"). */
   activityCities: z.array(requiredString('short')).max(culturalProfileListMax),
   /** Social networks, a site, a shop. */

@@ -1,11 +1,12 @@
-import type { Creator } from '@bratura/shared/entities/creator/entity';
-import type { PortfolioItem } from '@bratura/shared/entities/portfolio-item/entity';
+import type { PortfolioItem } from '../../portfolio-item/entity';
+import type { Creator } from '../entity';
 
 /**
- * Dona Maria, the landing's fictional artisan, as a filled portfolio: lets a visitor see the app
- * working without typing a sign-up. Not a real person; the CPF is a made-up valid number.
+ * Dona Maria, the fictional artisan (competition rule 6.9), as a filled portfolio: the profile the
+ * backend matches calls against until `creators` exists, and what "Entrar como Dona Maria" loads in
+ * the browser demo. Not a real person.
  */
-export const EXAMPLE_CREATOR: Creator = {
+export const FICTIONAL_CREATOR: Creator = {
   fullName: 'Maria das Dores Silva',
   email: 'maria@example.com',
   nationality: 'Brasileira',
@@ -25,11 +26,14 @@ export const EXAMPLE_CREATOR: Creator = {
   activityStartYear: 1998,
   activityDescription:
     'Produzo toalhas, caminhos de mesa e golas em renda de bilro, e dou oficinas em escolas e associações.',
+  birthDate: '1968-03-12',
+  livesInCurrentPlaceSince: '1968-03-12',
+  isPublicServant: false,
   activityCities: ['Juazeiro do Norte - CE', 'Crato - CE', 'Barbalha - CE'],
   externalLinks: ['https://www.instagram.com/donamariarendeira.exemplo'],
 };
 
-export const EXAMPLE_PORTFOLIO_ITEMS: PortfolioItem[] = [
+export const FICTIONAL_CREATOR_PORTFOLIO_ITEMS: PortfolioItem[] = [
   {
     kind: 'culturalExperience',
     clientItemId: 'example-experience-1',

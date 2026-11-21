@@ -9,7 +9,10 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ROUTES } from '@/features/common/config/routes';
 import { loadExample, signIn, storedAccountEmail } from '@/features/common/data/demoStore';
-import { EXAMPLE_CREATOR, EXAMPLE_PORTFOLIO_ITEMS } from '@/features/common/data/exampleCreator';
+import {
+  FICTIONAL_CREATOR,
+  FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
+} from '@bratura/shared/entities/creator/demo/fictional-creator';
 import { useContractForm } from '@/features/common/hooks/useContractForm';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { SIGN_IN_FORM_CONTENT } from './content';
@@ -21,7 +24,7 @@ export function SignInForm({ locale }: { locale: Locale }) {
   // The example takes the place of the account this browser keeps: asked before, never silent.
   const [replacedEmail, setReplacedEmail] = useState<string | null>(null);
   const signInWithExample = () => {
-    loadExample({ creator: EXAMPLE_CREATOR, portfolioItems: EXAMPLE_PORTFOLIO_ITEMS });
+    loadExample({ creator: FICTIONAL_CREATOR, portfolioItems: FICTIONAL_CREATOR_PORTFOLIO_ITEMS });
     openPortfolio();
   };
   const { draft, setField, messageByPath, setMessageByPath, formRef, submit } = useContractForm({
@@ -83,7 +86,7 @@ export function SignInForm({ locale }: { locale: Locale }) {
             variant="ghost"
             onClick={() => {
               const stored = storedAccountEmail();
-              if (stored === null || stored === EXAMPLE_CREATOR.email) signInWithExample();
+              if (stored === null || stored === FICTIONAL_CREATOR.email) signInWithExample();
               else setReplacedEmail(stored);
             }}
           >

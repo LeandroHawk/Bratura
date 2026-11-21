@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { callNoticesWithMatch } from '@/features/call-notices/data/callNoticesWithMatch';
-import { EXAMPLE_CREATOR, EXAMPLE_PORTFOLIO_ITEMS } from '@/features/common/data/exampleCreator';
+import {
+  FICTIONAL_CREATOR,
+  FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
+} from '@bratura/shared/entities/creator/demo/fictional-creator';
 import {
   callNoticeStatus,
   emptyCallNoticeFilters,
@@ -10,7 +13,7 @@ import {
 
 const NOW = Date.UTC(2026, 10, 15, 15);
 const CALL_NOTICES = callNoticesWithMatch(
-  { creator: EXAMPLE_CREATOR, portfolioItems: EXAMPLE_PORTFOLIO_ITEMS },
+  { creator: FICTIONAL_CREATOR, portfolioItems: FICTIONAL_CREATOR_PORTFOLIO_ITEMS },
   NOW,
 );
 

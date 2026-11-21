@@ -25,6 +25,9 @@ export const emptyCulturalProfile: CreatorCulturalProfile = {
   artisticLanguagesAndTechniques: [],
   activityStartYear: null,
   activityDescription: null,
+  birthDate: null,
+  livesInCurrentPlaceSince: null,
+  isPublicServant: null,
   activityCities: [],
   externalLinks: [],
 };

@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { EXAMPLE_CREATOR, EXAMPLE_PORTFOLIO_ITEMS } from '@/features/common/data/exampleCreator';
+import {
+  FICTIONAL_CREATOR,
+  FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
+} from '@bratura/shared/entities/creator/demo/fictional-creator';
 import { callNoticesWithMatch } from './callNoticesWithMatch';
 
 const NOW = Date.UTC(2026, 10, 15, 15);
 
-function matchOf(callNoticeId: string, portfolioItems = EXAMPLE_PORTFOLIO_ITEMS) {
-  const callNotice = callNoticesWithMatch({ creator: EXAMPLE_CREATOR, portfolioItems }, NOW).find(
+function matchOf(callNoticeId: string, portfolioItems = FICTIONAL_CREATOR_PORTFOLIO_ITEMS) {
+  const callNotice = callNoticesWithMatch({ creator: FICTIONAL_CREATOR, portfolioItems }, NOW).find(
     (candidate) => candidate.callNoticeId === callNoticeId,
   );
   if (!callNotice) throw new Error(`no sample call ${callNoticeId}`);
@@ -31,7 +34,7 @@ describe('standInMatch, over the sample calls and the example portfolio', () => 
   });
 
   it('a valid document turns the same requirement into met', () => {
-    const withValidSicab = EXAMPLE_PORTFOLIO_ITEMS.map((item) =>
+    const withValidSicab = FICTIONAL_CREATOR_PORTFOLIO_ITEMS.map((item) =>
       item.kind === 'document' && item.documentKind === 'sicab'
         ? { ...item, validUntil: '2030-01-01' }
         : item,
@@ -60,7 +63,7 @@ describe('standInMatch, over the sample calls and the example portfolio', () => 
 
   it('every requirement carries the passage of the call that asks for it', () => {
     const callNotices = callNoticesWithMatch(
-      { creator: EXAMPLE_CREATOR, portfolioItems: EXAMPLE_PORTFOLIO_ITEMS },
+      { creator: FICTIONAL_CREATOR, portfolioItems: FICTIONAL_CREATOR_PORTFOLIO_ITEMS },
       NOW,
     );
     for (const { match } of callNotices)
