@@ -1,3 +1,4 @@
+import { CallNoticeSchema } from '@bratura/shared/entities/call-notice/entity';
 import { CallNoticeListingFields } from '@bratura/shared/entities/call-notice/fragments/listing/fields';
 import {
   CallNoticeRegistrationWindowFields,
@@ -5,7 +6,8 @@ import {
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { z } from 'zod';
-import { internalZodMutation, type CallerArgs } from './lib/builders';
+import { appError } from './lib/appError';
+import { internalZodMutation, internalZodQuery, type CallerArgs } from './lib/builders';
 import {
   closedWhenFirstSeen,
   closedWhenFirstSeenToStore,
@@ -92,3 +94,17 @@ export const backfillClosedWhenFirstSeen = internalZodMutation({
 
 /** What a source's reader hands over for one call notice: its listing and registration window. */
 export type CallNoticeListingToRecord = CallerArgs<typeof RecordCallNoticeMutationArgsSchema>;
+
+const GetCallNoticeQueryArgsSchema = z.object({ callNoticeId: documentId('callNotices') });
+const GetCallNoticeQueryReturnsSchema = CallNoticeSchema;
+
+/** A call notice by id, for what a notification says about it. */
+export const getCallNotice = internalZodQuery({
+  args: GetCallNoticeQueryArgsSchema,
+  returns: GetCallNoticeQueryReturnsSchema,
+  handler: async (ctx, { callNoticeId }) => {
+    const callNotice = await ctx.db.get(callNoticeId);
+    if (!callNotice) throw appError({ code: 'notFound' });
+    return callNotice;
+  },
+});

@@ -35,8 +35,6 @@ import type * as model_mapasCulturais_client from "../model/mapasCulturais/clien
 import type * as model_mapasCulturais_date from "../model/mapasCulturais/date.js";
 import type * as model_mapasCulturais_listing from "../model/mapasCulturais/listing.js";
 import type * as model_mapasCulturais_payload from "../model/mapasCulturais/payload.js";
-import type * as model_nvoip_client from "../model/nvoip/client.js";
-import type * as model_nvoip_payload from "../model/nvoip/payload.js";
 import type * as model_officialPage_client from "../model/officialPage/client.js";
 import type * as model_officialPage_discovery from "../model/officialPage/discovery.js";
 import type * as model_officialPage_html from "../model/officialPage/html.js";
@@ -46,9 +44,16 @@ import type * as model_officialPage_registrationClose from "../model/officialPag
 import type * as model_pdfText_pdfTextOnSourceHost from "../model/pdfText/pdfTextOnSourceHost.js";
 import type * as model_sourceHost_fetchOnSourceHost from "../model/sourceHost/fetchOnSourceHost.js";
 import type * as model_sources_registry from "../model/sources/registry.js";
+import type * as model_telegram_client from "../model/telegram/client.js";
+import type * as model_telegram_payload from "../model/telegram/payload.js";
+import type * as model_telegram_sendMessage from "../model/telegram/sendMessage.js";
+import type * as notificationDeliveries from "../notificationDeliveries.js";
 import type * as pdfText from "../pdfText.js";
 import type * as sources from "../sources.js";
-import type * as whatsapp from "../whatsapp.js";
+import type * as telegram from "../telegram.js";
+import type * as userMessageChannels from "../userMessageChannels.js";
+import type * as userNotifications from "../userNotifications.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -84,8 +89,6 @@ declare const fullApi: ApiFromModules<{
   "model/mapasCulturais/date": typeof model_mapasCulturais_date;
   "model/mapasCulturais/listing": typeof model_mapasCulturais_listing;
   "model/mapasCulturais/payload": typeof model_mapasCulturais_payload;
-  "model/nvoip/client": typeof model_nvoip_client;
-  "model/nvoip/payload": typeof model_nvoip_payload;
   "model/officialPage/client": typeof model_officialPage_client;
   "model/officialPage/discovery": typeof model_officialPage_discovery;
   "model/officialPage/html": typeof model_officialPage_html;
@@ -95,9 +98,16 @@ declare const fullApi: ApiFromModules<{
   "model/pdfText/pdfTextOnSourceHost": typeof model_pdfText_pdfTextOnSourceHost;
   "model/sourceHost/fetchOnSourceHost": typeof model_sourceHost_fetchOnSourceHost;
   "model/sources/registry": typeof model_sources_registry;
+  "model/telegram/client": typeof model_telegram_client;
+  "model/telegram/payload": typeof model_telegram_payload;
+  "model/telegram/sendMessage": typeof model_telegram_sendMessage;
+  notificationDeliveries: typeof notificationDeliveries;
   pdfText: typeof pdfText;
   sources: typeof sources;
-  whatsapp: typeof whatsapp;
+  telegram: typeof telegram;
+  userMessageChannels: typeof userMessageChannels;
+  userNotifications: typeof userNotifications;
+  users: typeof users;
 }>;
 
 /**

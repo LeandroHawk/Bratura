@@ -26,17 +26,18 @@ from steering the LLM. Shapes and ports are in `docs/contracts.md`.
 - **Size limits live in the Zod declaration**: `.max()` on every free text, a maximum number of
   portfolio items, file type and size checked before storage. The backend parses them, so the limit
   holds whatever the front sends.
-- **Rate limits per creator and per phone number** on writes and on the WhatsApp entry, declared
+- **Rate limits per creator and per recipient** on writes and on the Telegram entry, declared
   once in the public builders (`publicQuery`, `creatorMutation`…) when the first one is written.
   `convex-helpers` (already a dependency) ships `rateLimit` (token bucket or fixed window), so no
   new dependency is needed; `@convex-dev/rate-limiter` stays an alternative for the team.
-- **The WhatsApp webhook trusts nothing**: it checks where the call comes from (ask Nvoip whether
-  calls are signed), ignores a message id it has already handled (the inbox pattern of
-  `docs/architecture.md`, Idempotency and concurrency), and answers an unknown number with the
+- **The Telegram webhook trusts nothing**: it checks the `secret_token` header `setWebhook` is
+  called with, ignores an `update_id` it has already handled (the inbox pattern of
+  `docs/architecture.md`, Idempotency and concurrency), and answers an unknown chat with the
   sign-up link only.
 - **Paid or limited calls never run per user request.** Gemini and Firecrawl run in batch ingestion;
   a user action reads what is stored. Public queries are paginated, never an unbounded `collect()`.
-- **Messages out need opt-in** (`whatsappOptInAt`) and stop on "SAIR"; e-mail alerts the same.
+- **Messages out need opt-in** (a `userMessageChannels` row: destination, `optInAt`, `optOutAt`)
+  and stop on `/parar` or a blocked bot (a 403 writes `optOutAt`); e-mail alerts the same.
 
 ## 3. Prompt injection
 
@@ -62,7 +63,7 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
 - **The application kit is a draft.** Its texts are generated from the creator's portfolio and the
   extracted requirements, shown for the creator to edit, and never ask for documents or personal
   data beyond what the extracted requirements list with evidence.
-- **WhatsApp intent is not free text to the model.** Buttons and keywords decide what the creator
+- **Telegram intent is not free text to the model.** Commands and buttons decide what the creator
   asked; if the model ever classifies a message, its output is one value of a Zod enum.
 - **Untrusted text is marked as data in the prompt** (delimited, with the instruction to treat it
   as content). This lowers the rate; the checks above are what make it safe.
@@ -125,8 +126,12 @@ Every dependency runs with the backend's secrets or in the creator's browser.
 
 Known gaps, in no order; add yours:
 
-- Does Nvoip sign webhook calls, and how do we verify them?
+- The Telegram webhook's `secret_token` is checked when inbound lands.
 - Rate limiter: `convex-helpers`' `rateLimit` (no new dependency) or the Convex component?
 - Uploads: do we need a malware or content check for portfolio files before showing them on a
   public page (`/p/{slug}`)?
-- Account deletion and data export (LGPD) for creators.
+- Account deletion and data export (LGPD) for creators: deleting a user must also clean
+  `userNotifications`, `notificationDeliveries`, `userMessageChannels` and `rateLimits` — the
+  four tables that carry their data.
+- Owner checks: today's `notify`, `sendPendingDeliveries` and friends are internal; when login
+  lands and they become public, each must confirm the caller owns the `userId` it touches.

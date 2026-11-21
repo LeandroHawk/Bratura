@@ -1,6 +1,6 @@
 # packages/backend — Convex
 
-The backend: tables, ingestion, matching, alerts. It computes; the web and the WhatsApp bot display
+The backend: tables, ingestion, matching, alerts. It computes; the web and the Telegram bot display
 what it stores. Cross-folder reasoning stays in `docs/architecture.md`; how functions are declared
 in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 
@@ -8,7 +8,7 @@ in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 convex/
   schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
   crons.ts        the daily ingestion (09:00 UTC); deadline alerts later        } entry files:
-  http.ts         routes only (Nvoip inbound, Firecrawl webhooks: not yet)      } fixed names
+  http.ts         routes only (Telegram webhook, Firecrawl webhooks: not yet)   } fixed names
   lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts,
                   sha256.ts, text.ts (plain text, cut to a ceiling), monthNames.ts: no functions
 
@@ -18,9 +18,13 @@ convex/
   documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments` and
                   its text, `callNoticeDocumentTexts`
   pdfText.ts      "use node": a PDF's text layer read on its source's host (the parser needs Node)
-  whatsapp.ts     WhatsApp through Nvoip                                        (skeleton)
+  telegram.ts     Telegram through the Bot API                                  (skeleton)
   extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
-  portfolio.ts  matching.ts  alerts.ts  orgs.ts                                 (not yet)
+  userNotifications.ts        what to tell a user: the only writer of `userNotifications`
+  userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
+  notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
+  users.ts                    the user's only writer
+  portfolio.ts  matching.ts  orgs.ts                                            (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
@@ -33,7 +37,8 @@ convex/
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
-    nvoip/           client.ts, payload.ts
+    telegram/        sendMessage.ts (the only import), client.ts + payload.ts (the Bot API:
+                     getMe, sendMessage); the text is `shared/messages/user-notification`
     sources/         registry.ts: every source the team checked, what `registerSource` copies
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
@@ -42,11 +47,12 @@ convex/
 **A root file is a door; `model/` is what the doors share** (Convex's "Best Practices": thin
 functions over plain helpers). A subject's functions and its table's `ctx.db` live in one root file,
 its tests beside it (`ingestion.ts` is the only writer of `ingestionRuns`). `model/` is named by
-what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `nvoip/`) or a loop several doors
+what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `telegram/`) or a loop several doors
 run (`ingestion/`). **A provider we may swap is named by what it does** (`llm/`): doors import one
 neutral function (`llm/generateJson.ts`), which alone picks the client and reads its key; a fixed
-one is named by itself (`mapasCulturais/` is the source). `nvoip/` gets its channel adapter with the
-first alert. A root file past ~6 functions becomes a folder of the same name, one file per door.
+one is named by itself (`mapasCulturais/` is the source). A channel is named by what it does and
+keeps its provider inside when it has one (`telegram/` talks to the Bot API directly). A root file
+past ~6 functions becomes a folder of the same name, one file per door.
 
 ## Running it
 
@@ -97,13 +103,13 @@ pnpm exec convex run documents:readChosenCallNotices '{"callNoticeIds":["…"],"
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10,"callNoticeIds":["…"]}'
 ```
 
-Secrets (`FIRECRAWL_API_KEY`, `NVOIP_CLIENT_ID`, `NVOIP_CLIENT_SECRET`, `LLM_API_KEY`) live
+Secrets (`FIRECRAWL_API_KEY`, `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`) live
 **only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
 it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).
 The LLM is configuration, not code: `LLM_BASE_URL` (any provider in the OpenAI chat format;
 Gemini's is `https://generativelanguage.googleapis.com/v1beta/openai`), `LLM_MODEL` (what AI
 Studio lists for the key's project) and `LLM_API_KEY`.
-`convex run whatsapp:checkNvoipCredentials '{}'` and `convex run extraction:checkLlmCredentials
+`convex run telegram:checkTelegramCredentials '{}'` and `convex run extraction:checkLlmCredentials
 '{}'` prove a key works (the second spends one free-tier call).
 
 ## Rules
@@ -117,7 +123,7 @@ Studio lists for the key's project) and `LLM_API_KEY`.
   its type is `Id<'table'>`, the table stores `v.id('table')`, and an id from the wrong table fails
   both `tsc` and the write. A natural key (`sources.slug`) is for people and seeds, never a reference.
 - **Outside input is parsed at the edge**, in the module that reads it, with a local Zod schema:
-  `payload.ts` beside the client in `model/` (Mapas, Firecrawl, Nvoip), webhooks in their subject's
+  `payload.ts` beside the client in `model/` (Mapas, Firecrawl, Telegram), webhooks in their subject's
   file, LLM output in `model/llm/`.
 - **Nothing is invented**: a field the source does not give is `null`.
 - **A write sends only its own fragments.** `recordCallNotice` takes the listing and the registration

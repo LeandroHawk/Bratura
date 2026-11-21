@@ -21,6 +21,10 @@ cultural MEI) who cannot afford a producer or a project consultant.
   activity; LinkedIn does not fit artisans; data the creator provides needs no scraping. The
   Instagram personal-account API is discontinued as far as known, so uploads are manual. Framed as
   proof for calls and fairs, not as marketing.
+- **Platform announcements stay** (decided 2026-11-18, text to be confirmed by Atilio in review):
+  beyond the call
+  alerts, Bratura itself can message a creator — a new source covered, a feature shipped — as a
+  `platformAnnouncement` notification, same inbox and same opted-in message channel.
 
 ## Competitors (checked 2026-11-07)
 
@@ -75,7 +79,7 @@ said and what it changed: one real sentence in the video is worth more than a sl
 
 Rouanet matchmaking; community-submitted fairs; more states; public pages per open call in plain
 Portuguese, indexable, as the main acquisition channel (Search Console only after a definitive
-domain); WhatsApp sign-up and portfolio.
+domain); Telegram sign-up and portfolio.
 
 **Rouanet facts for the pitch**: only companies under *lucro real* (up to 4% of income tax) and
 individuals filing the full declaration (up to 6%) can deduct; MEI and Simples cannot. A
@@ -95,7 +99,7 @@ Product ideas from anyone are welcome here. Open now:
   Brazil, then Latin America). Is internationalization a competition criterion?
 - The logo slogan "o seu país com mais cultura" versus the video's closing line ("Bratura. O
   dinheiro da cultura chegando em quem cria."): one, the other, or both?
-- A verified phone as the identity, without a password (`docs/integrations/whatsapp.md`).
+- A Telegram account as the identity, without a password (`docs/integrations/telegram.md`).
 - **AI crawlers**: blocked in `robots.txt` for now (2026-11-13), search engines allowed. Open:
   being found by AI search (ChatGPT, Perplexity, Claude) versus being used for training; the two can
   be split per crawler.

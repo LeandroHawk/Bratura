@@ -1,4 +1,10 @@
-# WhatsApp (Nvoip)
+# WhatsApp (Nvoip) — paused
+
+> **Paused, 2026-11-17.** The WhatsApp number was banned by Meta (a terms violation that cannot
+> be appealed), so the official API left the design and Telegram became the message channel
+> (`docs/integrations/telegram.md`). This doc stays as the record of the channel's design: if
+> WhatsApp returns it comes back as a `userMessageChannels` row and a `model/whatsapp/`
+> adapter, not a migration.
 
 WhatsApp is **the second front** of Bratura: a second way into the same backend, not a separate
 service. Messages go out through **Nvoip** (team decision, 2026-11-12), which sends through the
