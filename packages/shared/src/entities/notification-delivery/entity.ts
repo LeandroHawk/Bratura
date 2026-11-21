@@ -6,9 +6,6 @@ import { DeliveryChannelEnum } from '../../primitives/domain/delivery-channel/en
 import { NotificationDeliveryFailureEnum } from './enums/delivery-failure/enum';
 import { NotificationDeliveryReservationFields } from './fragments/reservation/fields';
 
-export { NotificationDeliveryFailureEnum };
-export type { NotificationDeliveryFailure } from './enums/delivery-failure/enum';
-
 const identityFields = {
   /** The notification this send delivers. */
   notificationId: documentId('userNotifications'),

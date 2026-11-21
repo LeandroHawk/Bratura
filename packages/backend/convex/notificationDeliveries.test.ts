@@ -405,6 +405,53 @@ describe('sendPendingDeliveries', () => {
     expect(again.left).toBe(0);
   });
 
+  test('a delivery a crashed run left behind still ends: dead lease + opt-out → optedOut', async () => {
+    const t = convexTest(schema, modules);
+    const { deliveryId, userId } = await withDelivery(t);
+    // The lease of a run that died mid-send, already past its lifetime.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(deliveryId, {
+        attempts: 1,
+        sendingSince: Date.now() - deliveryClaimLeaseMs - 1_000,
+      });
+    });
+    await t.mutation(internal.userMessageChannels.markChannelOptOut, {
+      userId,
+      channel: 'telegram',
+      optOutAt: Date.now(),
+    });
+    const fetchMock = telegramAnswers();
+    await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(sendsOf(fetchMock)).toHaveLength(0);
+    expect(await deliveryOf(t, deliveryId)).toMatchObject({
+      status: 'failed',
+      failure: 'optedOut',
+    });
+    const again = await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(again).toMatchObject({ failed: 0, left: 0 });
+  });
+
+  test('a dead lease + a deleted call notice ends subjectGone, once', async () => {
+    const t = convexTest(schema, modules);
+    const { deliveryId, callNoticeId } = await withDelivery(t);
+    await t.run(async (ctx) => {
+      await ctx.db.patch(deliveryId, {
+        attempts: 2,
+        sendingSince: Date.now() - deliveryClaimLeaseMs - 1_000,
+      });
+      await ctx.db.delete(callNoticeId);
+    });
+    const fetchMock = telegramAnswers();
+    await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(sendsOf(fetchMock)).toHaveLength(0);
+    expect(await deliveryOf(t, deliveryId)).toMatchObject({
+      status: 'failed',
+      failure: 'subjectGone',
+    });
+    const again = await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(again).toMatchObject({ failed: 0, left: 0 });
+  });
+
   test('a deleted call notice ends its delivery subjectGone', async () => {
     const t = convexTest(schema, modules);
     const { deliveryId, callNoticeId } = await withDelivery(t);

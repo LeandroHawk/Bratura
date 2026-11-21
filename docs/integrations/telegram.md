@@ -93,8 +93,9 @@ Known next steps, each with the trigger that makes it real; add yours:
    past its deadline expires unclaimed. The producer must respect the send-time rules the outbox
    already enforces (a `d1`/`d7` only while the stored close still matches, never a `d7` over a
    new-call notice for a call closing within 7 days).
-5. **Outbox growth** (when volume matters): fewer reads per delivery (list rows, not ids), and
-   the queue split `pending`/`sending` so a claim is a status flip, not a reservation.
+5. **Outbox growth** (when volume matters): fewer reads per delivery (list rows, not ids — today
+   the listing also reads each row's notification and call notice to rank urgency), and the queue
+   split `pending`/`sending` so a claim is a status flip, not a reservation.
 6. **Platform announcements** (when the team announces through the product): an admin-facing
    writer for `platformAnnouncement` — the kind exists, nothing creates one outside tests.
 7. **Web inbox** (when the app gets a shell): the unread counter over `userNotifications` —
@@ -123,3 +124,6 @@ Known next steps, each with the trigger that makes it real; add yours:
     arrived — the retry delivers it twice. Telegram has no idempotency key; a retried timeout
     either accepts the duplicate or the outbox marks it sent-ish (design it before volume makes
     the duplicate a real complaint).
+16. **Bare domains in titles** (when titles from new sources show them): the cleaner strips
+    `http…` and `www.…` but a bare `exemplo.com/edital` survives — and Telegram still links it.
+    Extend `callNoticeTitleForMessage` when a real title carries one.

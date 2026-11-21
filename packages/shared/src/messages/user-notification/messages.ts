@@ -64,25 +64,41 @@ const messages = {
   },
   deadlineSoon: {
     ptBR: (
-      notification: Extract<UserNotification, { kind: 'deadlineSoon' }>,
+      _notification: Extract<UserNotification, { kind: 'deadlineSoon' }>,
       content: CallContent,
-    ): RenderedNotificationMessage => ({
-      title: 'O prazo está chegando',
-      body: `${
-        notification.occurrence === 'd7' ? 'Faltam 7 dias' : 'Falta 1 dia'
-      }: as inscrições de ${content.call.callTitle} ${content.call.closeText?.ptBR ?? 'se encerram em breve'}. Não perca o prazo — acesse a Bratura.`,
-      link: content.call.link,
-    }),
+    ): RenderedNotificationMessage => {
+      const daysLeft =
+        content.call.daysLeft === null ? null : Math.max(1, Math.ceil(content.call.daysLeft));
+      const days =
+        daysLeft === null
+          ? 'Prazo chegando'
+          : daysLeft === 1
+            ? 'Falta 1 dia'
+            : `Faltam ${daysLeft} dias`;
+      return {
+        title: 'O prazo está chegando',
+        body: `${days}: as inscrições de ${content.call.callTitle} ${content.call.closeText?.ptBR ?? 'se encerram em breve'}. Não perca o prazo — acesse a Bratura.`,
+        link: content.call.link,
+      };
+    },
     en: (
-      notification: Extract<UserNotification, { kind: 'deadlineSoon' }>,
+      _notification: Extract<UserNotification, { kind: 'deadlineSoon' }>,
       content: CallContent,
-    ): RenderedNotificationMessage => ({
-      title: 'Deadline approaching',
-      body: `${
-        notification.occurrence === 'd7' ? '7 days left' : '1 day left'
-      }: registration for ${content.call.callTitle} ${content.call.closeText?.en ?? 'closes soon'}. Do not miss the deadline — go to Bratura.`,
-      link: content.call.link,
-    }),
+    ): RenderedNotificationMessage => {
+      const daysLeft =
+        content.call.daysLeft === null ? null : Math.max(1, Math.ceil(content.call.daysLeft));
+      const days =
+        daysLeft === null
+          ? 'Deadline soon'
+          : daysLeft === 1
+            ? '1 day left'
+            : `${daysLeft} days left`;
+      return {
+        title: 'Deadline approaching',
+        body: `${days}: registration for ${content.call.callTitle} ${content.call.closeText?.en ?? 'closes soon'}. Do not miss the deadline — go to Bratura.`,
+        link: content.call.link,
+      };
+    },
   },
   callNoticeAmended: {
     ptBR: (

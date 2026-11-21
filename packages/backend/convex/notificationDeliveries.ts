@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import {
-  NotificationDeliveryFailureEnum,
-  NotificationDeliverySchema,
-} from '@bratura/shared/entities/notification-delivery/entity';
+import { NotificationDeliverySchema } from '@bratura/shared/entities/notification-delivery/entity';
+import { NotificationDeliveryFailureEnum } from '@bratura/shared/entities/notification-delivery/enums/delivery-failure/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { nullableString } from '@bratura/shared/primitives/code/string/fields';
 import { requiredInstant } from '@bratura/shared/primitives/code/time/instant/fields';
@@ -250,9 +248,20 @@ export const releaseDeliveryClaim = internalZodMutation({
   },
 });
 
-/** The lease check every confirm shares: ours to resolve, or already someone else's. */
-const claimStillOurs = (delivery: Doc<'notificationDeliveries'>, sendingSince: number | null) =>
-  delivery.status === 'sending' && delivery.sendingSince === sendingSince;
+/**
+ * The lease check every confirm shares: ours to resolve, or already someone else's. A `null`
+ * lease means "the row held no live claim when it was listed" — a dead lease counts too, so a
+ * delivery a crashed run left behind can still be ended.
+ */
+const claimStillOurs = (
+  delivery: Doc<'notificationDeliveries'>,
+  sendingSince: number | null,
+  now: number,
+) => {
+  if (delivery.status !== 'sending') return false;
+  if (sendingSince !== null) return delivery.sendingSince === sendingSince;
+  return delivery.sendingSince === null || now - delivery.sendingSince >= deliveryClaimLeaseMs;
+};
 
 const ConfirmDeliverySentMutationArgsSchema = z.object({
   deliveryId: documentId('notificationDeliveries'),
@@ -271,7 +280,7 @@ export const confirmDeliverySent = internalZodMutation({
   returns: ConfirmDeliverySentMutationReturnsSchema,
   handler: async (ctx, { deliveryId, sendingSince, providerMessageId }): Promise<null> => {
     const delivery = await getDeliveryRow(ctx, deliveryId);
-    if (!claimStillOurs(delivery, sendingSince)) return null;
+    if (!claimStillOurs(delivery, sendingSince, Date.now())) return null;
     await rateLimit(ctx, { name: 'telegramDeliverySend', key: delivery.userId });
     await ctx.db.replace(deliveryId, {
       ...identityFieldsOf(delivery),
@@ -289,23 +298,26 @@ const ConfirmDeliveryFailedMutationArgsSchema = z.object({
   sendingSince: requiredInstant.nullable(),
   failure: NotificationDeliveryFailureEnum,
 });
-const ConfirmDeliveryFailedMutationReturnsSchema = z.null();
+const ConfirmDeliveryFailedMutationReturnsSchema = z.boolean();
 
-/** Ends a delivery with why, as a code: a refusal the same send would repeat, attempts out,
- * no opted-in recipient left, a gone subject, or a newer fact that makes it pointless. */
+/**
+ * Ends a delivery with why, as a code: a refusal the same send would repeat, attempts out, no
+ * opted-in recipient left, a gone subject, or a newer fact that makes it pointless. Returns
+ * whether the row actually ended, so a caller never counts a skip as a failure.
+ */
 export const confirmDeliveryFailed = internalZodMutation({
   args: ConfirmDeliveryFailedMutationArgsSchema,
   returns: ConfirmDeliveryFailedMutationReturnsSchema,
-  handler: async (ctx, { deliveryId, sendingSince, failure }): Promise<null> => {
+  handler: async (ctx, { deliveryId, sendingSince, failure }) => {
     const delivery = await getDeliveryRow(ctx, deliveryId);
-    if (!claimStillOurs(delivery, sendingSince)) return null;
+    if (!claimStillOurs(delivery, sendingSince, Date.now())) return false;
     await ctx.db.replace(deliveryId, {
       ...identityFieldsOf(delivery),
       status: 'failed',
       failedAt: Date.now(),
       failure,
     });
-    return null;
+    return true;
   },
 });
 
@@ -381,13 +393,15 @@ export const sendPendingDeliveries = internalZodAction({
       deliveryId: Id<'notificationDeliveries'>,
       failure: z.infer<typeof NotificationDeliveryFailureEnum>,
     ) => {
-      await ctx.runMutation(internal.notificationDeliveries.confirmDeliveryFailed, {
+      const ended = await ctx.runMutation(internal.notificationDeliveries.confirmDeliveryFailed, {
         deliveryId,
         sendingSince: null,
         failure,
       });
-      result.failed += 1;
-      result.left -= 1;
+      if (ended) {
+        result.failed += 1;
+        result.left -= 1;
+      }
     };
 
     for (const deliveryId of pending) {

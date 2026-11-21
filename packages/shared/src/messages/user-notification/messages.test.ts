@@ -93,6 +93,25 @@ describe('userNotificationMessageOf', () => {
     expect(message?.body).toContain('encerram em 21/11, às 23h59');
   });
 
+  test('a deadline message says the days actually left, not the marker fired', () => {
+    const d7 = {
+      ...drafts.deadlineSoon,
+      occurrence: 'd7' as const,
+    };
+    const closingSoon = {
+      ...callNotice,
+      registrationCloses: closes('2025-11-12T23:59:00-03:00'),
+    };
+    const message = userNotificationMessageOf(
+      d7,
+      userNotificationContentOf(d7, closingSoon, now),
+      'pt-BR',
+    );
+    expect(message?.body).toContain('Faltam 3 dias');
+    const en = userNotificationMessageOf(d7, userNotificationContentOf(d7, closingSoon, now), 'en');
+    expect(en?.body).toContain('3 days left');
+  });
+
   test('an announcement carries its own text and no link', () => {
     const draft = drafts.platformAnnouncement;
     const message = userNotificationMessageOf(
