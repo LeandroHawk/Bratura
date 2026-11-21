@@ -1,5 +1,4 @@
 import {
-  ApplicantTypeEnum,
   ArtFormEnum,
   type ArtForm,
   type CallNoticeExtraction,
@@ -10,6 +9,7 @@ import {
   RequirementKindEnum,
   RequirementStageEnum,
 } from '@bratura/shared/entities/call-notice/enums/requirement/enum';
+import { ApplicantTypeEnum } from '@bratura/shared/primitives/domain/applicant-type/enum';
 import { requiredString, textLengths } from '@bratura/shared/primitives/code/string/fields';
 import { requiredAmountInCents } from '@bratura/shared/primitives/domain/money/fields';
 import { z } from 'zod';

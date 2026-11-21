@@ -9,7 +9,7 @@ export const EXAMPLE_CREATOR: Creator = {
   fullName: 'Maria das Dores Silva',
   email: 'maria@example.com',
   nationality: 'Brasileira',
-  profileType: 'individual',
+  applicantType: 'individual',
   mobilePhone: '88987654321',
   cpf: '52998224725',
   cep: '63010010',

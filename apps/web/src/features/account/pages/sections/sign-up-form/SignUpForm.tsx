@@ -1,7 +1,7 @@
 'use client';
 
 import { SignUpMutationFromBraturaPortalArgsSchema } from '@bratura/shared/entities/creator/dto/bratura-portal/sign-up/mutation';
-import { CreatorProfileTypeEnum } from '@bratura/shared/entities/creator/enums/profile-type/enum';
+import { ApplicantTypeEnum } from '@bratura/shared/primitives/domain/applicant-type/enum';
 import { CreatorRegistrationFields } from '@bratura/shared/entities/creator/fragments/registration/fields';
 import { parseWithMessages } from '@bratura/shared/messages/messages';
 import { validationMessage } from '@bratura/shared/primitives/code/validation-message/validation-message';
@@ -44,7 +44,7 @@ const SignUpFormSchema = SignUpMutationFromBraturaPortalArgsSchema.extend({
 const EMPTY_DRAFT = {
   fullName: '',
   nationality: '',
-  profileType: '',
+  applicantType: '',
   mobilePhone: '',
   cpf: '',
   email: '',
@@ -99,16 +99,16 @@ export function SignUpForm({ locale }: { locale: Locale }) {
             error={messageByPath.fullName}
           />
           <SelectField
-            label={content.profileType}
-            name="profileType"
-            value={draft.profileType}
-            onChange={(event) => setField('profileType', event.target.value)}
-            error={messageByPath.profileType}
+            label={content.applicantType}
+            name="applicantType"
+            value={draft.applicantType}
+            onChange={(event) => setField('applicantType', event.target.value)}
+            error={messageByPath.applicantType}
           >
             <option value="">{labels.chooseOne}</option>
-            {CreatorProfileTypeEnum.options.map((profileType) => (
-              <option key={profileType} value={profileType}>
-                {labels.profileType[profileType]}
+            {ApplicantTypeEnum.options.map((applicantType) => (
+              <option key={applicantType} value={applicantType}>
+                {labels.applicantType[applicantType]}
               </option>
             ))}
           </SelectField>

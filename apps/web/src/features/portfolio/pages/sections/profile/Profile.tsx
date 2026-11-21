@@ -2,7 +2,7 @@
 
 import type { Creator } from '@bratura/shared/entities/creator/entity';
 import { CulturalAreaEnum } from '@bratura/shared/entities/creator/enums/cultural-area/enum';
-import { CreatorProfileTypeEnum } from '@bratura/shared/entities/creator/enums/profile-type/enum';
+import { ApplicantTypeEnum } from '@bratura/shared/primitives/domain/applicant-type/enum';
 import { CreatorCulturalProfileFields } from '@bratura/shared/entities/creator/fragments/cultural-profile/fields';
 import { parseWithMessages } from '@bratura/shared/messages/messages';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
@@ -35,9 +35,9 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
     { name: 'fullName', control: 'text' },
     { name: 'email', control: 'text' },
     {
-      name: 'profileType',
+      name: 'applicantType',
       control: 'select',
-      options: { values: CreatorProfileTypeEnum.options, labels: labels.profileType },
+      options: { values: ApplicantTypeEnum.options, labels: labels.applicantType },
     },
     { name: 'nationality', control: 'text' },
     { name: 'cpf', control: 'text' },

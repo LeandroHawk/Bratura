@@ -5,7 +5,7 @@ import {
   OpportunityKindEnum,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-overview/query';
 import { MatchClassificationEnum } from '@bratura/shared/entities/call-notice/dto/bratura-portal/eligible-call-notices/query';
-import { ApplicantTypeEnum } from '@bratura/shared/entities/call-notice-extraction/entity';
+import { ApplicantTypeEnum } from '@bratura/shared/primitives/domain/applicant-type/enum';
 import { CulturalAreaEnum } from '@bratura/shared/entities/creator/enums/cultural-area/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { UfEnum } from '@bratura/shared/primitives/external/uf/enum';

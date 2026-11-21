@@ -7,7 +7,7 @@ const registration = {
   fullName: 'Maria das Dores',
   email: 'maria@example.com',
   nationality: 'Brasileira',
-  profileType: 'individual',
+  applicantType: 'individual',
   mobilePhone: '85987654321',
   cpf: '52998224725',
   cep: '63010010',

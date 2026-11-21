@@ -1,17 +1,16 @@
 import type { CulturalArea } from '@bratura/shared/entities/creator/enums/cultural-area/enum';
-import type { CreatorProfileType } from '@bratura/shared/entities/creator/enums/profile-type/enum';
 import type { PortfolioDocumentKind } from '@bratura/shared/entities/portfolio-item/enums/document-kind/enum';
+import type { ApplicantType } from '@bratura/shared/primitives/domain/applicant-type/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
-  profileType: {
+  applicantType: {
     individual: 'Pessoa física',
-    nonprofitLegalEntity: 'Pessoa jurídica sem fins lucrativos',
-    forProfitLegalEntity: 'Pessoa jurídica com fins lucrativos',
-    informalGroup: 'Grupo informal ou coletivo',
-    rightsCouncil: 'Conselho de direitos',
-    publicOrganization: 'Organização pública',
-  } satisfies Record<CreatorProfileType, string>,
+    mei: 'Microempreendedor individual (MEI)',
+    company: 'Empresa',
+    collectiveWithoutCnpj: 'Coletivo sem CNPJ',
+    nonprofit: 'Organização sem fins lucrativos',
+  } satisfies Record<ApplicantType, string>,
   culturalArea: {
     music: 'Música',
     theatre: 'Teatro',
@@ -49,13 +48,12 @@ const ptBR = {
 export const CREATOR_LABELS: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
-    profileType: {
+    applicantType: {
       individual: 'Individual',
-      nonprofitLegalEntity: 'Non-profit organization',
-      forProfitLegalEntity: 'For-profit company',
-      informalGroup: 'Informal group or collective',
-      rightsCouncil: 'Rights council',
-      publicOrganization: 'Public organization',
+      mei: 'Individual microentrepreneur (MEI)',
+      company: 'Company',
+      collectiveWithoutCnpj: 'Collective without a CNPJ',
+      nonprofit: 'Non-profit organization',
     },
     culturalArea: {
       music: 'Music',

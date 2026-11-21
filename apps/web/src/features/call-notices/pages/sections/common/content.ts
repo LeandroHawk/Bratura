@@ -7,7 +7,6 @@ import type {
   MatchRequirementKind,
   MatchRequirementStatus,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/eligible-call-notices/query';
-import type { ApplicantType } from '@bratura/shared/entities/call-notice-extraction/entity';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { CallNoticeSort, CallNoticeStatus } from './filtering';
 
@@ -27,13 +26,6 @@ const ptBR = {
     regional: 'Regional',
     national: 'Nacional',
   } satisfies Record<CallNoticeCoverage, string>,
-  applicantType: {
-    individual: 'Pessoa física',
-    mei: 'Microempreendedor individual (MEI)',
-    company: 'Empresa',
-    collectiveWithoutCnpj: 'Coletivo sem CNPJ',
-    nonprofit: 'Organização sem fins lucrativos',
-  } satisfies Record<ApplicantType, string>,
   anyArtForm: 'Todas as áreas culturais',
   status: {
     notYetOpen: 'Ainda não abriu',
@@ -178,13 +170,6 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
       state: 'State',
       regional: 'Regional',
       national: 'National',
-    },
-    applicantType: {
-      individual: 'Individual',
-      mei: 'Individual microentrepreneur (MEI)',
-      company: 'Company',
-      collectiveWithoutCnpj: 'Collective without a company number',
-      nonprofit: 'Non-profit organization',
     },
     anyArtForm: 'Every cultural area',
     status: {

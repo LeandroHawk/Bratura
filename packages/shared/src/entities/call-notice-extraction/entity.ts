@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ApplicantTypeEnum } from '../../primitives/domain/applicant-type/enum';
 import { requiredAmountInCents } from '../../primitives/domain/money/fields';
 import { requiredSha256Hex } from '../../primitives/code/hash/fields';
 import { documentId } from '../../primitives/code/id/fields';
@@ -7,16 +8,6 @@ import { requiredInstant } from '../../primitives/code/time/instant/fields';
 import { EligibilityRuleKindEnum } from '../call-notice/enums/eligibility-rule/enum';
 import { QuotaGroupEnum } from '../call-notice/enums/quota-group/enum';
 import { RequirementKindEnum, RequirementStageEnum } from '../call-notice/enums/requirement/enum';
-
-/** Who may apply, as call notices name them (pessoa física, MEI, empresa, coletivo, OSC). */
-export const ApplicantTypeEnum = z.enum([
-  'individual',
-  'mei',
-  'company',
-  'collectiveWithoutCnpj',
-  'nonprofit',
-]);
-export type ApplicantType = z.infer<typeof ApplicantTypeEnum>;
 
 /** The artistic languages a call covers (draft list, from the PNAB segments); `any` for all. */
 export const ArtFormEnum = z.enum([
