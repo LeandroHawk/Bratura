@@ -2714,6 +2714,7 @@ export const caicoCultureCallsSource = {
  * each linking its PDFs. The PNAB section's own listing keeps these links inside HTML comments, so
  * the cycle's page is the listing. Measured 2026-11-20: 001–005/FCCR/2026, all closed (sign-up on
  * Prosas in June). Robots: none (`/robots.txt` serves the home page); terms link commented out.
+ * 2026-11-20: HTTP 403 to Convex (US East), 200 from Brazil: read through Firecrawl from Brazil.
  */
 export const saoJoseDosCamposPnabSource = {
   kind: 'officialPage',
@@ -2726,6 +2727,7 @@ export const saoJoseDosCamposPnabSource = {
     'https://fccr.sp.gov.br/fccr/pnab---lei-14399-2022-fomento-a-cultura/pnab---ciclo-2-2026---periodo-eleitoral',
   discovery: { hops: 'callPage', callPageUrlParts: ['/edital-'] },
   documentUrlParts: ['/fccr/conteudo/'],
+  answersOnlyFromBrazil: true,
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
@@ -2733,6 +2735,7 @@ export const saoJoseDosCamposPnabSource = {
  * São José dos Campos-SP, FCCR's municipal fund (FMC), the year's page ("2026 - Execução em
  * 2027"), read as its PNAB one. Measured 2026-11-20: Editais 002–009/P/2026, results posted. The
  * next cycle gets a new page, so the listing URL changes each year.
+ * 2026-11-20: HTTP 403 to Convex (US East), 200 from Brazil: read through Firecrawl from Brazil.
  */
 export const saoJoseDosCamposFmcSource = {
   kind: 'officialPage',
@@ -2745,6 +2748,7 @@ export const saoJoseDosCamposFmcSource = {
     'https://fccr.sp.gov.br/fccr/fundo-municipal-de-cultura---fmc/2026---execucao-em-2027',
   discovery: { hops: 'callPage', callPageUrlParts: ['/edital-'] },
   documentUrlParts: ['/fccr/conteudo/'],
+  answersOnlyFromBrazil: true,
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
@@ -2790,6 +2794,7 @@ export const suzanoPnabSource = {
  * Rio Claro-SP culture office: the page links each notice itself, named by its number. Measured
  * 2026-11-20: Chamamentos 03 and 04/2026 (orchestra, band) and 01/2025; the two PNAB calls are
  * Google Drive folders (not read). Robots: WordPress default; no terms page.
+ * 2026-11-20: HTTP 403 to Convex (US East), 200 from Brazil: read through Firecrawl from Brazil.
  */
 export const rioClaroCultureSource = {
   kind: 'officialPage',
@@ -2801,6 +2806,7 @@ export const rioClaroCultureSource = {
   listingUrl: 'https://rioclaro.sp.gov.br/secretaria/secretaria-de-cultura/',
   discovery: { hops: 'documentsOnListing' },
   documentUrlParts: ['/wp-content/uploads/'],
+  answersOnlyFromBrazil: true,
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
@@ -2904,6 +2910,7 @@ export const canoasCultureSource = {
  * Santa Maria-RS PNAB 2026: one flat list of files, each naming "EDITAL Nº 00X.2026" (a dot), the
  * results as "SELEÇÃO FINAL - EDITAL N 004.2026". Measured 2026-11-20: Editais 002–004.2026, all
  * closed. Robots allow all; no terms page.
+ * 2026-11-20: times out from Convex (US East), answers from Brazil: read through Firecrawl.
  */
 export const santaMariaPnabSource = {
   kind: 'officialPage',
@@ -2916,6 +2923,7 @@ export const santaMariaPnabSource = {
     'https://www.santamaria.rs.gov.br/cultura/1792-editais-da-politica-nacional-aldir-blanc--2026',
   discovery: { hops: 'documentsOnListing' },
   documentUrlParts: ['/arquivos/baixar-arquivo/'],
+  answersOnlyFromBrazil: true,
   timeZone: ianaTimeZone.parse('America/Sao_Paulo'),
 } satisfies Source;
 
@@ -2942,6 +2950,7 @@ export const varzeaGrandePnabSource = {
  * Dourados-MS PNAB cycle 2 hub: each call page linked as "Clique aqui.", named by its `<h1>`.
  * Measured 2026-11-20: Fomento, Cultura Viva and Cultura Viva – Prêmio (posted 09/11/2026). Robots
  * allow all; no terms page.
+ * 2026-11-20: times out from Convex (US East), answers from Brazil: read through Firecrawl.
  */
 export const douradosPnabSource = {
   kind: 'officialPage',
@@ -2954,6 +2963,7 @@ export const douradosPnabSource = {
     'https://portal.dourados.ms.gov.br/index.php/politica-nacional-aldir-blanc-ciclo-2-semc/',
   discovery: { hops: 'callPage', callPageUrlParts: ['/edital-'], callTitleOnCallPage: true },
   documentUrlParts: ['/wp-content/uploads/'],
+  answersOnlyFromBrazil: true,
   timeZone: ianaTimeZone.parse('America/Campo_Grande'),
 } satisfies Source;
 
@@ -2996,6 +3006,7 @@ export const valparaisoDeGoiasPnabSource = {
  * Camaçari-BA culture office, "Editais": one page per call, the notice a certified gazette PDF,
  * annexes on Google Docs (not read). Measured 2026-11-20: 001–005/2026 plus earlier calls with no
  * year in the title. Robots: none (404); no terms page.
+ * 2026-11-20: times out from Convex (US East), answers from Brazil: read through Firecrawl.
  */
 export const camacariCultureSource = {
   kind: 'officialPage',
@@ -3008,6 +3019,7 @@ export const camacariCultureSource = {
   discovery: { hops: 'callPage', callPageUrlParts: ['?page_id='] },
   callTitleParts: ['edital'],
   documentUrlParts: ['.pdf'],
+  answersOnlyFromBrazil: true,
   timeZone: ianaTimeZone.parse('America/Bahia'),
 } satisfies Source;
 
