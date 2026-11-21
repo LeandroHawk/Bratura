@@ -38,7 +38,6 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
       options: { values: PortfolioDocumentKindEnum.options, labels: documentKind },
     },
     { name: 'description', control: 'text', isRequired: true },
-    { name: 'registrationNumber', control: 'text', isWide: true },
     { name: 'issuedOn', control: 'date' },
     { name: 'validUntil', control: 'date' },
     { name: 'file', control: 'file', isWide: true },

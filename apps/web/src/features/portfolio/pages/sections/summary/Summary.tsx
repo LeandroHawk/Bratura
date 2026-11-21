@@ -23,7 +23,7 @@ export function Summary({ locale, state }: { locale: Locale; state: SignedInStat
   const { creator, portfolioItems } = state;
   // Read once, when the section mounts: a render must give the same answer twice.
   const [currentYear] = useState(() => new Date().getFullYear());
-  const name = creator.artisticName ?? creator.fullName;
+  const name = creator.artisticName ?? creator.fullName ?? creator.email;
   const hasItem = (kind: string) => portfolioItems.some((item) => item.kind === kind);
 
   const steps = [

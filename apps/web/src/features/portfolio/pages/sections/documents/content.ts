@@ -11,7 +11,6 @@ const ptBR = {
   fields: {
     documentKind: 'Tipo de documento',
     description: 'Nome ou descrição',
-    registrationNumber: 'Número de registro',
     issuedOn: 'Data de emissão',
     validUntil: 'Data de validade',
     file: 'Arquivo',
@@ -35,7 +34,6 @@ export const DOCUMENTS_CONTENT: Record<Locale, typeof ptBR> = {
     fields: {
       documentKind: 'Type of document',
       description: 'Name or description',
-      registrationNumber: 'Registration number',
       issuedOn: 'Issue date',
       validUntil: 'Expiry date',
       file: 'File',

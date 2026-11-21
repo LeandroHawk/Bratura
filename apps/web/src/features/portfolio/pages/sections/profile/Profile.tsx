@@ -1,6 +1,10 @@
 'use client';
 
-import type { Creator } from '@bratura/shared/entities/creator/entity';
+import type {
+  Creator,
+  CreatorCulturalProfile,
+  CreatorRegistration,
+} from '@bratura/shared/entities/creator/entity';
 import { CulturalAreaEnum } from '@bratura/shared/entities/creator/enums/cultural-area/enum';
 import { ApplicantTypeEnum } from '@bratura/shared/primitives/domain/applicant-type/enum';
 import { CreatorCulturalProfileFields } from '@bratura/shared/entities/creator/fragments/cultural-profile/fields';
@@ -12,12 +16,6 @@ import { useState } from 'react';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { UF_NAME } from '@/features/common/content/uf-names';
 import { saveCreatorFields } from '@/features/common/data/demoStore';
-import {
-  CEP_MASK,
-  CPF_MASK,
-  maskedFromDigits,
-  MOBILE_PHONE_MASK,
-} from '@/features/common/utils/form-text';
 import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
 import { RecordDetails } from '@/features/portfolio/pages/sections/common/RecordDetails';
 import { RecordFormDialog } from '@/features/portfolio/pages/sections/common/RecordFormDialog';
@@ -31,22 +29,18 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
   const titleId = `${PORTFOLIO_SECTION_IDS.profile}-title`;
   const areas = { values: CulturalAreaEnum.options, labels: labels.culturalArea };
 
-  const registrationFields: FormField<keyof typeof content.registration>[] = [
-    { name: 'fullName', control: 'text' },
+  const registrationFields = [
     { name: 'email', control: 'text' },
     {
       name: 'applicantType',
       control: 'select',
       options: { values: ApplicantTypeEnum.options, labels: labels.applicantType },
     },
-    { name: 'nationality', control: 'text' },
-    { name: 'cpf', control: 'text' },
-    { name: 'mobilePhone', control: 'text' },
-    { name: 'cep', control: 'text' },
     { name: 'city', control: 'text' },
     { name: 'state', control: 'select', options: { values: UfEnum.options, labels: UF_NAME } },
-  ];
-  const profileFields: FormField<keyof typeof content.fields>[] = [
+  ] satisfies FormField<keyof CreatorRegistration>[];
+  const profileFields = [
+    { name: 'fullName', control: 'text', isWide: true },
     { name: 'artisticName', control: 'text', isWide: true },
     { name: 'mainCulturalArea', control: 'select', options: areas },
     { name: 'activityStartYear', control: 'year' },
@@ -57,7 +51,7 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
     { name: 'activityCities', control: 'lines' },
     { name: 'externalLinks', control: 'links', isWide: true },
     { name: 'profileImage', control: 'file', isWide: true },
-  ];
+  ] satisfies FormField<keyof CreatorCulturalProfile>[];
 
   return (
     <section id={PORTFOLIO_SECTION_IDS.profile} aria-labelledby={titleId} className="grid gap-5">
@@ -92,12 +86,7 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
             locale={locale}
             fields={registrationFields}
             labels={content.registration}
-            values={{
-              ...creator,
-              cpf: maskedFromDigits(creator.cpf, CPF_MASK),
-              cep: maskedFromDigits(creator.cep, CEP_MASK),
-              mobilePhone: maskedFromDigits(creator.mobilePhone, MOBILE_PHONE_MASK),
-            }}
+            values={creator}
           />
         </Card>
       </div>

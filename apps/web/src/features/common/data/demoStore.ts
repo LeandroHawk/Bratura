@@ -1,3 +1,4 @@
+import type { SignUpMutationFromBraturaPortalArgs } from '@bratura/shared/entities/creator/dto/bratura-portal/sign-up/mutation';
 import {
   CreatorSchema,
   emptyCulturalProfile,
@@ -16,9 +17,9 @@ import {
 import { useSyncExternalStore } from 'react';
 
 /**
- * Stands in for the backend until the creator's tables and sign-in exist: everything the creator
- * types is kept in this browser only, read back through the same contract the backend will use.
- * The password is never kept. The one place to swap for Convex queries and mutations.
+ * Stands in for the backend until the creator's tables and sign-in exist (after 30/11): what the
+ * creator types is kept in this browser only, read back through the same contract the backend
+ * will use, and erased at sign-out. No password exists. The one place to swap for Convex.
  */
 export type DemoState = {
   creator: Creator | null;
@@ -96,17 +97,19 @@ export function useDemoState(): DemoState | null {
 }
 
 /**
- * The e-mail of the account this browser keeps, or `null`: `loadExample` replaces that account,
- * so the screen asks before calling it over one.
+ * The e-mail of the account `loadExample` would erase, or `null` when there is none to lose (no
+ * account, or the example itself): the screen asks before loading the example over one.
  */
-export function storedAccountEmail(): string | null {
-  return currentState().creator?.email ?? null;
+export function accountReplacedByExample(example: Pick<Creator, 'email'>): string | null {
+  const stored = currentState().creator?.email ?? null;
+  return stored === example.email ? null : stored;
 }
 
-export function signUp(registration: CreatorRegistration) {
+/** Creates the demo account from the sign-up, signed in. */
+export function signUp({ mainCulturalArea, ...registration }: SignUpMutationFromBraturaPortalArgs) {
   setState({
     ...EMPTY_STATE,
-    creator: { ...registration, ...emptyCulturalProfile },
+    creator: { ...registration, ...emptyCulturalProfile, mainCulturalArea },
     isSignedIn: true,
   });
 }
@@ -119,8 +122,15 @@ export function signIn(email: string): boolean {
   return true;
 }
 
+/** The browser keeps nothing after it: the account, the portfolio and the saved calls go. */
 export function signOut() {
-  setState({ ...currentState(), isSignedIn: false });
+  state = EMPTY_STATE;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage blocked: nothing was kept there either.
+  }
+  listeners.forEach((listener) => listener());
 }
 
 /** Replaces everything with a ready-made example (the fictional Dona Maria), signed in. */

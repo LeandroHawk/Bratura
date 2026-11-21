@@ -1,5 +1,9 @@
 'use client';
 
+import {
+  FICTIONAL_CREATOR,
+  FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
+} from '@bratura/shared/entities/creator/demo/fictional-creator';
 import { SignInMutationFromBraturaPortalArgsSchema } from '@bratura/shared/entities/creator/dto/bratura-portal/sign-in/mutation';
 import { parseWithMessages } from '@bratura/shared/messages/messages';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
@@ -8,11 +12,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ROUTES } from '@/features/common/config/routes';
-import { loadExample, signIn, storedAccountEmail } from '@/features/common/data/demoStore';
-import {
-  FICTIONAL_CREATOR,
-  FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
-} from '@bratura/shared/entities/creator/demo/fictional-creator';
+import { accountReplacedByExample, loadExample, signIn } from '@/features/common/data/demoStore';
 import { useContractForm } from '@/features/common/hooks/useContractForm';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { SIGN_IN_FORM_CONTENT } from './content';
@@ -28,7 +28,7 @@ export function SignInForm({ locale }: { locale: Locale }) {
     openPortfolio();
   };
   const { draft, setField, messageByPath, setMessageByPath, formRef, submit } = useContractForm({
-    initialDraft: { email: '', password: '' },
+    initialDraft: { email: '' },
     parse: (typed) => parseWithMessages(SignInMutationFromBraturaPortalArgsSchema, typed, locale),
     onValid: ({ email }) => {
       if (signIn(email)) openPortfolio();
@@ -45,18 +45,10 @@ export function SignInForm({ locale }: { locale: Locale }) {
             name="email"
             type="email"
             autoComplete="email"
+            hint={content.emailHint}
             value={draft.email}
             onChange={(event) => setField('email', event.target.value)}
             error={messageByPath.email}
-          />
-          <TextField
-            label={content.password}
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={draft.password}
-            onChange={(event) => setField('password', event.target.value)}
-            error={messageByPath.password}
           />
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <Button type="submit">{content.submit}</Button>
@@ -85,9 +77,9 @@ export function SignInForm({ locale }: { locale: Locale }) {
           <Button
             variant="ghost"
             onClick={() => {
-              const stored = storedAccountEmail();
-              if (stored === null || stored === FICTIONAL_CREATOR.email) signInWithExample();
-              else setReplacedEmail(stored);
+              const replaced = accountReplacedByExample(FICTIONAL_CREATOR);
+              if (replaced === null) signInWithExample();
+              else setReplacedEmail(replaced);
             }}
           >
             {content.useExample}
