@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { UserMessageChannelSchema } from '@bratura/shared/entities/user-message-channel/entity';
-import { DeliveryChannelEnum } from '@bratura/shared/entities/notification-delivery/enums/delivery-channel/enum';
+import { DeliveryChannelEnum } from '@bratura/shared/primitives/domain/delivery-channel/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { nullableString } from '@bratura/shared/primitives/code/string/fields';
 import { requiredInstant } from '@bratura/shared/primitives/code/time/instant/fields';

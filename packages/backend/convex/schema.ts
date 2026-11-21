@@ -10,6 +10,7 @@ import { NotificationDeliverySchema } from '@bratura/shared/entities/notificatio
 import { SourceSchema } from '@bratura/shared/entities/source/entity';
 import { UserMessageChannelSchema } from '@bratura/shared/entities/user-message-channel/entity';
 import { UserNotificationSchema } from '@bratura/shared/entities/user-notification/entity';
+import { UserSchema } from '@bratura/shared/entities/user/entity';
 
 // Each table is its entity's Zod, never a validator written beside it (docs/architecture.md §3).
 // `rateLimits` is convex-helpers' own table (the send cap), not an entity: it is the exception.
@@ -50,4 +51,5 @@ export default defineSchema({
     'by_user_and_channel',
     ['userId', 'channel'],
   ),
+  users: defineTable(zodToConvex(UserSchema)),
 });

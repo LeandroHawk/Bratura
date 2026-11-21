@@ -1,85 +1,99 @@
 import { convexTest } from 'convex-test';
-import type { GenericId } from 'convex/values';
+import type { ZonedInstant } from '@bratura/shared/primitives/code/time/zoned-instant/fields';
+import type { Id } from './_generated/dataModel';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
 import { deliveryClaimLeaseMs, maxDeliveryAttempts } from './notificationDeliveries';
 import schema from './schema';
 import { modules } from './test.setup';
+import {
+  deliveryOfNotification,
+  withCallNotice,
+  withTelegramOptIn,
+  withUser,
+} from './userNotifications.fixture';
 
-// The `users` table does not exist yet (Convex Auth lands it with login), so a test fabricates a
-// document id for it: convex-test reads the table name off the id's non-digit suffix.
-const testUserId = '0000000000000000000000001users' as GenericId<'users'>;
 const chatId = '123456789';
+const dayMs = 24 * 60 * 60 * 1000;
+const saoPaulo = 'America/Sao_Paulo' as ZonedInstant['timeZone'];
+const inDays = (days: number): ZonedInstant => ({
+  at: Date.now() + days * dayMs,
+  timeZone: saoPaulo,
+  precision: 'minute',
+});
 
-async function withCallNotice(t: ReturnType<typeof convexTest>) {
-  const known = await t.run(
-    async (ctx) =>
-      (await ctx.db.query('sources').collect()).find((s) => s.slug === 'mapas-federal') ?? null,
-  );
-  const sourceId =
-    known?._id ?? (await t.mutation(internal.sources.registerSource, { slug: 'mapas-federal' }));
-  const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
-    sourceId,
-    externalId: '8498',
-    title: 'Edital das Artes',
-    summary: null,
-    officialUrl: 'https://mapacultural.secult.ce.gov.br/oportunidade/8498/',
-    documentUrls: [],
-    registrationOpens: null,
-    registrationCloses: null,
+type TestBackend = ReturnType<typeof convexTest>;
+
+/** A `newEligibleCall` notification plus its reserved delivery (the user has opt-in). */
+async function withDelivery(
+  t: TestBackend,
+  dedupeKey = 'new:1',
+  options: { closes?: ZonedInstant | null; title?: string; userId?: Id<'users'> } = {},
+) {
+  const userId = options.userId ?? (await withUser(t));
+  await withTelegramOptIn(t, userId, chatId);
+  const callNoticeId = await withCallNotice(t, {
+    registrationCloses: options.closes ?? null,
+    title: options.title,
   });
-  return callNoticeId;
+  const notificationId = await t.mutation(internal.userNotifications.notify, {
+    notification: {
+      kind: 'newEligibleCall' as const,
+      userId,
+      dedupeKey,
+      callNoticeId,
+      matchStatus: 'eligible' as const,
+    },
+  });
+  const delivery = await deliveryOfNotification(t, notificationId);
+  return { notificationId, callNoticeId, deliveryId: delivery!._id, userId };
 }
 
-async function withTelegramOptIn(t: ReturnType<typeof convexTest>) {
-  await t.mutation(internal.userMessageChannels.setMessageChannel, {
-    userId: testUserId,
-    channel: 'telegram',
-    destination: chatId,
-    optInAt: Date.now(),
-    optOutAt: null,
-  });
-}
-
-/** A notification plus its reserved delivery (the user has opt-in). */
-async function withDelivery(t: ReturnType<typeof convexTest>, dedupeKey = 'd7:1') {
-  await withTelegramOptIn(t);
-  const callNoticeId = await withCallNotice(t);
+/** A `deadlineSoon` notification plus its reserved delivery. */
+async function withDeadlineDelivery(
+  t: TestBackend,
+  options: {
+    occurrence: 'd7' | 'd1';
+    closes: ZonedInstant;
+    userId: Id<'users'>;
+    callNoticeId?: Id<'callNotices'>;
+    dedupeKey?: string;
+  },
+) {
+  await withTelegramOptIn(t, options.userId, chatId);
+  const callNoticeId =
+    options.callNoticeId ?? (await withCallNotice(t, { registrationCloses: options.closes }));
   const notificationId = await t.mutation(internal.userNotifications.notify, {
     notification: {
       kind: 'deadlineSoon' as const,
-      userId: testUserId,
-      dedupeKey,
+      userId: options.userId,
+      dedupeKey: options.dedupeKey ?? `deadline:${options.occurrence}`,
       callNoticeId,
-      occurrence: 'd7' as const,
+      occurrence: options.occurrence,
     },
   });
-  const delivery = await t.run(async (ctx) =>
-    (await ctx.db.query('notificationDeliveries').collect()).find(
-      (row) => row.notificationId === notificationId,
-    ),
-  );
+  const delivery = await deliveryOfNotification(t, notificationId);
   return { notificationId, callNoticeId, deliveryId: delivery!._id };
 }
 
-const deliveryOf = (
-  t: ReturnType<typeof convexTest>,
-  deliveryId: GenericId<'notificationDeliveries'>,
-) => t.run(async (ctx) => await ctx.db.get(deliveryId));
+const deliveryOf = (t: TestBackend, deliveryId: Id<'notificationDeliveries'>) =>
+  t.run(async (ctx) => await ctx.db.get(deliveryId));
 
-const channelOf = (t: ReturnType<typeof convexTest>) =>
+const channelOf = (t: TestBackend) =>
   t.run(async (ctx) => (await ctx.db.query('userMessageChannels').collect()).at(0) ?? null);
 
 const sendsOf = (fetchMock: ReturnType<typeof vi.fn>) =>
   fetchMock.mock.calls.filter(([url]) => String(url).includes('sendMessage'));
 
+const okGetMe = () =>
+  new Response(JSON.stringify({ ok: true, result: { id: 7, username: 'bratura_bot' } }));
+const okSend = () => new Response(JSON.stringify({ ok: true, result: { message_id: 42 } }));
+
 function telegramAnswers(sendStatus = 200) {
   const fetchMock = vi.fn<typeof fetch>(async (input) => {
     const url = String(input);
-    if (url.includes('getMe'))
-      return new Response(JSON.stringify({ ok: true, result: { id: 7, username: 'bratura_bot' } }));
-    if (sendStatus === 200)
-      return new Response(JSON.stringify({ ok: true, result: { message_id: 42 } }));
+    if (url.includes('getMe')) return okGetMe();
+    if (sendStatus === 200) return okSend();
     return new Response(JSON.stringify({ ok: false, error_code: sendStatus }), {
       status: sendStatus,
     });
@@ -131,8 +145,8 @@ describe('sendPendingDeliveries', () => {
 
   test('checks the bot token once per run, not per message', async () => {
     const t = convexTest(schema, modules);
-    await withDelivery(t, 'd7:a');
-    await withDelivery(t, 'd7:b');
+    await withDelivery(t, 'a');
+    await withDelivery(t, 'b');
     const fetchMock = telegramAnswers();
     const result = await t.action(
       internal.notificationDeliveries.sendPendingDeliveries,
@@ -160,14 +174,38 @@ describe('sendPendingDeliveries', () => {
     expect(again).toMatchObject({ sent: 0, failed: 0, left: 0 });
   });
 
+  test('a timed-out send is transient: the claim is released and a retry sends', async () => {
+    const t = convexTest(schema, modules);
+    const { deliveryId } = await withDelivery(t);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input) => {
+        if (String(input).includes('getMe')) return okGetMe();
+        throw new DOMException('The operation timed out', 'TimeoutError');
+      }),
+    );
+    await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(await deliveryOf(t, deliveryId)).toMatchObject({
+      status: 'sending',
+      attempts: 1,
+      sendingSince: null,
+    });
+
+    telegramAnswers();
+    const retry = await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(retry.sent).toBe(1);
+    expect((await deliveryOf(t, deliveryId))?.status).toBe('sent');
+  });
+
   test('a transient failure costs no quota: three later sends still fit the day', async () => {
     const t = convexTest(schema, modules);
-    const { deliveryId: stuck } = await withDelivery(t, 'stuck');
+    const userId = await withUser(t);
+    const { deliveryId: stuck } = await withDelivery(t, 'stuck', { userId });
     telegramAnswers(503);
     await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
     expect((await deliveryOf(t, stuck))?.attempts).toBe(1);
 
-    for (const key of ['r1', 'r2', 'r3']) await withDelivery(t, key);
+    for (const key of ['r1', 'r2', 'r3']) await withDelivery(t, key, { userId });
     telegramAnswers(200);
     const result = await t.action(
       internal.notificationDeliveries.sendPendingDeliveries,
@@ -191,26 +229,69 @@ describe('sendPendingDeliveries', () => {
     expect(sendsOf(fetchMock)).toHaveLength(1);
   });
 
-  test('a 401 stops the run without touching the rest', async () => {
+  test('a 401 on getMe means a bad token: notConfigured, nothing claimed', async () => {
     const t = convexTest(schema, modules);
-    const { deliveryId: first } = await withDelivery(t, 'd7:a');
-    const { deliveryId: second } = await withDelivery(t, 'd7:b');
+    const { deliveryId } = await withDelivery(t);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('unauthorized', { status: 401 })),
+    );
+    const result = await t.action(
+      internal.notificationDeliveries.sendPendingDeliveries,
+      sendArgs(),
+    );
+    expect(result.stoppedBy).toBe('notConfigured');
+    expect(await deliveryOf(t, deliveryId)).toMatchObject({
+      status: 'sending',
+      attempts: 0,
+      sendingSince: null,
+    });
+  });
+
+  test('a 401 mid-run stops as notConfigured and gives the attempt back', async () => {
+    const t = convexTest(schema, modules);
+    const { deliveryId: first } = await withDelivery(t, 'a');
+    const { deliveryId: second } = await withDelivery(t, 'b');
     telegramAnswers(401);
 
     const result = await t.action(
       internal.notificationDeliveries.sendPendingDeliveries,
       sendArgs(),
     );
-    expect(result.stoppedBy).toBe('providerUnreachable');
-    const [gone, untouched] = [await deliveryOf(t, first), await deliveryOf(t, second)];
-    // Whichever delivery the 401 hit was handed back; the other was never claimed.
-    expect([gone, untouched].some((d) => d?.status === 'sending' && d.attempts === 1)).toBe(true);
-    expect([gone, untouched].some((d) => d?.status === 'sending' && d.attempts === 0)).toBe(true);
+    expect(result.stoppedBy).toBe('notConfigured');
+    for (const deliveryId of [first, second]) {
+      // The claim the 401 hit was refunded; the other delivery was never claimed.
+      expect(await deliveryOf(t, deliveryId)).toMatchObject({
+        status: 'sending',
+        attempts: 0,
+        sendingSince: null,
+      });
+    }
+  });
+
+  test('a 429 throttles the bot: the run stops and the claim is refunded', async () => {
+    const t = convexTest(schema, modules);
+    const { deliveryId: first } = await withDelivery(t, 'a');
+    const { deliveryId: second } = await withDelivery(t, 'b');
+    telegramAnswers(429);
+
+    const result = await t.action(
+      internal.notificationDeliveries.sendPendingDeliveries,
+      sendArgs(),
+    );
+    expect(result.stoppedBy).toBe('providerThrottled');
+    for (const deliveryId of [first, second]) {
+      expect(await deliveryOf(t, deliveryId)).toMatchObject({
+        status: 'sending',
+        attempts: 0,
+        sendingSince: null,
+      });
+    }
   });
 
   test('a 403 records the opt-out, ends the delivery, and nothing claims that user again', async () => {
     const t = convexTest(schema, modules);
-    const { deliveryId } = await withDelivery(t);
+    const { deliveryId, userId } = await withDelivery(t);
     telegramAnswers(403);
 
     const first = await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
@@ -225,7 +306,7 @@ describe('sendPendingDeliveries', () => {
     await t.mutation(internal.userNotifications.notify, {
       notification: {
         kind: 'callNoticeAmended' as const,
-        userId: testUserId,
+        userId,
         dedupeKey: 'amended:after-block',
         callNoticeId: (await t.run((ctx) => ctx.db.query('callNotices').collect())).at(0)!._id,
         amendedAt: Date.now(),
@@ -262,8 +343,9 @@ describe('sendPendingDeliveries', () => {
 
   test('the per-run cap stops the batch', async () => {
     const t = convexTest(schema, modules);
-    await withDelivery(t, 'd7:a');
-    await withDelivery(t, 'd7:b');
+    const userId = await withUser(t);
+    await withDelivery(t, 'a', { userId });
+    await withDelivery(t, 'b', { userId });
     telegramAnswers();
     const result = await t.action(
       internal.notificationDeliveries.sendPendingDeliveries,
@@ -274,7 +356,8 @@ describe('sendPendingDeliveries', () => {
 
   test('the per-recipient cap waits: a fourth send of the day is not claimed', async () => {
     const t = convexTest(schema, modules);
-    for (const key of ['r1', 'r2', 'r3', 'r4']) await withDelivery(t, key);
+    const userId = await withUser(t);
+    for (const key of ['r1', 'r2', 'r3', 'r4']) await withDelivery(t, key, { userId });
     const fetchMock = telegramAnswers();
     const result = await t.action(
       internal.notificationDeliveries.sendPendingDeliveries,
@@ -303,11 +386,11 @@ describe('sendPendingDeliveries', () => {
     });
   });
 
-  test('no claim without a recipient: an opt-out user costs no attempt', async () => {
+  test('a delivery with no recipient ends optedOut and never comes back', async () => {
     const t = convexTest(schema, modules);
-    const { deliveryId } = await withDelivery(t);
+    const { deliveryId, userId } = await withDelivery(t);
     await t.mutation(internal.userMessageChannels.markChannelOptOut, {
-      userId: testUserId,
+      userId,
       channel: 'telegram',
       optOutAt: Date.now(),
     });
@@ -315,12 +398,14 @@ describe('sendPendingDeliveries', () => {
     await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
     expect(sendsOf(fetchMock)).toHaveLength(0);
     expect(await deliveryOf(t, deliveryId)).toMatchObject({
-      status: 'sending',
-      attempts: 0,
+      status: 'failed',
+      failure: 'optedOut',
     });
+    const again = await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(again.left).toBe(0);
   });
 
-  test('no claim without content: a deleted call notice costs no attempt', async () => {
+  test('a deleted call notice ends its delivery subjectGone', async () => {
     const t = convexTest(schema, modules);
     const { deliveryId, callNoticeId } = await withDelivery(t);
     await t.run(async (ctx) => {
@@ -330,8 +415,148 @@ describe('sendPendingDeliveries', () => {
     await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
     expect(sendsOf(fetchMock)).toHaveLength(0);
     expect(await deliveryOf(t, deliveryId)).toMatchObject({
-      status: 'sending',
-      attempts: 0,
+      status: 'failed',
+      failure: 'subjectGone',
+    });
+  });
+
+  test('a call whose window already closed ends its delivery subjectGone', async () => {
+    const t = convexTest(schema, modules);
+    const { deliveryId } = await withDelivery(t, 'closed', { closes: inDays(-1) });
+    const fetchMock = telegramAnswers();
+    await t.action(internal.notificationDeliveries.sendPendingDeliveries, sendArgs());
+    expect(sendsOf(fetchMock)).toHaveLength(0);
+    expect(await deliveryOf(t, deliveryId)).toMatchObject({
+      status: 'failed',
+      failure: 'subjectGone',
+    });
+  });
+
+  test('a row that errors in the middle fails alone; the batch continues', async () => {
+    const t = convexTest(schema, modules);
+    const userId = await withUser(t);
+    await withDelivery(t, 'a', { userId });
+    const { deliveryId: second } = await withDelivery(t, 'b', { userId });
+    await withDelivery(t, 'c', { userId });
+    // The second delivery (by creation order) is deleted once the first send went out.
+    let deleted = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input) => {
+        if (String(input).includes('getMe')) return okGetMe();
+        if (!deleted) {
+          deleted = true;
+          await t.run(async (ctx) => {
+            await ctx.db.delete(second);
+          });
+        }
+        return okSend();
+      }),
+    );
+    const result = await t.action(
+      internal.notificationDeliveries.sendPendingDeliveries,
+      sendArgs(),
+    );
+    expect(result).toMatchObject({ sent: 2, failed: 1, stoppedBy: 'nothingLeft' });
+  });
+
+  test('urgency first inside the cap: a d1 and a call closing in 3 days lead the queue', async () => {
+    const t = convexTest(schema, modules);
+    const userId = await withUser(t);
+    // Two new calls far from closing, then a d1, then a new call closing in 3 days.
+    await withDelivery(t, 'long-a', { userId, closes: inDays(30), title: 'Edital Longe A' });
+    await withDelivery(t, 'long-b', { userId, closes: inDays(30), title: 'Edital Longe B' });
+    const { callNoticeId: d1Call } = await withDeadlineDelivery(t, {
+      occurrence: 'd1',
+      closes: inDays(0.5),
+      userId,
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(d1Call, { title: 'Edital D1' });
+    });
+    await withDelivery(t, 'soon', { userId, closes: inDays(3), title: 'Edital Perto' });
+    const fetchMock = telegramAnswers();
+
+    const result = await t.action(
+      internal.notificationDeliveries.sendPendingDeliveries,
+      sendArgs(),
+    );
+    expect(result.sent).toBe(3);
+    const texts = sendsOf(fetchMock).map((call) => String(call[1]?.body));
+    expect(texts[0]).toContain('Edital D1');
+    expect(texts[1]).toContain('Edital Perto');
+    expect(texts[2]).toContain('Edital Longe A');
+  });
+});
+
+describe('deadline checks at send', () => {
+  beforeEach(() => {
+    vi.stubEnv('TELEGRAM_BOT_TOKEN', 'bot-token');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  const sendArgs = () => ({ sendCeiling: 10 });
+
+  test('a d1 whose call was extended ends superseded, not sent', async () => {
+    const t = convexTest(schema, modules);
+    const userId = await withUser(t);
+    const { deliveryId, callNoticeId } = await withDeadlineDelivery(t, {
+      occurrence: 'd1',
+      closes: inDays(0.5),
+      userId,
+    });
+    // The call was extended by 10 days after the reminder was created.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(callNoticeId, { registrationCloses: inDays(10) });
+    });
+    const fetchMock = telegramAnswers();
+    const result = await t.action(
+      internal.notificationDeliveries.sendPendingDeliveries,
+      sendArgs(),
+    );
+    expect(sendsOf(fetchMock)).toHaveLength(0);
+    expect(await deliveryOf(t, deliveryId)).toMatchObject({
+      status: 'failed',
+      failure: 'superseded',
+    });
+    expect(result.left).toBe(0);
+  });
+
+  test('a d7 over a new-call notice for the same closing call ends superseded', async () => {
+    const t = convexTest(schema, modules);
+    const userId = await withUser(t);
+    await withTelegramOptIn(t, userId, chatId);
+    const callNoticeId = await withCallNotice(t, { registrationCloses: inDays(5) });
+    await t.mutation(internal.userNotifications.notify, {
+      notification: {
+        kind: 'newEligibleCall' as const,
+        userId,
+        dedupeKey: 'new:same-call',
+        callNoticeId,
+        matchStatus: 'eligible' as const,
+      },
+    });
+    const { deliveryId: d7Delivery } = await withDeadlineDelivery(t, {
+      occurrence: 'd7',
+      closes: inDays(5),
+      userId,
+      callNoticeId,
+      dedupeKey: 'deadline:d7:same-call',
+    });
+    const fetchMock = telegramAnswers();
+
+    const result = await t.action(
+      internal.notificationDeliveries.sendPendingDeliveries,
+      sendArgs(),
+    );
+    expect(result.sent).toBe(1);
+    expect(sendsOf(fetchMock)).toHaveLength(1);
+    expect(await deliveryOf(t, d7Delivery)).toMatchObject({
+      status: 'failed',
+      failure: 'superseded',
     });
   });
 });
@@ -340,12 +565,12 @@ describe('claimDelivery', () => {
   test('two claims of one delivery claim once', async () => {
     const t = convexTest(schema, modules);
     const { deliveryId } = await withDelivery(t);
-    expect(await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId })).toBe(
-      'claimed',
-    );
-    expect(await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId })).toBe(
-      'waiting',
-    );
+    expect(
+      await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId }),
+    ).toMatchObject({ outcome: 'claimed', sendingSince: expect.any(Number) });
+    expect(
+      await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId }),
+    ).toMatchObject({ outcome: 'waiting' });
   });
 
   test('a live lease is waiting, never exhausted, even on the last attempt', async () => {
@@ -358,9 +583,9 @@ describe('claimDelivery', () => {
         sendingSince: Date.now(),
       });
     });
-    expect(await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId })).toBe(
-      'waiting',
-    );
+    expect(
+      await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId }),
+    ).toMatchObject({ outcome: 'waiting' });
     expect((await deliveryOf(t, deliveryId))?.status).toBe('sending');
   });
 
@@ -368,17 +593,42 @@ describe('claimDelivery', () => {
     const t = convexTest(schema, modules);
     vi.useFakeTimers();
     const { deliveryId } = await withDelivery(t);
-    expect(await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId })).toBe(
-      'claimed',
-    );
+    expect(
+      await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId }),
+    ).toMatchObject({ outcome: 'claimed' });
     vi.setSystemTime(Date.now() + deliveryClaimLeaseMs - 1_000);
-    expect(await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId })).toBe(
-      'waiting',
-    );
+    expect(
+      await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId }),
+    ).toMatchObject({ outcome: 'waiting' });
     vi.setSystemTime(Date.now() + 2_000);
-    expect(await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId })).toBe(
-      'claimed',
-    );
+    expect(
+      await t.mutation(internal.notificationDeliveries.claimDelivery, { deliveryId }),
+    ).toMatchObject({ outcome: 'claimed' });
     expect(await deliveryOf(t, deliveryId)).toMatchObject({ attempts: 2 });
+  });
+
+  test('a confirm with a moved lease is already resolved, never an error', async () => {
+    const t = convexTest(schema, modules);
+    const { deliveryId } = await withDelivery(t);
+    const claim = await t.mutation(internal.notificationDeliveries.claimDelivery, {
+      deliveryId,
+    });
+    if (claim.outcome !== 'claimed') throw new Error('expected a claim');
+    // Another run took the lease over while this one was sending.
+    await t.run(async (ctx) => {
+      await ctx.db.patch(deliveryId, { sendingSince: claim.sendingSince + 1 });
+    });
+    await t.mutation(internal.notificationDeliveries.confirmDeliverySent, {
+      deliveryId,
+      sendingSince: claim.sendingSince,
+      providerMessageId: '42',
+    });
+    expect((await deliveryOf(t, deliveryId))?.status).toBe('sending');
+    await t.mutation(internal.notificationDeliveries.confirmDeliveryFailed, {
+      deliveryId,
+      sendingSince: claim.sendingSince,
+      failure: 'providerRejected',
+    });
+    expect((await deliveryOf(t, deliveryId))?.status).toBe('sending');
   });
 });

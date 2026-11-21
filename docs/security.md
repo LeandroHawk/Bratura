@@ -131,7 +131,7 @@ Known gaps, in no order; add yours:
 - Uploads: do we need a malware or content check for portfolio files before showing them on a
   public page (`/p/{slug}`)?
 - Account deletion and data export (LGPD) for creators: deleting a user must also clean
-  `userNotifications`, `notificationDeliveries` and `userMessageChannels` — the four tables that
-  carry their data.
+  `userNotifications`, `notificationDeliveries`, `userMessageChannels` and `rateLimits` — the
+  four tables that carry their data.
 - Owner checks: today's `notify`, `sendPendingDeliveries` and friends are internal; when login
   lands and they become public, each must confirm the caller owns the `userId` it touches.

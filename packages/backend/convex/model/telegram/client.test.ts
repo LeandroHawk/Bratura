@@ -43,7 +43,7 @@ describe('sendTelegramMessage', () => {
     expect(await sendTelegramMessage(send)).toBeNull();
   });
 
-  test('a non-2xx throws with the status and keeps the body out of the tables', async () => {
+  test('a non-2xx throws a TelegramAnswerError that carries only the status', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>(
@@ -57,5 +57,18 @@ describe('sendTelegramMessage', () => {
     const error = await sendTelegramMessage(send).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(TelegramAnswerError);
     expect((error as TelegramAnswerError).status).toBe(403);
+    expect((error as Error).message).not.toContain('bot was blocked');
+  });
+
+  test('no answer at all throws the fetch error, not a TelegramAnswerError', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => {
+        throw new DOMException('The operation timed out', 'TimeoutError');
+      }),
+    );
+    const error = await sendTelegramMessage(send).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(DOMException);
+    expect(error).not.toBeInstanceOf(TelegramAnswerError);
   });
 });

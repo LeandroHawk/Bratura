@@ -1,43 +1,9 @@
 import { convexTest } from 'convex-test';
-import type { GenericId } from 'convex/values';
 import { describe, expect, test } from 'vitest';
 import { internal } from './_generated/api';
 import schema from './schema';
 import { modules } from './test.setup';
-
-// The `users` table does not exist yet (Convex Auth lands it with login), so a test fabricates a
-// document id for it: convex-test reads the table name off the id's non-digit suffix.
-const testUserId = '0000000000000000000000001users' as GenericId<'users'>;
-const otherUserId = '0000000000000000000000002users' as GenericId<'users'>;
-
-async function withCallNotice(t: ReturnType<typeof convexTest>) {
-  const sourceId = await t.mutation(internal.sources.registerSource, { slug: 'mapas-federal' });
-  const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
-    sourceId,
-    externalId: '8498',
-    title: 'Edital das Artes',
-    summary: null,
-    officialUrl: 'https://mapacultural.secult.ce.gov.br/oportunidade/8498/',
-    documentUrls: [],
-    registrationOpens: null,
-    registrationCloses: null,
-  });
-  return callNoticeId;
-}
-
-/** The user's Telegram row in `userMessageChannels`, opted in — how the demo creator is seeded. */
-async function withTelegramOptIn(
-  t: ReturnType<typeof convexTest>,
-  userId: GenericId<'users'> = testUserId,
-) {
-  await t.mutation(internal.userMessageChannels.setMessageChannel, {
-    userId,
-    channel: 'telegram',
-    destination: '123456789',
-    optInAt: Date.now(),
-    optOutAt: null,
-  });
-}
+import { withCallNotice, withTelegramOptIn, withUser } from './userNotifications.fixture';
 
 const deliveriesOf = (t: ReturnType<typeof convexTest>) =>
   t.run((ctx) => ctx.db.query('notificationDeliveries').collect());
@@ -45,10 +11,12 @@ const deliveriesOf = (t: ReturnType<typeof convexTest>) =>
 describe('notify', () => {
   test('the same dedupe key creates one notification, and it scopes to its user', async () => {
     const t = convexTest(schema, modules);
+    const userId = await withUser(t);
+    const otherUserId = await withUser(t);
     const callNoticeId = await withCallNotice(t);
     const notification = {
       kind: 'deadlineSoon' as const,
-      userId: testUserId,
+      userId,
       dedupeKey: 'deadlineSoon:d7',
       callNoticeId,
       occurrence: 'd7' as const,
@@ -66,10 +34,11 @@ describe('notify', () => {
 
   test('opt-in reserves one Telegram delivery, later opt-in fills a missing one', async () => {
     const t = convexTest(schema, modules);
+    const userId = await withUser(t);
     const callNoticeId = await withCallNotice(t);
     const notification = {
       kind: 'callNoticeAmended' as const,
-      userId: testUserId,
+      userId,
       dedupeKey: 'amended:1',
       callNoticeId,
       amendedAt: Date.now(),
@@ -77,12 +46,12 @@ describe('notify', () => {
     await t.mutation(internal.userNotifications.notify, { notification });
     expect(await deliveriesOf(t)).toHaveLength(0);
 
-    await withTelegramOptIn(t);
+    await withTelegramOptIn(t, userId);
     const notificationId = await t.mutation(internal.userNotifications.notify, { notification });
     const [delivery] = await deliveriesOf(t);
     expect(delivery).toMatchObject({
       notificationId,
-      userId: testUserId,
+      userId,
       channel: 'telegram',
       status: 'sending',
       attempts: 0,
@@ -94,11 +63,31 @@ describe('notify', () => {
     expect(await deliveriesOf(t)).toHaveLength(1);
   });
 
+  test('a notification already read reserves no delivery on a re-fire', async () => {
+    const t = convexTest(schema, modules);
+    const userId = await withUser(t);
+    const callNoticeId = await withCallNotice(t);
+    const notification = {
+      kind: 'callNoticeAmended' as const,
+      userId,
+      dedupeKey: 'amended:read',
+      callNoticeId,
+      amendedAt: Date.now(),
+    };
+    const notificationId = await t.mutation(internal.userNotifications.notify, { notification });
+    await t.mutation(internal.userNotifications.markRead, { notificationId });
+
+    await withTelegramOptIn(t, userId);
+    await t.mutation(internal.userNotifications.notify, { notification });
+    expect(await deliveriesOf(t)).toHaveLength(0);
+  });
+
   test('an opted-out channel reserves no delivery', async () => {
     const t = convexTest(schema, modules);
+    const userId = await withUser(t);
     const callNoticeId = await withCallNotice(t);
     await t.mutation(internal.userMessageChannels.setMessageChannel, {
-      userId: testUserId,
+      userId,
       channel: 'telegram',
       destination: '123456789',
       optInAt: Date.now() - 10_000,
@@ -107,7 +96,7 @@ describe('notify', () => {
     await t.mutation(internal.userNotifications.notify, {
       notification: {
         kind: 'callNoticeAmended' as const,
-        userId: testUserId,
+        userId,
         dedupeKey: 'amended:2',
         callNoticeId,
         amendedAt: Date.now(),
@@ -118,55 +107,54 @@ describe('notify', () => {
 
   test('a platform announcement reaches the inbox with no delivery when the user has no opt-in', async () => {
     const t = convexTest(schema, modules);
+    const userId = await withUser(t);
     await t.mutation(internal.userNotifications.notify, {
       notification: {
         kind: 'platformAnnouncement',
-        userId: testUserId,
+        userId,
         dedupeKey: 'announce:1',
         title: { ptBR: 'Bem-vinda ao Bratura', en: 'Welcome to Bratura' },
         body: { ptBR: 'Cadastre seu portfólio.', en: 'Register your portfolio.' },
       },
     });
-    const [stored] = await t.query(internal.userNotifications.listForUser, {
-      userId: testUserId,
-    });
+    const [stored] = await t.query(internal.userNotifications.listForUser, { userId });
     expect(stored).toMatchObject({ kind: 'platformAnnouncement', readAt: null });
     expect(await deliveriesOf(t)).toHaveLength(0);
   });
 });
 
 describe('the inbox', () => {
-  test("listForUser returns only the user's, newest first", async () => {
+  test("listForUser returns only the user's, newest first even when keys sort backwards", async () => {
     const t = convexTest(schema, modules);
-    for (const [userId, key] of [
-      [testUserId, 'a1'],
-      [testUserId, 'a2'],
-      [otherUserId, 'b1'],
+    const userId = await withUser(t);
+    const otherUserId = await withUser(t);
+    for (const [owner, key] of [
+      [userId, 'zzz'],
+      [userId, 'aaa'],
+      [otherUserId, 'mid'],
     ] as const) {
       await t.mutation(internal.userNotifications.notify, {
         notification: {
           kind: 'platformAnnouncement',
-          userId,
+          userId: owner,
           dedupeKey: key,
           title: { ptBR: `Título ${key}`, en: `Title ${key}` },
           body: { ptBR: 'corpo', en: 'body' },
         },
       });
     }
-    const list = await t.query(internal.userNotifications.listForUser, {
-      userId: testUserId,
-    });
+    const list = await t.query(internal.userNotifications.listForUser, { userId });
     expect(list).toHaveLength(2);
-    expect(list[0]?.dedupeKey).toBe('a2');
-    expect(list.every((n) => n.userId === testUserId)).toBe(true);
+    expect(list.map((n) => n.dedupeKey)).toEqual(['aaa', 'zzz']);
   });
 
   test('markRead keeps the first read time', async () => {
     const t = convexTest(schema, modules);
+    const userId = await withUser(t);
     const notificationId = await t.mutation(internal.userNotifications.notify, {
       notification: {
         kind: 'platformAnnouncement',
-        userId: testUserId,
+        userId,
         dedupeKey: 'read:1',
         title: { ptBR: 'Olá', en: 'Hello' },
         body: { ptBR: 'corpo', en: 'body' },

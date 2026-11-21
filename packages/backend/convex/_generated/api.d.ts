@@ -45,7 +45,6 @@ import type * as model_pdfText_pdfTextOnSourceHost from "../model/pdfText/pdfTex
 import type * as model_sourceHost_fetchOnSourceHost from "../model/sourceHost/fetchOnSourceHost.js";
 import type * as model_sources_registry from "../model/sources/registry.js";
 import type * as model_telegram_client from "../model/telegram/client.js";
-import type * as model_telegram_messageText from "../model/telegram/messageText.js";
 import type * as model_telegram_payload from "../model/telegram/payload.js";
 import type * as model_telegram_sendMessage from "../model/telegram/sendMessage.js";
 import type * as notificationDeliveries from "../notificationDeliveries.js";
@@ -54,6 +53,7 @@ import type * as sources from "../sources.js";
 import type * as telegram from "../telegram.js";
 import type * as userMessageChannels from "../userMessageChannels.js";
 import type * as userNotifications from "../userNotifications.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -99,7 +99,6 @@ declare const fullApi: ApiFromModules<{
   "model/sourceHost/fetchOnSourceHost": typeof model_sourceHost_fetchOnSourceHost;
   "model/sources/registry": typeof model_sources_registry;
   "model/telegram/client": typeof model_telegram_client;
-  "model/telegram/messageText": typeof model_telegram_messageText;
   "model/telegram/payload": typeof model_telegram_payload;
   "model/telegram/sendMessage": typeof model_telegram_sendMessage;
   notificationDeliveries: typeof notificationDeliveries;
@@ -108,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   telegram: typeof telegram;
   userMessageChannels: typeof userMessageChannels;
   userNotifications: typeof userNotifications;
+  users: typeof users;
 }>;
 
 /**

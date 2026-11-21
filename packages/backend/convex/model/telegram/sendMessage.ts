@@ -1,15 +1,19 @@
 import type { UserNotificationDraft } from '@bratura/shared/entities/user-notification/entity';
+import type { CallNoticeForMessage } from '@bratura/shared/messages/user-notification/content';
+import { userNotificationContentOf } from '@bratura/shared/messages/user-notification/content';
+import { userNotificationMessageOf } from '@bratura/shared/messages/user-notification/messages';
 import { sendTelegramMessage } from './client';
-import { telegramMessageOfNotification } from './messageText';
 
 export type TelegramNotificationSend = {
   /** `TELEGRAM_BOT_TOKEN`, read by the caller from env. */
   token: string;
   notification: UserNotificationDraft;
-  /** The stored call notice's title for kinds that name it; `null` when it is gone. */
-  callNoticeTitle: string | null;
-  /** The recipient's chat id, resolved from `users` at send time — never stored in a table. */
+  /** The stored call notice for kinds that name it; `null` when it is gone. */
+  callNotice: CallNoticeForMessage | null;
+  /** The recipient's chat id, read off `userMessageChannels` at send time. */
   destination: string;
+  /** The instant the message is built at — close text and days-left come from it. */
+  now: number;
 };
 
 export type TelegramSendOutcome =
@@ -18,17 +22,21 @@ export type TelegramSendOutcome =
   | { outcome: 'noContent' };
 
 /**
- * The only function the doors import for Telegram sends (`docs/integrations/telegram.md`): maps
- * the notification kind to its pt-BR text and sends through the Bot API.
+ * The only function the doors import for Telegram sends (`docs/integrations/telegram.md`): the
+ * message itself lives in `shared/messages/user-notification` (same text as the web inbox, in
+ * pt-BR and en); this adapter only formats it as plain text and calls the Bot API.
  */
 export async function sendTelegramNotification({
   token,
   notification,
-  callNoticeTitle,
+  callNotice,
   destination,
+  now,
 }: TelegramNotificationSend): Promise<TelegramSendOutcome> {
-  const text = telegramMessageOfNotification(notification, callNoticeTitle);
-  if (text === null) return { outcome: 'noContent' };
+  const content = userNotificationContentOf(notification, callNotice, now);
+  const message = userNotificationMessageOf(notification, content, 'pt-BR');
+  if (message === null) return { outcome: 'noContent' };
+  const text = [message.title, message.body, message.link].filter(Boolean).join('\n\n');
   const providerMessageId = await sendTelegramMessage({ token, chatId: destination, text });
   return { outcome: 'sent', providerMessageId };
 }

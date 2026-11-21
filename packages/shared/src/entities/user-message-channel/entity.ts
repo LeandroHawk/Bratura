@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { documentId } from '../../primitives/code/id/fields';
 import { requiredString } from '../../primitives/code/string/fields';
 import { requiredInstant } from '../../primitives/code/time/instant/fields';
-import { DeliveryChannelEnum } from '../notification-delivery/enums/delivery-channel/enum';
+import { DeliveryChannelEnum } from '../../primitives/domain/delivery-channel/enum';
 
 /**
  * How to reach a user on one message channel: one row per user per channel, the user's opt-in

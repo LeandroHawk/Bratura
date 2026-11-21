@@ -6,33 +6,23 @@ import {
 
 const telegramTimeoutMs = 15_000;
 const telegramBaseUrl = 'https://api.telegram.org';
-const answerExcerptMaxLength = 300;
 
 /**
  * A non-2xx Telegram answer: `status` is what the outbox reads to tell a refusal (4xx, never
- * retried) from a transient failure (429, 5xx, no answer). The body excerpt stays in the logs;
- * it may echo the chat and never reaches a table.
+ * retried) from a transient failure (429, 5xx, no answer). The body is never read into the
+ * error: it may echo the chat and must not reach a log or a table.
  */
 export class TelegramAnswerError extends Error {
-  constructor(
-    public readonly status: number,
-    excerpt: string,
-  ) {
-    super(`Telegram answered HTTP ${status}${excerpt ? `: ${excerpt}` : ''}`);
+  constructor(public readonly status: number) {
+    super(`Telegram answered HTTP ${status}`);
     this.name = 'TelegramAnswerError';
   }
 }
 
-async function telegramAnswerError(response: Response): Promise<TelegramAnswerError> {
-  const body = (await response.text().catch(() => '')).replace(/\s+/g, ' ').trim();
-  const excerpt =
-    body.length > answerExcerptMaxLength ? `${body.slice(0, answerExcerptMaxLength)}…` : body;
-  return new TelegramAnswerError(response.status, excerpt);
-}
-
 /**
  * Calls a Bot API method: `POST /bot<token>/<method>`, JSON body, timeout on every call. Any
- * 2xx returns the parsed envelope; a non-2xx or no answer throws `TelegramAnswerError`.
+ * 2xx returns the parsed envelope; a non-2xx throws `TelegramAnswerError`, while no answer at
+ * all (timeout, network) throws the `fetch` error itself (`DOMException`/`TypeError`).
  */
 async function callTelegram(
   token: string,
@@ -45,7 +35,7 @@ async function callTelegram(
     body: body === undefined ? '{}' : JSON.stringify(body),
     signal: AbortSignal.timeout(telegramTimeoutMs),
   });
-  if (!response.ok) throw await telegramAnswerError(response);
+  if (!response.ok) throw new TelegramAnswerError(response.status);
   const envelope = TelegramResultEnvelopeSchema.safeParse(await response.json().catch(() => null));
   return envelope.success ? envelope.data.result : undefined;
 }
@@ -73,7 +63,7 @@ export async function sendTelegramMessage({
   text,
 }: {
   token: string;
-  /** The chat the user opened with the bot, resolved from `users` at send time. */
+  /** The chat the user opened with the bot, resolved from `userMessageChannels` at send time. */
   chatId: string;
   text: string;
 }): Promise<string | null> {

@@ -92,7 +92,7 @@ The rules that hold everywhere:
 ## Git
 
 - **Branch `<type>/<slug>` from `dev`**, where `<type>` is the commit type: `feat/`, `fix/`,
-  `refactor/`, `docs/`, `chore/`, `test/` (`feat/telegram-alerts`, `docs/split-architecture-docs`).
+  `refactor/`, `docs/`, `chore/`, `test/` (`feat/whatsapp-alerts`, `docs/split-architecture-docs`).
 - **Conventional commits** with the workspace as scope when there is one: `feat(web): …`,
   `fix(shared): …`, `docs: …`. The subject says what changes, lowercase, no final period.
 - **One concern per PR, into `dev`.** Review it with `docs/review.md` before opening.

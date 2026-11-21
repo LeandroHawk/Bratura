@@ -23,6 +23,7 @@ convex/
   userNotifications.ts        what to tell a user: the only writer of `userNotifications`
   userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
   notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
+  users.ts                    the user's only writer
   portfolio.ts  matching.ts  orgs.ts                                            (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
@@ -36,8 +37,8 @@ convex/
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
-    telegram/        sendMessage.ts + messageText.ts (kind → pt-BR text), client.ts + payload.ts
-                     (the Bot API: getMe, sendMessage)
+    telegram/        sendMessage.ts (the only import), client.ts + payload.ts (the Bot API:
+                     getMe, sendMessage); the text is `shared/messages/user-notification`
     sources/         registry.ts: every source the team checked, what `registerSource` copies
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
   _generated/     written by the Convex CLI; committed, never edited by hand
@@ -51,8 +52,7 @@ run (`ingestion/`). **A provider we may swap is named by what it does** (`llm/`)
 neutral function (`llm/generateJson.ts`), which alone picks the client and reads its key; a fixed
 one is named by itself (`mapasCulturais/` is the source). A channel is named by what it does and
 keeps its provider inside when it has one (`telegram/` talks to the Bot API directly). A root file
-past ~6 functions becomes a
-folder of the same name, one file per door.
+past ~6 functions becomes a folder of the same name, one file per door.
 
 ## Running it
 

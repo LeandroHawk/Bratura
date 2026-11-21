@@ -8,7 +8,7 @@ import { requiredString } from '../../../../primitives/code/string/fields';
  * natural key — one notification per user per key, so the same event never notifies twice.
  */
 export const UserNotificationIdentityFields = z.object({
-  /** Whose notification: a `users` row (Convex Auth creates the table with login). */
+  /** Whose notification: a `users` row (WorkOS supplies the identity when login lands). */
   userId: documentId('users'),
   /** The trigger's key ('deadlineSoon:d7:<callNoticeId>'): a repeat of it finds the same row. */
   dedupeKey: requiredString('short'),

@@ -72,7 +72,8 @@ Never a share of the prize, never selling data.
 5. **Alerts**: e-mail at D-7 and D-1; Telegram messages.
 
 Starting tables: `sources`, `callNotices`, `ingestionRuns`, `creators`, `portfolioItems`,
-`matches`, `applicationKits`, `alerts`, `organizations`, `memberships`. Screens: onboarding,
+`matches`, `applicationKits`, `users`, `userNotifications`, `notificationDeliveries`,
+`userMessageChannels`, `organizations`, `memberships`. Screens: onboarding,
 portfolio builder, call notices (Elegível / Quase / Todos), call notice detail, kit, org panel,
 admin review. The landing still lacks the way into the app ("Começar meu portfólio", "Sou uma
 organização"), which comes with login.

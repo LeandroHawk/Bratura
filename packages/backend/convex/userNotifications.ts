@@ -10,17 +10,18 @@ import { PlatformAnnouncementNotificationSchema } from '@bratura/shared/entities
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { requiredInstant } from '@bratura/shared/primitives/code/time/instant/fields';
 import type { GenericId } from 'convex/values';
-import type { Id } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { appError } from './lib/appError';
 import { internalZodMutation, internalZodQuery } from './lib/builders';
+import { reserveDelivery } from './notificationDeliveries';
 
 // The web inbox's only writer. A trigger (matching, the deadline cron, an amended call, an admin
 // announcement) calls `notify`; the notification exists — and the inbox shows it — with or
-// without a message channel. When `userMessageChannels` says the user opted in to a channel
-// (and never opted out), the same call reserves a `notificationDeliveries` row; without it,
-// nothing leaves the site (`docs/security.md` §2). Internal until login lands the `users` table
-// and the auth builders (`docs/contracts.md` §3).
+// without a message channel. For every channel `userMessageChannels` says the user opted in to
+// (and never opted out), the same call reserves a `notificationDeliveries` row — through the
+// outbox's own `reserveDelivery`, its only insert; without it, nothing leaves the site
+// (`docs/security.md` §2). Internal until login lands the auth builders
+// (`docs/contracts.md` §3).
 
 const userNotificationsOf = (ctx: QueryCtx, userId: GenericId<'users'>) =>
   ctx.db
@@ -33,9 +34,10 @@ const NotifyMutationArgsSchema = z.object({
 const NotifyMutationReturnsSchema = documentId('userNotifications');
 
 /**
- * Creates the notification (natural-key upsert on user + `dedupeKey`) and, when the user has an
- * opted-in message channel, reserves its delivery. A repeat of the same key returns the existing
- * row and only fills in a missing delivery — an opt-in gained later still gets its send.
+ * Creates the notification (natural-key upsert on user + `dedupeKey`) and reserves a delivery
+ * per channel the user is opted in to. A repeat of the same key returns the existing row and
+ * only fills in a missing delivery — an opt-in gained later still gets its send — unless the
+ * user already read the notification: re-firing a read event sends nothing.
  */
 export const notify = internalZodMutation({
   args: NotifyMutationArgsSchema,
@@ -49,44 +51,20 @@ export const notify = internalZodMutation({
       .unique();
     const notificationId =
       known?._id ?? (await ctx.db.insert('userNotifications', { ...notification, readAt: null }));
-    if (await hasOptedInChannel(ctx, notification.userId))
-      await reserveDelivery(ctx, notificationId, notification.userId);
+    if (known !== null && known.readAt !== null) return notificationId;
+    for (const channel of await optedInChannels(ctx, notification.userId))
+      await reserveDelivery(ctx, notificationId, notification.userId, channel);
     return notificationId;
   },
 });
 
-/** A `userMessageChannels` row for the channel, opted in and never opted out. */
-async function hasOptedInChannel(ctx: MutationCtx, userId: GenericId<'users'>) {
-  const channel = await ctx.db
+/** The `userMessageChannels` rows for the user, opted in and never opted out. */
+async function optedInChannels(ctx: MutationCtx, userId: GenericId<'users'>) {
+  const channels = await ctx.db
     .query('userMessageChannels')
-    .withIndex('by_user_and_channel', (index) =>
-      index.eq('userId', userId).eq('channel', 'telegram'),
-    )
-    .unique();
-  return channel !== null && channel.optOutAt === null;
-}
-
-/** Reserves the Telegram delivery once (outbox pattern); a second call finds it and stops. */
-async function reserveDelivery(
-  ctx: MutationCtx,
-  notificationId: Id<'userNotifications'>,
-  userId: GenericId<'users'>,
-) {
-  const known = await ctx.db
-    .query('notificationDeliveries')
-    .withIndex('by_notification_and_channel', (index) =>
-      index.eq('notificationId', notificationId).eq('channel', 'telegram'),
-    )
-    .unique();
-  if (known) return;
-  await ctx.db.insert('notificationDeliveries', {
-    notificationId,
-    userId,
-    channel: 'telegram',
-    status: 'sending',
-    attempts: 0,
-    sendingSince: null,
-  });
+    .withIndex('by_user_and_channel', (index) => index.eq('userId', userId))
+    .collect();
+  return channels.filter((channel) => channel.optOutAt === null).map((channel) => channel.channel);
 }
 
 const GetUserNotificationQueryArgsSchema = z.object({
@@ -122,7 +100,8 @@ export const markRead = internalZodMutation({
 
 const systemFields = {
   _id: documentId('userNotifications'),
-  _creationTime: requiredInstant,
+  /** Convex's own timestamp: a `number`, not guaranteed to land on a whole millisecond. */
+  _creationTime: z.number().nonnegative(),
 };
 const readState = { readAt: requiredInstant.nullable() };
 
