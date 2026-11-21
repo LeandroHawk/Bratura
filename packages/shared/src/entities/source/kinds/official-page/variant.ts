@@ -112,6 +112,20 @@ export const OfficialPageDiscoverySchema = z.discriminatedUnion('hops', [
      */
     headingClass: cssClassName.optional(),
     /**
+     * Only `headingClass` titles a call: the `<h1-6>` inside each item name its parts (Volta
+     * Redonda, 2026-11-20: an accordion item per call, "EDITAL" and "HABILITAÇÃO" headings inside
+     * it), which would split every call into nameless ones.
+     */
+    headingClassOnly: z.boolean().optional(),
+    /**
+     * A heading other than `<h1-6>` (`headingClass`, `boldParagraphIsHeading`) is titled by its
+     * text before its first link: a table row titles its
+     * call and also holds the notice's link and a status (FCMS, 2026-11-20: `<tr
+     * class="consulta-row">` … "Acessar proposta Em andamento"), which would rename the call on
+     * every status change.
+     */
+    headingEndsAtFirstLink: z.boolean().optional(),
+    /**
      * A paragraph that opens in bold titles each call, where the page has no heading or class for
      * it (RS Sedac: `<p><strong>EDITAL SEDAC nº 38/2026 FAC RS ECOSSISTEMAS…</strong></p>`, then
      * a summary and a link reading only "EDITAL"). Ignored with `headingClass`.

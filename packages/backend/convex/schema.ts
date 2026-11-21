@@ -3,6 +3,7 @@ import { rateLimitTables } from 'convex-helpers/server/rateLimit';
 import { zodToConvex } from 'convex-helpers/server/zod4';
 import { CallNoticeSchema } from '@bratura/shared/entities/call-notice/entity';
 import { CallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-document/entity';
+import { CallNoticeDocumentTextSchema } from '@bratura/shared/entities/call-notice-document-text/entity';
 import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
 import { IngestionRunSchema } from '@bratura/shared/entities/ingestion-run/entity';
 import { NotificationDeliverySchema } from '@bratura/shared/entities/notification-delivery/entity';
@@ -19,10 +20,17 @@ export default defineSchema({
     .index('by_is_active', ['isActive']),
   callNotices: defineTable(zodToConvex(CallNoticeSchema))
     .index('by_source_and_external_id', ['sourceId', 'externalId'])
-    .index('by_registration_closes', ['registrationCloses.at']),
+    .index('by_closed_when_first_seen_and_registration_closes', [
+      'closedWhenFirstSeen',
+      'registrationCloses.at',
+    ]),
   callNoticeDocuments: defineTable(zodToConvex(CallNoticeDocumentSchema))
     .index('by_call_notice_and_url', ['callNoticeId', 'url'])
     .index('by_status', ['status']),
+  callNoticeDocumentTexts: defineTable(zodToConvex(CallNoticeDocumentTextSchema)).index(
+    'by_call_notice_document',
+    ['callNoticeDocumentId'],
+  ),
   callNoticeExtractions: defineTable(zodToConvex(CallNoticeExtractionSchema)).index(
     'by_call_notice',
     ['callNoticeId'],

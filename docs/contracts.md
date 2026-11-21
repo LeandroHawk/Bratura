@@ -110,6 +110,7 @@ packages/shared/src/entities/call-notice/
   dto/                      who reads, one folder per port (§2)
     bratura-portal/  telegram/                              (later)
 packages/shared/src/entities/call-notice-document/  one row per document read (its own table)
+packages/shared/src/entities/call-notice-document-text/  its text, one row per read (its own table)
 packages/shared/src/entities/call-notice-extraction/  one row per call extracted (its own table)
 
 packages/backend/convex/    a root file is a door (Convex functions); model/ is what doors share
@@ -118,7 +119,8 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
   ingestion.ts              the process, not an entity: the daily schedule, one action per
                             source kind, the run lease (the only writer of `ingestionRuns`)
   documents.ts              which documents are worth credits, the read by hand through
-                            model/firecrawl, the only writer of `callNoticeDocuments`
+                            model/firecrawl, the only writer of `callNoticeDocuments` and
+                            `callNoticeDocumentTexts`
   model/
     ingestion/runSourceIngestion.ts  the loop every kind shares: lease, parse, record, count, close
     mapasCulturais/         the Mapas reader: client, edge Zod (payload.ts), listing, date

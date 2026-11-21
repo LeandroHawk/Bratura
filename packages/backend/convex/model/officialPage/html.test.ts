@@ -12,6 +12,16 @@ describe('linksOfHtml', () => {
     ]);
   });
 
+  test('a link opened inside another closes it, as a browser does (Campo Grande)', () => {
+    const html = `<a class="wp-block-nwe-link" href="/sectur/plano/"><figure><a href="/fundac/fmic-2026/"><img alt=""></a></figure></a>
+      <a href="/e.pdf">PDF</a>`;
+    expect(linksOfHtml(html, page)).toEqual([
+      { url: 'https://www.ba.gov.br/sectur/plano/', label: '' },
+      { url: 'https://www.ba.gov.br/fundac/fmic-2026/', label: '' },
+      { url: 'https://www.ba.gov.br/e.pdf', label: 'PDF' },
+    ]);
+  });
+
   test('resolves relative links, decodes the text and keeps page order', () => {
     const html = `
       <a href="/fundacaocultural/edital-0222026-apoio">EDITAL 022/2026 &ndash; <b>APOIO</b>&nbsp;A ESPETÁCULOS</a>
@@ -256,6 +266,32 @@ describe('sectionsOfHtml', () => {
     ]);
   });
 
+  test('a heading-class table row is titled by its text before its first link when asked: FCMS', () => {
+    const page = 'https://www.fundacaodecultura.ms.gov.br/informativos/consultas/';
+    const html = [
+      '<tr class="consulta-row"><td><strong></strong></td><td>Prêmio Guadakan de cinema</td>',
+      '<td><a href="/wp-content/uploads/2026/10/Guadakan.pdf">Acessar proposta</a><br> Em andamento</td></tr>',
+      '<tr><td>*Observação: <a href="/wp-content/uploads/2026/10/Anexos.docx">Anexos</a></td></tr>',
+    ].join('');
+    const options = { headingClass: 'consulta-row', headingEndsAtFirstLink: true };
+    expect(sectionsOfHtml(html, page, options)).toEqual([
+      {
+        heading: 'Prêmio Guadakan de cinema',
+        links: [
+          {
+            url: 'https://www.fundacaodecultura.ms.gov.br/wp-content/uploads/2026/10/Guadakan.pdf',
+            label: 'Acessar proposta',
+          },
+          {
+            url: 'https://www.fundacaodecultura.ms.gov.br/wp-content/uploads/2026/10/Anexos.docx',
+            label: 'Anexos',
+          },
+        ],
+        text: 'Acessar proposta Em andamento *Observação: Anexos',
+      },
+    ]);
+  });
+
   test("an element of the heading class titles a section too: Recife's in-page link, Spcine's button", () => {
     const page = 'https://www.culturarecife.com.br/public/home.php';
     const html = [
@@ -295,5 +331,27 @@ describe('sectionsOfHtml', () => {
         ],
       },
     ]);
+  });
+});
+
+describe('sectionsOfHtml: only the class titles a call (Volta Redonda)', () => {
+  test('the <h1-6> inside an accordion item are its parts, not calls', () => {
+    const page = 'https://pnab.voltaredonda.rj.gov.br/ciclo-2/';
+    const html = [
+      '<summary><div class="e-n-accordion-item-title-text">EDITAL CULTURA VIVA FOMENTO</div></summary>',
+      '<h4>EDITAL</h4><a href="/wp-content/uploads/2026/10/edital.pdf">EDITAL</a>',
+      '<h4>HABILITAÇÃO</h4><a href="/wp-content/uploads/2026/10/hab.pdf">Resultado</a>',
+    ].join('');
+    const headings = (headingClassOnly?: boolean) =>
+      sectionsOfHtml(html, page, {
+        headingClass: 'e-n-accordion-item-title-text',
+        ...(headingClassOnly ? { headingClassOnly } : {}),
+      }).map(({ heading, links }) => [heading, links.length]);
+    expect(headings()).toEqual([
+      ['EDITAL CULTURA VIVA FOMENTO', 0],
+      ['EDITAL', 1],
+      ['HABILITAÇÃO', 1],
+    ]);
+    expect(headings(true)).toEqual([['EDITAL CULTURA VIVA FOMENTO', 2]]);
   });
 });

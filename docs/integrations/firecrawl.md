@@ -46,7 +46,9 @@ The team's draft of this flow also stored an embedding per call; matching is rul
    scrape: an unchanged page spends no Gemini call; an amended deadline triggers a new extraction and
    an alert ("o prazo mudou").
 4. **Provenance.** Store with each call notice the `sourceUrl`, `scrapedAt`, the Markdown hash and
-   the verbatim quote per extracted field.
+   the verbatim quote per extracted field. The Markdown itself goes to `callNoticeDocumentTexts`,
+   one row per read document, apart from the small row the queues read (`docs/architecture.md`,
+   The database is Convex).
 5. **Long batches without hitting Convex action limits.** Async `/batch/scrape` or `/crawl` with a
    **webhook** (`page`, `completed`) into a Convex HTTP action in `http.ts`. This postpones the
    `apps/crawler` worker of `docs/architecture.md` §1.
@@ -75,8 +77,21 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   portfolio is scored: only there). **Never** results, rankings or lists of applicants (personal
   data, ruled out by either name), nor the forms an applicant fills in. A call whose notice no name
   identifies is left for the admin review. Rules: `model/callNoticeDocuments/selection.ts`.
-- **A closed call is read last, and not a year after it closed.** An official page that prints its
-  close in a registration sentence ("inscrições … até 25 de novembro de 2026") gives the call its
+- **A call closed when first seen is recorded, not read** (user, 2026-11-20): the database holds
+  every call of the year (Mapas asks for all since 1 January) for volume and yearly numbers, and
+  reading them all would spend the credits. Neither queue (`readPendingDocuments`,
+  `extractPendingCallNotices`) takes a call whose close is before its `firstSeenAt`, nor one an
+  official page listed with a result already posted (`resultPosted`: many such pages print no
+  close). `recordCallNotice` stores the rule (`isClosedAsOf`, `model/callNoticeDocuments/selection.ts`)
+  as the row's `closedWhenFirstSeen`: a call found open stays open; one found closed reopens only
+  when a listing shows an extension (a close past the day it was found, and no result posted) — a
+  close or result missing from one run never reopens it. The read queue reads through
+  an index on it, so closed calls are never loaded (a year of them would pass a query's 8 MiB);
+  rows from before the flag are set by `callNotices:backfillClosedWhenFirstSeen`. A sample picked by hand is read with `documents:readChosenCallNotices` (up to 50
+  `callNoticeIds` and a credit ceiling, same rules, robots and lease) and extracted with
+  `extractPendingCallNotices` given the same `callNoticeIds`.
+- **A call tracked while open is read last once closed, and not a year after it closed.** An
+  official page that prints its close in a registration sentence ("inscrições … até 25 de novembro de 2026") gives the call its
   `registrationCloses` for free (`model/officialPage/registrationClose.ts`). Until 2026-11-20 a
   closed call was not read at all; the user reversed that for product research, with credits to
   spare. A close written without its year is not used (Secec-RJ prints 11 of 13
@@ -94,7 +109,10 @@ document read stores it as the `outOfCredits` failure of the document it was rea
   `formats: ['rawHtml']` and `location: { country: 'BR' }` returned Pernambuco's and Sergipe's Mapas
   API JSON intact in 2–3 s and Ponta Grossa's listing in 6 s, while without the location Firecrawl
   failed like Convex. For those sources the daily ingestion fetches the listing (and each call page)
-  through Firecrawl, 1 credit per page per day: 6 sources on 2026-11-17 (São Bernardo and Maringá added), about 6 credits a day.
+  through Firecrawl, 1 credit per page per day (a Mapas API page holds 250 opportunities of the year): 10 sources on 2026-11-20 — 5 Mapas instances, one page each (Pernambuco's whole year is 95 opportunities), and 5 official pages, a credit per listing and call page each day (São Luís alone up to ~17).
+  Recording closed official-page calls added no page to the 5 official pages read from Brazil
+  (measured 2026-11-20: same pages before and after): a call page was already opened to see its
+  result.
   Those reads ask `maxAge: 0` (the default cache would answer a listing up to two days old), keep
   the caller's timeout (30 s a page, 60 s for Mapas; Firecrawl's own `timeout` is 10 s shorter so
   its error arrives first), are spaced 6.5 s apart and retried once after a 429, as document reads

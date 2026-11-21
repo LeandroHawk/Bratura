@@ -26,5 +26,6 @@ export function callNoticeListingFromOfficialPageCall(
     ),
     registrationOpens: null,
     registrationCloses: call.registrationCloses,
+    ...(call.resultPosted && { resultPosted: true }),
   };
 }

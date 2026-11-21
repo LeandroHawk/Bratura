@@ -2,6 +2,7 @@ import { convexTest } from 'convex-test';
 import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fields';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 import { readDocumentKeysPageSize } from './extraction';
 import schema from './schema';
 import { federalMapasSource } from './model/sources/registry';
@@ -12,8 +13,11 @@ const notice = 'https://mapacultural.secult.ce.gov.br/files/opportunity/8498/edi
 const markdown =
   'O valor total deste edital é de **R$ 160.000,00**.\nInscrições até 20 de novembro de 2026.';
 
-async function withReadCallNotice(closesInDays = 9, amendmentsReadBefore = 0) {
-  const t = convexTest(schema, modules);
+async function withReadCallNotice(
+  closesInDays = 9,
+  amendmentsReadBefore = 0,
+  t = convexTest(schema, modules),
+) {
   const sourceId = await t.run((ctx) => ctx.db.insert('sources', federalMapasSource));
   const { callNoticeId } = await t.mutation(internal.callNotices.recordCallNotice, {
     sourceId,
@@ -30,17 +34,18 @@ async function withReadCallNotice(closesInDays = 9, amendmentsReadBefore = 0) {
     },
   });
   await t.run(async (ctx) => {
-    for (let index = 0; index < amendmentsReadBefore; index++)
-      await ctx.db.insert('callNoticeDocuments', {
+    for (let index = 0; index < amendmentsReadBefore; index++) {
+      const callNoticeDocumentId = await ctx.db.insert('callNoticeDocuments', {
         callNoticeId,
         url: `${notice}?amendment=${index}`,
         role: 'amendment',
         status: 'read',
-        markdown,
         markdownHash: 'b'.repeat(64),
         readAt: Date.now(),
         creditsUsed: 1,
       });
+      await ctx.db.insert('callNoticeDocumentTexts', { callNoticeDocumentId, markdown });
+    }
   });
   await t.mutation(internal.documents.recordDocumentRead, {
     callNoticeId,
@@ -143,11 +148,79 @@ describe('extractPendingCallNotices', () => {
     expect(await extractPending(t)).toMatchObject({ extracted: 1 });
   });
 
-  test('a closed call is extracted too: what it asked still counts', async () => {
+  test('a call whose input cannot be built is skipped and counted; the run goes on to the next', async () => {
+    const { t, callNoticeId: broken } = await withReadCallNotice(2);
+    await withReadCallNotice(9, 0, t);
+    // A read document left with no text anywhere (an out-of-band edit): its call comes first.
+    await t.run(async (ctx) => {
+      const documents = await ctx.db.query('callNoticeDocuments').collect();
+      const document = documents.find((stored) => stored.callNoticeId === broken)!;
+      const texts = await ctx.db.query('callNoticeDocumentTexts').collect();
+      const text = texts.find((stored) => stored.callNoticeDocumentId === document._id)!;
+      await ctx.db.delete(text._id);
+    });
+    modelAnswers({});
+    expect(await extractPending(t)).toMatchObject({ extracted: 1, failed: 1, left: 0 });
+    const extracted = await extractionsOf(t);
+    expect(extracted.map(({ callNoticeId }) => callNoticeId)).not.toContain(broken);
+  });
+
+  test('a call seen open and closed since is extracted too: what it asked still counts', async () => {
     const { t, callNoticeId } = await withReadCallNotice(-1);
+    await t.run((ctx) =>
+      ctx.db.patch(callNoticeId, {
+        firstSeenAt: Date.now() - 10 * day,
+        closedWhenFirstSeen: false,
+      }),
+    );
     expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
       callNoticeId,
     ]);
+  });
+
+  test('a call stored as closed when first seen (a result posted, no close) is extracted only when picked by hand', async () => {
+    const { t, callNoticeId } = await withReadCallNotice();
+    await t.run((ctx) => ctx.db.patch(callNoticeId, { closedWhenFirstSeen: true }));
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);
+    expect(
+      await t.action(internal.extraction.listCallNoticesToExtract, {
+        callNoticeIds: [callNoticeId],
+      }),
+    ).toEqual([callNoticeId]);
+  });
+
+  test('a call closed when first seen is extracted only when picked by hand', async () => {
+    const { t, callNoticeId } = await withReadCallNotice(-1);
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([]);
+
+    modelAnswers({});
+    const picked = { limit: 10, callNoticeIds: [callNoticeId] };
+    expect(await t.action(internal.extraction.extractPendingCallNotices, picked)).toMatchObject({
+      extracted: 1,
+      left: 0,
+    });
+    expect(await extractionsOf(t)).toMatchObject([{ callNoticeId }]);
+  });
+
+  test('picked by hand, only the calls picked are extracted', async () => {
+    const { t, callNoticeId } = await withReadCallNotice();
+    const known = await t.run((ctx) => ctx.db.get(callNoticeId));
+    const { callNoticeId: other } = await t.mutation(internal.callNotices.recordCallNotice, {
+      sourceId: known!.sourceId,
+      externalId: 'other',
+      title: 'Outro edital',
+      summary: null,
+      officialUrl: 'https://mapacultural.secult.ce.gov.br/oportunidade/9999/',
+      documentUrls: [],
+      registrationOpens: null,
+      registrationCloses: null,
+    });
+    expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
+      callNoticeId,
+    ]);
+    expect(
+      await t.action(internal.extraction.listCallNoticesToExtract, { callNoticeIds: [other] }),
+    ).toEqual([]);
   });
 
   test('a call notice whose document is past the first page of read documents is listed', async () => {
@@ -155,5 +228,49 @@ describe('extractPendingCallNotices', () => {
     expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
       callNoticeId,
     ]);
+  });
+
+  describe('reads a text only where it is used', () => {
+    const limited = () =>
+      convexTest({ schema, modules, transactionLimits: { bytesRead: 64 * 1024 } });
+    const longAmendment = (callNoticeId: Id<'callNotices'>) => ({
+      callNoticeId,
+      url: `${notice}?amendment=long`,
+      role: 'amendment' as const,
+      markdown: 'x'.repeat(300_000),
+      markdownHash: 'c'.repeat(64),
+      creditsUsed: 1,
+    });
+
+    test('the extraction queue reads document keys, never their text', async () => {
+      const { t, callNoticeId } = await withReadCallNotice(9, 0, limited());
+      await t.mutation(internal.documents.recordDocumentRead, longAmendment(callNoticeId));
+      expect(await t.action(internal.extraction.listCallNoticesToExtract, {})).toEqual([
+        callNoticeId,
+      ]);
+      // The limit does catch a text read: this call's own input passes it.
+      await expect(
+        t.query(internal.extraction.getExtractionInput, { callNoticeId }),
+      ).rejects.toThrow(/bytes/i);
+    });
+
+    test("a call's extraction input holds its own texts only", async () => {
+      const { t, callNoticeId } = await withReadCallNotice(9, 0, limited());
+      const known = await t.run((ctx) => ctx.db.get(callNoticeId));
+      const { callNoticeId: other } = await t.mutation(internal.callNotices.recordCallNotice, {
+        sourceId: known!.sourceId,
+        externalId: 'other',
+        title: 'Outro edital',
+        summary: null,
+        officialUrl: 'https://mapacultural.secult.ce.gov.br/oportunidade/9999/',
+        documentUrls: [],
+        registrationOpens: null,
+        registrationCloses: null,
+      });
+      await t.mutation(internal.documents.recordDocumentRead, longAmendment(other));
+      expect(await t.query(internal.extraction.getExtractionInput, { callNoticeId })).toEqual([
+        { url: notice, role: 'callNotice', markdown, markdownHash: 'a'.repeat(64) },
+      ]);
+    });
   });
 });

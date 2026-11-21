@@ -2,7 +2,10 @@ import { ianaTimeZone } from '@bratura/shared/primitives/code/time/time-zone/fie
 import { describe, expect, test } from 'vitest';
 import {
   callNoticeDocumentRole,
+  closedWhenFirstSeen,
+  closedWhenFirstSeenToStore,
   documentsWorthReading,
+  isClosedAsOf,
   postsResult,
   queueOrder,
   reasonToSkipReadingDocuments,
@@ -407,5 +410,105 @@ describe('queueOrder', () => {
       .sort(queueOrder(now))
       .map(({ name }) => name);
     expect(ordered).toEqual(['sooner', 'later', 'undated', 'closedYesterday', 'closedLongAgo']);
+  });
+});
+
+describe('isClosedAsOf', () => {
+  test('a call found after its close, never one found open nor one with no close', () => {
+    expect(isClosedAsOf({ registrationCloses: closingIn(-day) }, now)).toBe(true);
+    expect(isClosedAsOf({ registrationCloses: closingIn(-day) }, now - 2 * day)).toBe(false);
+    expect(isClosedAsOf({ registrationCloses: null }, now)).toBe(false);
+  });
+
+  test('a call with a result posted, even with no close or a later one', () => {
+    for (const registrationCloses of [null, closingIn(day)]) {
+      expect(isClosedAsOf({ registrationCloses, resultPosted: true }, now)).toBe(true);
+      expect(isClosedAsOf({ registrationCloses, resultPosted: false }, now)).toBe(false);
+    }
+  });
+});
+
+describe('closedWhenFirstSeen', () => {
+  test('reads the stored flag, whatever the close says', () => {
+    const stored = { registrationCloses: closingIn(-day), firstSeenAt: now };
+    expect(closedWhenFirstSeen({ ...stored, closedWhenFirstSeen: false })).toBe(false);
+    expect(
+      closedWhenFirstSeen({ ...stored, registrationCloses: null, closedWhenFirstSeen: true }),
+    ).toBe(true);
+  });
+
+  test('a row from before the flag, by its close alone', () => {
+    expect(closedWhenFirstSeen({ registrationCloses: closingIn(-day), firstSeenAt: now })).toBe(
+      true,
+    );
+    expect(closedWhenFirstSeen({ registrationCloses: null, firstSeenAt: now })).toBe(false);
+  });
+});
+
+describe('closedWhenFirstSeenToStore', () => {
+  const known = (closedWhenFirstSeen?: boolean) => ({
+    registrationCloses: closingIn(-day),
+    firstSeenAt: now - 10 * day,
+    ...(closedWhenFirstSeen !== undefined && { closedWhenFirstSeen }),
+  });
+
+  test('a new call: the rule at this moment', () => {
+    expect(closedWhenFirstSeenToStore({ registrationCloses: closingIn(-day) }, null, now)).toBe(
+      true,
+    );
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: null, resultPosted: true }, null, now),
+    ).toBe(true);
+    expect(closedWhenFirstSeenToStore({ registrationCloses: closingIn(day) }, null, now)).toBe(
+      false,
+    );
+  });
+
+  test('one found open stays so, closed since or posting a result: it is read last', () => {
+    const closedNow = { registrationCloses: closingIn(-20 * day), resultPosted: true };
+    expect(closedWhenFirstSeenToStore(closedNow, known(false), now)).toBe(false);
+  });
+
+  test('one found closed reopens when its close moves past the day it was found, unless a result is posted', () => {
+    const extended = { registrationCloses: closingIn(day) };
+    expect(closedWhenFirstSeenToStore(extended, known(true), now)).toBe(false);
+    expect(closedWhenFirstSeenToStore({ ...extended, resultPosted: true }, known(true), now)).toBe(
+      true,
+    );
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: closingIn(-20 * day) }, known(true), now),
+    ).toBe(true);
+  });
+
+  test('a row from before the flag: by its close alone, a result posted since not counted', () => {
+    const open = { ...known(), registrationCloses: closingIn(day) };
+    expect(
+      closedWhenFirstSeenToStore({ registrationCloses: null, resultPosted: true }, open, now),
+    ).toBe(false);
+  });
+});
+
+describe('the re-sweep sources (2026-11-20)', () => {
+  const files = 'https://piracicaba.sp.gov.br/wp-content/uploads/2026/04';
+  test('a notice published as its draft is the notice (Piracicaba), a contract draft is not', () => {
+    expect(
+      callNoticeDocumentRole(`${files}/Edital-1-2026-Selecao.pdf`, 'Minuta do Edital 1/2026'),
+    ).toBe('callNotice');
+    expect(
+      callNoticeDocumentRole(`${files}/a.pdf`, 'Anexo 5 – Minuta do Termo de Execução Cultural'),
+    ).toBeNull();
+    expect(callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Termo de Execução')).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Edital 01/2026 para consulta pública'),
+    ).toBeNull();
+  });
+
+  test('a "seleção final" posts a result (Santa Maria)', () => {
+    expect(
+      postsResult(
+        'https://www.santamaria.rs.gov.br/arquivos/baixar-arquivo/conteudo/D08-4874.pdf',
+        'SELEÇÃO FINAL - EDITAL N 004.2026 – PREMIAÇÃO DE PONTOS DE CULTURA',
+      ),
+    ).toBe(true);
   });
 });
