@@ -201,10 +201,14 @@ const namesNoCall = (label: string) =>
 
 /**
  * A listing card saying registration is over (2026-11-18: Secult-RN Mais Cultura "Inscrições
- * encerradas" on all 47 PNAB cards, FCP-PA "Situação: Encerrada"): its page is never opened.
+ * encerradas" on all 47 PNAB cards, FCP-PA "Situação: Encerrada"), or that the call is void
+ * (Várzea Grande, 2026-11-20: "Edital Nº 001/2026 - CIRCULARTE - (ANULADO)"): its page is never
+ * opened.
  */
 const saysRegistrationClosed = (label: string) =>
-  /\b(inscricoes encerradas|situacao: encerrada)\b/.test(plainText(label));
+  /\b(inscricoes encerradas|situacao: encerrada|anulad[oa]|cancelad[oa]|revogad[oa])\b/.test(
+    plainText(label),
+  );
 
 /**
  * A call page whose own text is the notice (Badesc, 2026-11-17: the rules in the post, applications
@@ -544,7 +548,11 @@ export function callNumberOf(label: string): CallNumber | null {
   const text = plainText(label);
   // Not a date: "31/07/25" is no call number, so no digit or `/` may touch the pair.
   for (const match of text.matchAll(/(?<![\d/.])(\d{1,3})\s*[/.-]\s*(20\d{2}|\d{2})(?![\d/.])/g)) {
-    const before = text.slice(Math.max(0, match.index - 50), match.index);
+    // A result names its call's number after "seleção final" (Santa Maria, 2026-11-20: "SELEÇÃO
+    // FINAL - EDITAL N 004.2026"): the call is the edital, not a "seleção".
+    const before = text
+      .slice(Math.max(0, match.index - 50), match.index)
+      .replace(/selecao final/g, '');
     const kind = callKinds.find((word) => before.includes(word));
     if (!kind) continue;
     const year = Number(match[2]!.length === 2 ? `20${match[2]}` : match[2]);

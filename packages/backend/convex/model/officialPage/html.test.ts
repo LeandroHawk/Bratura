@@ -333,3 +333,25 @@ describe('sectionsOfHtml', () => {
     ]);
   });
 });
+
+describe('sectionsOfHtml: only the class titles a call (Volta Redonda)', () => {
+  test('the <h1-6> inside an accordion item are its parts, not calls', () => {
+    const page = 'https://pnab.voltaredonda.rj.gov.br/ciclo-2/';
+    const html = [
+      '<summary><div class="e-n-accordion-item-title-text">EDITAL CULTURA VIVA FOMENTO</div></summary>',
+      '<h4>EDITAL</h4><a href="/wp-content/uploads/2026/10/edital.pdf">EDITAL</a>',
+      '<h4>HABILITAÇÃO</h4><a href="/wp-content/uploads/2026/10/hab.pdf">Resultado</a>',
+    ].join('');
+    const headings = (headingClassOnly?: boolean) =>
+      sectionsOfHtml(html, page, {
+        headingClass: 'e-n-accordion-item-title-text',
+        ...(headingClassOnly ? { headingClassOnly } : {}),
+      }).map(({ heading, links }) => [heading, links.length]);
+    expect(headings()).toEqual([
+      ['EDITAL CULTURA VIVA FOMENTO', 0],
+      ['EDITAL', 1],
+      ['HABILITAÇÃO', 1],
+    ]);
+    expect(headings(true)).toEqual([['EDITAL CULTURA VIVA FOMENTO', 2]]);
+  });
+});

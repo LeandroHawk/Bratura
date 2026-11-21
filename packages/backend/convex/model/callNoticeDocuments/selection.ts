@@ -139,10 +139,11 @@ export function reasonToSkipReadingDocuments(
 
 /**
  * A result posted about a call: it names who was picked, and says registration is over. Duque de
- * Caxias posts them as "Lista preliminar/final de seleção" (2026-11-15).
+ * Caxias posts them as "Lista preliminar/final de seleção" (2026-11-15), Santa Maria as "SELEÇÃO
+ * FINAL - EDITAL N 004.2026" (2026-11-20).
  */
 const resultName =
-  /resultado|homologa|classificad|selecionad|suplente|(^|-)lista-(preliminar|final)/;
+  /resultado|homologa|classificad|selecionad|suplente|(^|-)lista-(preliminar|final)|selecao-final/;
 
 /**
  * Never read, whatever else the name says: results, rankings and lists of applicants carry personal
@@ -181,6 +182,10 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
     'amendment',
     /errata|aditivo|adendo|prorrogacao|reabertura|retifica|cronograma-(atualizado|alterado|retificado)/,
   ],
+  // The published notice under its draft's name (Piracicaba, 2026-11-20: "Minuta do Edital 1/2026"
+  // for each of its 6 calls; Cachoeiro's "Minuta do Edital"), before the forms rule's `minuta` (a
+  // contract's draft). A draft put to public consultation is not the call yet (Guarapuava).
+  ['callNotice', new RegExp(`^minuta-d[oe]-(${noticeWords})(?!.*(anexo|consulta))`)],
   // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
   // A council's resolution can be the rules (São Bernardo, Natal on Mapas, 2026-11-17).
   [

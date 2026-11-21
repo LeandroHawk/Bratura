@@ -487,3 +487,28 @@ describe('closedWhenFirstSeenToStore', () => {
     ).toBe(false);
   });
 });
+
+describe('the re-sweep sources (2026-11-20)', () => {
+  const files = 'https://piracicaba.sp.gov.br/wp-content/uploads/2026/04';
+  test('a notice published as its draft is the notice (Piracicaba), a contract draft is not', () => {
+    expect(
+      callNoticeDocumentRole(`${files}/Edital-1-2026-Selecao.pdf`, 'Minuta do Edital 1/2026'),
+    ).toBe('callNotice');
+    expect(
+      callNoticeDocumentRole(`${files}/a.pdf`, 'Anexo 5 – Minuta do Termo de Execução Cultural'),
+    ).toBeNull();
+    expect(callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Termo de Execução')).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Edital 01/2026 para consulta pública'),
+    ).toBeNull();
+  });
+
+  test('a "seleção final" posts a result (Santa Maria)', () => {
+    expect(
+      postsResult(
+        'https://www.santamaria.rs.gov.br/arquivos/baixar-arquivo/conteudo/D08-4874.pdf',
+        'SELEÇÃO FINAL - EDITAL N 004.2026 – PREMIAÇÃO DE PONTOS DE CULTURA',
+      ),
+    ).toBe(true);
+  });
+});
