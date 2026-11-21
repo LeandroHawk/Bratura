@@ -166,6 +166,7 @@ async function cardOfMatch(
     registrationCloses: callNotice.registrationCloses,
     firstSeenAt: callNotice.firstSeenAt,
     organizer: source.name,
+    isNew: callNotice.firstSeenAt >= now - newCallNoticeWithinDays * dayInMs,
     deadline,
     closesSoon:
       deadline === 'open' &&
@@ -358,6 +359,7 @@ export const callNoticeDetails = publicZodQuery({
       firstSeenAt: callNotice.firstSeenAt,
       lastSeenAt: callNotice.lastSeenAt,
       organizer: source.name,
+      isNew: callNotice.firstSeenAt >= now - newCallNoticeWithinDays * dayInMs,
       deadline,
       closesSoon:
         deadline === 'open' &&

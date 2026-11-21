@@ -225,6 +225,7 @@ describe('callNoticeCards', () => {
       organizer: federalMapasSource.name,
       deadline: 'open',
       closesSoon: true,
+      isNew: false,
       largestAmountPerProjectInCents: 2_000_000,
       artForms: ['crafts'],
       classification: 'eligible',

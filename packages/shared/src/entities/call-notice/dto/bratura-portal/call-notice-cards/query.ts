@@ -43,6 +43,8 @@ export const CallNoticeCardSchema = z.object({
   deadline: CallNoticeDeadlineEnum,
   /** Open, with the close a few days away: the server decides how few. */
   closesSoon: z.boolean(),
+  /** First seen a few days ago: the server decides how few. */
+  isNew: z.boolean(),
   largestAmountPerProjectInCents: MatchSchema.shape.largestAmountPerProjectInCents,
   artForms: z.array(ArtFormEnum),
   /** Never `eligible` for a closed call. */
