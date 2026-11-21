@@ -150,6 +150,30 @@ describe('callsOfCallPages', () => {
     ]);
   });
 
+  test('a call page the listing calls void is never opened (Várzea Grande)', async () => {
+    const listing = 'https://www.varzeagrande.mt.gov.br/arquivos/5513';
+    const fetchMock = siteAnswers({
+      [listing]: [
+        a('/arquivos/5514', 'Edital Nº 001/2026 - CIRCULARTE - (ANULADO)'),
+        a('/arquivos/5550', 'Edital Nº 003/2026 - CIRCUITO CULTURAL VG'),
+      ].join(''),
+      'https://www.varzeagrande.mt.gov.br/arquivos/5550': a(
+        '/storage/Arquivos/f1.pdf',
+        'Edital nº 003/2026 - CIRCUITO CULTURAL VG',
+      ),
+    });
+    const calls = await callsOf({
+      ...bahiaFuncebSource,
+      listingUrl: listing,
+      discovery: { hops: 'callPage', callPageUrlParts: ['/arquivos/'] },
+      documentUrlParts: ['/storage/Arquivos/'],
+    });
+    expect(calls.map(({ title }) => title)).toEqual(['Edital Nº 003/2026 - CIRCUITO CULTURAL VG']);
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).not.toContain(
+      'https://www.varzeagrande.mt.gov.br/arquivos/5514',
+    );
+  });
+
   test('opens a call posting results; one numbered before last year and other hosts are not fetched', async () => {
     const fetchMock = siteAnswers();
     await callsOf(bahiaFuncebSource);

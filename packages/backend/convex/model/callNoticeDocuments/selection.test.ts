@@ -498,6 +498,9 @@ describe('the re-sweep sources (2026-11-20)', () => {
       callNoticeDocumentRole(`${files}/a.pdf`, 'Anexo 5 – Minuta do Termo de Execução Cultural'),
     ).toBeNull();
     expect(callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Termo de Execução')).toBeNull();
+    expect(
+      callNoticeDocumentRole(`${files}/a.pdf`, 'Minuta do Edital 01/2026 para consulta pública'),
+    ).toBeNull();
   });
 
   test('a "seleção final" posts a result (Santa Maria)', () => {

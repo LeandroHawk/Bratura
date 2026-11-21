@@ -183,8 +183,9 @@ const documentRoleByName: [CallNoticeDocumentRole | null, RegExp][] = [
     /errata|aditivo|adendo|prorrogacao|reabertura|retifica|cronograma-(atualizado|alterado|retificado)/,
   ],
   // The published notice under its draft's name (Piracicaba, 2026-11-20: "Minuta do Edital 1/2026"
-  // for each of its 6 calls), before the forms rule's `minuta` (a contract's draft).
-  ['callNotice', new RegExp(`^minuta-d[oe]-(${noticeWords})(?!.*anexo)`)],
+  // for each of its 6 calls; Cachoeiro's "Minuta do Edital"), before the forms rule's `minuta` (a
+  // contract's draft). A draft put to public consultation is not the call yet (Guarapuava).
+  ['callNotice', new RegExp(`^minuta-d[oe]-(${noticeWords})(?!.*(anexo|consulta))`)],
   // Before the forms rule: a notice's own name may describe what it signs ("termo de execução").
   // A council's resolution can be the rules (São Bernardo, Natal on Mapas, 2026-11-17).
   [
