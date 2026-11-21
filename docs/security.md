@@ -34,6 +34,12 @@ from steering the LLM. Shapes and ports are in `docs/contracts.md`.
   called with, ignores an `update_id` it has already handled (the inbox pattern of
   `docs/architecture.md`, Idempotency and concurrency), and answers an unknown chat with the
   sign-up link only.
+- **The AbacatePay webhook trusts nothing either**: the shared secret and the HMAC-SHA256 over
+  the raw body are both checked in constant time before the body is parsed, the delivery's
+  `log_...` id dedupes retries into `billingWebhookDeliveries` before anything is applied, and
+  events are applied by the row's status, never by arrival order — a late `completed` cannot
+  reopen a `cancelled` subscription. Billing access comes only from these deliveries, never from
+  a browser returning from checkout (`docs/integrations/abacate-pay.md`).
 - **Paid or limited calls never run per user request.** Gemini and Firecrawl run in batch ingestion;
   a user action reads what is stored. Public queries are paginated, never an unbounded `collect()`.
 - **Messages out need opt-in** (a `userMessageChannels` row: destination, `optInAt`, `optOutAt`)
@@ -82,6 +88,9 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
 - **Personal data inside documents is not stored.** Call notice PDFs are public, but a *result*
   ("resultado final", lists of approved applicants) carries individuals' names and sometimes CPFs.
   Classification drops such documents before their text is stored (competition rule 6.8, LGPD).
+- **The payer's data stays with the billing provider.** Webhook payloads carry masked personal
+  fields (`customer`, `payerInformation`); the parse reads only the subscription and checkout ids
+  and amounts our rows need, so no payer data ever reaches a table.
 - **Our code fetches only what the team registered.** A Convex action calls `fetch` only on a
   registered source's `https` base URL, or, for an official page, an `https` page on its listing's
   own host, following a redirect only to `https` on that same host (`model/sourceHost/fetchOnSourceHost.ts`:

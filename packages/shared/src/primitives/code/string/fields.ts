@@ -18,3 +18,6 @@ export const requiredString = (length: TextLength = 'medium') =>
 /** Text a source may not give: `null` then, never an empty string, and the same ceiling rule. */
 export const nullableString = (length: TextLength = 'max') =>
   z.string().trim().max(textLengths[length]).nullable();
+
+/** A name in code, seeds and ops commands (`mapas-federal`, `demo-assoc`): a natural key. */
+export const requiredSlug = requiredString('short').regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
