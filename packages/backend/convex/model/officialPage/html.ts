@@ -143,7 +143,7 @@ function baseUrlOf(page: string, pageUrl: string) {
 /** What titles a section besides an `<h1-6>`: the source's `documentsUnderHeadings` options. */
 type OtherHeadings = Pick<
   Extract<OfficialPageSource['discovery'], { hops: 'documentsUnderHeadings' }>,
-  'headingClass' | 'headingEndsAtFirstLink' | 'boldParagraphIsHeading'
+  'headingClass' | 'headingClassOnly' | 'headingEndsAtFirstLink' | 'boldParagraphIsHeading'
 >;
 
 /**
@@ -162,9 +162,16 @@ type OtherHeadings = Pick<
 function* headingsAndLinksOf(
   html: string,
   pageUrl: string,
-  { headingClass, headingEndsAtFirstLink, boldParagraphIsHeading }: OtherHeadings = {},
+  {
+    headingClass,
+    headingClassOnly,
+    headingEndsAtFirstLink,
+    boldParagraphIsHeading,
+  }: OtherHeadings = {},
 ) {
   const page = withoutCode(html);
+  // `(?!)()` never matches: with `headingClassOnly`, an `<h1-6>` is plain text.
+  const standardHeading = headingClass && headingClassOnly ? '(?!)()' : '<(h[1-6])\\b[^>]*>';
   const baseUrl = baseUrlOf(page, pageUrl);
   // With neither, `(?!)` never matches and its group stays empty.
   const otherHeading = headingClass
@@ -178,7 +185,7 @@ function* headingsAndLinksOf(
   let previousLinkLabel = '';
   for (const match of page.matchAll(
     new RegExp(
-      `${otherHeading}|<a\\b[^>]*?\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+))[^>]*>([\\s\\S]*?)(?:</a>|(?=<a\\b))|<(h[1-6])\\b[^>]*>`,
+      `${otherHeading}|<a\\b[^>]*?\\bhref\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>"']+))[^>]*>([\\s\\S]*?)(?:</a>|(?=<a\\b))|${standardHeading}`,
       'gi',
     ),
   )) {

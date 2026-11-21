@@ -1253,6 +1253,10 @@ describe('callNumberOf', () => {
     ['EDITAL DE SELEÇÃO PÚBLICA Nº 001/2026 – SECMA', { kind: 'selecao', number: 1, year: 2026 }],
     ['EDITAL DE CHAMAMENTO PÚBLICO Nº 006.2024', { kind: 'chamamento', number: 6, year: 2024 }],
     ['PREGÃO ELETRÔNICO 044-2025 - SECMA', { kind: 'pregao', number: 44, year: 2025 }],
+    [
+      'SELEÇÃO FINAL - EDITAL N 004.2026 – PREMIAÇÃO DE PONTOS DE CULTURA',
+      { kind: 'edital', number: 4, year: 2026 },
+    ],
   ])('%s → %o', (label, number) => {
     expect(callNumberOf(label)).toEqual(number);
   });
