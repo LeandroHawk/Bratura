@@ -11,4 +11,12 @@ crons.daily(
   {},
 );
 
+// After the day's ingestion: a close may have moved and a paper of the profile may have expired.
+crons.daily(
+  'match every call for creators again',
+  { hourUTC: 10, minuteUTC: 0 },
+  internal.matching.recomputeMatches,
+  { cursor: null },
+);
+
 export default crons;

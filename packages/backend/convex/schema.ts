@@ -6,6 +6,7 @@ import { CallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-d
 import { CallNoticeDocumentTextSchema } from '@bratura/shared/entities/call-notice-document-text/entity';
 import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
 import { IngestionRunSchema } from '@bratura/shared/entities/ingestion-run/entity';
+import { MatchSchema } from '@bratura/shared/entities/match/entity';
 import { NotificationDeliverySchema } from '@bratura/shared/entities/notification-delivery/entity';
 import { SourceSchema } from '@bratura/shared/entities/source/entity';
 import { UserMessageChannelSchema } from '@bratura/shared/entities/user-message-channel/entity';
@@ -40,6 +41,13 @@ export default defineSchema({
     'sourceId',
     'status',
   ]),
+  // One profile today (the fictional creator); with `creators`, every index leads with the creator.
+  matches: defineTable(zodToConvex(MatchSchema))
+    .index('by_call_notice', ['callNoticeId'])
+    .index('by_closes', ['closesAtForOrdering'])
+    .index('by_classification_and_closes', ['classification', 'closesAtForOrdering'])
+    .index('by_largest_amount', ['largestAmountPerProjectInCents'])
+    .index('by_first_seen', ['callNoticeFirstSeenAt']),
   userNotifications: defineTable(zodToConvex(UserNotificationSchema)).index(
     'by_user_and_dedupe_key',
     ['userId', 'dedupeKey'],

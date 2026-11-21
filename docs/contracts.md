@@ -72,10 +72,17 @@ In a Next.js backend one wrapper (`withRoute`) declares auth, parses input, vali
 maps errors. In Bratura that is `packages/backend/convex/lib/builders.ts`: builders take Zod `args`
 and `returns`, parse both whole, and (once there is a caller) resolve auth before the handler.
 
-- **Auth is declared once, in the builder**: `publicQuery`, `creatorQuery`, `creatorMutation`,
-  `orgMemberQuery`, `adminMutation`, built in `packages/backend` beside the internal ones. The builder
-  resolves the caller and puts it in `ctx` (`ctx.creator`); a function picks a builder, it does not
-  check auth by hand. A public function is a visible choice (`publicQuery`), not a missing check.
+- **Auth is declared once, in the builder**: `publicZodQuery` (exists), then `creatorQuery`,
+  `creatorMutation`, `orgMemberQuery`, `adminMutation`, built in `packages/backend` beside the
+  internal ones. The builder resolves the caller and puts it in `ctx` (`ctx.creator`); a function
+  picks a builder, it does not check auth by hand. A public function is a visible choice
+  (`publicZodQuery`), not a missing check.
+- **`publicZodQuery` has no caller**: anyone with the deployment's URL may call it, so its handler
+  reads only what a visitor may see, a page at a time or through a bounded index range. Until the
+  sign-in exists (after 30/11) the call screens' reads are public and answer for one profile, the
+  fictional creator; "the full list needs the sign-in" is held by the web's demo sign-in only. When
+  `creators` exists, those reads move to `creatorQuery` and only `callNoticeHighlights` stays
+  public.
 - **Every function declares `args` and `returns`** from the DTOs above. The output check is what
   stops a read from leaking a field the whitelist left out.
 - **Errors**: a schema returns violations as data; the function decides what is terminal and throws
@@ -140,8 +147,9 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
   notificationDeliveries.ts how it left the site: the send outbox (the only writer of
                             `notificationDeliveries`)
   users.ts                  the user's only writer
-  telegram.ts  matching.ts                                  (telegram.ts is a skeleton; matching.ts
-                                                            comes later)
+  matching.ts               how each call fits the profile (the only writer of `matches`) and the
+                            call screens' reads
+  telegram.ts                                               (a skeleton)
 ```
 
 - **A source kind brings only what is its own** (`SourceReader` in `runSourceIngestion.ts`): how
