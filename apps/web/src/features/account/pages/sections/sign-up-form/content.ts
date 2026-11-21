@@ -1,0 +1,58 @@
+import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
+
+const ptBR = {
+  title: 'Crie seu cadastro',
+  lead: 'Uma vez só. Estes dados já entram no seu portfólio cultural: você não digita nada de novo depois.',
+  demoNotice:
+    'Versão de demonstração: o que você digitar fica só neste navegador, e a senha não é guardada.',
+  whoYouAre: 'Quem é você',
+  access: 'Seu acesso',
+  whereYouLive: 'Onde você mora',
+  fullName: 'Nome completo',
+  nationality: 'Nacionalidade',
+  profileType: 'Tipo de perfil',
+  mobilePhone: 'Celular',
+  mobilePhoneHint: 'Com DDD. É por ele que os avisos de prazo chegam no WhatsApp.',
+  cpf: 'CPF',
+  email: 'E-mail',
+  emailConfirmation: 'Confirme o e-mail',
+  password: 'Senha',
+  passwordHint: 'Pelo menos 8 caracteres.',
+  passwordConfirmation: 'Confirme a senha',
+  cep: 'CEP',
+  state: 'Estado',
+  city: 'Cidade',
+  submit: 'Criar meu cadastro',
+  haveAccount: 'Já tem cadastro?',
+  signIn: 'Entrar',
+};
+
+export const SIGN_UP_FORM_CONTENT: Record<Locale, typeof ptBR> = {
+  'pt-BR': ptBR,
+  en: {
+    title: 'Create your account',
+    lead: 'Only once. These details go straight into your cultural portfolio: you never type them again.',
+    demoNotice:
+      'Demo version: what you type stays in this browser only, and the password is not kept.',
+    whoYouAre: 'Who you are',
+    access: 'Your access',
+    whereYouLive: 'Where you live',
+    fullName: 'Full name',
+    nationality: 'Nationality',
+    profileType: 'Profile type',
+    mobilePhone: 'Mobile phone',
+    mobilePhoneHint: 'With the area code. Deadline alerts reach you on WhatsApp through it.',
+    cpf: 'CPF (Brazilian taxpayer number)',
+    email: 'E-mail',
+    emailConfirmation: 'Confirm the e-mail',
+    password: 'Password',
+    passwordHint: 'At least 8 characters.',
+    passwordConfirmation: 'Confirm the password',
+    cep: 'Postal code (CEP)',
+    state: 'State',
+    city: 'City',
+    submit: 'Create my account',
+    haveAccount: 'Already have an account?',
+    signIn: 'Sign in',
+  },
+};

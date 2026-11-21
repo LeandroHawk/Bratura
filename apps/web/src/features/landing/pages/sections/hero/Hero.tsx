@@ -2,7 +2,9 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { ButtonLink, Container } from '@bratura/ui';
 import { PageIntro } from '@/features/common/components/PageIntro';
 import { NewTabHint } from '@/features/common/components/NewTabHint';
-import { REPO_URL, TAGLINE } from '@/features/common/config/site';
+import { ROUTES } from '@/features/common/config/routes';
+import { REPO_URL, SHOWS_PROJECT_LINKS, TAGLINE } from '@/features/common/config/site';
+import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { HERO_CONTENT } from './content';
 import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
 import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
@@ -25,20 +27,34 @@ export function Hero({ locale }: { locale: Locale }) {
       >
         <ul className="flex flex-wrap gap-3">
           <li>
-            <ButtonLink href={`#${SECTION_IDS.howItWorks}`}>{content.howItWorks}</ButtonLink>
-          </li>
-          <li>
-            <ButtonLink href={REPO_URL} variant="ghost" target="_blank" rel="noreferrer">
-              {content.seeCode}
-              <NewTabHint locale={locale} />
+            <ButtonLink href={localizedPathFromLocale(locale, ROUTES.signUp)}>
+              {content.createPortfolio}
             </ButtonLink>
           </li>
           <li>
-            <ButtonLink href="/design" hrefLang="pt-BR" lang="en" variant="ghost">
-              Design system
+            <ButtonLink href={localizedPathFromLocale(locale, ROUTES.signIn)} variant="ghost">
+              {content.signIn}
             </ButtonLink>
           </li>
         </ul>
+        {SHOWS_PROJECT_LINKS && (
+          <ul className="flex flex-wrap gap-3">
+            <li>
+              <ButtonLink href={`#${SECTION_IDS.howItWorks}`}>{content.howItWorks}</ButtonLink>
+            </li>
+            <li>
+              <ButtonLink href={REPO_URL} variant="ghost" target="_blank" rel="noreferrer">
+                {content.seeCode}
+                <NewTabHint locale={locale} />
+              </ButtonLink>
+            </li>
+            <li>
+              <ButtonLink href="/design" hrefLang="pt-BR" lang="en" variant="ghost">
+                Design system
+              </ButtonLink>
+            </li>
+          </ul>
+        )}
       </PageIntro>
       <ExampleCall locale={locale} />
     </Container>

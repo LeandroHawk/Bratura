@@ -11,6 +11,12 @@ export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
 
 export const REPO_URL = 'https://github.com/LeandroHawk/Bratura';
 
+/**
+ * The landing's links from before the app existed (how it works, the repository, the design
+ * system): kept in the code for the team, not rendered for a visitor while this is false.
+ */
+export const SHOWS_PROJECT_LINKS: boolean = false;
+
 /** The slogan in each locale; the name, Bratura, is the same in all of them. */
 export const SITE_SLOGAN: Record<Locale, string> = {
   'pt-BR': SLOGAN,

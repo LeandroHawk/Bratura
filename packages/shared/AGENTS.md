@@ -8,6 +8,12 @@ Today it holds the locale, `requiredString`, `documentId`, and the entities of t
 tables: `source`, `call-notice`, `call-notice-document`, `call-notice-document-text`,
 `call-notice-extraction`, `ingestion-run`.
 
+⚠️ **`creator` and `portfolio-item` are here ahead of their tables**, with the portal DTOs of the
+call screens (`call-notice/dto/bratura-portal/`). Their only consumer today is the web, which keeps
+them in the browser (`features/common/data/demoStore.ts`) until the Convex tables and functions
+are written; then the tables are built from these same schemas. Change them with the backend's
+author before that.
+
 ```
 src/
   entities/<entity>/           has a table: identity, lifecycle, an owner      (with the backend)
@@ -124,8 +130,8 @@ silently carries less than the row. Name a subset when the same list appears a s
   against the contract schema and renders `error.message`; no message is written in a component.
   Re-describing a schema by hand on the front is how a sibling project ended up showing Zod's
   English default messages to Portuguese users.
-- ⚠️ **Open: messages in two languages.** "Text lives in the Zod declaration" and "copy exists in
-  pt-BR and en" meet at the first form. Decide then (`docs/architecture.md`, Open).
+- **Messages in two languages**: a field carries no text, a rule of our own names its message
+  (`validationMessage('cpf')`), and `src/messages/` has the text per locale (Messages, below).
 - **"If A then B exists"** → `z.discriminatedUnion` first. **"A compared with B"** (the
   registration window closes after it opens) → a `with…` function next to the entity that adds the
   `refine`, so both sides run one check (`withOrderedRegistrationWindow`). Never on the entity
@@ -157,7 +163,7 @@ and en copy: a Zod error map per locale (issue code and its numbers → text) an
 `params: { message: '<key>' }`. The map is applied where an error is shown (a form's parse, a
 caught `appError`), with the reader's locale. Zod's built-in `pt` locale is not used: it is
 European Portuguese and reads like a log ("Demasiado grande: esperava que o texto tivesse <= 5
-caracteres"). Born with the first form; until then only the team reads errors, raw.
+caracteres"). The web applies it in `useContractForm` (`features/common/hooks/`).
 
 ## Naming
 
