@@ -1,18 +1,16 @@
 import { z } from 'zod';
 import { MembershipSchema } from '@bratura/shared/entities/membership/entity';
-import { MembershipRoleEnum } from '@bratura/shared/entities/membership/enums/membership-role/enum';
 import { OrganizationSchema } from '@bratura/shared/entities/organization/entity';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
-import { requiredSlug, requiredString } from '@bratura/shared/primitives/code/string/fields';
 import { internalZodMutation, internalZodQuery } from './lib/builders';
 
 // `organizations` and `memberships`: who pays for the panel and who belongs to it
 // (`docs/product.md`, Who pays). Login makes creation a member action later; today rows are
 // written by hand for the demo (`docs/plan.md`). The only writer of both tables.
 
-const CreateOrganizationMutationArgsSchema = z.object({
-  slug: requiredSlug,
-  name: requiredString(),
+const CreateOrganizationMutationArgsSchema = OrganizationSchema.pick({
+  slug: true,
+  name: true,
 });
 const CreateOrganizationMutationReturnsSchema = documentId('organizations');
 
@@ -43,11 +41,7 @@ export const getOrganization = internalZodQuery({
   handler: async (ctx, { organizationId }) => await ctx.db.get(organizationId),
 });
 
-const AddOrganizationMemberMutationArgsSchema = z.object({
-  organizationId: documentId('organizations'),
-  userId: documentId('users'),
-  role: MembershipRoleEnum,
-});
+const AddOrganizationMemberMutationArgsSchema = MembershipSchema.omit({ createdAt: true });
 const AddOrganizationMemberMutationReturnsSchema = documentId('memberships');
 
 /**
@@ -75,20 +69,4 @@ export const addOrganizationMember = internalZodMutation({
       createdAt: Date.now(),
     });
   },
-});
-
-const ListOrganizationMembersQueryArgsSchema = z.object({
-  organizationId: documentId('organizations'),
-});
-const ListOrganizationMembersQueryReturnsSchema = z.array(MembershipSchema);
-
-/** Every member of an organization: what the panel's ownership check will read. */
-export const listOrganizationMembers = internalZodQuery({
-  args: ListOrganizationMembersQueryArgsSchema,
-  returns: ListOrganizationMembersQueryReturnsSchema,
-  handler: async (ctx, { organizationId }) =>
-    await ctx.db
-      .query('memberships')
-      .withIndex('by_organization_and_user', (index) => index.eq('organizationId', organizationId))
-      .collect(),
 });

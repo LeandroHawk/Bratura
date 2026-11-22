@@ -55,9 +55,7 @@ describe('addOrganizationMember', () => {
       role: 'owner',
     });
     expect(again).toBe(membershipId);
-    const members = await t.query(internal.organizations.listOrganizationMembers, {
-      organizationId,
-    });
+    const members = await t.run((ctx) => ctx.db.query('memberships').collect());
     expect(members).toHaveLength(1);
     expect(members[0]).toMatchObject({ userId, role: 'owner' });
   });

@@ -48,7 +48,7 @@ producers and project consultants; then **city and state culture departments** (
 applications, a demand map); **sponsors** looking for projects (Rouanet, ProAC) in phase 2. Not
 doing: a share of the prize (may be forbidden in public calls; unverified) or selling creators' data.
 
-**Charging the panel: AbacatePay (backend integrated 2026-11-21, `docs/integrations/abacate-pay.md`).** A monthly subscription per
+**Charging the panel: AbacatePay (under study, 2026-11-13).** A monthly subscription per
 organization whose quantity is the number of creators it follows (the "per managed profile" price
 on the landing): AbacatePay subscriptions bill price × quantity by card or Pix Automático, its
 hosted checkout needs no payment UI of ours, and `subscription.*` webhooks into `http.ts` turn the

@@ -90,8 +90,10 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
   ("resultado final", lists of approved applicants) carries individuals' names and sometimes CPFs.
   Classification drops such documents before their text is stored (competition rule 6.8, LGPD).
 - **The payer's data stays with the billing provider.** Webhook payloads carry masked personal
-  fields (`customer`, `payerInformation`); the parse reads only the subscription and checkout ids
-  and amounts our rows need, so no payer data ever reaches a table.
+  fields (`customer`, `payerInformation`); the parse reads only the ids and amounts our rows
+  need, so no payer data ever reaches a table. The one exception is `cancelledDueTo`, which can
+  carry a payer-typed motive: it is read only to map it to our enum and is never stored or
+  logged (`docs/integrations/abacate-pay.md`, Cancellation reasons).
 - **Our code fetches only what the team registered.** A Convex action calls `fetch` only on a
   registered source's `https` base URL, or, for an official page, an `https` page on its listing's
   own host, following a redirect only to `https` on that same host (`model/sourceHost/fetchOnSourceHost.ts`:

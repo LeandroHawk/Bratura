@@ -2,23 +2,12 @@ import { httpAction } from './_generated/server';
 import { z } from 'zod';
 import { BillingSubscriptionSchema } from '@bratura/shared/entities/billing-subscription/entity';
 import { BillingSubscriptionIdentityFields } from '@bratura/shared/entities/billing-subscription/fragments/identity/fields';
+import { BillingWebhookDeliverySchema } from '@bratura/shared/entities/billing-webhook-delivery/entity';
 import { DeliveryOutcomeEnum } from '@bratura/shared/entities/billing-webhook-delivery/enums/delivery-outcome/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { requiredAmountInCents } from '@bratura/shared/primitives/domain/money/fields';
-import {
-  nullableAbacatePayCheckoutId,
-  nullableAbacatePaySubscriptionId,
-  nullableAmountInCents,
-  nullableCancellationReason,
-  nullablePaymentMethod,
-  requiredAbacatePayCheckoutId,
-} from '@bratura/shared/primitives/external/abacate-pay/fields';
 import { CancellationReasonEnum } from '@bratura/shared/primitives/external/abacate-pay/enums/cancellation-reason/enum';
-import {
-  nullableString,
-  requiredString,
-  textLengths,
-} from '@bratura/shared/primitives/code/string/fields';
+import { requiredString, textLengths } from '@bratura/shared/primitives/code/string/fields';
 import { requiredHttpsUrl } from '@bratura/shared/primitives/code/url/fields';
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
@@ -39,7 +28,7 @@ import {
 } from './model/abacatePay/client';
 import {
   AbacatePayDeliveryEnvelopeSchema,
-  parseAbacatePayEventData,
+  deliveryFieldsFromAbacatePayEvent,
 } from './model/abacatePay/payload';
 import { abacatePaySecretMatches, abacatePaySignatureMatches } from './model/abacatePay/signature';
 
@@ -142,59 +131,45 @@ export const registerPanelWebhook = internalZodAction({
 
 // The subscription's lifecycle --------------------------------------------------------------------
 
-const GetOpenPanelSubscriptionQueryArgsSchema = z.object({
+const GetPanelBillingStateQueryArgsSchema = z.object({
   organizationId: documentId('organizations'),
 });
-const GetOpenPanelSubscriptionQueryReturnsSchema = z
-  .object({
-    billingSubscriptionId: documentId('billingSubscriptions'),
-    subscription: BillingSubscriptionSchema,
-  })
-  .nullable();
-type GetOpenPanelSubscriptionResult = z.infer<typeof GetOpenPanelSubscriptionQueryReturnsSchema>;
+const GetPanelBillingStateQueryReturnsSchema = z.object({
+  open: z
+    .object({
+      billingSubscriptionId: documentId('billingSubscriptions'),
+      subscription: BillingSubscriptionSchema,
+    })
+    .nullable(),
+  subscriptionCount: z.number(),
+});
+type GetPanelBillingStateResult = z.infer<typeof GetPanelBillingStateQueryReturnsSchema>;
 
-/** The organization's subscription that is not cancelled — at most one is open at a time. */
-export const getOpenPanelSubscription = internalZodQuery({
-  args: GetOpenPanelSubscriptionQueryArgsSchema,
-  returns: GetOpenPanelSubscriptionQueryReturnsSchema,
-  handler: async (ctx, { organizationId }): Promise<GetOpenPanelSubscriptionResult> => {
+/**
+ * The organization's open subscription (at most one is open at a time) and how many rows it
+ * has ever had — the count builds the next checkout `externalId`.
+ */
+export const getPanelBillingState = internalZodQuery({
+  args: GetPanelBillingStateQueryArgsSchema,
+  returns: GetPanelBillingStateQueryReturnsSchema,
+  handler: async (ctx, { organizationId }): Promise<GetPanelBillingStateResult> => {
     const rows = await ctx.db
       .query('billingSubscriptions')
       .withIndex('by_organization', (index) => index.eq('organizationId', organizationId))
       .collect();
-    const open = rows.filter((row) => row.status !== 'cancelled');
-    const latest = open.sort((a, b) => b._creationTime - a._creationTime)[0];
-    if (!latest) return null;
-    return { billingSubscriptionId: latest._id, subscription: latest };
+    const latest = rows
+      .filter((row) => row.status !== 'cancelled')
+      .sort((a, b) => b._creationTime - a._creationTime)[0];
+    return {
+      open: latest ? { billingSubscriptionId: latest._id, subscription: latest } : null,
+      subscriptionCount: rows.length,
+    };
   },
 });
 
-const CountBillingSubscriptionsQueryArgsSchema = z.object({
-  organizationId: documentId('organizations'),
-});
-const CountBillingSubscriptionsQueryReturnsSchema = z.number();
-type CountBillingSubscriptionsResult = z.infer<typeof CountBillingSubscriptionsQueryReturnsSchema>;
-
-/** How many subscription rows the organization has ever had: builds the next `externalId`. */
-export const countBillingSubscriptions = internalZodQuery({
-  args: CountBillingSubscriptionsQueryArgsSchema,
-  returns: CountBillingSubscriptionsQueryReturnsSchema,
-  handler: async (ctx, { organizationId }): Promise<CountBillingSubscriptionsResult> => {
-    const rows = await ctx.db
-      .query('billingSubscriptions')
-      .withIndex('by_organization', (index) => index.eq('organizationId', organizationId))
-      .collect();
-    return rows.length;
-  },
-});
-
-const RecordPendingSubscriptionMutationArgsSchema = z.object({
-  organizationId: documentId('organizations'),
-  abacatePayCheckoutId: requiredAbacatePayCheckoutId,
-  checkoutUrl: requiredHttpsUrl,
-  abacatePayCustomerId: requiredString('short'),
-  managedProfiles: z.int().positive(),
-  devMode: z.boolean(),
+const RecordPendingSubscriptionMutationArgsSchema = BillingSubscriptionIdentityFields.omit({
+  createdAt: true,
+  updatedAt: true,
 });
 const RecordPendingSubscriptionMutationReturnsSchema = documentId('billingSubscriptions');
 type RecordPendingSubscriptionResult = z.infer<
@@ -202,10 +177,9 @@ type RecordPendingSubscriptionResult = z.infer<
 >;
 
 /**
- * Writes the `pending` row behind a checkout the provider just opened. One open subscription per
- * organization: the same checkout returns its row, a `bill_` a cancelled row owns is a `conflict`
- * (a second row under it would make `by_checkout` non-unique), and a different one while another
- * is open is a `conflict` — cancel first.
+ * Writes the `pending` row behind a checkout the provider just opened. One open subscription
+ * per organization; a `bill_` a cancelled row owns is a `conflict` — a second row under it
+ * would make `by_checkout` non-unique.
  */
 export const recordPendingSubscription = internalZodMutation({
   args: RecordPendingSubscriptionMutationArgsSchema,
@@ -260,9 +234,8 @@ type OpenPanelCheckoutResult = z.infer<typeof OpenPanelCheckoutActionReturnsSche
 
 /**
  * Opens the organization's panel subscription: dedupes the provider customer, opens a
- * subscription checkout (a new `externalId` per attempt, `org-<id>-<n>`, so a repeat after a
- * cancel never hands back the dead `bill_`), and records the `pending` row. A pending checkout
- * is handed back as is — `cancelPanelSubscription` ends it so a different quantity can open.
+ * subscription checkout (a new `externalId` per attempt, `org-<id>-<n>`) and records the
+ * `pending` row. A pending checkout is handed back as is — `cancelPanelSubscription` ends it.
  */
 export const openPanelCheckout = internalZodAction({
   args: OpenPanelCheckoutActionArgsSchema,
@@ -275,20 +248,17 @@ export const openPanelCheckout = internalZodAction({
       organizationId: args.organizationId,
     });
     if (!organization) throw appError({ code: 'notFound' });
-    const open = await ctx.runQuery(internal.billing.getOpenPanelSubscription, {
+    const state = await ctx.runQuery(internal.billing.getPanelBillingState, {
       organizationId: args.organizationId,
     });
-    if (open?.subscription.status === 'active') throw appError({ code: 'conflict' });
-    if (open?.subscription.status === 'pending') {
+    if (state.open?.subscription.status === 'active') throw appError({ code: 'conflict' });
+    if (state.open?.subscription.status === 'pending') {
       return {
-        billingSubscriptionId: open.billingSubscriptionId,
-        checkoutUrl: open.subscription.checkoutUrl,
+        billingSubscriptionId: state.open.billingSubscriptionId,
+        checkoutUrl: state.open.subscription.checkoutUrl,
         reusedPendingCheckout: true,
       };
     }
-    const subscriptionCount = await ctx.runQuery(internal.billing.countBillingSubscriptions, {
-      organizationId: args.organizationId,
-    });
     const customer = await upsertAbacatePayCustomer({
       apiKey,
       email: args.customerEmail,
@@ -301,7 +271,7 @@ export const openPanelCheckout = internalZodAction({
       productId,
       quantity: args.managedProfiles,
       customerId: customer.id,
-      externalId: `org-${args.organizationId}-${subscriptionCount + 1}`,
+      externalId: `org-${args.organizationId}-${state.subscriptionCount + 1}`,
       methods: ['CARD'],
       ...(completionUrl == null ? {} : { completionUrl }),
     });
@@ -318,6 +288,22 @@ export const openPanelCheckout = internalZodAction({
     );
     return { billingSubscriptionId, checkoutUrl: checkout.url, reusedPendingCheckout: false };
   },
+});
+
+/** The `cancelled` variant of an open row, built once for both our cancel and the event's. */
+const cancelledRowFrom = (
+  row: Doc<'billingSubscriptions'>,
+  abacatePaySubscriptionId: string | null,
+  cancelledDueTo: z.infer<typeof CancellationReasonEnum> | null,
+  now: number,
+) => ({
+  ...BillingSubscriptionIdentityFields.parse(row),
+  updatedAt: now,
+  status: 'cancelled' as const,
+  abacatePaySubscriptionId,
+  activatedAt: row.status === 'active' ? row.activatedAt : null,
+  cancelledAt: now,
+  cancelledDueTo,
 });
 
 const MarkSubscriptionCancelledMutationArgsSchema = z.object({
@@ -339,16 +325,15 @@ export const markSubscriptionCancelled = internalZodMutation({
   ): Promise<MarkSubscriptionCancelledResult> => {
     const row = await ctx.db.get(billingSubscriptionId);
     if (!row || row.status === 'cancelled') return null;
-    const now = Date.now();
-    await ctx.db.replace(billingSubscriptionId, {
-      ...BillingSubscriptionIdentityFields.parse(row),
-      updatedAt: now,
-      status: 'cancelled',
-      abacatePaySubscriptionId: row.status === 'active' ? row.abacatePaySubscriptionId : null,
-      activatedAt: row.status === 'active' ? row.activatedAt : null,
-      cancelledAt: now,
-      cancelledDueTo,
-    });
+    await ctx.db.replace(
+      billingSubscriptionId,
+      cancelledRowFrom(
+        row,
+        row.status === 'active' ? row.abacatePaySubscriptionId : null,
+        cancelledDueTo,
+        Date.now(),
+      ),
+    );
     return null;
   },
 });
@@ -360,19 +345,17 @@ const CancelPanelSubscriptionActionReturnsSchema = z.literal(true);
 type CancelPanelSubscriptionResult = z.infer<typeof CancelPanelSubscriptionActionReturnsSchema>;
 
 /**
- * Ends the organization's open subscription: `cancelPolicy: NOW` on an active one, deleting the
- * unpaid `bill_...` on a pending one (the provider emits no event for an expired checkout, so a
- * pending row would otherwise stay open forever). There is no un-cancel: a new panel starts
- * from a new checkout.
+ * Ends the organization's open subscription: `cancelPolicy: NOW` on an active one, deleting
+ * the unpaid `bill_...` on a pending one (the provider emits no event for an expired checkout).
+ * No un-cancel: a new panel starts from a new checkout.
  */
 export const cancelPanelSubscription = internalZodAction({
   args: CancelPanelSubscriptionActionArgsSchema,
   returns: CancelPanelSubscriptionActionReturnsSchema,
   handler: async (ctx, { organizationId }): Promise<CancelPanelSubscriptionResult> => {
     const apiKey = requiredEnv('ABACATE_PAY_API_KEY');
-    const open = await ctx.runQuery(internal.billing.getOpenPanelSubscription, {
-      organizationId,
-    });
+    const state = await ctx.runQuery(internal.billing.getPanelBillingState, { organizationId });
+    const open = state.open;
     if (!open) throw appError({ code: 'notFound' });
     if (open.subscription.status === 'active') {
       await cancelAbacatePaySubscription({
@@ -447,9 +430,8 @@ export const changeManagedProfiles = internalZodAction({
   ): Promise<ChangeManagedProfilesResult> => {
     const apiKey = requiredEnv('ABACATE_PAY_API_KEY');
     const productId = requiredEnv('ABACATE_PAY_PRODUCT_ID');
-    const open = await ctx.runQuery(internal.billing.getOpenPanelSubscription, {
-      organizationId,
-    });
+    const state = await ctx.runQuery(internal.billing.getPanelBillingState, { organizationId });
+    const open = state.open;
     if (!open || open.subscription.status !== 'active') throw appError({ code: 'notFound' });
     const change = await changeAbacatePayPlan({
       apiKey,
@@ -467,21 +449,14 @@ export const changeManagedProfiles = internalZodAction({
 
 // The webhook inbox -------------------------------------------------------------------------------
 
-const RecordAbacatePayDeliveryMutationArgsSchema = z.object({
-  deliveryId: requiredString('short'),
-  event: requiredString('short'),
-  devMode: z.boolean(),
-  abacatePaySubscriptionId: nullableAbacatePaySubscriptionId,
-  abacatePayCheckoutId: nullableAbacatePayCheckoutId,
-  amountInCents: nullableAmountInCents,
-  method: nullablePaymentMethod,
-  pendingUpdateId: nullableString('short'),
-  planChangeStatus: nullableString('short'),
-  quantity: z.int().positive().nullable(),
-  newAmountInCents: nullableAmountInCents,
-  cancelledDueTo: nullableCancellationReason,
-  /** `true` when the delivery carried no usable ids: it is terminal, nothing can re-run it. */
-  unparsed: z.boolean().optional(),
+const RecordAbacatePayDeliveryMutationArgsSchema = BillingWebhookDeliverySchema.omit({
+  billingSubscriptionId: true,
+  receivedAt: true,
+  processedAt: true,
+  outcome: true,
+}).extend({
+  /** A delivery resolved at record time: `unparsed` (no usable ids) or `ignored` (not ours). */
+  resolvedOutcome: z.enum(['unparsed', 'ignored']).optional(),
 });
 const RecordAbacatePayDeliveryMutationReturnsSchema = z.union([
   z.object({
@@ -494,8 +469,8 @@ type RecordAbacatePayDeliveryResult = z.infer<typeof RecordAbacatePayDeliveryMut
 
 /**
  * The webhook's only write before it answers: a delivery is stored once per provider `log_` id,
- * so AbacatePay's retries never apply twice (the inbox's dedupe key). An `unparsed` one is
- * stored already resolved — without the raw body it can never be re-run.
+ * so retries never apply twice. A `resolvedOutcome` marks it processed now — an `unparsed` one
+ * can never re-run (the raw body is gone), an `ignored` one was never meant for us.
  */
 export const recordAbacatePayDelivery = internalZodMutation({
   args: RecordAbacatePayDeliveryMutationArgsSchema,
@@ -506,14 +481,14 @@ export const recordAbacatePayDelivery = internalZodMutation({
       .withIndex('by_delivery', (index) => index.eq('deliveryId', args.deliveryId))
       .unique();
     if (known) return { outcome: 'duplicate' };
-    const { unparsed, ...delivery } = args;
+    const { resolvedOutcome, ...delivery } = args;
     const now = Date.now();
     const billingWebhookDeliveryId = await ctx.db.insert('billingWebhookDeliveries', {
       ...delivery,
       billingSubscriptionId: null,
       receivedAt: now,
-      processedAt: unparsed === true ? now : null,
-      outcome: unparsed === true ? 'unparsed' : null,
+      processedAt: resolvedOutcome === undefined ? null : now,
+      outcome: resolvedOutcome ?? null,
     });
     return { outcome: 'stored', billingWebhookDeliveryId };
   },
@@ -545,11 +520,9 @@ async function findBillingSubscriptionFor(
 }
 
 /**
- * Applies one stored delivery to its `billingSubscriptions` row and marks it processed — the
- * shared body of `processAbacatePayDelivery` and `reprocessUnprocessedDeliveries`. Events may
- * arrive out of order, so the row's status decides: `cancelled` is terminal (a late event is
- * `superseded`), and a `plan_changed` still `PENDING` records the asked quantity while one
- * without the request fields is the applied change.
+ * Applies one stored delivery to its row and marks it processed — shared by
+ * `processAbacatePayDelivery` and `reprocessUnprocessedDeliveries`. `cancelled` is terminal; a
+ * `PENDING` `plan_changed` records the asked quantity, one without request fields is applied.
  */
 async function applyAbacatePayDelivery(
   ctx: MutationCtx,
@@ -579,6 +552,12 @@ async function applyAbacatePayDelivery(
     case 'subscription.trial_started':
     case 'subscription.renewed': {
       if (row.status === 'cancelled') {
+        // A charge landing on a closed row means the provider billed a panel that is off —
+        // log it loudly so someone can cancel or refund on the provider's dashboard.
+        console.error(
+          `AbacatePay delivery ${delivery.deliveryId} (${delivery.event}) charged a cancelled row`,
+          delivery.abacatePaySubscriptionId,
+        );
         await finish('superseded');
         return;
       }
@@ -638,10 +617,21 @@ async function applyAbacatePayDelivery(
           updatedAt: now,
           pendingManagedProfiles: delivery.quantity ?? row.pendingManagedProfiles,
         });
+      } else if (row.pendingManagedProfiles === null) {
+        // An applied change with nothing pending (a dashboard change whose request event has
+        // not landed): the event carries no new quantity, so only the amount moves.
+        console.warn(
+          `AbacatePay delivery ${delivery.deliveryId} applied a plan change with nothing pending`,
+          delivery.abacatePaySubscriptionId,
+        );
+        await ctx.db.patch(row._id, {
+          updatedAt: now,
+          amountInCents: delivery.amountInCents ?? row.amountInCents,
+        });
       } else {
         await ctx.db.patch(row._id, {
           updatedAt: now,
-          managedProfiles: row.pendingManagedProfiles ?? delivery.quantity ?? row.managedProfiles,
+          managedProfiles: row.pendingManagedProfiles,
           pendingManagedProfiles: null,
           amountInCents: delivery.amountInCents ?? row.amountInCents,
         });
@@ -657,17 +647,16 @@ async function applyAbacatePayDelivery(
         await finish('superseded');
         return;
       }
-      await ctx.db.replace(row._id, {
-        ...BillingSubscriptionIdentityFields.parse(row),
-        updatedAt: now,
-        status: 'cancelled',
-        abacatePaySubscriptionId:
+      await ctx.db.replace(
+        row._id,
+        cancelledRowFrom(
+          row,
           delivery.abacatePaySubscriptionId ??
-          (row.status === 'active' ? row.abacatePaySubscriptionId : null),
-        activatedAt: row.status === 'active' ? row.activatedAt : null,
-        cancelledAt: now,
-        cancelledDueTo: delivery.cancelledDueTo,
-      });
+            (row.status === 'active' ? row.abacatePaySubscriptionId : null),
+          delivery.cancelledDueTo,
+          now,
+        ),
+      );
       await finish('applied');
       return;
     }
@@ -701,7 +690,7 @@ const ReprocessUnprocessedDeliveriesMutationArgsSchema = z.object({
 });
 const ReprocessUnprocessedDeliveriesMutationReturnsSchema = z.object({
   reprocessed: z.number(),
-  remaining: z.number(),
+  hasMore: z.boolean(),
 });
 type ReprocessUnprocessedDeliveriesResult = z.infer<
   typeof ReprocessUnprocessedDeliveriesMutationReturnsSchema
@@ -709,27 +698,23 @@ type ReprocessUnprocessedDeliveriesResult = z.infer<
 
 /**
  * Re-runs deliveries a scheduled process never finished (`processedAt` still null), a bounded
- * batch at a time so a by-hand run stays cheap:
- * `pnpm exec convex run billing:reprocessUnprocessedDeliveries '{}'`
+ * batch at a time: `pnpm exec convex run billing:reprocessUnprocessedDeliveries '{}'`
  */
 export const reprocessUnprocessedDeliveries = internalZodMutation({
   args: ReprocessUnprocessedDeliveriesMutationArgsSchema,
   returns: ReprocessUnprocessedDeliveriesMutationReturnsSchema,
   handler: async (ctx, { limit }): Promise<ReprocessUnprocessedDeliveriesResult> => {
+    const batchSize = limit ?? reprocessBatchCeiling;
     const stranded = await ctx.db
       .query('billingWebhookDeliveries')
       .withIndex('by_processed', (index) => index.eq('processedAt', null))
-      .collect();
-    for (const delivery of stranded.slice(0, limit ?? reprocessBatchCeiling)) {
+      .take(batchSize + 1);
+    for (const delivery of stranded.slice(0, batchSize)) {
       await applyAbacatePayDelivery(ctx, delivery._id);
     }
-    const stillStranded = await ctx.db
-      .query('billingWebhookDeliveries')
-      .withIndex('by_processed', (index) => index.eq('processedAt', null))
-      .collect();
     return {
-      reprocessed: stranded.length - stillStranded.length,
-      remaining: stillStranded.length,
+      reprocessed: Math.min(batchSize, stranded.length),
+      hasMore: stranded.length > batchSize,
     };
   },
 });
@@ -761,13 +746,19 @@ export const abacatePayWebhook = httpAction(async (ctx, request) => {
   } catch {
     return new Response('Bad Request', { status: 400 });
   }
-  const fields = parseAbacatePayEventData(envelope.data);
-  const unparsed = fields.abacatePaySubscriptionId === null && fields.abacatePayCheckoutId === null;
-  if (unparsed) {
-    console.warn(
-      `AbacatePay delivery ${envelope.id} (${envelope.event}) carried no usable ids`,
-      fields.issuePaths,
-    );
+  const fields = deliveryFieldsFromAbacatePayEvent(envelope.data);
+  // An event that is not ours resolves as `ignored` before the id check — a signed
+  // `payout.completed` must not warn or schedule anything.
+  const resolvedOutcome = !envelope.event.startsWith('subscription.')
+    ? ('ignored' as const)
+    : fields.abacatePaySubscriptionId === null && fields.abacatePayCheckoutId === null
+      ? ('unparsed' as const)
+      : undefined;
+  if (resolvedOutcome === 'unparsed') {
+    console.warn(`AbacatePay delivery ${envelope.id} (${envelope.event}) carried no usable ids`, {
+      subscriptionIdPresent: fields.subscriptionIdPresent,
+      checkoutIdPresent: fields.checkoutIdPresent,
+    });
   }
   const record = await ctx.runMutation(internal.billing.recordAbacatePayDelivery, {
     deliveryId: envelope.id,
@@ -782,9 +773,9 @@ export const abacatePayWebhook = httpAction(async (ctx, request) => {
     quantity: fields.quantity,
     newAmountInCents: fields.newAmountInCents,
     cancelledDueTo: fields.cancelledDueTo,
-    unparsed,
+    ...(resolvedOutcome === undefined ? {} : { resolvedOutcome }),
   });
-  if (record.outcome === 'stored' && !unparsed) {
+  if (record.outcome === 'stored' && resolvedOutcome === undefined) {
     await ctx.scheduler.runAfter(0, internal.billing.processAbacatePayDelivery, {
       billingWebhookDeliveryId: record.billingWebhookDeliveryId,
     });

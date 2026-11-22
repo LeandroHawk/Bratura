@@ -14,12 +14,12 @@ to delete them.
 | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
 | `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `hash/`, `time/instant/`, `time/zoned-instant/`, `calendar/` |
 | `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL, **exists**) |
-| `external/<subject>/` | neither: law, an agency, an outside standard             | `locale/` (BCP 47, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/` |
+| `external/<subject>/` | neither: law, an agency, an outside standard             | `locale/` (BCP 47, **exists**), `abacate-pay/` (the billing provider, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/` |
 
 `Math.round` does not mean money; composed with the BRL rules it becomes `money/` and gets a
 business name. We do not decide what a CNPJ is or which states exist: that puts them in
-`external/`. Only `external/locale/` exists today; the others are where those concepts go when
-their first entity needs them, not files to create now.
+`external/`. `external/locale/` and `external/abacate-pay/` exist today; the others are where
+those concepts go when their first entity needs them, not files to create now.
 
 ## Dependency is one way
 

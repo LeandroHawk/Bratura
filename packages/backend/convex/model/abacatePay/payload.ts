@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { nullableString, requiredString } from '@bratura/shared/primitives/code/string/fields';
 import { requiredAmountInCents } from '@bratura/shared/primitives/domain/money/fields';
 import type { CancellationReason } from '@bratura/shared/primitives/external/abacate-pay/enums/cancellation-reason/enum';
-import type { PaymentMethod } from '@bratura/shared/primitives/external/abacate-pay/enums/payment-method/enum';
 import { PaymentMethodEnum } from '@bratura/shared/primitives/external/abacate-pay/enums/payment-method/enum';
 
 // AbacatePay answers: a 2xx wraps the resource as `{ data: …, success, error }`; a non-2xx
@@ -23,10 +22,7 @@ export const AbacatePayEnvelopeSchema = z.looseObject({
 });
 
 /** `GET /stores/get`: proves an `ABACATE_PAY_API_KEY` is real and names the store. */
-export const AbacatePayStoreSchema = z.looseObject({
-  id: z.string(),
-  name: z.string(),
-});
+export const AbacatePayStoreSchema = z.looseObject({ id: z.string(), name: z.string() });
 
 /** A product (`prod_...`): only the id is read back. */
 export const AbacatePayProductSchema = z.looseObject({ id: z.string() });
@@ -48,10 +44,7 @@ export const AbacatePaySubscriptionCheckoutSchema = z.looseObject({
 });
 
 /** The pending plan change (`subu_...`) a change-plan call schedules. */
-export const AbacatePayPlanChangeSchema = z.looseObject({
-  id: z.string(),
-  newAmount: z.int().optional(),
-});
+export const AbacatePayPlanChangeSchema = z.looseObject({ id: z.string() });
 
 /** A registered webhook (`webh_...`). */
 export const AbacatePayWebhookSchema = z.looseObject({ id: z.string() });
@@ -72,8 +65,8 @@ export const AbacatePayDeliveryEnvelopeSchema = z.looseObject({
  * read only to map it to our enum and is never stored or logged (`docs/security.md` §4).
  * Texts and codes come from the provider's subscriptions-events table.
  */
-export function mapAbacatePayCancellationReason(raw: unknown): CancellationReason | null {
-  if (typeof raw !== 'string') return null;
+export function cancellationReasonFromAbacatePay(raw: string | null): CancellationReason | null {
+  if (raw === null) return null;
   if (raw.startsWith('Cancelada pelo cliente no portal')) return 'customerPortal';
   if (raw.startsWith('Cancelada pelo reembolso pedido pelo cliente no portal')) {
     return 'customerRefund';
@@ -92,77 +85,59 @@ export function mapAbacatePayCancellationReason(raw: unknown): CancellationReaso
   }
 }
 
-/** What a `subscription.*` event's `data` tells our rows, one field at a time. */
-export type AbacatePayEventFields = {
-  abacatePaySubscriptionId: string | null;
-  abacatePayCheckoutId: string | null;
-  amountInCents: number | null;
-  method: PaymentMethod | null;
-  pendingUpdateId: string | null;
-  planChangeStatus: string | null;
-  quantity: number | null;
-  newAmountInCents: number | null;
-  cancelledDueTo: CancellationReason | null;
-  /** Our field names for every field that failed to parse: for the `unparsed` log, no values. */
-  issuePaths: string[];
-};
-
-const asRecord = (value: unknown): Record<string, unknown> =>
-  typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
-
-const field = <T>(
-  value: unknown,
-  schema: z.ZodType<T>,
-  path: string,
-  issuePaths: string[],
-): T | null => {
-  const parsed = schema.safeParse(value);
-  if (parsed.success) return parsed.data;
-  issuePaths.push(path);
-  return null;
-};
+/**
+ * The `data` of a `subscription.*` delivery, `.catch` per field so a bad field becomes `null`
+ * alone — an unknown `method` can no longer erase the event's ids. `cancelledDueTo` stays a
+ * raw string with no ceiling: it feeds the mapper only. Personal members are never read.
+ */
+export const AbacatePayEventDataSchema = z.looseObject({
+  subscription: z
+    .looseObject({
+      id: requiredString('short').nullish().catch(null),
+      amount: requiredAmountInCents.nullish().catch(null),
+      method: PaymentMethodEnum.nullish().catch(null),
+      cancelledDueTo: z.string().nullish().catch(null),
+    })
+    .catch({}),
+  checkout: z
+    .looseObject({
+      id: requiredString('short').nullish().catch(null),
+    })
+    .catch({}),
+  pendingUpdateId: nullableString('short').catch(null),
+  status: nullableString('short').catch(null),
+  quantity: z.int().positive().nullish().catch(null),
+  newAmount: requiredAmountInCents.nullish().catch(null),
+});
 
 /**
- * Parses the `data` of a webhook delivery field by field: a bad field becomes `null` alone —
- * a `cancelledDueTo` too long or a `method` we do not know can no longer erase the event's
- * ids. Personal members (`customer`, `payerInformation`) are never read.
+ * What a `subscription.*` event's `data` tells our rows. `quantity` reads `data.quantity` only:
+ * the applied plan-change event keeps the checkout's original items, so a fallback to
+ * `checkout.items` would hand back the old quantity.
  */
-export function parseAbacatePayEventData(data: unknown): AbacatePayEventFields {
-  const issuePaths: string[] = [];
-  const dataRecord = asRecord(data);
-  const subscription = asRecord(dataRecord.subscription);
-  const checkout = asRecord(dataRecord.checkout);
-  const firstItem = asRecord(Array.isArray(checkout.items) ? checkout.items[0] : undefined);
-  const quantity =
-    field(dataRecord.quantity, z.int().positive(), 'quantity', issuePaths) ??
-    field(firstItem.quantity, z.int().positive(), 'checkout.items.0.quantity', issuePaths);
+export function deliveryFieldsFromAbacatePayEvent(data: unknown) {
+  const parsed = AbacatePayEventDataSchema.parse(data);
+  const record = typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
+  const rawSubscription =
+    typeof record.subscription === 'object' && record.subscription !== null
+      ? (record.subscription as Record<string, unknown>)
+      : {};
+  const rawCheckout =
+    typeof record.checkout === 'object' && record.checkout !== null
+      ? (record.checkout as Record<string, unknown>)
+      : {};
   return {
-    abacatePaySubscriptionId: field(
-      subscription.id,
-      requiredString('short'),
-      'subscription.id',
-      issuePaths,
-    ),
-    abacatePayCheckoutId: field(checkout.id, requiredString('short'), 'checkout.id', issuePaths),
-    amountInCents: field(
-      subscription.amount,
-      requiredAmountInCents,
-      'subscription.amount',
-      issuePaths,
-    ),
-    method: field(subscription.method, PaymentMethodEnum, 'subscription.method', issuePaths),
-    pendingUpdateId: field(
-      dataRecord.pendingUpdateId,
-      nullableString('short'),
-      'pendingUpdateId',
-      issuePaths,
-    ),
-    planChangeStatus: field(dataRecord.status, nullableString('short'), 'status', issuePaths),
-    quantity,
-    newAmountInCents: field(dataRecord.newAmount, requiredAmountInCents, 'newAmount', issuePaths),
-    cancelledDueTo: mapAbacatePayCancellationReason(
-      subscription.cancelledDueTo ?? dataRecord.cancelledDueTo,
-    ),
-    issuePaths,
+    abacatePaySubscriptionId: parsed.subscription.id ?? null,
+    abacatePayCheckoutId: parsed.checkout.id ?? null,
+    /** Whether the raw event carried each id — present-but-invalid shows up in the log. */
+    subscriptionIdPresent: rawSubscription.id !== undefined,
+    checkoutIdPresent: rawCheckout.id !== undefined,
+    amountInCents: parsed.subscription.amount ?? null,
+    method: parsed.subscription.method ?? null,
+    pendingUpdateId: parsed.pendingUpdateId ?? null,
+    planChangeStatus: parsed.status ?? null,
+    quantity: parsed.quantity ?? null,
+    newAmountInCents: parsed.newAmount ?? null,
+    cancelledDueTo: cancellationReasonFromAbacatePay(parsed.subscription.cancelledDueTo ?? null),
   };
 }

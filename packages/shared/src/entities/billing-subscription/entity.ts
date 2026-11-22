@@ -2,11 +2,11 @@ import { z } from 'zod';
 import { requiredInstant } from '../../primitives/code/time/instant/fields';
 import {
   nullableAbacatePaySubscriptionId,
-  nullableAmountInCents,
   nullableCancellationReason,
   nullablePaymentMethod,
   requiredAbacatePaySubscriptionId,
 } from '../../primitives/external/abacate-pay/fields';
+import { nullableAmountInCents } from '../../primitives/domain/money/fields';
 import { BillingSubscriptionIdentityFields } from './fragments/identity/fields';
 
 /**
@@ -43,8 +43,8 @@ export const ActiveBillingSubscriptionSchema = z.object({
 
 /**
  * Ended: never bills again and never comes back (`docs/integrations/abacate-pay.md`). A
- * cancelled row can come from a pending checkout the provider closed, so the subscription id
- * stays nullable.
+ * cancelled row can come from a pending checkout our own `checkouts/delete` closed, so the
+ * subscription id stays nullable.
  */
 export const CancelledBillingSubscriptionSchema = z.object({
   status: z.literal('cancelled'),

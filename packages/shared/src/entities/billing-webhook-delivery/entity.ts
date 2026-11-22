@@ -5,17 +5,16 @@ import { requiredInstant } from '../../primitives/code/time/instant/fields';
 import {
   nullableAbacatePayCheckoutId,
   nullableAbacatePaySubscriptionId,
-  nullableAmountInCents,
   nullableCancellationReason,
   nullablePaymentMethod,
 } from '../../primitives/external/abacate-pay/fields';
+import { nullableAmountInCents } from '../../primitives/domain/money/fields';
 import { DeliveryOutcomeEnum } from './enums/delivery-outcome/enum';
 
 /**
  * One webhook delivery from the billing provider (the inbox pattern): its `log_...` id is the
- * dedupe key — retries resend it. It stores what the event says about the subscription and
- * never the whole payload, which carries masked personal data (`docs/security.md` §4).
- * Writes: `billing.ts` — the http route records it, `processAbacatePayDelivery` resolves it.
+ * dedupe key — retries resend it. Stores what the event says about the subscription, never the
+ * whole payload (`docs/security.md` §4). Written only by `billing.ts`.
  */
 export const BillingWebhookDeliverySchema = z.object({
   /** The provider's delivery id (`log_...`): identical across retries, so it dedupes. */

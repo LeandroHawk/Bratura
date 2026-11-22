@@ -56,8 +56,10 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
   `data.status: "PENDING"`, `pendingUpdateId`, `quantity` and `newAmount` — it only records the
   asked quantity in `pendingManagedProfiles`. The applied event comes on the next charge
   **without** the request fields, with the new cycle charge in `subscription.amount`: it moves
-  the quantity into `managedProfiles` (from `pendingManagedProfiles`, else the event's
-  `quantity`, which also covers a change made on the provider's dashboard).
+  `pendingManagedProfiles` into `managedProfiles`. A change made on the provider's dashboard
+  lands through its request event just like ours — and the applied event says nothing about
+  the new quantity (its `checkout.items` keeps the original item), so with nothing pending
+  only the amount moves and the delivery is logged.
 - **Cancel** (`POST /subscriptions/cancel`): immediate and irreversible on the provider; ours
   then marks the row `cancelled` with `cancelledByBratura`. On a `pending` row —
   `POST /subscriptions/checkouts/delete` instead: the unpaid `bill_...` stops accepting payment,
@@ -65,10 +67,10 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
   event when one expires).
 - **Cancellation reasons**: the event's `cancelledDueTo` is free text that can carry a
   payer-typed motive ("Cancelada pelo cliente no portal: <reason>"). It is read only to map it
-  to our `CancellationReasonEnum` at the edge (`mapAbacatePayCancellationReason` in
+  to our `CancellationReasonEnum` at the edge (`cancellationReasonFromAbacatePay` in
   `payload.ts`): `customerPortal`, `customerRefund`, `maxPaymentRetriesExceeded`,
-  `disputeOpened`, `pixAuthorizationRefused`, `accountClosed`, `other` — the provider's text
-  itself never reaches a table or a log.
+  `disputeOpened`, `pixAuthorizationRefused`, `accountClosed`, `cancelledByBratura`, `other`
+  — the provider's text itself never reaches a table or a log.
 - **`GET /stores/get`**: `billing:checkAbacatePayCredentials` runs it to prove a key — run it
   after `env set`, like `telegram:checkTelegramCredentials`.
 - **`POST /webhooks/create`**: `billing:registerPanelWebhook` registers
@@ -105,7 +107,8 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
   `processAbacatePayDelivery` runs scheduled. A slow or failing apply never turns into a provider
   retry we already deduped; a delivery names its row by `subs_...` first, then by `bill_...`. A
   delivery a scheduled run never finished (`processedAt` still null) can be re-run by hand with
-  `billing:reprocessUnprocessedDeliveries`.
+  `billing:reprocessUnprocessedDeliveries`. A non-`subscription.*` event is stored already
+  resolved as `ignored` — silently, nothing scheduled.
 
 ## Operations
 
@@ -129,6 +132,13 @@ pnpm exec convex run billing:provisionPanelProduct '{"priceInCents":2990}'   # a
 pnpm exec convex env set ABACATE_PAY_PRODUCT_ID       # the prod_... it answered
 pnpm exec convex env set ABACATE_PAY_WEBHOOK_SECRET   # a generated random string
 pnpm exec convex run billing:registerPanelWebhook '{}'
+```
+
+A pending row left open when `checkouts/delete` succeeded but `markSubscriptionCancelled`
+failed (the provider sends no event for a deleted checkout) is closed by hand:
+
+```bash
+pnpm exec convex run billing:markSubscriptionCancelled '{"billingSubscriptionId":"…","cancelledDueTo":"cancelledByBratura"}'
 ```
 
 **Checked with real calls, 2026-11-21/22** (sandbox `abc_dev_` key on a dev deployment, no
@@ -169,6 +179,14 @@ they need a live cycle to fire.
 - **Ownership** (when auth lands): `openPanelCheckout`, `changeManagedProfiles` and
   `cancelPanelSubscription` must check the caller owns a membership of the organization —
   everything is `internal` today, so the check is a precondition for exposing them, not a hole.
+- **When a charge lands on a `cancelled` row** (cancel raced the payment, or the provider
+  deleted a checkout whose payment was already in): the delivery is `superseded` and logged as
+  an error with its `log_` and `subs_` — whoever sees the log cancels or refunds on the
+  provider's dashboard. Decide then whether it deserves an alert.
+- **When an applied `plan_changed` lands before its request event** (order is not guaranteed):
+  the row keeps `managedProfiles`, takes the new `amountInCents`, and logs the delivery; the
+  late request then leaves a stale `pendingManagedProfiles` behind. Decide then whether the
+  late request should be cleared.
 - **Customer-portal cancels are `NEXT_CYCLE`**: a payer cancelling on the provider's portal keeps
   access until the paid cycle ends; our `cancelled` is terminal on arrival, so the panel turns
   off early. Revisit if organizations ever cancel through the portal.

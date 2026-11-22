@@ -226,10 +226,15 @@ describe('processAbacatePayDelivery', () => {
       status: 'cancelled',
       cancelledDueTo: 'maxPaymentRetriesExceeded',
     });
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const late = await recordAndProcess(t, { deliveryId: 'log_late' });
     const lateDelivery = await deliveryRowOf(t, storedDeliveryId(late));
     expect(lateDelivery?.outcome).toBe('superseded');
     expect((await subscriptionOf(t, id))?.status).toBe('cancelled');
+    // A charge on a closed row means the provider billed a panel that is off: the log warns
+    // with the delivery id and the subs_ so someone can refund on the provider's dashboard.
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('log_late'), 'subs_sub1');
+    error.mockRestore();
   });
 
   test("a provider's cancelled landing after our own cancel keeps the row", async () => {
@@ -286,23 +291,26 @@ describe('processAbacatePayDelivery', () => {
     });
   });
 
-  test('an applied plan change from the dashboard still lands on the quantity', async () => {
+  test('an applied plan change with nothing pending keeps the quantity, moves the amount', async () => {
     const t = convexTest(schema, modules);
     const organizationId = await organizationIdOf(t);
     const id = await pendingSubscriptionOf(t, organizationId);
     await recordAndProcess(t);
-    // A change made on the provider's dashboard: no pendingManagedProfiles on our row, the
-    // applied event still carries the new quantity on the checkout's item.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // The docs' applied example: no `quantity`, no `status`, and the checkout still carries
+    // the original item — the event says nothing about the new quantity.
     await recordAndProcess(t, {
       deliveryId: 'log_plan_dashboard',
       event: 'subscription.plan_changed',
-      quantity: 7,
+      quantity: null,
       amountInCents: 20930,
     });
     expect(await subscriptionOf(t, id)).toMatchObject({
-      managedProfiles: 7,
+      managedProfiles: 3,
       amountInCents: 20930,
     });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('log_plan_dashboard'), 'subs_sub1');
+    warn.mockRestore();
   });
 
   test('an event naming no row is unmatched; a non-subscription event is ignored', async () => {
@@ -341,7 +349,7 @@ describe('processAbacatePayDelivery', () => {
     const id = await pendingSubscriptionOf(t, organizationId);
     await t.mutation(internal.billing.recordAbacatePayDelivery, deliveryArgs());
     const result = await t.mutation(internal.billing.reprocessUnprocessedDeliveries, {});
-    expect(result).toEqual({ reprocessed: 1, remaining: 0 });
+    expect(result).toEqual({ reprocessed: 1, hasMore: false });
     expect(await subscriptionOf(t, id)).toMatchObject({ status: 'active' });
   });
 });
@@ -501,9 +509,6 @@ describe('openPanelCheckout', () => {
           { status: 200 },
         );
       }
-      if (url.endsWith('/subscriptions/checkouts/delete')) {
-        return new Response(JSON.stringify({ data: {} }), { status: 200 });
-      }
       return new Response('not found', { status: 404 });
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -543,6 +548,22 @@ describe('openPanelCheckout', () => {
     expect(fetchMock.mock.calls.length).toBe(calls);
   });
 
+  test('a 2xx whose data fails the shape reaches the caller as unavailable', async () => {
+    vi.stubEnv('ABACATE_PAY_API_KEY', 'abc_dev_key');
+    vi.stubEnv('ABACATE_PAY_PRODUCT_ID', 'prod_panel');
+    const t = convexTest(schema, modules);
+    const organizationId = await organizationIdOf(t);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () =>
+        Promise.resolve(new Response(JSON.stringify({ data: { id: 1 } }), { status: 200 })),
+      ),
+    );
+    await expect(
+      t.action(internal.billing.openPanelCheckout, openArgs(organizationId)),
+    ).rejects.toMatchObject({ data: { code: 'unavailable' } });
+  });
+
   test('reopening after a cancel asks for a fresh externalId, never the dead bill_', async () => {
     vi.stubEnv('ABACATE_PAY_API_KEY', 'abc_dev_key');
     vi.stubEnv('ABACATE_PAY_PRODUCT_ID', 'prod_panel');
@@ -551,9 +572,9 @@ describe('openPanelCheckout', () => {
     const fetchMock = abacatePayAnswers('bill_checkout2');
     // Seed the cancelled first attempt directly.
     await pendingSubscriptionOf(t, organizationId);
-    const open = await t.query(internal.billing.getOpenPanelSubscription, { organizationId });
+    const state = await t.query(internal.billing.getPanelBillingState, { organizationId });
     await t.mutation(internal.billing.markSubscriptionCancelled, {
-      billingSubscriptionId: open!.billingSubscriptionId,
+      billingSubscriptionId: state.open!.billingSubscriptionId,
       cancelledDueTo: 'cancelledByBratura',
     });
     const reopened = await t.action(internal.billing.openPanelCheckout, openArgs(organizationId));
@@ -731,6 +752,7 @@ describe('abacatePayWebhook', () => {
   test('a delivery without any usable id is stored unparsed and answered 200', async () => {
     vi.stubEnv('ABACATE_PAY_WEBHOOK_SECRET', webhookSecret);
     const t = convexTest(schema, modules);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const body = JSON.stringify({
       id: 'log_web6',
       event: 'subscription.cancelled',
@@ -750,5 +772,38 @@ describe('abacatePayWebhook', () => {
         .unique(),
     );
     expect(delivery).toMatchObject({ outcome: 'unparsed', processedAt: expect.any(Number) });
+    // The log says the event and which ids were present — never a value.
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('log_web6'), {
+      subscriptionIdPresent: true,
+      checkoutIdPresent: false,
+    });
+    warn.mockRestore();
+  });
+
+  test('an event that is not ours is stored ignored, silently, answered 200', async () => {
+    vi.stubEnv('ABACATE_PAY_WEBHOOK_SECRET', webhookSecret);
+    const t = convexTest(schema, modules);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const body = JSON.stringify({
+      id: 'log_web7',
+      event: 'payout.completed',
+      devMode: true,
+      data: {},
+    });
+    const signature = await sign(body);
+    const response = await post(t, body, {
+      'x-webhook-secret': webhookSecret,
+      'x-webhook-signature': signature,
+    });
+    expect(response.status).toBe(200);
+    const delivery = await t.run((ctx) =>
+      ctx.db
+        .query('billingWebhookDeliveries')
+        .withIndex('by_delivery', (index) => index.eq('deliveryId', 'log_web7'))
+        .unique(),
+    );
+    expect(delivery).toMatchObject({ outcome: 'ignored', processedAt: expect.any(Number) });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
