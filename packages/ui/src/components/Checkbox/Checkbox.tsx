@@ -14,7 +14,7 @@ export function Checkbox({ children, className = '', ...props }: CheckboxProps) 
       <span className="relative mt-0.5 inline-flex size-5 shrink-0">
         <input
           type="checkbox"
-          className="bt-checkbox-input size-5 cursor-pointer appearance-none rounded-md border-2 border-muted-foreground bg-card focus-ring"
+          className="bt-checkbox-input size-5 cursor-pointer appearance-none rounded-md border-2 focus-ring"
           {...props}
         />
         <svg

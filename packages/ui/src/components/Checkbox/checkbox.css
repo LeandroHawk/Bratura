@@ -1,5 +1,8 @@
 @layer components {
+  /* The box's colours live here, not in utility classes: those outrank this layer's `:checked`. */
   .bt-checkbox-input {
+    border-color: var(--bt-muted-foreground);
+    background-color: var(--bt-card);
     transition:
       background-color 0.15s ease-out,
       border-color 0.15s ease-out;
