@@ -35,7 +35,8 @@ from steering the LLM. Shapes and ports are in `docs/contracts.md`.
   `docs/architecture.md`, Idempotency and concurrency), and answers an unknown chat with the
   sign-up link only.
 - **The AbacatePay webhook trusts nothing either**: the shared secret and the HMAC-SHA256 over
-  the raw body are both checked in constant time before the body is parsed, the delivery's
+  the raw body are both checked in constant time before the body is parsed — the signature key
+  is public, so it proves integrity only and the secret is what proves origin. The delivery's
   `log_...` id dedupes retries into `billingWebhookDeliveries` before anything is applied, and
   events are applied by the row's status, never by arrival order — a late `completed` cannot
   reopen a `cancelled` subscription. Billing access comes only from these deliveries, never from

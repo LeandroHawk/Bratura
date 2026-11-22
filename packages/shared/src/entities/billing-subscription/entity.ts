@@ -1,8 +1,12 @@
 import { z } from 'zod';
-import { nullableString, requiredString } from '../../primitives/code/string/fields';
-import { requiredAmountInCents } from '../../primitives/domain/money/fields';
 import { requiredInstant } from '../../primitives/code/time/instant/fields';
-import { PaymentMethodEnum } from './enums/payment-method/enum';
+import {
+  nullableAbacatePaySubscriptionId,
+  nullableAmountInCents,
+  nullableCancellationReason,
+  nullablePaymentMethod,
+  requiredAbacatePaySubscriptionId,
+} from '../../primitives/external/abacate-pay/fields';
 import { BillingSubscriptionIdentityFields } from './fragments/identity/fields';
 
 /**
@@ -24,12 +28,12 @@ export const ActiveBillingSubscriptionSchema = z.object({
   status: z.literal('active'),
   ...BillingSubscriptionIdentityFields.shape,
   /** The provider's subscription (`subs_...`), born from the first payment. */
-  abacatePaySubscriptionId: requiredString('short'),
+  abacatePaySubscriptionId: requiredAbacatePaySubscriptionId,
   activatedAt: requiredInstant,
   /** How the cycle is charged; `null` when the event did not say. */
-  method: PaymentMethodEnum.nullable(),
+  method: nullablePaymentMethod,
   /** What the last cycle charged, in cents; `null` when the event did not say. */
-  amountInCents: requiredAmountInCents.nullable(),
+  amountInCents: nullableAmountInCents,
   lastRenewedAt: requiredInstant.nullable(),
   /** A refused cycle charge: retries still run and the status stays `active`. */
   lastPaymentFailedAt: requiredInstant.nullable(),
@@ -45,11 +49,11 @@ export const ActiveBillingSubscriptionSchema = z.object({
 export const CancelledBillingSubscriptionSchema = z.object({
   status: z.literal('cancelled'),
   ...BillingSubscriptionIdentityFields.shape,
-  abacatePaySubscriptionId: nullableString('short'),
+  abacatePaySubscriptionId: nullableAbacatePaySubscriptionId,
   activatedAt: requiredInstant.nullable(),
   cancelledAt: requiredInstant,
-  /** The provider's reason when it gave one (`max_payment_retries_exceeded`), else ours. */
-  cancelledDueTo: nullableString('medium'),
+  /** Our enum (`CancellationReasonEnum`), never the provider's free text. */
+  cancelledDueTo: nullableCancellationReason,
 });
 
 /**

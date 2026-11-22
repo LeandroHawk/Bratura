@@ -57,14 +57,15 @@ export default defineSchema({
   ),
   users: defineTable(zodToConvex(UserSchema)),
   organizations: defineTable(zodToConvex(OrganizationSchema)).index('by_slug', ['slug']),
-  memberships: defineTable(zodToConvex(MembershipSchema))
-    .index('by_organization_and_user', ['organizationId', 'userId'])
-    .index('by_user', ['userId']),
+  memberships: defineTable(zodToConvex(MembershipSchema)).index('by_organization_and_user', [
+    'organizationId',
+    'userId',
+  ]),
   billingSubscriptions: defineTable(zodToConvex(BillingSubscriptionSchema))
     .index('by_organization', ['organizationId'])
     .index('by_checkout', ['abacatePayCheckoutId'])
     .index('by_subscription', ['abacatePaySubscriptionId']),
   billingWebhookDeliveries: defineTable(zodToConvex(BillingWebhookDeliverySchema))
     .index('by_delivery', ['deliveryId'])
-    .index('by_billing_subscription', ['billingSubscriptionId']),
+    .index('by_processed', ['processedAt']),
 });

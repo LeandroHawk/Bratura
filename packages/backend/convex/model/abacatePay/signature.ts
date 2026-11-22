@@ -7,30 +7,24 @@
  * relation to our webhook secret (`docs.abacatepay.com`, Segurança dos webhooks). Because it is
  * public the signature only proves integrity — the secret is what proves origin.
  */
-const abacatePayWebhookPublicKey =
+export const abacatePayWebhookPublicKey =
   't9dXRhHHo3yDEj5pVDYz0frf7q6bMKyMRmxxCPIPp3RCplBfXRxqlC6ZpiWmOqj4L63qEaeUOtrCI8P0VMUgo6iIga2ri9ogaHFs0WIIywSMg0q7RmBfybe1E5XJcfC4IW3alNqym0tXoAKkzvfEjZxV6bE0oG2zJrNNYmUCKZyV0KZ3JS8Votf9EAWWYdiDkMkpbMdPggfh1EqHlVkMiTady6jOR3hyzGEHrIz2Ret0xHKMbiqkr9HS1JhNHDX9';
 
 const utf8 = new TextEncoder();
-const base64Digits = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('');
 
-/** Standard base64 → bytes; `null` on anything outside the alphabet (padding allowed). */
+/** Standard base64 → bytes via `atob`; `null` on anything that is not valid base64. */
 function decodeBase64(value: string): Uint8Array | null {
-  const digits = value.replace(/=+$/, '');
-  if (digits.length === 0) return null;
-  const bytes: number[] = [];
-  let buffer = 0;
-  let heldBits = 0;
-  for (const char of digits) {
-    const digit = base64Digits.indexOf(char);
-    if (digit === -1) return null;
-    buffer = (buffer << 6) | digit;
-    heldBits += 6;
-    if (heldBits >= 8) {
-      heldBits -= 8;
-      bytes.push((buffer >> heldBits) & 0xff);
+  try {
+    const binary = atob(value);
+    if (binary.length === 0) return null;
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
     }
+    return bytes;
+  } catch {
+    return null;
   }
-  return Uint8Array.from(bytes);
 }
 
 /**

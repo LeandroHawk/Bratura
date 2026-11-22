@@ -3,6 +3,7 @@ import { documentId } from '../../../../primitives/code/id/fields';
 import { requiredString } from '../../../../primitives/code/string/fields';
 import { requiredHttpsUrl } from '../../../../primitives/code/url/fields';
 import { requiredInstant } from '../../../../primitives/code/time/instant/fields';
+import { requiredAbacatePayCheckoutId } from '../../../../primitives/external/abacate-pay/fields';
 
 /**
  * Writes: `billing.ts`, when a subscription checkout is opened. Comes from: the organization row
@@ -12,7 +13,7 @@ export const BillingSubscriptionIdentityFields = z.object({
   /** The organization the panel belongs to. */
   organizationId: documentId('organizations'),
   /** The provider's checkout (`bill_...`): the first charge's page and the link webhooks carry. */
-  abacatePayCheckoutId: requiredString('short'),
+  abacatePayCheckoutId: requiredAbacatePayCheckoutId,
   /** Where the organization pays the first charge: an AbacatePay-hosted page, always https. */
   checkoutUrl: requiredHttpsUrl,
   /** The provider's customer (`cust_...`) the checkout bills. */

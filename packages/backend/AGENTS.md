@@ -108,6 +108,13 @@ pnpm exec convex run documents:readChosenCallNotices '{"callNoticeIds":["…"],"
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10,"callNoticeIds":["…"]}'
 ```
 
+Billing deliveries a scheduled process never finished (`processedAt` still null) can be re-run
+by hand, a bounded batch at a time:
+
+```bash
+pnpm exec convex run billing:reprocessUnprocessedDeliveries '{}'
+```
+
 Secrets (`FIRECRAWL_API_KEY`, `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`, `ABACATE_PAY_API_KEY`,
 `ABACATE_PAY_WEBHOOK_SECRET`) live
 **only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for

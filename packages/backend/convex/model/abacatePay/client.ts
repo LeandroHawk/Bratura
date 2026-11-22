@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { httpAnswerError } from '../../lib/httpError';
+import { appError } from '../../lib/appError';
 import {
   AbacatePayCustomerSchema,
   AbacatePayEnvelopeSchema,
@@ -13,26 +13,15 @@ import {
 
 const abacatePayTimeoutMs = 15_000;
 const abacatePayBaseUrl = 'https://api.abacatepay.com/v2';
+/** How many catalog pages `findAbacatePayProduct` walks before giving up. */
+const abacatePayProductListPageCeiling = 10;
+/** Retries the provider runs on a failed subscription charge (3 tries, 2 days apart). */
+const abacatePayChargeRetryPolicy = { maxRetry: 3, retryEvery: 2 };
 
 /**
- * A non-2xx AbacatePay answer, or a 2xx whose envelope carries `error`: `status` is what a
- * caller reads to tell "not found" (404) or a bad key (401) from anything else. The body excerpt
- * stays in the error text for the logs, never for a table (`lib/httpError.ts`).
- */
-export class AbacatePayAnswerError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
-    super(`AbacatePay answered HTTP ${status}${message ? `: ${message}` : ''}`);
-    this.name = 'AbacatePayAnswerError';
-  }
-}
-
-/**
- * Calls one API route: Bearer auth, JSON, timeout on every call. A 2xx hands back the envelope's
- * `data`; a non-2xx or an envelope carrying `error` throws `AbacatePayAnswerError`, while no
- * answer at all (timeout, network) throws the `fetch` error itself.
+ * Calls one API route: Bearer auth, JSON, timeout on every call. Any failure — non-2xx, a 2xx
+ * envelope carrying `error`, a bad envelope, timeout — ends as `unavailable` with only the
+ * status and route in the log: the provider's error text never reaches a table or a caller.
  */
 async function callAbacatePay(
   apiKey: string,
@@ -40,24 +29,28 @@ async function callAbacatePay(
   path: string,
   body?: Record<string, unknown>,
 ): Promise<{ data: unknown; pagination: { hasMore?: boolean; next?: string | null } | null }> {
-  const response = await fetch(`${abacatePayBaseUrl}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    signal: AbortSignal.timeout(abacatePayTimeoutMs),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${abacatePayBaseUrl}${path}`, {
+      method,
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      signal: AbortSignal.timeout(abacatePayTimeoutMs),
+    });
+  } catch {
+    console.error(`AbacatePay ${method} ${path} did not answer`);
+    throw appError({ code: 'unavailable' });
+  }
   if (!response.ok) {
-    const answer = await httpAnswerError('AbacatePay', response);
-    throw new AbacatePayAnswerError(response.status, answer.message.split(': ', 2)[1] ?? '');
+    console.error(`AbacatePay ${method} ${path} answered HTTP ${response.status}`);
+    throw appError({ code: 'unavailable' });
   }
   const envelope = AbacatePayEnvelopeSchema.safeParse(await response.json().catch(() => null));
-  if (envelope.success && envelope.data.error) {
-    throw new AbacatePayAnswerError(response.status, envelope.data.error);
+  if (!envelope.success || envelope.data.error) {
+    console.error(`AbacatePay ${method} ${path} answered a failed or malformed envelope`);
+    throw appError({ code: 'unavailable' });
   }
-  return {
-    data: envelope.success ? envelope.data.data : undefined,
-    pagination: envelope.success ? (envelope.data.pagination ?? null) : null,
-  };
+  return { data: envelope.data.data, pagination: envelope.data.pagination ?? null };
 }
 
 /** `GET /stores/get`: proves an api key answers and names the store; writes nothing. */
@@ -72,10 +65,9 @@ export async function fetchAbacatePayStore({
 }
 
 /**
- * Walks `GET /products/list` for our `externalId`: `/products/get` answers 400 (not 404) on a
- * miss, and a business-rule 400 is indistinguishable from a real bad request — the listing is
- * the lookup that does not depend on error text. A repeated `next` cursor ends the walk, so a
- * parameter the provider ignores cannot loop forever.
+ * Walks `GET /products/list` for our `externalId`, up to the page ceiling: `/products/get`
+ * answers 400 on a miss, indistinguishable from a real bad request, so the listing is the
+ * lookup that does not depend on error text.
  */
 export async function findAbacatePayProduct({
   apiKey,
@@ -84,18 +76,16 @@ export async function findAbacatePayProduct({
   apiKey: string;
   externalId: string;
 }): Promise<{ id: string } | null> {
-  const seenCursors = new Set<string>();
   let cursor: string | null = null;
-  do {
+  for (let page = 0; page < abacatePayProductListPageCeiling; page += 1) {
     const query = cursor === null ? '' : `?cursor=${encodeURIComponent(cursor)}`;
     const { data, pagination } = await callAbacatePay(apiKey, 'GET', `/products/list${query}`);
     const items = z.array(AbacatePayProductListItemSchema).parse(data ?? []);
     const found = items.find((item) => item.externalId === externalId);
     if (found) return { id: found.id };
     cursor = pagination?.hasMore ? (pagination.next ?? null) : null;
-    if (cursor !== null && seenCursors.has(cursor)) return null;
-    if (cursor !== null) seenCursors.add(cursor);
-  } while (cursor !== null);
+    if (cursor === null) return null;
+  }
   return null;
 }
 
@@ -184,7 +174,7 @@ export async function createAbacatePaySubscriptionCheckout({
     customerId,
     externalId,
     methods,
-    retryPolicy: { maxRetry: 3, retryEvery: 2 },
+    retryPolicy: abacatePayChargeRetryPolicy,
     ...(completionUrl === undefined ? {} : { completionUrl }),
   });
   const checkout = AbacatePaySubscriptionCheckoutSchema.parse(data);
@@ -200,6 +190,21 @@ export async function cancelAbacatePaySubscription({
   subscriptionId: string;
 }): Promise<void> {
   await callAbacatePay(apiKey, 'POST', '/subscriptions/cancel', { id: subscriptionId });
+}
+
+/** `POST /subscriptions/checkouts/delete?id=...`: an unpaid `bill_...` stops accepting payment. */
+export async function deleteAbacatePaySubscriptionCheckout({
+  apiKey,
+  checkoutId,
+}: {
+  apiKey: string;
+  checkoutId: string;
+}): Promise<void> {
+  await callAbacatePay(
+    apiKey,
+    'POST',
+    `/subscriptions/checkouts/delete?id=${encodeURIComponent(checkoutId)}`,
+  );
 }
 
 /**

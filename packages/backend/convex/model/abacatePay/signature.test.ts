@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { abacatePaySecretMatches, abacatePaySignatureMatches } from './signature';
+import {
+  abacatePaySecretMatches,
+  abacatePaySignatureMatches,
+  abacatePayWebhookPublicKey,
+} from './signature';
 
 const utf8 = new TextEncoder();
 
@@ -11,6 +15,20 @@ const fixtureBody = utf8.encode(
 const fixtureSignature = 'IwdH+CMPKKwqT0Nwt64xN4GPK1Cur/WNImQCGFJj7N8=';
 
 describe('abacatePaySignatureMatches', () => {
+  test('the exported public key signs `fixtureBody` into `fixtureSignature`', async () => {
+    const key = await crypto.subtle.importKey(
+      'raw',
+      utf8.encode(abacatePayWebhookPublicKey),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const signature = btoa(
+      String.fromCharCode(...new Uint8Array(await crypto.subtle.sign('HMAC', key, fixtureBody))),
+    );
+    expect(signature).toBe(fixtureSignature);
+  });
+
   test('accepts the HMAC-SHA256 of the raw body', async () => {
     expect(await abacatePaySignatureMatches(fixtureBody, fixtureSignature)).toBe(true);
   });
@@ -30,7 +48,7 @@ describe('abacatePaySignatureMatches', () => {
 
 describe('abacatePaySecretMatches', () => {
   test('equal secrets match; a different or empty one does not', () => {
-    const secret = 'f72179170ec5a0c845c0fcd18457e241006d09363b2d2a7d296d7bffbcd027c4';
+    const secret = 'test-webhook-secret';
     expect(abacatePaySecretMatches(secret, secret)).toBe(true);
     expect(abacatePaySecretMatches(`${secret}x`, secret)).toBe(false);
     expect(abacatePaySecretMatches('', secret)).toBe(false);

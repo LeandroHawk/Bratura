@@ -1,15 +1,20 @@
 import { z } from 'zod';
 import { documentId } from '../../primitives/code/id/fields';
 import { nullableString, requiredString } from '../../primitives/code/string/fields';
-import { requiredAmountInCents } from '../../primitives/domain/money/fields';
 import { requiredInstant } from '../../primitives/code/time/instant/fields';
-import { PaymentMethodEnum } from '../billing-subscription/enums/payment-method/enum';
+import {
+  nullableAbacatePayCheckoutId,
+  nullableAbacatePaySubscriptionId,
+  nullableAmountInCents,
+  nullableCancellationReason,
+  nullablePaymentMethod,
+} from '../../primitives/external/abacate-pay/fields';
 import { DeliveryOutcomeEnum } from './enums/delivery-outcome/enum';
 
 /**
  * One webhook delivery from the billing provider (the inbox pattern): its `log_...` id is the
- * dedupe key — retries resend the same one. It stores what the event says about the subscription
- * and never the whole payload, which carries masked personal data (`docs/security.md` §4).
+ * dedupe key — retries resend it. It stores what the event says about the subscription and
+ * never the whole payload, which carries masked personal data (`docs/security.md` §4).
  * Writes: `billing.ts` — the http route records it, `processAbacatePayDelivery` resolves it.
  */
 export const BillingWebhookDeliverySchema = z.object({
@@ -20,14 +25,20 @@ export const BillingWebhookDeliverySchema = z.object({
   /** The provider's sandbox flag on the delivery. */
   devMode: z.boolean(),
   /** The `subs_...` and `bill_...` the event names, when it names them. */
-  abacatePaySubscriptionId: nullableString('short'),
-  abacatePayCheckoutId: nullableString('short'),
+  abacatePaySubscriptionId: nullableAbacatePaySubscriptionId,
+  abacatePayCheckoutId: nullableAbacatePayCheckoutId,
   /** What the event's subscription charges per cycle, in cents, when it says. */
-  amountInCents: requiredAmountInCents.nullable(),
-  method: PaymentMethodEnum.nullable(),
-  /** Set on a plan change the provider has not applied yet. */
+  amountInCents: nullableAmountInCents,
+  method: nullablePaymentMethod,
+  /** Set on a plan change the provider has not applied yet (`subu_...`). */
   pendingUpdateId: nullableString('short'),
-  cancelledDueTo: nullableString('medium'),
+  /** `data.status` on a plan change: `PENDING` until the next charge applies it. */
+  planChangeStatus: nullableString('short'),
+  /** The new quantity a plan change carries (`data.quantity` or the checkout's item). */
+  quantity: z.int().positive().nullable(),
+  /** The subscription's new charge on a plan change, in cents. */
+  newAmountInCents: nullableAmountInCents,
+  cancelledDueTo: nullableCancellationReason,
   /** Our row the event landed on; `null` while unmatched or unprocessed. */
   billingSubscriptionId: documentId('billingSubscriptions').nullable(),
   receivedAt: requiredInstant,

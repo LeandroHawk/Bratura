@@ -28,7 +28,9 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
 
 - Every call is `https://api.abacatepay.com/v2/<path>` with `Authorization: Bearer <key>`, JSON
   body, under our usual `AbortSignal.timeout`. A 2xx answers `{ data, success, error }`; a non-2xx
-  answers `{ error }` — only the HTTP status reaches our error, never the text.
+  answers `{ error }`. Every failure — non-2xx, a failed or malformed envelope, a timeout — is
+  thrown as `unavailable` in one place (`callAbacatePay`); the log keeps the status and the
+  route, and the provider's error text never reaches a table, a caller or a log.
 - **Test mode** keys start `abc_dev_`, production `abc_prod_`: same API, simulated payments, no
   company verification — what the hackathon's rule 6.9 allows for the demo. Dev-mode and
   production objects live in separate stores; each environment provisions its own product.
@@ -41,17 +43,32 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
   idempotent on it, so a repeat checkout dedupes to the same `cust_...`.
 - **The subscription checkout** (`POST /subscriptions/create`): one product item with
   `quantity` = managed profiles; answers a `bill_...` with a hosted `url` — the only page the
-  organization ever sees. `externalId` is `org-<organizationId>`, so a repeat call is the
-  provider's dedupe as well. The `subs_...` subscription itself is born only when the first
-  charge succeeds (or the trial starts).
+  organization ever sees. `externalId` is `org-<organizationId>-<n>` where `n` counts the
+  organization's subscription rows plus one: a fresh id per attempt, so the provider's dedupe
+  still catches concurrent repeats and a reopen after a cancel never asks for the dead `bill_`.
+  The `subs_...` subscription itself is born only when the first charge succeeds (or the trial
+  starts). The checkout is created with the provider's `retryPolicy` of 3 charge retries, 2
+  days apart (the named `abacatePayChargeRetryPolicy` in `client.ts`).
 - **Change plan** (`POST /subscriptions/change-plan`): schedules a new quantity for the **next
   cycle** — no proration, one pending change at a time, products must share the cycle. Pix
   Automático subscriptions refuse an amount change; the provider's refusal then reaches the
-  caller as `unavailable`. Meanwhile `pendingManagedProfiles` holds the asked quantity until the
-  provider's `plan_changed` without `pendingUpdateId` lands — that delivery is the applied
-  change.
+  caller as `unavailable`. The provider emits `plan_changed` twice: the request event carries
+  `data.status: "PENDING"`, `pendingUpdateId`, `quantity` and `newAmount` — it only records the
+  asked quantity in `pendingManagedProfiles`. The applied event comes on the next charge
+  **without** the request fields, with the new cycle charge in `subscription.amount`: it moves
+  the quantity into `managedProfiles` (from `pendingManagedProfiles`, else the event's
+  `quantity`, which also covers a change made on the provider's dashboard).
 - **Cancel** (`POST /subscriptions/cancel`): immediate and irreversible on the provider; ours
-  then marks the row `cancelled` with `cancelledByBratura`.
+  then marks the row `cancelled` with `cancelledByBratura`. On a `pending` row —
+  `POST /subscriptions/checkouts/delete` instead: the unpaid `bill_...` stops accepting payment,
+  which is how an abandoned or mis-quantified checkout gets a way out (the provider emits no
+  event when one expires).
+- **Cancellation reasons**: the event's `cancelledDueTo` is free text that can carry a
+  payer-typed motive ("Cancelada pelo cliente no portal: <reason>"). It is read only to map it
+  to our `CancellationReasonEnum` at the edge (`mapAbacatePayCancellationReason` in
+  `payload.ts`): `customerPortal`, `customerRefund`, `maxPaymentRetriesExceeded`,
+  `disputeOpened`, `pixAuthorizationRefused`, `accountClosed`, `other` — the provider's text
+  itself never reaches a table or a log.
 - **`GET /stores/get`**: `billing:checkAbacatePayCredentials` runs it to prove a key — run it
   after `env set`, like `telegram:checkTelegramCredentials`.
 - **`POST /webhooks/create`**: `billing:registerPanelWebhook` registers
@@ -65,25 +82,30 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
 - **Proof, before anything reads the body**: the shared secret (`X-Webhook-Secret` header or the
   `webhookSecret` query param, both compared in constant time) and `X-Webhook-Signature`, an
   HMAC-SHA256 over the **raw** body bytes, base64, keyed by the provider's documented public key.
-  A failure is a 401; a signed body that is not our envelope is a 400. We accept the signature
-  rather than signing ourselves because the key is public — what proves the delivery is the
-  secret only we and the provider know.
+  A failure is a 403; a signed body that is not our envelope is a 400. Because the signing key
+  is public, the signature proves the body arrived intact — only the secret proves the delivery
+  is really ours (see "Open for brainstorming" for what this means when the panel unlocks).
 - **The envelope** is `{ id: "log_...", event, apiVersion, devMode, data }`. `id` is stable
-  across retries — the inbox's dedupe key. The provider warns fields may be added, so `data` is
-  parsed loosely down to what rows need (`subscription.id/amount/method/cancelledDueTo`,
-  `checkout.id`, `pendingUpdateId`); personal fields (`customer`, `payerInformation`) are never
-  read, which is stronger than dropping them.
+  across retries — the inbox's dedupe key. `data` is parsed **field by field**
+  (`parseAbacatePayEventData`): a bad field becomes `null` alone, so an oversized reason or an
+  unknown `method` cannot erase the `subs_...`/`bill_...` that locate the row. If neither id
+  parses, the delivery is stored already resolved as `unparsed` (the event name and the failed
+  field paths are logged, never values) — the raw body is gone, so it can never be re-run.
+  Personal fields (`customer`, `payerInformation`) are never read, which is stronger than
+  dropping them.
 - **Events handled** (all `subscription.*`; `checkout.completed` is deliberately not subscribed —
   every paid subscription charge also emits it, and handling both families would apply twice):
   `completed` and `trial_started` activate, `renewed` refreshes amount and clears the failure
   mark, `payment_failed` marks `lastPaymentFailedAt` (retries still run; the panel stays on),
-  `plan_changed` is the pending (`pendingUpdateId` set) or applied quantity change, `cancelled`
-  is terminal.
+  `plan_changed` is the requested (`PENDING`) or applied quantity change, `cancelled` is
+  terminal.
 - **Order is not guaranteed** — the row's status decides, not the event's position: a `completed`
   or `renewed` landing on a `cancelled` row is recorded as `superseded` and changes nothing.
 - **Store, answer, process**: the handler records the delivery and answers 200, then
   `processAbacatePayDelivery` runs scheduled. A slow or failing apply never turns into a provider
-  retry we already deduped; a delivery names its row by `subs_...` first, then by `bill_...`.
+  retry we already deduped; a delivery names its row by `subs_...` first, then by `bill_...`. A
+  delivery a scheduled run never finished (`processedAt` still null) can be re-run by hand with
+  `billing:reprocessUnprocessedDeliveries`.
 
 ## Operations
 
@@ -109,25 +131,44 @@ pnpm exec convex env set ABACATE_PAY_WEBHOOK_SECRET   # a generated random strin
 pnpm exec convex run billing:registerPanelWebhook '{}'
 ```
 
-**Checked with real calls, 2026-11-21** (sandbox `abc_dev_` key on a dev deployment, no production
-data): `stores/get`, `products/list` + `create`, `customers/create`, `subscriptions/create` and
-`webhooks/create` all answered as documented, and a paid test checkout delivered a real signed
-`subscription.completed` — secret and HMAC verified, the inbox applied it, the row went `active`
-with a real `subs_...`. Learned live: `subscription.amount` is the **cycle total** in cents
-(8970 for 3 × 2990), not the unit price; and `/products/get` answers **400** on a miss, which is
-why the product lookup walks `/products/list` instead of trusting a status code. Still unproven:
-`plan_changed`'s `pendingUpdateId` on the applied change, `payment_failed` and `renewed` — they
-need a live cycle to fire.
+**Checked with real calls, 2026-11-21/22** (sandbox `abc_dev_` key on a dev deployment, no
+production data): `stores/get`, `products/list` + `create`, `customers/create`,
+`subscriptions/create`, `change-plan`, `cancel` and `webhooks/create` all answered as
+documented, and a paid test checkout delivered a real signed `subscription.completed` — secret
+and HMAC verified, the inbox applied it, the row went `active` with a real `subs_...`. Learned
+live: `subscription.amount` is the **cycle total** in cents (8970 for 3 × 2990), not the unit
+price; `/products/get` answers **400** on a miss, which is why the product lookup walks
+`/products/list` instead of trusting a status code; a real `plan_changed` request arrived with
+`pendingUpdateId` set (`subu_...`) and our row kept the old quantity as billed; and a provider
+`subscription.cancelled` landing after our own cancel used to wipe `activatedAt` —
+`cancelled` is now guarded as terminal like every other event. Cancel-and-reopen was exercised
+live too: attempt 1 `bill_XBFJmN2KtFCsEchZq1LskfNp` (paid, cancelled), attempt 2
+`bill_DB2ndn1enXcz5nsbMm4XqXsa` (`org-<id>-2`, deleted as a pending checkout), attempt 3
+`bill_5hQZaBC44mwccm2HRk0dxjJ5` (`org-<id>-3`, still pending) — three distinct `bill_`, no
+duplicate. Two live API corrections this round: `checkouts/delete` takes the `id` in the
+**query string**, and old delivery rows needed a backfill before the new required fields
+pushed. Still unproven: the applied `plan_changed` event, `payment_failed` and `renewed` —
+they need a live cycle to fire.
 
 ## Open for brainstorming
 
-1. **Ownership** (when auth lands): `openPanelCheckout`, `changeManagedProfiles` and
-   `cancelPanelSubscription` must check the caller owns a membership of the organization —
-   everything is `internal` today, so the check is a precondition for exposing them, not a hole.
-2. **Dunning** (when the org panel exists): `payment_failed` only marks the row; the
-   notification outbox can warn the organization's members the panel will go dark.
-3. **Pix Automático** (when a payer asks for it): `methods` is `['CARD']` today; adding `PIX`
-   means change-plan stops working (the provider refuses amount changes on Pix), so quantity
-   changes would need a cancel-and-reopen path.
-4. **Member sync** (when the panel counts real profiles): `managedProfiles` is passed by the
-   caller today; a membership/follow count should drive it.
+- **When the panel unlocks anything meaningful**: confirm an activating delivery against the
+  provider's API before turning it on. The HMAC key is public and the shared secret travels in
+  the URL — whoever knows the secret can emit a signed `subscription.completed` today. Cheap
+  insurance: `GET` the subscription by the `subs_...` the event named before activating.
+- **When the panel counts real creators**: decide which table is the source of truth for
+  `managedProfiles`. It is a number the caller passes today (`memberships` are the
+  organization's users, not the creators it follows); the count should come from a
+  follow/managed table that does not exist yet.
+- **When the payment-failure policy is decided**: `payment_failed` only marks the row today.
+  Define the dunning flow — grace period, notification to the organization's members, when the
+  panel goes dark — before cutting access.
+- **When Pix Automático is supported**: `methods` is `['CARD']` today. Pix refuses amount
+  changes on change-plan, so quantity changes would need a cancel-and-reopen path, and its
+  authorization events need mapping.
+- **Ownership** (when auth lands): `openPanelCheckout`, `changeManagedProfiles` and
+  `cancelPanelSubscription` must check the caller owns a membership of the organization —
+  everything is `internal` today, so the check is a precondition for exposing them, not a hole.
+- **Customer-portal cancels are `NEXT_CYCLE`**: a payer cancelling on the provider's portal keeps
+  access until the paid cycle ends; our `cancelled` is terminal on arrival, so the panel turns
+  off early. Revisit if organizations ever cancel through the portal.
