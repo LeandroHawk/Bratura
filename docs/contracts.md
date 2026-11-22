@@ -130,6 +130,8 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
                             `shared/messages/user-notification`
     callNoticeDocuments/    selection.ts: which calls and files are worth reading, from the listing
     llm/                    generateJson.ts (the only import; provider and model from env), evidence.ts
+    abacatePay/             the billing provider: client.ts + payload.ts (the API), signature.ts
+                            (the webhook's HMAC)
   crons.ts  http.ts         Convex's entry files
   extraction.ts             fields from the read documents, by hand, through model/llm; the only
                             writer of `callNoticeExtractions`
@@ -140,6 +142,9 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
   notificationDeliveries.ts how it left the site: the send outbox (the only writer of
                             `notificationDeliveries`)
   users.ts                  the user's only writer
+  organizations.ts          the organization's only writer (`organizations`, `memberships`)
+  billing.ts                the panel subscription's only writer (`billingSubscriptions`,
+                            `billingWebhookDeliveries`) and the AbacatePay webhook's handler
   telegram.ts  matching.ts                                  (telegram.ts is a skeleton; matching.ts
                                                             comes later)
 ```

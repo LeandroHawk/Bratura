@@ -24,7 +24,10 @@ convex/
   userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
   notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
   users.ts                    the user's only writer
-  portfolio.ts  matching.ts  orgs.ts                                            (not yet)
+  organizations.ts            the organization's only writer (`organizations`, `memberships`)
+  billing.ts                  the panel subscription's only writer (`billingSubscriptions`,
+                              `billingWebhookDeliveries`), the AbacatePay webhook's handler
+  portfolio.ts  matching.ts                                                     (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
@@ -41,6 +44,8 @@ convex/
                      getMe, sendMessage); the text is `shared/messages/user-notification`
     sources/         registry.ts: every source the team checked, what `registerSource` copies
     llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
+    abacatePay/      client.ts + payload.ts (the billing API), signature.ts (the webhook's HMAC):
+                     docs/integrations/abacate-pay.md
   _generated/     written by the Convex CLI; committed, never edited by hand
 ```
 
@@ -103,7 +108,15 @@ pnpm exec convex run documents:readChosenCallNotices '{"callNoticeIds":["…"],"
 pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10,"callNoticeIds":["…"]}'
 ```
 
-Secrets (`FIRECRAWL_API_KEY`, `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`) live
+Billing deliveries a scheduled process never finished (`processedAt` still null) can be re-run
+by hand, a bounded batch at a time:
+
+```bash
+pnpm exec convex run billing:reprocessUnprocessedDeliveries '{}'
+```
+
+Secrets (`FIRECRAWL_API_KEY`, `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`, `ABACATE_PAY_API_KEY`,
+`ABACATE_PAY_WEBHOOK_SECRET`) live
 **only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
 it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).
 The LLM is configuration, not code: `LLM_BASE_URL` (any provider in the OpenAI chat format;
