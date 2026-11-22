@@ -43,10 +43,9 @@ import {
 } from './model/abacatePay/payload';
 import { abacatePaySecretMatches, abacatePaySignatureMatches } from './model/abacatePay/signature';
 
-// Billing (`docs/integrations/abacate-pay.md`): the organization panel's monthly subscription,
-// billed per managed profile by AbacatePay — the only writer of `billingSubscriptions` and
-// `billingWebhookDeliveries`. Handlers name their return types: this module calls its own
-// functions through `internal`, and without them every `internal` type silently becomes `any`.
+// Billing (`docs/integrations/abacate-pay.md`): the panel's monthly subscription per managed
+// profile — the only writer of `billingSubscriptions` and `billingWebhookDeliveries`. Handlers
+// name return types: without them every `internal` call here silently becomes `any`.
 
 /** The panel product's `externalId` on the provider: one per store, never per organization. */
 const panelProductExternalId = 'bratura-managed-profile';
