@@ -4,8 +4,9 @@ import type { PortfolioItemsCopy } from '@/features/portfolio/pages/sections/com
 
 const ptBR = {
   title: 'Documentação',
-  lead: 'Os papéis que os editais pedem, guardados uma vez. Avisamos quando um deles vence.',
-  empty: 'Nenhum documento ainda. O CPF e um comprovante de residência já abrem muitos editais.',
+  lead: 'Os papéis que os editais pedem, guardados uma vez. Um papel vencido ou perto de vencer aparece marcado aqui e em cada edital que o pede.',
+  empty:
+    'Nenhum documento ainda. Um documento de identidade e um comprovante de residência já abrem muitos editais.',
   add: 'Adicionar documento',
   edit: 'Editar documento',
   fields: {
@@ -17,6 +18,7 @@ const ptBR = {
   },
   status: {
     registered: 'Cadastrado',
+    expiring: 'Vence em breve',
     pending: 'Pendente',
     expired: 'Vencido',
   } satisfies Record<PortfolioDocumentStatus, string>,
@@ -27,8 +29,9 @@ export const DOCUMENTS_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     title: 'Documents',
-    lead: 'The papers calls ask for, stored once. We warn you when one of them expires.',
-    empty: 'No document yet. The CPF and a proof of residence already open many calls.',
+    lead: 'The papers calls ask for, stored once. A paper that expired or is about to is marked here and in every call that asks for it.',
+    empty:
+      'No document yet. An identity document and a proof of residence already open many calls.',
     add: 'Add document',
     edit: 'Edit document',
     fields: {
@@ -38,7 +41,12 @@ export const DOCUMENTS_CONTENT: Record<Locale, typeof ptBR> = {
       validUntil: 'Expiry date',
       file: 'File',
     },
-    status: { registered: 'Registered', pending: 'Pending', expired: 'Expired' },
+    status: {
+      registered: 'Registered',
+      expiring: 'Expires soon',
+      pending: 'Pending',
+      expired: 'Expired',
+    },
     validUntil: (date) => `valid until ${date}`,
   },
 };

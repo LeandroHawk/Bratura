@@ -42,6 +42,8 @@ const ptBR = {
   notInformed: 'Não informado',
   optional: '(opcional)',
   chooseOne: 'Escolha',
+  yes: 'Sim',
+  no: 'Não',
 };
 
 /** Names of the contract's values and the words every form and listing repeats. */
@@ -86,5 +88,7 @@ export const CREATOR_LABELS: Record<Locale, typeof ptBR> = {
     notInformed: 'Not informed',
     optional: '(optional)',
     chooseOne: 'Choose',
+    yes: 'Yes',
+    no: 'No',
   },
 };

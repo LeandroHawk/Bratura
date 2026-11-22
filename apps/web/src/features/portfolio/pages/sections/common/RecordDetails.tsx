@@ -2,36 +2,47 @@ import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-fi
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { ReactNode } from 'react';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { formattedPlainDate } from '@/features/common/utils/format';
+import { formattedAmountInCents, formattedPlainDate } from '@/features/common/utils/format';
 import type { FormField } from './formFields';
 
 const LINK = 'rounded-sm font-semibold underline underline-offset-4 focus-ring break-all';
 
 function shownValue(value: unknown, { control, options }: FormField, locale: Locale): ReactNode {
+  const labels = CREATOR_LABELS[locale];
   if (value === null || value === undefined || value === '') return null;
   if (Array.isArray(value)) {
     if (value.length === 0) return null;
     return (
       <ul className="grid gap-1">
-        {(value as (string | AttachedFile)[]).map((entry) => {
-          const text = typeof entry === 'string' ? entry : entry.fileName;
-          return (
-            <li key={text}>
-              {control === 'links' ? (
-                <a href={text} target="_blank" rel="noreferrer" className={LINK}>
-                  {text}
-                </a>
-              ) : (
-                (options?.labels[text] ?? text)
-              )}
-            </li>
-          );
-        })}
+        {(value as (string | AttachedFile | { name: string; role: string })[]).map(
+          (entry, index) => {
+            const text =
+              typeof entry === 'string'
+                ? entry
+                : 'fileName' in entry
+                  ? entry.fileName
+                  : `${entry.name} · ${entry.role}`;
+            return (
+              // A stored list read back, never reordered: its position is the stable key.
+              <li key={index}>
+                {control === 'links' ? (
+                  <a href={text} target="_blank" rel="noreferrer" className={LINK}>
+                    {text}
+                  </a>
+                ) : (
+                  (options?.labels[text] ?? text)
+                )}
+              </li>
+            );
+          },
+        )}
       </ul>
     );
   }
   if (control === 'file') return (value as AttachedFile).fileName;
   if (control === 'date') return formattedPlainDate(String(value), locale);
+  if (control === 'amount') return formattedAmountInCents(Number(value), locale);
+  if (control === 'yesNo') return value === true ? labels.yes : labels.no;
   if (control === 'select') return options?.labels[String(value)] ?? String(value);
   return String(value);
 }

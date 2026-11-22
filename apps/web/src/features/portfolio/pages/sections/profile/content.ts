@@ -2,7 +2,7 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
   title: 'Perfil cultural',
-  lead: 'Como você se apresenta. Um edital lê isto antes de ler o seu projeto.',
+  lead: 'Como você se apresenta. Um edital lê isto antes de ler o seu projeto. Nascimento, tempo de residência e serviço público são opcionais: servem para conferir as regras de idade, moradia e impedimento dos editais.',
   edit: 'Editar perfil cultural',
   registrationTitle: 'Do seu cadastro',
   registrationLead: 'O que os editais são conferidos com você: quem se inscreve e onde.',
@@ -18,6 +18,9 @@ const ptBR = {
     artisticName: 'Nome artístico ou nome fantasia',
     mainCulturalArea: 'Área cultural principal',
     activityStartYear: 'Ano de início da atuação cultural',
+    birthDate: 'Data de nascimento',
+    livesInCurrentPlaceSince: 'Mora na cidade atual desde',
+    isPublicServant: 'É servidor(a) público(a)?',
     secondaryCulturalAreas: 'Áreas culturais secundárias',
     biography: 'Biografia ou apresentação',
     activityDescription: 'Descrição da atuação cultural',
@@ -31,7 +34,7 @@ export const PROFILE_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     title: 'Cultural profile',
-    lead: 'How you present yourself. A call reads this before it reads your project.',
+    lead: 'How you present yourself. A call reads this before it reads your project. Birth date, time of residence and public service are optional: they answer the calls’ rules on age, residence and who is barred.',
     edit: 'Edit cultural profile',
     registrationTitle: 'From your sign-up',
     registrationLead: 'What the calls are checked against: who applies and where.',
@@ -47,6 +50,9 @@ export const PROFILE_CONTENT: Record<Locale, typeof ptBR> = {
       artisticName: 'Artistic or trade name',
       mainCulturalArea: 'Main cultural area',
       activityStartYear: 'Year your cultural work began',
+      birthDate: 'Date of birth',
+      livesInCurrentPlaceSince: 'Living in the current city since',
+      isPublicServant: 'Are you a public servant?',
       secondaryCulturalAreas: 'Secondary cultural areas',
       biography: 'Biography or presentation',
       activityDescription: 'Description of your cultural work',

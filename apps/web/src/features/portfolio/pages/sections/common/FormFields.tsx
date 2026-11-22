@@ -13,6 +13,14 @@ const FILE_INPUT =
   'file:border-foreground file:bg-transparent file:px-3.5 file:py-1.5 file:font-body ' +
   'file:text-caption file:font-semibold file:text-foreground';
 
+type CommonContent = (typeof PORTFOLIO_COMMON_CONTENT)[Locale];
+
+const LIST_HINT = {
+  lines: (content: CommonContent) => content.onePerLine,
+  links: (content: CommonContent) => content.oneLinkPerLine,
+  people: (content: CommonContent) => content.onePersonPerLine,
+};
+
 /** The controls of a form, drawn from its field list: one renderer for every portfolio form. */
 export function FormFields({
   locale,
@@ -31,7 +39,7 @@ export function FormFields({
   messageByPath: Record<string, string>;
 }) {
   const content = PORTFOLIO_COMMON_CONTENT[locale];
-  const { optional, chooseOne } = CREATOR_LABELS[locale];
+  const { optional, chooseOne, yes, no } = CREATOR_LABELS[locale];
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -53,15 +61,27 @@ export function FormFields({
             onChange: (event: { target: { value: string } }) => setField(name, event.target.value),
           };
           if (control === 'textarea') return <TextAreaField key={name} {...common} />;
-          if (control === 'lines' || control === 'links')
+          if (control === 'lines' || control === 'links' || control === 'people')
             return (
               <TextAreaField
                 key={name}
                 {...common}
                 rows={3}
-                hint={control === 'links' ? content.oneLinkPerLine : content.onePerLine}
+                hint={LIST_HINT[control](content)}
                 inputMode={control === 'links' ? 'url' : undefined}
               />
+            );
+          if (control === 'yesNo')
+            return (
+              <SelectField key={name} {...common}>
+                <option value="">{chooseOne}</option>
+                <option value="yes">{yes}</option>
+                <option value="no">{no}</option>
+              </SelectField>
+            );
+          if (control === 'amount')
+            return (
+              <TextField key={name} {...common} inputMode="decimal" hint={content.amountInReais} />
             );
           if (control === 'select')
             return (

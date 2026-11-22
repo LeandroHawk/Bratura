@@ -3,8 +3,11 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 const ptBR = {
   title: 'Portfólio inteligente',
   lead: 'Sua trajetória montada sozinha a partir do que você cadastrou, pronta para mostrar ou imprimir.',
-  timelineTitle: 'Linha do tempo',
-  timelineEmpty: 'A linha do tempo aparece quando houver uma experiência com data.',
+  timelineTitle: 'Currículo',
+  timelineLead:
+    'Montado das suas experiências: o que foi, de que tipo, onde e quando. É o que responde a um edital que pede currículo.',
+  timelineEmpty: 'O currículo aparece quando houver uma experiência com data.',
+  period: (start: string, end: string) => `${start} a ${end}`,
   checksTitle: 'O que conferir',
   checksLead: 'Conferência automática do que está cadastrado. Não é texto gerado por IA.',
   checks: {
@@ -32,8 +35,11 @@ export const SMART_PORTFOLIO_CONTENT: Record<Locale, typeof ptBR> = {
   en: {
     title: 'Smart portfolio',
     lead: 'Your path put together by itself from what you registered, ready to show or print.',
-    timelineTitle: 'Timeline',
-    timelineEmpty: 'The timeline appears once an experience has a date.',
+    timelineTitle: 'Curriculum',
+    timelineLead:
+      'Built from your experiences: what it was, of which kind, where and when. It answers a call that asks for a curriculum.',
+    timelineEmpty: 'The curriculum appears once an experience has a date.',
+    period: (start, end) => `${start} to ${end}`,
     checksTitle: 'What to check',
     checksLead: 'An automatic check of what is registered. This is not AI-generated text.',
     checks: {

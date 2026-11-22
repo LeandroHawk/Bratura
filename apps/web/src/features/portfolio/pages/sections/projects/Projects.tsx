@@ -33,7 +33,7 @@ export function Projects({
 }) {
   const content = PROJECTS_CONTENT[locale];
   const { culturalArea } = CREATOR_LABELS[locale];
-  const fields: FormField<keyof typeof content.fields>[] = [
+  const fields = [
     { name: 'name', control: 'text', isRequired: true, isWide: true },
     {
       name: 'culturalArea',
@@ -51,12 +51,14 @@ export function Projects({
     { name: 'endDate', control: 'date' },
     { name: 'venue', control: 'text' },
     { name: 'targetAudience', control: 'text' },
+    { name: 'budgetInCents', control: 'amount' },
+    { name: 'team', control: 'people', isWide: true },
     { name: 'description', control: 'textarea', isWide: true },
     { name: 'objective', control: 'textarea', isWide: true },
     { name: 'results', control: 'textarea', isWide: true },
     { name: 'links', control: 'links', isWide: true },
     { name: 'attachments', control: 'files', isWide: true },
-  ];
+  ] satisfies FormField<keyof CulturalProjectPortfolioItem>[];
 
   return (
     <PortfolioItemsSection

@@ -4,8 +4,10 @@ import type { Creator } from '@bratura/shared/entities/creator/entity';
 import type { CulturalExperiencePortfolioItem } from '@bratura/shared/entities/portfolio-item/kinds/cultural-experience/variant';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Card, Heading } from '@bratura/ui';
+import type { CSSProperties } from 'react';
 import { formattedPlainDate } from '@/features/common/utils/format';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
+import { PORTFOLIO_COMMON_CONTENT } from '@/features/portfolio/pages/sections/common/content';
 import { SMART_PORTFOLIO_CONTENT } from './content';
 
 /** Under this many characters a biography says too little for a call's reader. */
@@ -21,6 +23,7 @@ export function SmartPortfolio({
   experiences: CulturalExperiencePortfolioItem[];
 }) {
   const content = SMART_PORTFOLIO_CONTENT[locale];
+  const { activityKind } = PORTFOLIO_COMMON_CONTENT[locale];
   const titleId = `${PORTFOLIO_SECTION_IDS.smartPortfolio}-title`;
 
   const dated = experiences
@@ -65,9 +68,12 @@ export function SmartPortfolio({
 
       <div className="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
         <Card className="grid gap-4">
-          <Heading as="h3" size="item">
-            {content.timelineTitle}
-          </Heading>
+          <div className="grid gap-1">
+            <Heading as="h3" size="item">
+              {content.timelineTitle}
+            </Heading>
+            <p className="text-small text-muted-foreground">{content.timelineLead}</p>
+          </div>
           {dated.length === 0 ? (
             <p className="text-muted-foreground">{content.timelineEmpty}</p>
           ) : (
@@ -76,7 +82,7 @@ export function SmartPortfolio({
                 <li
                   key={year}
                   className="rise-in grid gap-2 sm:grid-cols-[4.5rem_1fr]"
-                  style={{ animationDelay: `${index * 80}ms` }}
+                  style={{ '--rise-index': Math.min(index, 8) } as CSSProperties}
                 >
                   <p className="font-display text-2xl leading-none font-bold">{year}</p>
                   <ul className="grid gap-3 border-l-2 border-foreground pl-4">
@@ -87,9 +93,17 @@ export function SmartPortfolio({
                           <p className="font-semibold">{experience.title}</p>
                           <p className="text-small text-muted-foreground">
                             {[
+                              activityKind[experience.activityKind],
+                              [experience.venue, experience.city, experience.state]
+                                .filter(Boolean)
+                                .join(', '),
                               experience.startDate &&
-                                formattedPlainDate(experience.startDate, locale),
-                              experience.city,
+                                (experience.endDate
+                                  ? content.period(
+                                      formattedPlainDate(experience.startDate, locale),
+                                      formattedPlainDate(experience.endDate, locale),
+                                    )
+                                  : formattedPlainDate(experience.startDate, locale)),
                             ]
                               .filter(Boolean)
                               .join(' · ')}
@@ -115,8 +129,9 @@ export function SmartPortfolio({
               {checks.length === 0 ? (
                 <li>{content.checks.allGood}</li>
               ) : (
-                checks.map((check) => (
-                  <li key={check} className="border-l-2 border-status-soon pl-3">
+                checks.map((check, index) => (
+                  // A fixed list of checks in a fixed order: the position is the stable key.
+                  <li key={index} className="border-l-2 border-status-soon pl-3">
                     {check}
                   </li>
                 ))

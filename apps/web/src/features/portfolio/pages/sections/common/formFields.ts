@@ -1,20 +1,26 @@
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import {
+  amountInCentsFromInput,
   linkFromInput,
   linesFromInput,
   listFromInput,
   nullableTextFromInput,
+  peopleFromInput,
 } from '@/features/common/utils/form-text';
 
 /**
  * How one field of the contract is typed in a form. `lines` and `links` are lists typed one per
- * line; `file` keeps one attached file, `files` several.
+ * line, `people` one "name, role" per line; `amount` is typed in reais and kept in cents; `yesNo`
+ * is a yes, a no or no answer; `file` keeps one attached file, `files` several.
  */
 export type FormFieldControl =
   | 'text'
   | 'textarea'
   | 'date'
   | 'year'
+  | 'amount'
+  | 'yesNo'
+  | 'people'
   | 'select'
   | 'checkboxes'
   | 'lines'
@@ -45,6 +51,14 @@ export function draftFromValues(fields: FormField[], values: Record<string, unkn
     else if (control === 'file') draft[name] = value ? [value as AttachedFile] : [];
     else if (control === 'lines' || control === 'links')
       draft[name] = ((value ?? []) as string[]).join('\n');
+    else if (control === 'people')
+      draft[name] = ((value ?? []) as { name: string; role: string }[])
+        .map(({ name: person, role }) => `${person}, ${role}`)
+        .join('\n');
+    else if (control === 'amount')
+      draft[name] = typeof value === 'number' ? (value / 100).toFixed(2).replace('.', ',') : '';
+    else if (control === 'yesNo')
+      draft[name] = value === true ? 'yes' : value === false ? 'no' : '';
     else draft[name] = value === null || value === undefined ? '' : String(value);
   }
   return draft;
@@ -59,6 +73,9 @@ export function valuesFromDraft(fields: FormField[], draft: FormDraft): Record<s
     else if (control === 'lines') values[name] = listFromInput(typed);
     else if (control === 'links') values[name] = linesFromInput(typed).map(linkFromInput);
     else if (control === 'year') values[name] = typed.trim() === '' ? null : Number(typed);
+    else if (control === 'amount') values[name] = amountInCentsFromInput(typed);
+    else if (control === 'people') values[name] = peopleFromInput(typed);
+    else if (control === 'yesNo') values[name] = typed === '' ? null : typed === 'yes';
     else values[name] = nullableTextFromInput(typed);
   }
   return values;

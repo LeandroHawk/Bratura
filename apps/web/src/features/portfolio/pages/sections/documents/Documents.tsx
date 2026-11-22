@@ -4,6 +4,7 @@ import { PortfolioDocumentKindEnum } from '@bratura/shared/entities/portfolio-it
 import {
   DocumentPortfolioItemSchema,
   portfolioDocumentStatus,
+  withClearanceValidity,
   type DocumentPortfolioItem,
   type PortfolioDocumentStatus,
 } from '@bratura/shared/entities/portfolio-item/kinds/document/variant';
@@ -19,8 +20,11 @@ import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/commo
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { DOCUMENTS_CONTENT } from './content';
 
+const DocumentFormSchema = withClearanceValidity(DocumentPortfolioItemSchema);
+
 const STATUS_TONE: Record<PortfolioDocumentStatus, BadgeTone> = {
   registered: 'open',
+  expiring: 'soon',
   pending: 'soon',
   expired: 'missing',
 };
@@ -30,7 +34,7 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
   const { documentKind } = CREATOR_LABELS[locale];
   // Read once, when the section mounts: a render must give the same answer twice.
   const [today] = useState(() => plainDateInSaoPaulo(Date.now()));
-  const fields: FormField<keyof typeof content.fields>[] = [
+  const fields = [
     {
       name: 'documentKind',
       control: 'select',
@@ -41,7 +45,7 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
     { name: 'issuedOn', control: 'date' },
     { name: 'validUntil', control: 'date' },
     { name: 'file', control: 'file', isWide: true },
-  ];
+  ] satisfies FormField<keyof DocumentPortfolioItem>[];
 
   return (
     <PortfolioItemsSection
@@ -51,7 +55,7 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
       copy={content}
       items={items}
       fields={fields}
-      parse={(values) => parseWithMessages(DocumentPortfolioItemSchema, values, locale)}
+      parse={(values) => parseWithMessages(DocumentFormSchema, values, locale)}
       rowFromItem={(item) => {
         const status = portfolioDocumentStatus(item, today);
         return {

@@ -1,4 +1,3 @@
-import type { CulturalActivityKind } from '@bratura/shared/entities/portfolio-item/enums/activity-kind/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { PortfolioItemsCopy } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
 
@@ -21,16 +20,6 @@ const ptBR = {
     links: 'Links de vídeos e páginas',
     attachments: 'Fotografias, áudios e comprovantes',
   },
-  activityKind: {
-    presentation: 'Apresentação',
-    exhibition: 'Exposição',
-    fair: 'Feira',
-    festival: 'Festival',
-    workshop: 'Oficina',
-    course: 'Curso',
-    culturalEvent: 'Evento cultural',
-    other: 'Outros',
-  } satisfies Record<CulturalActivityKind, string>,
 } satisfies PortfolioItemsCopy & Record<string, unknown>;
 
 export const EXPERIENCES_CONTENT: Record<Locale, typeof ptBR> = {
@@ -53,16 +42,6 @@ export const EXPERIENCES_CONTENT: Record<Locale, typeof ptBR> = {
       description: 'Description',
       links: 'Links to videos and pages',
       attachments: 'Photos, audios and proofs',
-    },
-    activityKind: {
-      presentation: 'Presentation',
-      exhibition: 'Exhibition',
-      fair: 'Fair',
-      festival: 'Festival',
-      workshop: 'Workshop',
-      course: 'Course',
-      culturalEvent: 'Cultural event',
-      other: 'Other',
     },
   },
 };

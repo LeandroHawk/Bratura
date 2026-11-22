@@ -1,3 +1,4 @@
+import type { CulturalActivityKind } from '@bratura/shared/entities/portfolio-item/enums/activity-kind/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
@@ -11,11 +12,23 @@ const ptBR = {
   close: 'Fechar',
   onePerLine: 'Um por linha.',
   oneLinkPerLine: 'Um endereço por linha.',
+  onePersonPerLine: 'Uma pessoa por linha: nome, função.',
+  amountInReais: 'Em reais, como 15.000,00.',
   chooseFile: 'Escolher arquivo',
   chooseFiles: 'Escolher arquivos',
   removeFile: (fileName: string) => `Tirar ${fileName}`,
   filesNotice: 'Nesta demonstração, só o nome do arquivo é guardado.',
   noFile: 'Nenhum arquivo.',
+  activityKind: {
+    presentation: 'Apresentação',
+    exhibition: 'Exposição',
+    fair: 'Feira',
+    festival: 'Festival',
+    workshop: 'Oficina',
+    course: 'Curso',
+    culturalEvent: 'Evento cultural',
+    other: 'Outros',
+  } satisfies Record<CulturalActivityKind, string>,
 };
 
 /** The words every form and list of the portfolio repeats. */
@@ -32,10 +45,22 @@ export const PORTFOLIO_COMMON_CONTENT: Record<Locale, typeof ptBR> = {
     close: 'Close',
     onePerLine: 'One per line.',
     oneLinkPerLine: 'One address per line.',
+    onePersonPerLine: 'One person per line: name, role.',
+    amountInReais: 'In reais, like 15.000,00.',
     chooseFile: 'Choose a file',
     chooseFiles: 'Choose files',
     removeFile: (fileName) => `Remove ${fileName}`,
     filesNotice: 'In this demo, only the file name is kept.',
     noFile: 'No file.',
+    activityKind: {
+      presentation: 'Presentation',
+      exhibition: 'Exhibition',
+      fair: 'Fair',
+      festival: 'Festival',
+      workshop: 'Workshop',
+      course: 'Course',
+      culturalEvent: 'Cultural event',
+      other: 'Other',
+    },
   },
 };

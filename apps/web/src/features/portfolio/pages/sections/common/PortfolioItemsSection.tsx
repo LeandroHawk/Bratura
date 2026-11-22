@@ -4,7 +4,7 @@ import type { PortfolioItem } from '@bratura/shared/entities/portfolio-item/enti
 import type { ParsedWithMessages } from '@bratura/shared/messages/messages';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Dialog, Heading } from '@bratura/ui';
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { removePortfolioItem, setPortfolioItem } from '@/features/common/data/demoStore';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
 import type { FormField } from './formFields';
@@ -88,7 +88,7 @@ export function PortfolioItemsSection<Item extends PortfolioItem>({
               <li
                 key={item.clientItemId}
                 className="rise-in flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4"
-                style={{ animationDelay: `${index * 55}ms` }}
+                style={{ '--rise-index': Math.min(index, 8) } as CSSProperties}
               >
                 <div className="grid min-w-0 gap-1">
                   <div className="flex flex-wrap items-center gap-2.5">

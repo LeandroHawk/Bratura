@@ -14,6 +14,7 @@ import { formattedPlainDate } from '@/features/common/utils/format';
 import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
 import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
+import { PORTFOLIO_COMMON_CONTENT } from '@/features/portfolio/pages/sections/common/content';
 import { EXPERIENCES_CONTENT } from './content';
 
 const ExperienceFormSchema = withOrderedPeriod(CulturalExperiencePortfolioItemSchema);
@@ -26,13 +27,14 @@ export function Experiences({
   items: CulturalExperiencePortfolioItem[];
 }) {
   const content = EXPERIENCES_CONTENT[locale];
-  const fields: FormField<keyof typeof content.fields>[] = [
+  const { activityKind } = PORTFOLIO_COMMON_CONTENT[locale];
+  const fields = [
     { name: 'title', control: 'text', isRequired: true, isWide: true },
     {
       name: 'activityKind',
       control: 'select',
       isRequired: true,
-      options: { values: CulturalActivityKindEnum.options, labels: content.activityKind },
+      options: { values: CulturalActivityKindEnum.options, labels: activityKind },
     },
     { name: 'organizer', control: 'text' },
     { name: 'startDate', control: 'date' },
@@ -43,7 +45,7 @@ export function Experiences({
     { name: 'description', control: 'textarea', isWide: true },
     { name: 'links', control: 'links', isWide: true },
     { name: 'attachments', control: 'files', isWide: true },
-  ];
+  ] satisfies FormField<keyof CulturalExperiencePortfolioItem>[];
 
   return (
     <PortfolioItemsSection
@@ -58,7 +60,7 @@ export function Experiences({
       rowFromItem={(item) => ({
         title: item.title,
         meta: [
-          content.activityKind[item.activityKind],
+          activityKind[item.activityKind],
           item.startDate && formattedPlainDate(item.startDate, locale),
           item.city,
         ],
