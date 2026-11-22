@@ -61,6 +61,8 @@ const dayInMs = 24 * 60 * 60 * 1000;
 export const closesSoonWithinDays = 7;
 /** A call first seen this many days ago or fewer is new. */
 export const newCallNoticeWithinDays = 7;
+/** How many rows one page of cards reads at most, the ones its filter drops included. */
+export const callNoticeCardsRowsReadMax = 500;
 
 // The writer -------------------------------------------------------------------------------------
 
@@ -182,19 +184,24 @@ async function cardOfMatch(
  * The calls for creators, a page at a time. Closing first, the close filter and the classification
  * are one index range; by amount or by newest, the index gives the order and the server keeps the
  * rows of the filter while it reads the page. The range is `closeRange`'s, steady between pages;
- * the exact close is checked on each row. A closed call never comes as `eligible`.
+ * the exact close is checked on each row. A closed call never comes as `eligible`. A page stops at
+ * `callNoticeCardsRowsReadMax` rows read, full or not: the next one goes on from there.
  */
 export const callNoticeCards = publicZodQuery({
   args: CallNoticeCardsQueryFromBraturaPortalArgsSchema,
   returns: CallNoticeCardsQueryFromBraturaPortalReturnsSchema,
   handler: async (ctx, { classification, closes, sort, paginationOpts }) => {
     const now = Date.now();
+    // Every closed call reads `notEligible`, whatever fit is stored: none has another one.
+    if (closes === 'closed' && classification !== null && classification !== 'notEligible')
+      return { page: [], isDone: true, continueCursor: '' };
+    const storedClassification = closes === 'closed' ? null : classification;
     const { from, to } = closeRange({ closes, now });
     // The most recently closed first; every other list from the nearest close on.
     const closingOrder = closes === 'closed' ? 'desc' : 'asc';
     const matches =
       sort === 'closestDeadline'
-        ? classification === null
+        ? storedClassification === null
           ? ctx.db
               .query('matches')
               .withIndex('by_closes', (index) =>
@@ -205,7 +212,7 @@ export const callNoticeCards = publicZodQuery({
               .query('matches')
               .withIndex('by_classification_and_closes', (index) =>
                 index
-                  .eq('classification', classification)
+                  .eq('classification', storedClassification)
                   .gte('closesAtForOrdering', from)
                   .lte('closesAtForOrdering', to),
               )
@@ -218,10 +225,14 @@ export const callNoticeCards = publicZodQuery({
               row.and(
                 row.gte(row.field('closesAtForOrdering'), from),
                 row.lte(row.field('closesAtForOrdering'), to),
-                classification === null || row.eq(row.field('classification'), classification),
+                storedClassification === null ||
+                  row.eq(row.field('classification'), storedClassification),
               ),
             );
-    const result = await matches.paginate(paginationOpts);
+    const result = await matches.paginate({
+      ...paginationOpts,
+      maximumRowsRead: callNoticeCardsRowsReadMax,
+    });
     const cards = await Promise.all(
       result.page
         .filter(({ closesAtForOrdering }) =>

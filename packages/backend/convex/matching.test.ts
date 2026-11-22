@@ -7,6 +7,7 @@ import { ConvexError } from 'convex/values';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { api, internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
+import { callNoticeCardsRowsReadMax } from './matching';
 import { federalMapasSource } from './model/sources/registry';
 import schema from './schema';
 import { modules } from './test.setup';
@@ -209,6 +210,52 @@ describe('recomputeMatches', () => {
 });
 
 describe('callNoticeCards', () => {
+  test.each(['closestDeadline', 'largestAmount', 'newest'] as const)(
+    'a closed call is listed as not eligible alone, whatever fit is stored (%s)',
+    async (sort) => {
+      const t = convexTest(schema, modules);
+      await withCall(t, { title: 'fechou ontem', closesInDays: -1 });
+      await withCall(t, { title: 'fecha amanhã', closesInDays: 1 });
+      const closed = { closes: 'closed' as const, sort };
+      expect(await titlesOf(t, { ...closed, classification: 'eligible' })).toEqual([]);
+      expect(await titlesOf(t, { ...closed, classification: 'almostEligible' })).toEqual([]);
+      expect(await titlesOf(t, { ...closed, classification: 'notEligible' })).toEqual([
+        'fechou ontem',
+      ]);
+    },
+  );
+
+  test('a page stops at the rows it may read: the filter never walks the whole table', async () => {
+    const t = convexTest(schema, modules);
+    await withCall(t, { title: 'aberto', closesInDays: 1, firstSeenDaysAgo: 40 });
+    const closedId = await withCall(t, { title: 'fechado', closesInDays: -1 });
+    await t.run(async (ctx) => {
+      const closed = await ctx.db
+        .query('matches')
+        .withIndex('by_call_notice', (index) => index.eq('callNoticeId', closedId))
+        .unique();
+      if (!closed) throw new Error('no match');
+      const row = {
+        callNoticeId: closed.callNoticeId,
+        classification: closed.classification,
+        closesAtForOrdering: closed.closesAtForOrdering,
+        largestAmountPerProjectInCents: closed.largestAmountPerProjectInCents,
+        callNoticeFirstSeenAt: closed.callNoticeFirstSeenAt,
+        computedAt: closed.computedAt,
+      };
+      for (let copy = 1; copy < callNoticeCardsRowsReadMax; copy += 1)
+        await ctx.db.insert('matches', row);
+    });
+    const newestOpen = { ...everyOpenCall, sort: 'newest' as const };
+    const first = await t.query(api.matching.callNoticeCards, newestOpen);
+    expect(first).toMatchObject({ page: [], isDone: false });
+    const second = await t.query(api.matching.callNoticeCards, {
+      ...newestOpen,
+      paginationOpts: { ...firstPage, cursor: first.continueCursor },
+    });
+    expect(second.page.map(({ title }) => title)).toEqual(['aberto']);
+  });
+
   test('a card carries the organizer from the source, the deadline on the server clock and the fit', async () => {
     const t = convexTest(schema, modules);
     await withCall(t, {
