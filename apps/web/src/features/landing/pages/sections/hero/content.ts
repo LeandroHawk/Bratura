@@ -5,7 +5,6 @@ const ptBR = {
   createPortfolio: 'Criar meu portfólio',
   signIn: 'Entrar',
   howItWorks: 'Como funciona',
-  seeCode: 'Ver o código',
   exampleCall: {
     caption: 'Exemplo · Dona Maria, artesã (personagem fictícia)',
     name: 'Edital de Feiras de Artesanato 2027',
@@ -29,7 +28,6 @@ export const HERO_CONTENT: Record<Locale, typeof ptBR> = {
     createPortfolio: 'Create my portfolio',
     signIn: 'Sign in',
     howItWorks: 'How it works',
-    seeCode: 'See the code',
     exampleCall: {
       caption: 'Example · Dona Maria, artisan (fictional character)',
       name: 'Craft Fairs Call 2027',
