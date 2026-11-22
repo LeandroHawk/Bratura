@@ -806,4 +806,88 @@ describe('abacatePayWebhook', () => {
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
+
+  test('a signed subscription event without data is stored unparsed, answered 200', async () => {
+    vi.stubEnv('ABACATE_PAY_WEBHOOK_SECRET', webhookSecret);
+    const t = convexTest(schema, modules);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const body = JSON.stringify({ id: 'log_web8', event: 'subscription.cancelled', devMode: true });
+    const signature = await sign(body);
+    const response = await post(t, body, {
+      'x-webhook-secret': webhookSecret,
+      'x-webhook-signature': signature,
+    });
+    expect(response.status).toBe(200);
+    const delivery = await t.run((ctx) =>
+      ctx.db
+        .query('billingWebhookDeliveries')
+        .withIndex('by_delivery', (index) => index.eq('deliveryId', 'log_web8'))
+        .unique(),
+    );
+    expect(delivery).toMatchObject({ outcome: 'unparsed', processedAt: expect.any(Number) });
+    warn.mockRestore();
+  });
+
+  test('a signed non-subscription event with a null data is stored ignored', async () => {
+    vi.stubEnv('ABACATE_PAY_WEBHOOK_SECRET', webhookSecret);
+    const t = convexTest(schema, modules);
+    const body = JSON.stringify({
+      id: 'log_web9',
+      event: 'payout.completed',
+      devMode: true,
+      data: null,
+    });
+    const signature = await sign(body);
+    const response = await post(t, body, {
+      'x-webhook-secret': webhookSecret,
+      'x-webhook-signature': signature,
+    });
+    expect(response.status).toBe(200);
+    const delivery = await t.run((ctx) =>
+      ctx.db
+        .query('billingWebhookDeliveries')
+        .withIndex('by_delivery', (index) => index.eq('deliveryId', 'log_web9'))
+        .unique(),
+    );
+    expect(delivery).toMatchObject({ outcome: 'ignored', processedAt: expect.any(Number) });
+  });
+
+  test('an applied plan_change through the webhook keeps the quantity, moves the amount', async () => {
+    vi.stubEnv('ABACATE_PAY_WEBHOOK_SECRET', webhookSecret);
+    const t = convexTest(schema, modules);
+    const organizationId = await organizationIdOf(t);
+    const id = await pendingSubscriptionOf(t, organizationId);
+    await recordAndProcess(t); // goes active, 3 profiles, nothing pending
+    // The docs' applied example: no data.quantity, no status/pendingUpdateId, and the
+    // checkout still carries the original item — a `checkout.items` fallback reads 1.
+    const body = JSON.stringify({
+      id: 'log_web10',
+      event: 'subscription.plan_changed',
+      devMode: true,
+      data: {
+        subscription: { id: 'subs_sub1', amount: 20930, method: 'CARD', status: 'ACTIVE' },
+        checkout: { id: 'bill_checkout1', items: [{ id: 'prod_panel', quantity: 1 }] },
+      },
+    });
+    const signature = await sign(body);
+    const response = await post(t, body, {
+      'x-webhook-secret': webhookSecret,
+      'x-webhook-signature': signature,
+    });
+    expect(response.status).toBe(200);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await t.finishInProgressScheduledFunctions();
+    expect(await subscriptionOf(t, id)).toMatchObject({
+      managedProfiles: 3,
+      amountInCents: 20930,
+    });
+    // A `checkout.items` quantity fallback would have recorded 1 here.
+    const delivery = await t.run((ctx) =>
+      ctx.db
+        .query('billingWebhookDeliveries')
+        .withIndex('by_delivery', (index) => index.eq('deliveryId', 'log_web10'))
+        .unique(),
+    );
+    expect(delivery?.quantity).toBeNull();
+  });
 });

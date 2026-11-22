@@ -6,6 +6,7 @@ import { BillingWebhookDeliverySchema } from '@bratura/shared/entities/billing-w
 import { DeliveryOutcomeEnum } from '@bratura/shared/entities/billing-webhook-delivery/enums/delivery-outcome/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { requiredAmountInCents } from '@bratura/shared/primitives/domain/money/fields';
+import type { CancellationReason } from '@bratura/shared/primitives/external/abacate-pay/enums/cancellation-reason/enum';
 import { CancellationReasonEnum } from '@bratura/shared/primitives/external/abacate-pay/enums/cancellation-reason/enum';
 import { requiredString, textLengths } from '@bratura/shared/primitives/code/string/fields';
 import { requiredHttpsUrl } from '@bratura/shared/primitives/code/url/fields';
@@ -294,7 +295,7 @@ export const openPanelCheckout = internalZodAction({
 const cancelledRowFrom = (
   row: Doc<'billingSubscriptions'>,
   abacatePaySubscriptionId: string | null,
-  cancelledDueTo: z.infer<typeof CancellationReasonEnum> | null,
+  cancelledDueTo: CancellationReason | null,
   now: number,
 ) => ({
   ...BillingSubscriptionIdentityFields.parse(row),
@@ -456,7 +457,7 @@ const RecordAbacatePayDeliveryMutationArgsSchema = BillingWebhookDeliverySchema.
   outcome: true,
 }).extend({
   /** A delivery resolved at record time: `unparsed` (no usable ids) or `ignored` (not ours). */
-  resolvedOutcome: z.enum(['unparsed', 'ignored']).optional(),
+  resolvedOutcome: DeliveryOutcomeEnum.extract(['unparsed', 'ignored']).optional(),
 });
 const RecordAbacatePayDeliveryMutationReturnsSchema = z.union([
   z.object({

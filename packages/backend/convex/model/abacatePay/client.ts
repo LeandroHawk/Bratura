@@ -19,10 +19,9 @@ const abacatePayProductListPageCeiling = 10;
 const abacatePayChargeRetryPolicy = { maxRetry: 3, retryEvery: 2 };
 
 /**
- * Calls one API route: Bearer auth, JSON, timeout on every call. Any failure — non-2xx, a 2xx
- * envelope carrying `error`, a bad envelope, `data` that fails the route's schema, timeout —
- * ends as `unavailable` with only the status and route in the log: the provider's error text
- * never reaches a table or a caller.
+ * Calls one API route: Bearer auth, JSON, timeout on every call. Any failure — non-2xx, a
+ * failed or malformed envelope, `data` off the route's schema, timeout — ends as `unavailable`
+ * with only the status and route in the log: provider text never reaches a table or a caller.
  */
 async function callAbacatePay<T>(
   apiKey: string,

@@ -88,13 +88,14 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
   is public, the signature proves the body arrived intact — only the secret proves the delivery
   is really ours (see "Open for brainstorming" for what this means when the panel unlocks).
 - **The envelope** is `{ id: "log_...", event, apiVersion, devMode, data }`. `id` is stable
-  across retries — the inbox's dedupe key. `data` is parsed **field by field**
-  (`parseAbacatePayEventData`): a bad field becomes `null` alone, so an oversized reason or an
-  unknown `method` cannot erase the `subs_...`/`bill_...` that locate the row. If neither id
-  parses, the delivery is stored already resolved as `unparsed` (the event name and the failed
-  field paths are logged, never values) — the raw body is gone, so it can never be re-run.
-  Personal fields (`customer`, `payerInformation`) are never read, which is stronger than
-  dropping them.
+  across retries — the inbox's dedupe key. `data` parses through one Zod schema
+  (`deliveryFieldsFromAbacatePayEvent`) with `.catch` per field: a bad field becomes `null`
+  alone, so an oversized reason or an unknown `method` cannot erase the `subs_...`/`bill_...`
+  that locate the row — and a `data` that is not even an object parses to all-null, never
+  throws. If neither id parses, the delivery is stored already resolved as `unparsed` (the
+  event name and which of the two ids were present are logged, never values) — the raw body
+  is gone, so it can never be re-run. Personal fields (`customer`, `payerInformation`) are
+  never read, which is stronger than dropping them.
 - **Events handled** (all `subscription.*`; `checkout.completed` is deliberately not subscribed —
   every paid subscription charge also emits it, and handling both families would apply twice):
   `completed` and `trial_started` activate, `renewed` refreshes amount and clears the failure

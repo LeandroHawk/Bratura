@@ -90,25 +90,36 @@ export function cancellationReasonFromAbacatePay(raw: string | null): Cancellati
  * alone — an unknown `method` can no longer erase the event's ids. `cancelledDueTo` stays a
  * raw string with no ceiling: it feeds the mapper only. Personal members are never read.
  */
-export const AbacatePayEventDataSchema = z.looseObject({
-  subscription: z
-    .looseObject({
-      id: requiredString('short').nullish().catch(null),
-      amount: requiredAmountInCents.nullish().catch(null),
-      method: PaymentMethodEnum.nullish().catch(null),
-      cancelledDueTo: z.string().nullish().catch(null),
-    })
-    .catch({}),
-  checkout: z
-    .looseObject({
-      id: requiredString('short').nullish().catch(null),
-    })
-    .catch({}),
-  pendingUpdateId: nullableString('short').catch(null),
-  status: nullableString('short').catch(null),
-  quantity: z.int().positive().nullish().catch(null),
-  newAmount: requiredAmountInCents.nullish().catch(null),
-});
+export const AbacatePayEventDataSchema = z
+  .looseObject({
+    subscription: z
+      .looseObject({
+        id: requiredString('short').nullish().catch(null),
+        amount: requiredAmountInCents.nullish().catch(null),
+        method: PaymentMethodEnum.nullish().catch(null),
+        cancelledDueTo: z.string().nullish().catch(null),
+      })
+      .catch({}),
+    checkout: z
+      .looseObject({
+        id: requiredString('short').nullish().catch(null),
+      })
+      .catch({}),
+    pendingUpdateId: nullableString('short').optional().catch(null),
+    status: nullableString('short').optional().catch(null),
+    quantity: z.int().positive().nullish().catch(null),
+    newAmount: requiredAmountInCents.nullish().catch(null),
+    /** A `data` that is not even an object parses to all-null, never throws. */
+  })
+  .catch({ subscription: {}, checkout: {} });
+
+/** Which ids the raw `data` carried — presence only, for the `unparsed` log. */
+const AbacatePayEventIdPresenceSchema = z
+  .looseObject({
+    subscription: z.looseObject({ id: z.unknown().optional() }).catch({}),
+    checkout: z.looseObject({ id: z.unknown().optional() }).catch({}),
+  })
+  .catch({ subscription: {}, checkout: {} });
 
 /**
  * What a `subscription.*` event's `data` tells our rows. `quantity` reads `data.quantity` only:
@@ -117,21 +128,13 @@ export const AbacatePayEventDataSchema = z.looseObject({
  */
 export function deliveryFieldsFromAbacatePayEvent(data: unknown) {
   const parsed = AbacatePayEventDataSchema.parse(data);
-  const record = typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
-  const rawSubscription =
-    typeof record.subscription === 'object' && record.subscription !== null
-      ? (record.subscription as Record<string, unknown>)
-      : {};
-  const rawCheckout =
-    typeof record.checkout === 'object' && record.checkout !== null
-      ? (record.checkout as Record<string, unknown>)
-      : {};
+  const present = AbacatePayEventIdPresenceSchema.parse(data);
   return {
     abacatePaySubscriptionId: parsed.subscription.id ?? null,
     abacatePayCheckoutId: parsed.checkout.id ?? null,
     /** Whether the raw event carried each id — present-but-invalid shows up in the log. */
-    subscriptionIdPresent: rawSubscription.id !== undefined,
-    checkoutIdPresent: rawCheckout.id !== undefined,
+    subscriptionIdPresent: present.subscription.id !== undefined,
+    checkoutIdPresent: present.checkout.id !== undefined,
     amountInCents: parsed.subscription.amount ?? null,
     method: parsed.subscription.method ?? null,
     pendingUpdateId: parsed.pendingUpdateId ?? null,
