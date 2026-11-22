@@ -98,6 +98,9 @@ Known next steps, each with the trigger that makes it real; add yours:
    split `pending`/`sending` so a claim is a status flip, not a reservation.
 6. **Platform announcements** (when the team announces through the product): an admin-facing
    writer for `platformAnnouncement` — the kind exists, nothing creates one outside tests.
+7. **Document expiry** (when a document-expiry notification kind exists): warn before a stored
+   `validUntil`. Today nothing sends it: the portfolio and a call's details only mark a paper
+   expired or expiring (`portfolioDocumentStatus`, `paperValidity`).
 7. **Web inbox** (when the app gets a shell): the unread counter over `userNotifications` —
    `listForUser` is already there, ordered newest first.
 8. **Caps per user and per organization** (when organizations pay, the multi-profile panel): the
