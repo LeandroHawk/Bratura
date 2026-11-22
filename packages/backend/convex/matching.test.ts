@@ -261,6 +261,28 @@ describe('callNoticeCards', () => {
     expect(await t.query(api.matching.callNoticeHighlights, {})).toEqual([]);
   });
 
+  test('a result the source posts later closes the call in the lists at once', async () => {
+    vi.useFakeTimers({ now: NOW });
+    const t = convexTest(schema, modules);
+    const callNoticeId = await withCall(t, { title: 'sem prazo', closesInDays: null });
+    expect(await titlesOf(t)).toEqual(['sem prazo']);
+    const listed = await t.run(async (ctx) => {
+      const callNotice = await ctx.db.get(callNoticeId);
+      if (!callNotice) throw new Error('no call');
+      const { sourceId, externalId, title, summary, officialUrl, documentUrls } = callNotice;
+      const { registrationOpens, registrationCloses } = callNotice;
+      return {
+        ...{ sourceId, externalId, title, summary, officialUrl, documentUrls },
+        ...{ registrationOpens, registrationCloses },
+      };
+    });
+    await t.mutation(internal.callNotices.recordCallNotice, { ...listed, resultPosted: true });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    expect(await titlesOf(t)).toEqual([]);
+    expect(await titlesOf(t, { closes: 'closed' })).toEqual(['sem prazo']);
+    expect(await t.query(api.matching.callNoticeCounters, {})).toMatchObject({ open: 0 });
+  });
+
   test('a page stops at the rows it may read: the filter never walks the whole table', async () => {
     const t = convexTest(schema, modules);
     await withCall(t, { title: 'aberto', closesInDays: 1, firstSeenDaysAgo: 40 });

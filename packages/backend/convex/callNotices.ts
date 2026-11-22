@@ -6,6 +6,7 @@ import {
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { z } from 'zod';
+import { internal } from './_generated/api';
 import { appError } from './lib/appError';
 import { internalZodMutation, internalZodQuery, type CallerArgs } from './lib/builders';
 import {
@@ -31,7 +32,7 @@ const RecordCallNoticeMutationReturnsSchema = z.object({
 export const recordCallNotice = internalZodMutation({
   args: RecordCallNoticeMutationArgsSchema,
   returns: RecordCallNoticeMutationReturnsSchema,
-  handler: async (ctx, listing) => {
+  handler: async (ctx, listing): Promise<z.infer<typeof RecordCallNoticeMutationReturnsSchema>> => {
     const now = Date.now();
     const known = await ctx.db
       .query('callNotices')
@@ -49,6 +50,16 @@ export const recordCallNotice = internalZodMutation({
         closedWhenFirstSeen: closed,
         lastSeenAt: now,
       });
+      // A match copies the call's close for its indexes: a moved close or a posted result is a
+      // new match, or the lists would filter by the old one until the daily recompute.
+      if (
+        known.registrationCloses?.at !== listing.registrationCloses?.at ||
+        (known.resultPosted === true) !== (listing.resultPosted === true)
+      ) {
+        await ctx.scheduler.runAfter(0, internal.matching.recomputeMatchOfCallNotice, {
+          callNoticeId: known._id,
+        });
+      }
       return { callNoticeId: known._id, isNew: false };
     }
     const callNoticeId = await ctx.db.insert('callNotices', {
