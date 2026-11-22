@@ -3,6 +3,7 @@ import { ianaTimeZone } from '../time/time-zone/fields';
 import {
   deadlinePartsInSaoPaulo,
   instantFromPlainDateTimeInZone,
+  plainDateDaysAfter,
   plainDateInSaoPaulo,
 } from './calendar';
 
@@ -63,5 +64,15 @@ describe('deadlinePartsInSaoPaulo', () => {
       month: '11',
       time: { hour: '23', minute: '59' },
     });
+  });
+});
+
+describe('plainDateDaysAfter', () => {
+  test('crosses a month and a year', () => {
+    expect(plainDateDaysAfter({ date: '2026-12-20', days: 30 })).toBe('2027-01-19');
+  });
+
+  test('keeps the day when nothing is added', () => {
+    expect(plainDateDaysAfter({ date: '2026-02-28', days: 0 })).toBe('2026-02-28');
   });
 });

@@ -90,6 +90,8 @@ export const FICTIONAL_CREATOR_PORTFOLIO_ITEMS: PortfolioItem[] = [
     venue: 'Juazeiro do Norte - CE',
     targetAudience: 'Jovens de 14 a 24 anos',
     results: null,
+    budgetInCents: null,
+    team: [{ name: 'Maria das Dores Silva', role: 'Mestra rendeira e coordenadora' }],
     links: [],
     attachments: [],
   },

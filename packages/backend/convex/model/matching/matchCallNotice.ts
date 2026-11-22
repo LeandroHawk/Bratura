@@ -120,9 +120,10 @@ export function matchCallNotice(
     if (portfolioKind.data === 'curriculum' && hasExperiences)
       return { status: 'met', paperValidity: null };
     const ofKind = documents.filter((document) => document.documentKind === portfolioKind.data);
-    const registered = ofKind.filter(
-      (document) => portfolioDocumentStatus(document, today) === 'registered',
-    );
+    const registered = ofKind.filter((document) => {
+      const status = portfolioDocumentStatus(document, today);
+      return status === 'registered' || status === 'expiring';
+    });
     if (registered.length === 0) {
       const isExpired = ofKind.some(
         (document) => portfolioDocumentStatus(document, today) === 'expired',

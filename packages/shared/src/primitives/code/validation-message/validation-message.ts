@@ -3,7 +3,8 @@
  * `validationMessage('<key>')`; the text per locale is in `src/messages/`, which must cover every
  * key here.
  */
-export type ValidationMessageKey = 'endsBeforeItStarts' | 'yearInTheFuture';
+export type ValidationMessageKey =
+  'clearanceWithoutValidity' | 'endsBeforeItStarts' | 'yearInTheFuture';
 
 /** The second argument of a `.refine`: the issue then carries the key, never a text. */
 export function validationMessage(key: ValidationMessageKey) {

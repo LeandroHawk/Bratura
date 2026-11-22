@@ -14,6 +14,7 @@ export const enValidationMessages: ValidationMessages = {
   numberTooBig: (maximum) => `The highest value accepted is ${maximum}.`,
   listTooLong: (maximum) => `Keep at most ${maximum} items.`,
   rule: {
+    clearanceWithoutValidity: 'A clearance certificate expires: say until when it is valid.',
     endsBeforeItStarts: 'The end cannot come before the start.',
     yearInTheFuture: 'That year has not come yet.',
   },

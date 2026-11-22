@@ -17,6 +17,13 @@ export function plainDateInSaoPaulo(instant: number) {
   return saoPauloDateFormatter.format(instant);
 }
 
+/** The calendar day `days` after `date` (`YYYY-MM-DD`): counted in UTC, a day has no zone. */
+export function plainDateDaysAfter({ date, days }: { date: string; days: number }) {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+  return day.toISOString().slice(0, 10);
+}
+
 // One formatter per zone, built once: building one costs far more than formatting with it. The
 // locale pins the Gregorian calendar and Latin digits; `h23` keeps midnight 00, never 24.
 const formatterByZone = new Map<string, Intl.DateTimeFormat>();

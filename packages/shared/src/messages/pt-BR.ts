@@ -15,6 +15,7 @@ export const ptBRValidationMessages = {
   numberTooBig: (maximum: number) => `O maior valor aceito é ${maximum}.`,
   listTooLong: (maximum: number) => `Mantenha no máximo ${maximum} itens.`,
   rule: {
+    clearanceWithoutValidity: 'Uma certidão tem validade: informe até quando ela vale.',
     endsBeforeItStarts: 'O término não pode vir antes do início.',
     yearInTheFuture: 'Esse ano ainda não chegou.',
   } satisfies Record<ValidationMessageKey, string>,
