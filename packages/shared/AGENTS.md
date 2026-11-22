@@ -7,7 +7,9 @@ belongs here only when it crosses the wire and has a consumer on the other side 
 Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
 tables: `source`, `call-notice`, `call-notice-document`, `call-notice-document-text`,
 `call-notice-extraction`, `ingestion-run`, `user`, `user-notification`, `notification-delivery`,
-`user-message-channel`.
+`user-message-channel`, `organization`, `membership`, `billing-subscription`,
+`billing-webhook-delivery`. The billing pair's provider fields and enums live in
+`primitives/external/abacate-pay/`.
 
 ⚠️ **`creator` and `portfolio-item` are here ahead of their tables**, an explicit demo exception.
 The web persists them in `features/common/data/demoStore.ts`; the backend reads the fictional

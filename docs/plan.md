@@ -43,9 +43,9 @@ Never a share of the prize, never selling data.
   came from (6.2); finance demos may run in test or simulation environments (6.9).
 - **Help**: mentors on Discord (`#pedir-mentoria`, `/mentoria`), listed at hackbrasil.com/mentores.
   Sponsor livestreams are optional and do not count for the score.
-- **Sponsors we use**: Firecrawl, Convex, Resend, WorkOS, Cognition (Devin); AbacatePay is
-  under study (`docs/product.md`). Their tools weigh the same as any tool; the prizes they give
-  are listed on hackbrasil.com.
+- **Sponsors we use**: Firecrawl, Convex, Resend, WorkOS, Cognition (Devin), AbacatePay
+  (billing, integrated backend-side in `docs/integrations/abacate-pay.md`). Their tools weigh
+  the same as any tool; the prizes they give are listed on hackbrasil.com.
 
 ## Tools and what each one does
 
@@ -70,6 +70,8 @@ Never a share of the prize, never selling data.
 4. **Application kit**: texts from the creator's portfolio and the extracted requirements only, a
    checklist, the portfolio in the call's format.
 5. **Alerts**: e-mail at D-7 and D-1; Telegram messages.
+6. **Billing**: the organization panel's monthly subscription, charged per managed profile
+   through AbacatePay (hosted checkout, webhook inbox; backend only until auth).
 
 Starting tables: `sources`, `callNotices`, `ingestionRuns`, `creators`, `portfolioItems`,
 `matches`, `applicationKits`, `users`, `userNotifications`, `notificationDeliveries`,

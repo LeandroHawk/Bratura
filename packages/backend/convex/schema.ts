@@ -8,6 +8,10 @@ import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice
 import { IngestionRunSchema } from '@bratura/shared/entities/ingestion-run/entity';
 import { MatchSchema } from '@bratura/shared/entities/match/entity';
 import { NotificationDeliverySchema } from '@bratura/shared/entities/notification-delivery/entity';
+import { BillingSubscriptionSchema } from '@bratura/shared/entities/billing-subscription/entity';
+import { BillingWebhookDeliverySchema } from '@bratura/shared/entities/billing-webhook-delivery/entity';
+import { MembershipSchema } from '@bratura/shared/entities/membership/entity';
+import { OrganizationSchema } from '@bratura/shared/entities/organization/entity';
 import { SourceSchema } from '@bratura/shared/entities/source/entity';
 import { UserMessageChannelSchema } from '@bratura/shared/entities/user-message-channel/entity';
 import { UserNotificationSchema } from '@bratura/shared/entities/user-notification/entity';
@@ -60,4 +64,16 @@ export default defineSchema({
     ['userId', 'channel'],
   ),
   users: defineTable(zodToConvex(UserSchema)),
+  organizations: defineTable(zodToConvex(OrganizationSchema)).index('by_slug', ['slug']),
+  memberships: defineTable(zodToConvex(MembershipSchema)).index('by_organization_and_user', [
+    'organizationId',
+    'userId',
+  ]),
+  billingSubscriptions: defineTable(zodToConvex(BillingSubscriptionSchema))
+    .index('by_organization', ['organizationId'])
+    .index('by_checkout', ['abacatePayCheckoutId'])
+    .index('by_subscription', ['abacatePaySubscriptionId']),
+  billingWebhookDeliveries: defineTable(zodToConvex(BillingWebhookDeliverySchema))
+    .index('by_delivery', ['deliveryId'])
+    .index('by_processed', ['processedAt']),
 });

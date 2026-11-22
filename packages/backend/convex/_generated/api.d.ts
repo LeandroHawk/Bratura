@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as billing from "../billing.js";
 import type * as callNotices from "../callNotices.js";
 import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
@@ -22,6 +23,9 @@ import type * as lib_monthNames from "../lib/monthNames.js";
 import type * as lib_sha256 from "../lib/sha256.js";
 import type * as lib_text from "../lib/text.js";
 import type * as matching from "../matching.js";
+import type * as model_abacatePay_client from "../model/abacatePay/client.js";
+import type * as model_abacatePay_payload from "../model/abacatePay/payload.js";
+import type * as model_abacatePay_signature from "../model/abacatePay/signature.js";
 import type * as model_callNoticeDocuments_selection from "../model/callNoticeDocuments/selection.js";
 import type * as model_callNoticeExtraction_prompt from "../model/callNoticeExtraction/prompt.js";
 import type * as model_callNoticeExtraction_verify from "../model/callNoticeExtraction/verify.js";
@@ -51,6 +55,7 @@ import type * as model_telegram_client from "../model/telegram/client.js";
 import type * as model_telegram_payload from "../model/telegram/payload.js";
 import type * as model_telegram_sendMessage from "../model/telegram/sendMessage.js";
 import type * as notificationDeliveries from "../notificationDeliveries.js";
+import type * as organizations from "../organizations.js";
 import type * as pdfText from "../pdfText.js";
 import type * as sources from "../sources.js";
 import type * as telegram from "../telegram.js";
@@ -65,6 +70,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  billing: typeof billing;
   callNotices: typeof callNotices;
   crons: typeof crons;
   documents: typeof documents;
@@ -79,6 +85,9 @@ declare const fullApi: ApiFromModules<{
   "lib/sha256": typeof lib_sha256;
   "lib/text": typeof lib_text;
   matching: typeof matching;
+  "model/abacatePay/client": typeof model_abacatePay_client;
+  "model/abacatePay/payload": typeof model_abacatePay_payload;
+  "model/abacatePay/signature": typeof model_abacatePay_signature;
   "model/callNoticeDocuments/selection": typeof model_callNoticeDocuments_selection;
   "model/callNoticeExtraction/prompt": typeof model_callNoticeExtraction_prompt;
   "model/callNoticeExtraction/verify": typeof model_callNoticeExtraction_verify;
@@ -108,6 +117,7 @@ declare const fullApi: ApiFromModules<{
   "model/telegram/payload": typeof model_telegram_payload;
   "model/telegram/sendMessage": typeof model_telegram_sendMessage;
   notificationDeliveries: typeof notificationDeliveries;
+  organizations: typeof organizations;
   pdfText: typeof pdfText;
   sources: typeof sources;
   telegram: typeof telegram;
