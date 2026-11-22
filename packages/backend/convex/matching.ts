@@ -2,7 +2,6 @@ import {
   CallNoticeCardsQueryFromBraturaPortalArgsSchema,
   CallNoticeCardsQueryFromBraturaPortalReturnsSchema,
   type CallNoticeCard,
-  type CallNoticeCloseFilter,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
 import {
   callNoticeCounterCeiling,
@@ -39,6 +38,7 @@ import type { Doc, Id } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { appError } from './lib/appError';
 import { internalZodMutation, publicZodQuery } from './lib/builders';
+import { closeRange, isInCloseFilter } from './model/matching/closeRange';
 import {
   largestAmountPerProjectInCents,
   matchCallNotice,
@@ -178,25 +178,18 @@ async function cardOfMatch(
   };
 }
 
-/** The range of `closesAtForOrdering` a close filter keeps, on `now`. */
-function closeRange(closes: CallNoticeCloseFilter, now: number): { from?: number; to?: number } {
-  if (closes === 'closed') return { to: now - 1 };
-  if (closes === 'within7Days') return { from: now, to: now + 7 * dayInMs };
-  if (closes === 'within30Days') return { from: now, to: now + 30 * dayInMs };
-  return { from: now };
-}
-
 /**
  * The calls for creators, a page at a time. Closing first, the close filter and the classification
  * are one index range; by amount or by newest, the index gives the order and the server keeps the
- * rows of the filter while it reads the page. A closed call never comes as `eligible`.
+ * rows of the filter while it reads the page. The range is `closeRange`'s, steady between pages;
+ * the exact close is checked on each row. A closed call never comes as `eligible`.
  */
 export const callNoticeCards = publicZodQuery({
   args: CallNoticeCardsQueryFromBraturaPortalArgsSchema,
   returns: CallNoticeCardsQueryFromBraturaPortalReturnsSchema,
   handler: async (ctx, { classification, closes, sort, paginationOpts }) => {
     const now = Date.now();
-    const { from, to } = closeRange(closes, now);
+    const { from, to } = closeRange({ closes, now });
     // The most recently closed first; every other list from the nearest close on.
     const closingOrder = closes === 'closed' ? 'desc' : 'asc';
     const matches =
@@ -205,21 +198,17 @@ export const callNoticeCards = publicZodQuery({
           ? ctx.db
               .query('matches')
               .withIndex('by_closes', (index) =>
-                to === undefined
-                  ? index.gte('closesAtForOrdering', from ?? 0)
-                  : index.gte('closesAtForOrdering', from ?? 0).lte('closesAtForOrdering', to),
+                index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
               )
               .order(closingOrder)
           : ctx.db
               .query('matches')
-              .withIndex('by_classification_and_closes', (index) => {
-                const ofClassification = index.eq('classification', classification);
-                return to === undefined
-                  ? ofClassification.gte('closesAtForOrdering', from ?? 0)
-                  : ofClassification
-                      .gte('closesAtForOrdering', from ?? 0)
-                      .lte('closesAtForOrdering', to);
-              })
+              .withIndex('by_classification_and_closes', (index) =>
+                index
+                  .eq('classification', classification)
+                  .gte('closesAtForOrdering', from)
+                  .lte('closesAtForOrdering', to),
+              )
               .order(closingOrder)
         : ctx.db
             .query('matches')
@@ -227,13 +216,19 @@ export const callNoticeCards = publicZodQuery({
             .order('desc')
             .filter((row) =>
               row.and(
-                row.gte(row.field('closesAtForOrdering'), from ?? 0),
-                row.lte(row.field('closesAtForOrdering'), to ?? matchClosesAtWithoutClose),
+                row.gte(row.field('closesAtForOrdering'), from),
+                row.lte(row.field('closesAtForOrdering'), to),
                 classification === null || row.eq(row.field('classification'), classification),
               ),
             );
     const result = await matches.paginate(paginationOpts);
-    const cards = await Promise.all(result.page.map((match) => cardOfMatch(ctx, match, now)));
+    const cards = await Promise.all(
+      result.page
+        .filter(({ closesAtForOrdering }) =>
+          isInCloseFilter({ closes, closesAt: closesAtForOrdering, now }),
+        )
+        .map((match) => cardOfMatch(ctx, match, now)),
+    );
     return { ...result, page: cards.filter((card) => card !== null) };
   },
 });

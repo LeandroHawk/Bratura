@@ -13,6 +13,7 @@ import { modules } from './test.setup';
 
 const NOW = Date.UTC(2026, 10, 15, 15);
 const dayInMs = 24 * 60 * 60 * 1000;
+const minutesInADay = 24 * 60;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'], now: NOW });
@@ -321,6 +322,22 @@ describe('callNoticeCards', () => {
       paginationOpts: { numItems: 2, cursor: first.continueCursor },
     });
     expect(second.page.map(({ title }) => title)).toEqual(['edital 3']);
+  });
+
+  test('a call that closes between two pages leaves the next page', async () => {
+    const t = convexTest(schema, modules);
+    await withCall(t, { title: 'fecha em 15 minutos', closesInDays: 15 / minutesInADay });
+    await withCall(t, { title: 'fecha em 30 minutos', closesInDays: 30 / minutesInADay });
+    const first = await t.query(api.matching.callNoticeCards, {
+      ...everyOpenCall,
+      paginationOpts: { numItems: 1, cursor: null },
+    });
+    vi.setSystemTime(NOW + (31 / minutesInADay) * dayInMs);
+    const second = await t.query(api.matching.callNoticeCards, {
+      ...everyOpenCall,
+      paginationOpts: { numItems: 1, cursor: first.continueCursor },
+    });
+    expect(second.page).toEqual([]);
   });
 });
 
