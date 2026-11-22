@@ -618,6 +618,13 @@ export const processAbacatePayDelivery = internalZodMutation({
         return null;
       }
       case 'subscription.cancelled': {
+        // A cancel we asked for marks the row before the provider's event lands: a second
+        // cancelled must not wipe `activatedAt`/`cancelledDueTo` — it is superseded like
+        // every other event after the terminal status.
+        if (row.status === 'cancelled') {
+          await finish('superseded');
+          return null;
+        }
         await ctx.db.replace(row._id, {
           ...identityFieldsOf(row),
           updatedAt: now,

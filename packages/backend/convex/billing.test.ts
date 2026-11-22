@@ -188,6 +188,33 @@ describe('processAbacatePayDelivery', () => {
     expect((await subscriptionOf(t, id))?.status).toBe('cancelled');
   });
 
+  test("a provider's cancelled landing after our own cancel keeps the row", async () => {
+    const t = convexTest(schema, modules);
+    const organizationId = await organizationIdOf(t);
+    const id = await pendingSubscriptionOf(t, organizationId);
+    await recordAndProcess(t);
+    // Our own cancel lands first, the provider's event right behind — the live sequence.
+    await t.mutation(internal.billing.markSubscriptionCancelled, {
+      billingSubscriptionId: id,
+      cancelledDueTo: 'cancelledByBratura',
+    });
+    const late = await recordAndProcess(t, {
+      deliveryId: 'log_cancel_echo',
+      event: 'subscription.cancelled',
+    });
+    const lateDelivery = await deliveryRowOf(
+      t,
+      (late as { billingWebhookDeliveryId: Id<'billingWebhookDeliveries'> })
+        .billingWebhookDeliveryId,
+    );
+    expect(lateDelivery?.outcome).toBe('superseded');
+    expect(await subscriptionOf(t, id)).toMatchObject({
+      status: 'cancelled',
+      activatedAt: expect.any(Number),
+      cancelledDueTo: 'cancelledByBratura',
+    });
+  });
+
   test('an applied plan change moves the pending quantity into place', async () => {
     const t = convexTest(schema, modules);
     const organizationId = await organizationIdOf(t);
