@@ -7,10 +7,17 @@ import { PaymentMethodEnum } from '@bratura/shared/entities/billing-subscription
 // answers `{ error: "…" }`. Schemas stay loose on purpose — the provider warns fields may be
 // added, and a rigid schema would break a working endpoint.
 
-/** The `data` member of a 2xx answer. */
+/** The `data` member of a 2xx answer, plus list pagination when the route has it. */
 export const AbacatePayEnvelopeSchema = z.looseObject({
   data: z.unknown().optional(),
   error: z.string().nullable().optional(),
+  pagination: z
+    .looseObject({
+      hasMore: z.boolean().optional(),
+      next: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 /** `GET /stores/get`: proves an `ABACATE_PAY_API_KEY` is real and names the store. */
@@ -21,6 +28,12 @@ export const AbacatePayStoreSchema = z.looseObject({
 
 /** A product (`prod_...`): only the id is read back. */
 export const AbacatePayProductSchema = z.looseObject({ id: z.string() });
+
+/** A row of `GET /products/list`: the `prod_...` and our `externalId` on it. */
+export const AbacatePayProductListItemSchema = z.looseObject({
+  id: z.string(),
+  externalId: z.string().nullable().optional(),
+});
 
 /** A customer (`cust_...`): only the id is kept. */
 export const AbacatePayCustomerSchema = z.looseObject({ id: z.string() });

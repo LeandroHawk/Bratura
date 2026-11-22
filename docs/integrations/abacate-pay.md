@@ -33,7 +33,7 @@ From AbacatePay's docs (`docs.abacatepay.com`), checked 2026-11-21:
   company verification — what the hackathon's rule 6.9 allows for the demo. Dev-mode and
   production objects live in separate stores; each environment provisions its own product.
 - **Amounts are integer centavos** everywhere (R$ 100,00 is `10000`).
-- **The product** (`POST /products/create`, `GET /products/get`): ours is one `prod_...` named
+- **The product** (`POST /products/create`, `GET /products/list`): ours is one `prod_...` named
   "Bratura — perfil gerenciado", `cycle: MONTHLY`, `externalId: bratura-managed-profile`, priced
   per managed profile. `billing:provisionPanelProduct` finds or creates it; its id goes in
   `ABACATE_PAY_PRODUCT_ID`. `trialDays` (1–90) is optional at creation.
@@ -109,10 +109,15 @@ pnpm exec convex env set ABACATE_PAY_WEBHOOK_SECRET   # a generated random strin
 pnpm exec convex run billing:registerPanelWebhook '{}'
 ```
 
-**Not yet checked with real calls** (no account yet — the sandbox key is pending): every request
-shape above comes from the docs, so the first real run of `provisionPanelProduct` and a paid test
-checkout are the proof. Verify especially: the `plan_changed` payload's `pendingUpdateId`
-presence on the applied change, and whether `subscription.amount` is per unit or per cycle.
+**Checked with real calls, 2026-11-21** (sandbox `abc_dev_` key on a dev deployment, no production
+data): `stores/get`, `products/list` + `create`, `customers/create`, `subscriptions/create` and
+`webhooks/create` all answered as documented, and a paid test checkout delivered a real signed
+`subscription.completed` — secret and HMAC verified, the inbox applied it, the row went `active`
+with a real `subs_...`. Learned live: `subscription.amount` is the **cycle total** in cents
+(8970 for 3 × 2990), not the unit price; and `/products/get` answers **400** on a miss, which is
+why the product lookup walks `/products/list` instead of trusting a status code. Still unproven:
+`plan_changed`'s `pendingUpdateId` on the applied change, `payment_failed` and `renewed` — they
+need a live cycle to fire.
 
 ## Open for brainstorming
 

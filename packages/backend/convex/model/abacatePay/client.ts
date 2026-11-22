@@ -1,8 +1,10 @@
+import { z } from 'zod';
 import { httpAnswerError } from '../../lib/httpError';
 import {
   AbacatePayCustomerSchema,
   AbacatePayEnvelopeSchema,
   AbacatePayPlanChangeSchema,
+  AbacatePayProductListItemSchema,
   AbacatePayProductSchema,
   AbacatePayStoreSchema,
   AbacatePaySubscriptionCheckoutSchema,
@@ -37,7 +39,7 @@ async function callAbacatePay(
   method: 'GET' | 'POST',
   path: string,
   body?: Record<string, unknown>,
-): Promise<unknown> {
+): Promise<{ data: unknown; pagination: { hasMore?: boolean; next?: string | null } | null }> {
   const response = await fetch(`${abacatePayBaseUrl}${path}`, {
     method,
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -52,7 +54,10 @@ async function callAbacatePay(
   if (envelope.success && envelope.data.error) {
     throw new AbacatePayAnswerError(response.status, envelope.data.error);
   }
-  return envelope.success ? envelope.data.data : undefined;
+  return {
+    data: envelope.success ? envelope.data.data : undefined,
+    pagination: envelope.success ? (envelope.data.pagination ?? null) : null,
+  };
 }
 
 /** `GET /stores/get`: proves an api key answers and names the store; writes nothing. */
@@ -61,11 +66,17 @@ export async function fetchAbacatePayStore({
 }: {
   apiKey: string;
 }): Promise<{ id: string; name: string }> {
-  const store = AbacatePayStoreSchema.parse(await callAbacatePay(apiKey, 'GET', '/stores/get'));
+  const { data } = await callAbacatePay(apiKey, 'GET', '/stores/get');
+  const store = AbacatePayStoreSchema.parse(data);
   return { id: store.id, name: store.name };
 }
 
-/** `GET /products/get?externalId=…`: the product's id, `null` when the store does not have it. */
+/**
+ * Walks `GET /products/list` for our `externalId`: `/products/get` answers 400 (not 404) on a
+ * miss, and a business-rule 400 is indistinguishable from a real bad request — the listing is
+ * the lookup that does not depend on error text. A repeated `next` cursor ends the walk, so a
+ * parameter the provider ignores cannot loop forever.
+ */
 export async function findAbacatePayProduct({
   apiKey,
   externalId,
@@ -73,19 +84,23 @@ export async function findAbacatePayProduct({
   apiKey: string;
   externalId: string;
 }): Promise<{ id: string } | null> {
-  try {
-    const product = AbacatePayProductSchema.parse(
-      await callAbacatePay(
-        apiKey,
-        'GET',
-        `/products/get?externalId=${encodeURIComponent(externalId)}`,
-      ),
+  const seenCursors = new Set<string>();
+  let cursor: string | null = null;
+  do {
+    const query = cursor === null ? '' : `?cursor=${encodeURIComponent(cursor)}`;
+    const { data, pagination } = await callAbacatePay(
+      apiKey,
+      'GET',
+      `/products/list${query}`,
     );
-    return { id: product.id };
-  } catch (error) {
-    if (error instanceof AbacatePayAnswerError && error.status === 404) return null;
-    throw error;
-  }
+    const items = z.array(AbacatePayProductListItemSchema).parse(data ?? []);
+    const found = items.find((item) => item.externalId === externalId);
+    if (found) return { id: found.id };
+    cursor = pagination?.hasMore ? (pagination.next ?? null) : null;
+    if (cursor !== null && seenCursors.has(cursor)) return null;
+    if (cursor !== null) seenCursors.add(cursor);
+  } while (cursor !== null);
+  return null;
 }
 
 /**
@@ -107,16 +122,15 @@ export async function createAbacatePayProduct({
   cycle: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'ANNUALLY';
   trialDays?: number;
 }): Promise<{ id: string }> {
-  const product = AbacatePayProductSchema.parse(
-    await callAbacatePay(apiKey, 'POST', '/products/create', {
-      externalId,
-      name,
-      price: priceInCents,
-      currency: 'BRL',
-      cycle,
-      ...(trialDays === undefined ? {} : { trialDays }),
-    }),
-  );
+  const { data } = await callAbacatePay(apiKey, 'POST', '/products/create', {
+    externalId,
+    name,
+    price: priceInCents,
+    currency: 'BRL',
+    cycle,
+    ...(trialDays === undefined ? {} : { trialDays }),
+  });
+  const product = AbacatePayProductSchema.parse(data);
   return { id: product.id };
 }
 
@@ -137,14 +151,13 @@ export async function upsertAbacatePayCustomer({
   taxId?: string;
   cellphone?: string;
 }): Promise<{ id: string }> {
-  const customer = AbacatePayCustomerSchema.parse(
-    await callAbacatePay(apiKey, 'POST', '/customers/create', {
-      email,
-      ...(name === undefined ? {} : { name }),
-      ...(taxId === undefined ? {} : { taxId }),
-      ...(cellphone === undefined ? {} : { cellphone }),
-    }),
-  );
+  const { data } = await callAbacatePay(apiKey, 'POST', '/customers/create', {
+    email,
+    ...(name === undefined ? {} : { name }),
+    ...(taxId === undefined ? {} : { taxId }),
+    ...(cellphone === undefined ? {} : { cellphone }),
+  });
+  const customer = AbacatePayCustomerSchema.parse(data);
   return { id: customer.id };
 }
 
@@ -170,16 +183,15 @@ export async function createAbacatePaySubscriptionCheckout({
   methods: Array<'CARD' | 'PIX'>;
   completionUrl?: string;
 }): Promise<{ id: string; url: string; devMode: boolean }> {
-  const checkout = AbacatePaySubscriptionCheckoutSchema.parse(
-    await callAbacatePay(apiKey, 'POST', '/subscriptions/create', {
-      items: [{ id: productId, quantity }],
-      customerId,
-      externalId,
-      methods,
-      retryPolicy: { maxRetry: 3, retryEvery: 2 },
-      ...(completionUrl === undefined ? {} : { completionUrl }),
-    }),
-  );
+  const { data } = await callAbacatePay(apiKey, 'POST', '/subscriptions/create', {
+    items: [{ id: productId, quantity }],
+    customerId,
+    externalId,
+    methods,
+    retryPolicy: { maxRetry: 3, retryEvery: 2 },
+    ...(completionUrl === undefined ? {} : { completionUrl }),
+  });
+  const checkout = AbacatePaySubscriptionCheckoutSchema.parse(data);
   return { id: checkout.id, url: checkout.url, devMode: checkout.devMode ?? false };
 }
 
@@ -209,13 +221,12 @@ export async function changeAbacatePayPlan({
   productId: string;
   quantity: number;
 }): Promise<{ updateId: string; newAmountInCents: number | null }> {
-  const change = AbacatePayPlanChangeSchema.parse(
-    await callAbacatePay(apiKey, 'POST', '/subscriptions/change-plan', {
-      id: subscriptionId,
-      productId,
-      quantity,
-    }),
-  );
+  const { data } = await callAbacatePay(apiKey, 'POST', '/subscriptions/change-plan', {
+    id: subscriptionId,
+    productId,
+    quantity,
+  });
+  const change = AbacatePayPlanChangeSchema.parse(data);
   return { updateId: change.id, newAmountInCents: change.newAmount ?? null };
 }
 
@@ -236,13 +247,12 @@ export async function createAbacatePayWebhook({
   secret: string;
   events: string[];
 }): Promise<{ id: string }> {
-  const webhook = AbacatePayWebhookSchema.parse(
-    await callAbacatePay(apiKey, 'POST', '/webhooks/create', {
-      name,
-      endpoint,
-      secret,
-      events,
-    }),
-  );
+  const { data } = await callAbacatePay(apiKey, 'POST', '/webhooks/create', {
+    name,
+    endpoint,
+    secret,
+    events,
+  });
+  const webhook = AbacatePayWebhookSchema.parse(data);
   return { id: webhook.id };
 }
