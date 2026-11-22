@@ -27,18 +27,25 @@ export function linkFromInput(text: string): string {
   return trimmed === '' || /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+/** "1.500,00" and "1500,5" (pt-BR); "1,500.00" and "1500.5" (en): whole reais, then the cents. */
+const TYPED_AMOUNTS = [
+  /^(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?$/,
+  /^(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$/,
+];
+
 /**
- * An amount typed in reais ("1.500,00", "1500", "1,500.50") as cents; `null` when empty, `NaN`
- * when it is not an amount, so the contract refuses it. A separator followed by one or two final
- * digits is the decimal one; any other is a thousands mark.
+ * An amount typed in reais as cents; `null` when empty, `NaN` when it is not an amount in one of
+ * `TYPED_AMOUNTS` ("1.500,005", "1.50.0"), so the contract refuses it instead of guessing.
  */
 export function amountInCentsFromInput(text: string): number | null {
   const trimmed = text.trim().replace(/^R\$\s*/, '');
   if (trimmed === '') return null;
-  const typed = /^(\d[\d.,]*?)(?:[.,](\d{1,2}))?$/.exec(trimmed);
-  if (typed === null) return Number.NaN;
-  const reais = typed[1]?.replace(/[.,]/g, '') ?? '';
-  return Number(reais) * 100 + Number((typed[2] ?? '').padEnd(2, '0'));
+  for (const typedAmount of TYPED_AMOUNTS) {
+    const [, reais, cents = ''] = typedAmount.exec(trimmed) ?? [];
+    if (reais !== undefined)
+      return Number(reais.replace(/[.,]/g, '')) * 100 + Number(cents.padEnd(2, '0'));
+  }
+  return Number.NaN;
 }
 
 /** One person per line, "name, role": what follows the first comma is the role. */
