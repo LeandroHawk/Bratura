@@ -14,8 +14,7 @@ const base64Digits = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345
 const toBase64 = (bytes: Uint8Array): string => {
   let output = '';
   for (let index = 0; index < bytes.length; index += 3) {
-    const triple =
-      (bytes[index]! << 16) | ((bytes[index + 1] ?? 0) << 8) | (bytes[index + 2] ?? 0);
+    const triple = (bytes[index]! << 16) | ((bytes[index + 1] ?? 0) << 8) | (bytes[index + 2] ?? 0);
     output += base64Digits[(triple >> 18) & 63];
     output += base64Digits[(triple >> 12) & 63];
     output += index + 1 < bytes.length ? base64Digits[(triple >> 6) & 63] : '=';
@@ -76,7 +75,10 @@ const recordAndProcess = async (
   t: ReturnType<typeof convexTest>,
   overrides: Partial<Record<string, unknown>> = {},
 ) => {
-  const record = await t.mutation(internal.billing.recordAbacatePayDelivery, deliveryArgs(overrides));
+  const record = await t.mutation(
+    internal.billing.recordAbacatePayDelivery,
+    deliveryArgs(overrides),
+  );
   if (record.outcome === 'stored') {
     await t.mutation(internal.billing.processAbacatePayDelivery, {
       billingWebhookDeliveryId: record.billingWebhookDeliveryId,
@@ -88,8 +90,10 @@ const recordAndProcess = async (
 const subscriptionOf = async (t: ReturnType<typeof convexTest>, id: Id<'billingSubscriptions'>) =>
   await t.run((ctx) => ctx.db.get(id));
 
-const deliveryRowOf = async (t: ReturnType<typeof convexTest>, id: Id<'billingWebhookDeliveries'>) =>
-  await t.run((ctx) => ctx.db.get(id));
+const deliveryRowOf = async (
+  t: ReturnType<typeof convexTest>,
+  id: Id<'billingWebhookDeliveries'>,
+) => await t.run((ctx) => ctx.db.get(id));
 
 describe('recordPendingSubscription', () => {
   test('inserts one pending row per organization, and only one open row', async () => {
@@ -327,9 +331,7 @@ describe('abacatePayWebhook', () => {
     const t = convexTest(schema, modules);
     const body = JSON.stringify({ id: 'log_web1', event: 'subscription.completed', data: {} });
     expect((await post(t, body, {})).status).toBe(401);
-    expect(
-      (await post(t, body, { 'x-webhook-secret': webhookSecret })).status,
-    ).toBe(401);
+    expect((await post(t, body, { 'x-webhook-secret': webhookSecret })).status).toBe(401);
     vi.unstubAllEnvs();
   });
 

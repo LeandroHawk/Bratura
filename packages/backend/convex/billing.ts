@@ -5,20 +5,13 @@ import { PaymentMethodEnum } from '@bratura/shared/entities/billing-subscription
 import { DeliveryOutcomeEnum } from '@bratura/shared/entities/billing-webhook-delivery/enums/delivery-outcome/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { requiredAmountInCents } from '@bratura/shared/primitives/domain/money/fields';
-import {
-  nullableString,
-  requiredString,
-} from '@bratura/shared/primitives/code/string/fields';
+import { nullableString, requiredString } from '@bratura/shared/primitives/code/string/fields';
 import { requiredHttpsUrl } from '@bratura/shared/primitives/code/url/fields';
 import { internal } from './_generated/api';
 import type { Doc } from './_generated/dataModel';
 import type { MutationCtx } from './_generated/server';
 import { appError } from './lib/appError';
-import {
-  internalZodAction,
-  internalZodMutation,
-  internalZodQuery,
-} from './lib/builders';
+import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
 import { optionalEnv, requiredEnv } from './lib/env';
 import {
   cancelAbacatePaySubscription,
@@ -34,10 +27,7 @@ import {
   AbacatePayDeliveryEnvelopeSchema,
   AbacatePaySubscriptionEventDataSchema,
 } from './model/abacatePay/payload';
-import {
-  abacatePaySecretMatches,
-  abacatePaySignatureMatches,
-} from './model/abacatePay/signature';
+import { abacatePaySecretMatches, abacatePaySignatureMatches } from './model/abacatePay/signature';
 
 // Billing (`docs/integrations/abacate-pay.md`): the organization panel's monthly subscription,
 // billed per managed profile by AbacatePay. `openPanelCheckout` opens the provider's hosted
@@ -328,7 +318,10 @@ type MarkSubscriptionCancelledResult = z.infer<
 export const markSubscriptionCancelled = internalZodMutation({
   args: MarkSubscriptionCancelledMutationArgsSchema,
   returns: MarkSubscriptionCancelledMutationReturnsSchema,
-  handler: async (ctx, { billingSubscriptionId, cancelledDueTo }): Promise<MarkSubscriptionCancelledResult> => {
+  handler: async (
+    ctx,
+    { billingSubscriptionId, cancelledDueTo },
+  ): Promise<MarkSubscriptionCancelledResult> => {
     const row = await ctx.db.get(billingSubscriptionId);
     if (!row || row.status === 'cancelled') return null;
     const now = Date.now();
@@ -390,7 +383,10 @@ type RecordPlanChangeResult = z.infer<typeof RecordPlanChangeMutationReturnsSche
 export const recordPlanChange = internalZodMutation({
   args: RecordPlanChangeMutationArgsSchema,
   returns: RecordPlanChangeMutationReturnsSchema,
-  handler: async (ctx, { billingSubscriptionId, managedProfiles }): Promise<RecordPlanChangeResult> => {
+  handler: async (
+    ctx,
+    { billingSubscriptionId, managedProfiles },
+  ): Promise<RecordPlanChangeResult> => {
     const row = await ctx.db.get(billingSubscriptionId);
     if (row?.status !== 'active') return null;
     await ctx.db.patch(billingSubscriptionId, {
@@ -419,7 +415,10 @@ type ChangeManagedProfilesResult = z.infer<typeof ChangeManagedProfilesActionRet
 export const changeManagedProfiles = internalZodAction({
   args: ChangeManagedProfilesActionArgsSchema,
   returns: ChangeManagedProfilesActionReturnsSchema,
-  handler: async (ctx, { organizationId, managedProfiles }): Promise<ChangeManagedProfilesResult> => {
+  handler: async (
+    ctx,
+    { organizationId, managedProfiles },
+  ): Promise<ChangeManagedProfilesResult> => {
     const apiKey = requiredEnv('ABACATE_PAY_API_KEY');
     const productId = requiredEnv('ABACATE_PAY_PRODUCT_ID');
     const open = await ctx.runQuery(internal.billing.getOpenPanelSubscription, {
@@ -460,9 +459,7 @@ const RecordAbacatePayDeliveryMutationReturnsSchema = z.union([
   }),
   z.object({ outcome: z.literal('duplicate') }),
 ]);
-type RecordAbacatePayDeliveryResult = z.infer<
-  typeof RecordAbacatePayDeliveryMutationReturnsSchema
->;
+type RecordAbacatePayDeliveryResult = z.infer<typeof RecordAbacatePayDeliveryMutationReturnsSchema>;
 
 /**
  * The webhook's only write before it answers: a delivery is stored once per provider `log_` id,
@@ -582,8 +579,7 @@ export const processAbacatePayDelivery = internalZodMutation({
             abacatePaySubscriptionId: delivery.abacatePaySubscriptionId,
             method: delivery.method ?? row.method,
             amountInCents: delivery.amountInCents ?? row.amountInCents,
-            lastRenewedAt:
-              delivery.event === 'subscription.renewed' ? now : row.lastRenewedAt,
+            lastRenewedAt: delivery.event === 'subscription.renewed' ? now : row.lastRenewedAt,
             lastPaymentFailedAt: null,
           });
         }

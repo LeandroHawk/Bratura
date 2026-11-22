@@ -85,6 +85,4 @@ export const AbacatePaySubscriptionEventDataSchema = z.looseObject({
   pendingUpdateId: requiredString('short').nullable().optional(),
 });
 
-export type AbacatePaySubscriptionEventData = z.infer<
-  typeof AbacatePaySubscriptionEventDataSchema
->;
+export type AbacatePaySubscriptionEventData = z.infer<typeof AbacatePaySubscriptionEventDataSchema>;

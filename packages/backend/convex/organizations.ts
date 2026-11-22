@@ -89,8 +89,6 @@ export const listOrganizationMembers = internalZodQuery({
   handler: async (ctx, { organizationId }) =>
     await ctx.db
       .query('memberships')
-      .withIndex('by_organization_and_user', (index) =>
-        index.eq('organizationId', organizationId),
-      )
+      .withIndex('by_organization_and_user', (index) => index.eq('organizationId', organizationId))
       .collect(),
 });

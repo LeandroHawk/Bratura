@@ -88,11 +88,7 @@ export async function findAbacatePayProduct({
   let cursor: string | null = null;
   do {
     const query = cursor === null ? '' : `?cursor=${encodeURIComponent(cursor)}`;
-    const { data, pagination } = await callAbacatePay(
-      apiKey,
-      'GET',
-      `/products/list${query}`,
-    );
+    const { data, pagination } = await callAbacatePay(apiKey, 'GET', `/products/list${query}`);
     const items = z.array(AbacatePayProductListItemSchema).parse(data ?? []);
     const found = items.find((item) => item.externalId === externalId);
     if (found) return { id: found.id };
