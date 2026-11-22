@@ -14,9 +14,8 @@ import type { CallNoticeStatus } from './callNoticeTexts';
 
 const ptBR = {
   fictionalProfileNotice:
-    'Demonstração: até as contas existirem no servidor, a compatibilidade é calculada para o portfólio de exemplo da Dona Maria, uma artesã fictícia, e não para o que você digitou neste navegador. Os editais são reais, lidos das fontes oficiais.',
-  unavailable:
-    'Os editais não estão disponíveis agora: este site não está ligado à base do Bratura.',
+    'As listas e contadores usam o portfólio fictício da Dona Maria. Os detalhes conferem o seu portfólio deste navegador.',
+  unavailable: 'Os editais estão indisponíveis no momento. Tente atualizar a página mais tarde.',
   loading: 'Carregando os editais…',
   anyArtForm: 'Todas as áreas culturais',
   status: {
@@ -174,9 +173,8 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     fictionalProfileNotice:
-      'Demo: until accounts exist on the server, the fit is computed for the example portfolio of Dona Maria, a fictional artisan, not for what you typed in this browser. The calls are real, read from the official sources.',
-    unavailable:
-      'The calls are not available right now: this site is not connected to Bratura’s database.',
+      'Lists and counters use Dona Maria’s fictional portfolio. Details check your portfolio from this browser.',
+    unavailable: 'Calls are unavailable at the moment. Try reloading the page later.',
     loading: 'Loading the calls…',
     anyArtForm: 'Every cultural area',
     status: {

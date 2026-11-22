@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MatchProfileSchema } from '../../../../match/profile';
 import { CallNoticeExtractionSchema } from '../../../../call-notice-extraction/entity';
 import {
   MatchCheckStatusEnum,
@@ -29,6 +30,10 @@ export type MatchEligibilityRuleCheck = z.infer<typeof MatchEligibilityRuleCheck
  * item with the call's own text as proof. A `null` check: the call does not state that rule.
  */
 export const CallNoticeMatchChecksSchema = z.object({
+  residence: extraction.residenceRequirement
+    .unwrap()
+    .extend({ status: MatchCheckStatusEnum })
+    .nullable(),
   /** `met` when the call lists the profile's applicant type; a list may be incomplete. */
   applicantType: extraction.applicantTypes
     .unwrap()
@@ -75,6 +80,7 @@ export type CallNoticeDetails = z.infer<typeof CallNoticeDetailsSchema>;
 
 export const CallNoticeDetailsQueryFromBraturaPortalArgsSchema = z.object({
   callNoticeId: CallNoticeCardSchema.shape.callNoticeId,
+  profile: MatchProfileSchema.optional(),
 });
 
 export const CallNoticeDetailsQueryFromBraturaPortalReturnsSchema = CallNoticeDetailsSchema;

@@ -6,7 +6,8 @@ import { Badge, Button, Card, Heading, Tag } from '@bratura/ui';
 import type { CSSProperties } from 'react';
 import { NewTabHint } from '@/features/common/components/NewTabHint';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { formattedAmountInCents, formattedDayOfInstant } from '@/features/common/utils/format';
+import { formattedDayOfInstant } from '@bratura/shared/primitives/code/calendar/format';
+import { formattedAmountInCents } from '@/features/common/utils/format';
 import {
   artFormName,
   CALL_NOTICE_LANGUAGE,

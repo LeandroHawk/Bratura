@@ -42,6 +42,7 @@ describe('deadlinePartsInSaoPaulo', () => {
   test('a day deadline has no time', () => {
     const at = Date.UTC(2026, 10, 21, 2, 59);
     expect(deadlinePartsInSaoPaulo({ at, precision: 'day' })).toEqual({
+      year: '2026',
       day: '20',
       month: '11',
       time: null,
@@ -51,6 +52,7 @@ describe('deadlinePartsInSaoPaulo', () => {
   test('a minute deadline is read in São Paulo', () => {
     const at = Date.UTC(2026, 10, 22, 2, 59);
     expect(deadlinePartsInSaoPaulo({ at, precision: 'minute' })).toEqual({
+      year: '2026',
       day: '21',
       month: '11',
       time: { hour: '23', minute: '59' },
@@ -60,6 +62,7 @@ describe('deadlinePartsInSaoPaulo', () => {
   test('midnight in São Paulo is the end of the day before', () => {
     const at = Date.UTC(2026, 10, 21, 3, 0);
     expect(deadlinePartsInSaoPaulo({ at, precision: 'minute' })).toEqual({
+      year: '2026',
       day: '20',
       month: '11',
       time: { hour: '23', minute: '59' },

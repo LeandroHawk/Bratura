@@ -145,7 +145,7 @@ export function StyleguidePage() {
                   <li
                     key={text}
                     className="rise-in rounded-xl border border-border bg-card p-3 text-small"
-                    style={{ animationDelay: `${index * 120}ms` }}
+                    style={{ '--rise-index': index } as React.CSSProperties}
                   >
                     {text}
                   </li>

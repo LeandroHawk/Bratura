@@ -9,7 +9,7 @@ import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds
 import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
 import { ExampleCall } from './ExampleCall';
 
-export function Hero({ locale }: { locale: Locale }) {
+export function Hero({ locale, highlights }: { locale: Locale; highlights: React.ReactNode }) {
   const content = HERO_CONTENT[locale];
   return (
     <Container
@@ -42,7 +42,10 @@ export function Hero({ locale }: { locale: Locale }) {
           </li>
         </ul>
       </PageIntro>
-      <ExampleCall locale={locale} />
+      <div className="grid min-w-0 gap-10">
+        <ExampleCall locale={locale} />
+        {highlights}
+      </div>
     </Container>
   );
 }

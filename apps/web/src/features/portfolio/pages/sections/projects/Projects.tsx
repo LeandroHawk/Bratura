@@ -11,7 +11,7 @@ import { parseWithMessages } from '@bratura/shared/messages/messages';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Badge, type BadgeTone } from '@bratura/ui';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
+import type { FormField } from '@/features/portfolio/pages/sections/common/form-fields';
 import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { PROJECTS_CONTENT } from './content';

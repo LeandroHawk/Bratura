@@ -1,3 +1,4 @@
+import { CallNoticeExtractionSchema } from '../call-notice-extraction/entity';
 import { z } from 'zod';
 import { documentId } from '../../primitives/code/id/fields';
 import { requiredInstant } from '../../primitives/code/time/instant/fields';
@@ -32,6 +33,7 @@ export const MatchSchema = z.object({
   largestAmountPerProjectInCents: requiredAmountInCents.nullable(),
   /** The call's `firstSeenAt`, copied for the "newest" index. */
   callNoticeFirstSeenAt: requiredInstant,
+  artForms: z.array(CallNoticeExtractionSchema.shape.artForms.element.shape.value).optional(),
   computedAt: requiredInstant,
 });
 

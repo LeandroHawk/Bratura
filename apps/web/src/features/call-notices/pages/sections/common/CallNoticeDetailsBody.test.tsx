@@ -57,6 +57,7 @@ const read: CallNoticeDetails = {
     extractedAt: Date.UTC(2026, 10, 19),
   },
   matchChecks: {
+    residence: null,
     applicantType: { value: ['individual', 'mei'], quote, status: 'met' },
     artFormStatus: 'met',
     requirements: [
@@ -95,6 +96,28 @@ const text = (details: CallNoticeDetails) =>
   renderToStaticMarkup(<CallNoticeDetailsBody locale="pt-BR" details={details} />);
 
 describe('CallNoticeDetailsBody', () => {
+  test.each(['pt-BR', 'en'] as const)(
+    'shows the residence decision and source passage in %s',
+    (locale) => {
+      const details: CallNoticeDetails = {
+        ...read,
+        matchChecks: {
+          ...read.matchChecks!,
+          residence: {
+            value: 'Município de Santos',
+            quote: 'Residir no município de Santos.',
+            status: 'needsConfirmation',
+          },
+        },
+      };
+      const html = renderToStaticMarkup(
+        <CallNoticeDetailsBody locale={locale} details={details} />,
+      );
+      expect(html).toContain('Residir no município de Santos.');
+      expect(html).toContain(locale === 'pt-BR' ? 'Para você conferir' : 'For you to check');
+      expect(html).toContain('lang="pt-BR"');
+    },
+  );
   test('a call whose documents were not read shows its official link alone', () => {
     const html = text(notRead);
     expect(html).toContain('href="https://cultura.example.gov.br/edital"');

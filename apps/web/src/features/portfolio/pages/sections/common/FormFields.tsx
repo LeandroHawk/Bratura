@@ -5,7 +5,7 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Checkbox, Fieldset, SelectField, TextAreaField, TextField } from '@bratura/ui';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
-import { fieldMessage, type FormDraft, type FormField } from './formFields';
+import { fieldMessage, type FormDraft, type FormField } from './form-fields';
 
 const FILE_INPUT =
   'block w-full cursor-pointer rounded-xl text-small text-muted-foreground focus-ring ' +
@@ -140,9 +140,9 @@ export function FormFields({
           >
             {files.length > 0 && (
               <ul className="grid gap-1.5">
-                {files.map((file) => (
+                {files.map((file, index) => (
                   <li
-                    key={file.fileName}
+                    key={`file-${index}`}
                     className="rise-in flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-1.5 text-small"
                   >
                     <span className="min-w-0 truncate">{file.fileName}</span>

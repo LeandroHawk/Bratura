@@ -31,10 +31,10 @@ describe('CreatorSchema', () => {
     );
   });
 
-  test('refuses a start year that has not come', () => {
-    const nextYear = new Date().getFullYear() + 1;
+  test('keeps the entity independent of the current clock', () => {
+    const nextYear = 2200;
     expect(CreatorCulturalProfileFields.shape.activityStartYear.safeParse(nextYear).success).toBe(
-      false,
+      true,
     );
   });
 });

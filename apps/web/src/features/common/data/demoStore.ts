@@ -12,6 +12,7 @@ import {
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/saved-call-notice/mutation';
 import {
   PortfolioItemSchema,
+  portfolioItemsMax,
   type PortfolioItem,
 } from '@bratura/shared/entities/portfolio-item/entity';
 import { useSyncExternalStore } from 'react';
@@ -50,7 +51,10 @@ function stateFromStorage(): DemoState {
   return {
     creator,
     isSignedIn: creator !== null && stored.isSignedIn === true,
-    portfolioItems: PortfolioItemSchema.array().catch([]).parse(stored.portfolioItems),
+    portfolioItems: PortfolioItemSchema.array()
+      .max(portfolioItemsMax)
+      .catch([])
+      .parse(stored.portfolioItems),
     savedCallNotices: SetSavedCallNoticeMutationFromBraturaPortalArgsSchema.array()
       .catch([])
       .parse(stored.savedCallNotices),
@@ -106,12 +110,17 @@ export function accountReplacedByExample(example: Pick<Creator, 'email'>): strin
 }
 
 /** Creates the demo account from the sign-up, signed in. */
-export function signUp({ mainCulturalArea, ...registration }: SignUpMutationFromBraturaPortalArgs) {
+export function signUp(
+  { mainCulturalArea, ...registration }: SignUpMutationFromBraturaPortalArgs,
+  replaceExisting = false,
+): boolean {
+  if (currentState().creator !== null && !replaceExisting) return false;
   setState({
     ...EMPTY_STATE,
     creator: { ...registration, ...emptyCulturalProfile, mainCulturalArea },
     isSignedIn: true,
   });
+  return true;
 }
 
 /** Whether an account with this e-mail exists in this browser; signs it in when it does. */
@@ -145,12 +154,20 @@ export function saveCreatorFields(fields: CreatorRegistration | CreatorCulturalP
 }
 
 /** Creates the item or replaces the one with the same `clientItemId`. */
-export function setPortfolioItem(item: PortfolioItem) {
+export function setPortfolioItem(item: PortfolioItem): boolean {
   const current = currentState();
-  const others = current.portfolioItems.filter(
-    (existing) => existing.clientItemId !== item.clientItemId,
-  );
-  setState({ ...current, portfolioItems: [...others, item] });
+  if (!current.isSignedIn || current.creator === null) return false;
+  const existing = current.portfolioItems.some((other) => other.clientItemId === item.clientItemId);
+  if (!existing && current.portfolioItems.length >= portfolioItemsMax) return false;
+  const parsed = PortfolioItemSchema.safeParse(item);
+  if (!parsed.success) return false;
+  const portfolioItems = existing
+    ? current.portfolioItems.map((other) =>
+        other.clientItemId === item.clientItemId ? parsed.data : other,
+      )
+    : [...current.portfolioItems, parsed.data];
+  setState({ ...current, portfolioItems });
+  return true;
 }
 
 export function removePortfolioItem(clientItemId: string) {

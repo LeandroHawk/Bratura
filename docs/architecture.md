@@ -43,7 +43,7 @@ Inside a feature the idea repeats: `common/` is common **at the level of its fol
 **What decides the folder is who imports it, not whether it is deployed.** `apps/` holds what is
 deployed and imported by nobody; `packages/` holds what something imports. The Convex backend is
 deployed on its own (`convex deploy`) and still lives in `packages/backend`, because the fronts
-import its generated API (`import { api } from '@bratura/backend/convex/_generated/api'`), and an
+import its generated API (`import { api } from '@bratura/backend/api'`), and an
 app never imports another app. Convex's own monorepo template
 (`get-convex/turbo-expo-nextjs-clerk-convex-monorepo`, checked 2026-11-08) does the same:
 `apps/web`, `apps/native`, `packages/backend`.

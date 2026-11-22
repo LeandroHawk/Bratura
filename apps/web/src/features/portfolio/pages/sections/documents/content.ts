@@ -4,7 +4,7 @@ import type { PortfolioItemsCopy } from '@/features/portfolio/pages/sections/com
 
 const ptBR = {
   title: 'Documentação',
-  lead: 'Os papéis que os editais pedem, guardados uma vez. Um papel vencido ou perto de vencer aparece marcado aqui e em cada edital que o pede.',
+  lead: 'Os papéis que os editais pedem, guardados uma vez. Um papel vencido ou perto de vencer aparece marcado aqui e nos detalhes dos editais que o pedem; as listas usam o exemplo da Dona Maria.',
   empty:
     'Nenhum documento ainda. Um documento de identidade e um comprovante de residência já abrem muitos editais.',
   add: 'Adicionar documento',
@@ -29,7 +29,7 @@ export const DOCUMENTS_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     title: 'Documents',
-    lead: 'The papers calls ask for, stored once. A paper that expired or is about to is marked here and in every call that asks for it.',
+    lead: 'The papers calls ask for, stored once. A paper that expired or is about to is marked here and in the details of calls that ask for it; lists use Dona Maria’s example.',
     empty:
       'No document yet. An identity document and a proof of residence already open many calls.',
     add: 'Add document',

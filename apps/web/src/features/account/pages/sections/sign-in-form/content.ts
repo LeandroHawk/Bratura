@@ -2,7 +2,7 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
   title: 'Entre no seu portfólio',
-  lead: 'Seus editais, o que falta para cada um e a inscrição preparada esperam por você.',
+  lead: 'Organize seu portfólio e confira os requisitos nos detalhes de cada edital.',
   demoNotice:
     'Demonstração até 30/11: não há senha nem conta de verdade. O cadastro fica só no navegador em que foi feito e é apagado quando você sai.',
   email: 'E-mail do cadastro deste navegador',
@@ -25,7 +25,7 @@ export const SIGN_IN_FORM_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     title: 'Sign in to your portfolio',
-    lead: 'Your calls, what each one still asks of you and the prepared application are waiting.',
+    lead: 'Organize your portfolio and check the requirements in each call’s details.',
     demoNotice:
       'Demo until 30/11: there is no password and no real account. An account lives only in the browser where it was created and is erased when you sign out.',
     email: 'E-mail of this browser’s account',

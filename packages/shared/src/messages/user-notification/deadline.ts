@@ -8,8 +8,10 @@ import type { Locale } from '../../primitives/external/locale/enum';
  * beside its own label.
  */
 export function registrationCloseDateText(closes: ZonedInstant, locale: Locale): string {
-  const { day, month, time } = deadlinePartsInSaoPaulo(closes);
-  const date = locale === 'pt-BR' ? `${day}/${month}` : `${month}/${day}`;
+  const { year, day, month, time } = deadlinePartsInSaoPaulo(closes);
+  const sameYear = year === deadlinePartsInSaoPaulo({ at: Date.now(), precision: 'day' }).year;
+  const date =
+    (locale === 'pt-BR' ? `${day}/${month}` : `${month}/${day}`) + (sameYear ? '' : `/${year}`);
   if (time === null) return date;
   return locale === 'pt-BR'
     ? `${date}, às ${time.hour}h${time.minute}`

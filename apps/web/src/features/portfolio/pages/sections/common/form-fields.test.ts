@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { draftFromValues, valuesFromDraft } from './formFields';
+import { draftFromValues, valuesFromDraft } from './form-fields';
 
 describe('valuesFromDraft', () => {
   it('keeps a comma inside a link, and gives a bare address its scheme', () => {

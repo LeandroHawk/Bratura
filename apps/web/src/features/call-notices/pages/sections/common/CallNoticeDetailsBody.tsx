@@ -11,7 +11,8 @@ import { NewTabHint } from '@/features/common/components/NewTabHint';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { ROUTES } from '@/features/common/config/routes';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { formattedAmountInCents, formattedDayOfInstant } from '@/features/common/utils/format';
+import { formattedDayOfInstant } from '@bratura/shared/primitives/code/calendar/format';
+import { formattedAmountInCents } from '@/features/common/utils/format';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import {
   artFormName,
@@ -230,6 +231,17 @@ export function CallNoticeDetailsBody({
               {matchChecks.applicantType.status !== 'met' && (
                 <p className="text-small">{copy.applicantTypeToConfirm}</p>
               )}
+            </div>
+          )}
+          {matchChecks.residence && (
+            <div className="grid gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge tone={CHECK_TONE[matchChecks.residence.status]}>
+                  {copy.checkStatus[matchChecks.residence.status]}
+                </Badge>
+                <p className="font-semibold">{copy.residence}</p>
+              </div>
+              <Quote locale={locale}>{matchChecks.residence.quote}</Quote>
             </div>
           )}
           {matchChecks.artFormStatus && matchChecks.artFormStatus !== 'met' && (

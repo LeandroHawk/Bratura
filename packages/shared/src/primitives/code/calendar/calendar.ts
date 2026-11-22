@@ -73,24 +73,17 @@ export function instantFromPlainDateTimeInZone(dateTime: PlainDateTime, timeZone
   return asUtc - offsetAt(firstGuess, timeZone);
 }
 
-// Reading a deadline for a person: always in America/Sao_Paulo, whatever zone the source wrote
-// (`primitives/AGENTS.md`, measured traps). Built once: constructing a formatter costs far more
-// than formatting with it.
-const saoPauloDateTime = new Intl.DateTimeFormat('en-US-u-ca-gregory-nu-latn', {
-  timeZone: 'America/Sao_Paulo',
-  hourCycle: 'h23',
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: 'numeric',
-});
-
 const partsInSaoPaulo = (instant: number) => {
-  const parts = saoPauloDateTime.formatToParts(instant);
+  const parts = formatterFor('America/Sao_Paulo').formatToParts(instant);
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((candidate) => candidate.type === type)?.value ?? '';
-  return { day: part('day'), month: part('month'), hour: part('hour'), minute: part('minute') };
+  return {
+    year: part('year'),
+    day: part('day'),
+    month: part('month'),
+    hour: part('hour'),
+    minute: part('minute'),
+  };
 };
 
 /**
@@ -100,10 +93,11 @@ const partsInSaoPaulo = (instant: number) => {
  */
 export function deadlinePartsInSaoPaulo(deadline: { at: number; precision: 'day' | 'minute' }) {
   const parts = partsInSaoPaulo(deadline.at);
-  if (deadline.precision === 'day') return { day: parts.day, month: parts.month, time: null };
-  const { day, month, hour, minute } =
+  if (deadline.precision === 'day')
+    return { year: parts.year, day: parts.day, month: parts.month, time: null };
+  const { year, day, month, hour, minute } =
     Number(parts.hour) === 0 && Number(parts.minute) === 0
       ? partsInSaoPaulo(deadline.at - 60_000)
       : parts;
-  return { day, month, time: { hour: hour.padStart(2, '0'), minute } };
+  return { year, day, month, time: { hour: hour.padStart(2, '0'), minute } };
 }

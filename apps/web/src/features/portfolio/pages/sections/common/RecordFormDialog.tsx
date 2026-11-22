@@ -5,8 +5,9 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Dialog } from '@bratura/ui';
 import { useContractForm } from '@/features/common/hooks/useContractForm';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
+import { amountInCentsFromInput } from '@/features/common/utils/form-text';
 import { FormFields } from './FormFields';
-import { draftFromValues, valuesFromDraft, type FormField } from './formFields';
+import { draftFromValues, valuesFromDraft, type FormField } from './form-fields';
 
 /**
  * A record of the portfolio edited in a dialog. Mount it when the dialog opens (and give it a
@@ -29,16 +30,26 @@ export function RecordFormDialog<Value>({
   initialValues: Record<string, unknown>;
   /** Checks the typed values against the contract (`parseWithMessages`). */
   parse: (values: Record<string, unknown>) => ParsedWithMessages<Value>;
-  onSave: (value: Value) => void;
+  onSave: (value: Value) => void | boolean;
   onClose: () => void;
 }) {
   const content = PORTFOLIO_COMMON_CONTENT[locale];
-  const { draft, setField, messageByPath, formRef, submit } = useContractForm({
+  const { draft, setField, messageByPath, setMessageByPath, formRef, submit } = useContractForm({
     initialDraft: draftFromValues(fields, initialValues),
-    parse: (typed) => parse(valuesFromDraft(fields, typed)),
+    parse: (typed) => {
+      const invalid = fields.find(
+        ({ name, control }) =>
+          control === 'amount' &&
+          typeof typed[name] === 'string' &&
+          Number.isNaN(amountInCentsFromInput(typed[name] as string)),
+      );
+      if (invalid)
+        return { success: false, messageByPath: { [invalid.name]: content.invalidAmount } };
+      return parse(valuesFromDraft(fields, typed));
+    },
     onValid: (value) => {
-      onSave(value);
-      onClose();
+      if (onSave(value) === false) setMessageByPath({ _form: content.itemLimit });
+      else onClose();
     },
   });
 
@@ -53,6 +64,7 @@ export function RecordFormDialog<Value>({
           setField={setField}
           messageByPath={messageByPath}
         />
+        {messageByPath._form && <p role="alert">{messageByPath._form}</p>}
         <div className="flex flex-wrap gap-3">
           <Button type="submit">{content.save}</Button>
           <Button variant="ghost" onClick={onClose}>

@@ -1,3 +1,5 @@
+import { matchProfileFromPortfolio } from '@bratura/shared/entities/match/profile';
+import type { Creator } from '@bratura/shared/entities/creator/entity';
 import type { CallNoticeExtraction } from '@bratura/shared/entities/call-notice-extraction/entity';
 import {
   FICTIONAL_CREATOR,
@@ -11,8 +13,9 @@ import {
   matchCallNotice,
   matchClassificationOnDeadline,
   monthsStatedIn,
-  type MatchProfile,
 } from './matchCallNotice';
+
+type MatchProfile = { creator: Creator; portfolioItems: PortfolioItem[] };
 
 const NOW = Date.UTC(2026, 10, 15, 15);
 const dayInMs = 24 * 60 * 60 * 1000;
@@ -27,7 +30,7 @@ const closesInDays = (days: number) => ({
 
 type Extracted = Pick<
   CallNoticeExtraction,
-  'applicantTypes' | 'artForms' | 'requirements' | 'eligibilityRules'
+  'applicantTypes' | 'artForms' | 'requirements' | 'eligibilityRules' | 'residenceRequirement'
 >;
 type Requirement = Extracted['requirements'][number];
 
@@ -52,6 +55,7 @@ const rule = (kind: Extracted['eligibilityRules'][number]['kind'], detail: strin
 const call = (overrides: Partial<Extracted> = {}): Extracted => ({
   applicantTypes: { value: ['individual', 'mei'], quote: 'pessoas físicas e MEI' },
   artForms: [{ value: 'crafts', quote: 'artesanato' }],
+  residenceRequirement: null,
   requirements: [],
   eligibilityRules: [],
   ...overrides,
@@ -89,7 +93,12 @@ const withDocument = (
 });
 
 const match = (extraction: Extracted, profile = donaMaria, days = 20) =>
-  matchCallNotice(profile, extraction, closesInDays(days), NOW);
+  matchCallNotice(
+    matchProfileFromPortfolio(profile.creator, profile.portfolioItems),
+    extraction,
+    closesInDays(days),
+    NOW,
+  );
 
 const statusesOf = (extraction: Extracted, profile = donaMaria) =>
   match(extraction, profile).requirements.map(({ kind, status }) => [kind, status]);
@@ -106,12 +115,12 @@ describe('matchCallNotice: the stage of a requirement', () => {
     const result = match(
       call({
         requirements: [
-          requirement('identity'),
+          requirement('proofOfResidence'),
           requirement('proofOfResidence'),
           requirement('bankAccount'),
           requirement('portfolioOrActivityProof'),
           requirement('curriculum'),
-          requirement('identity', null),
+          requirement('bankAccount', null),
           ...Array.from({ length: 4 }, () => requirement('taxAndLaborClearance', 'afterSelection')),
           requirement('cnpjOrMei', 'afterSelection'),
           requirement('artisanCredential', 'afterSelection'),
@@ -160,7 +169,7 @@ describe('matchCallNotice: who a requirement applies to', () => {
         requirement('identity', 'registration', ['individual']),
       ],
     });
-    expect(statusesOf(extraction)).toEqual([['identity', 'met']]);
+    expect(statusesOf(extraction)).toEqual([['identity', 'needsConfirmation']]);
     expect(match(extraction).classification).toBe('eligible');
   });
 
@@ -383,12 +392,12 @@ describe('matchCallNotice: eligibility rules', () => {
 });
 
 describe('matchCallNotice: art forms', () => {
-  test('a listed art form or "any" is met; an unlisted one is to confirm and lowers nothing', () => {
+  test('a listed art form or "any" is met; an unlisted one needs confirmation and lowers the classification', () => {
     expect(match(call()).artFormStatus).toBe('met');
     expect(match(call({ artForms: [{ value: 'any', quote: 'todas' }] })).artFormStatus).toBe('met');
     const music = match(call({ artForms: [{ value: 'music', quote: 'música' }] }));
     expect(music.artFormStatus).toBe('needsConfirmation');
-    expect(music.classification).toBe('eligible');
+    expect(music.classification).toBe('almostEligible');
     expect(match(call({ artForms: [] })).artFormStatus).toBeNull();
   });
 });
@@ -426,5 +435,73 @@ describe('the deadline and the amount', () => {
       largestAmountPerProjectInCents({ amountsPerProject: [amount(500_000), amount(1_500_000)] }),
     ).toBe(1_500_000);
     expect(largestAmountPerProjectInCents({ amountsPerProject: [] })).toBeNull();
+  });
+});
+
+describe('review regressions: residence, age and activity proof', () => {
+  test.each([
+    ['Município de Santos', 'Juazeiro do Norte', 'CE', 'needsConfirmation'],
+    ['município de São Paulo', 'Santos', 'SP', 'needsConfirmation'],
+    ['município de São Paulo', 'São Paulo', 'SP', 'met'],
+    ['Município de Juazeiro', 'Juazeiro do Norte', 'CE', 'needsConfirmation'],
+    ['Município de Juazeiro do Norte', 'Juazeiro', 'BA', 'needsConfirmation'],
+    ['Ceará', 'Juazeiro do Norte', 'CE', 'met'],
+    ['Brasil', 'Juazeiro do Norte', 'CE', 'met'],
+    [
+      'Estado do Rio Grande do Norte e/ou em algum dos Estados da Região Nordeste do Brasil',
+      'Juazeiro do Norte',
+      'CE',
+      'needsConfirmation',
+    ],
+  ] as const)('%s for %s/%s: %s', (value, city, state, status) => {
+    const result = match(
+      call({ residenceRequirement: { value, quote: value } }),
+      withCreator({ city, state }),
+    );
+    expect(result.residence).toEqual({ value, quote: value, status });
+    expect(result.classification).toBe(status === 'met' ? 'eligible' : 'almostEligible');
+  });
+
+  test('no residence requirement means no check', () => {
+    expect(match(call()).residence).toBeNull();
+  });
+
+  test.each([
+    ['1996-11-16', 'met'],
+    ['1996-11-15', 'notMet'],
+  ] as const)('maximum age admits the whole year: %s', (birthDate, status) => {
+    const result = match(
+      call({ eligibilityRules: [rule('maximumAge', 'até 29 anos')] }),
+      withCreator({ birthDate }),
+    );
+    expect(result.eligibilityRules[0]?.status).toBe(status);
+  });
+
+  test.each(['minimumAge', 'residenceTime', 'minimumExperience'] as const)(
+    '%s never interprets a maximum as a minimum',
+    (kind) => {
+      const result = match(
+        call({ eligibilityRules: [rule(kind, 'há, no máximo, 02 (dois) anos')] }),
+      );
+      expect(result.eligibilityRules[0]?.status).toBe('needsConfirmation');
+    },
+  );
+
+  test('activity proof needs an experience with a link or attachment', () => {
+    const extraction = call({ requirements: [requirement('portfolioOrActivityProof')] });
+    expect(statusesOf(extraction)).toEqual([['portfolioOrActivityProof', 'met']]);
+    const portfolioItems = FICTIONAL_CREATOR_PORTFOLIO_ITEMS.map((item) =>
+      item.kind === 'culturalExperience' ? { ...item, attachments: [], links: [] } : item,
+    );
+    expect(statusesOf(extraction, { ...donaMaria, portfolioItems })).toEqual([
+      ['portfolioOrActivityProof', 'notMet'],
+    ]);
+  });
+
+  test('a CPF alone never confirms an RG or CNH requirement', () => {
+    const result = match(
+      call({ requirements: [{ ...requirement('identity'), detail: 'RG ou CNH com foto' }] }),
+    );
+    expect(result.requirements[0]?.status).toBe('needsConfirmation');
   });
 });

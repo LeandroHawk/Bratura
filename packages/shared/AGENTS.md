@@ -9,11 +9,12 @@ tables: `source`, `call-notice`, `call-notice-document`, `call-notice-document-t
 `call-notice-extraction`, `ingestion-run`, `user`, `user-notification`, `notification-delivery`,
 `user-message-channel`.
 
-⚠️ **`creator` and `portfolio-item` are here ahead of their tables**, with the portal DTOs of the
-call screens (`call-notice/dto/bratura-portal/`). Their only consumer today is the web, which keeps
-them in the browser (`features/common/data/demoStore.ts`) until the Convex tables and functions
-are written; then the tables are built from these same schemas. Change them with the backend's
-author before that.
+⚠️ **`creator` and `portfolio-item` are here ahead of their tables**, an explicit demo exception.
+The web persists them in `features/common/data/demoStore.ts`; the backend reads the fictional
+creator and the bounded projection in `match/profile.ts`. `matchProfileFromPortfolio` is the one
+projection used by both callers, without contact information or portfolio text. The call-screen
+portal DTOs are consumed by the web and backend. When the creator tables are written, derive them
+from these same entities and replace the demo boundary with authenticated ownership.
 
 ```
 src/

@@ -10,23 +10,22 @@ import {
   type CallNoticeDeadline,
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import type { CallNoticeExtraction } from '@bratura/shared/entities/call-notice-extraction/entity';
-import type { Creator } from '@bratura/shared/entities/creator/entity';
+import type { MatchProfile } from '@bratura/shared/entities/match/profile';
+import { UF_NAME } from '@bratura/shared/primitives/external/uf/names';
 import type {
   MatchCheckStatus,
   MatchPaperValidity,
 } from '@bratura/shared/entities/match/enums/check-status/enum';
 import type { MatchClassification } from '@bratura/shared/entities/match/enums/classification/enum';
-import type { PortfolioItem } from '@bratura/shared/entities/portfolio-item/entity';
 import { PortfolioDocumentKindEnum } from '@bratura/shared/entities/portfolio-item/enums/document-kind/enum';
-import { portfolioDocumentStatus } from '@bratura/shared/entities/portfolio-item/kinds/document/variant';
 import { plainDateInSaoPaulo } from '@bratura/shared/primitives/code/calendar/calendar';
 
 /** Who a call is matched against: the account and its portfolio. */
-export type MatchProfile = { creator: Creator; portfolioItems: PortfolioItem[] };
+export type { MatchProfile } from '@bratura/shared/entities/match/profile';
 
 type ExtractedForMatching = Pick<
   CallNoticeExtraction,
-  'applicantTypes' | 'artForms' | 'requirements' | 'eligibilityRules'
+  'applicantTypes' | 'artForms' | 'requirements' | 'eligibilityRules' | 'residenceRequirement'
 >;
 
 export type CallNoticeMatch = CallNoticeMatchChecks & {
@@ -55,6 +54,34 @@ export function monthsStatedIn(detail: string): number | null {
   return Number(amount) * (unit.toLowerCase().startsWith('ano') ? 12 : 1);
 }
 
+function normalized(text: string) {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
+/** A place name must be complete; a city restriction cannot be satisfied by its state. */
+function residenceStatus(creator: MatchProfile['creator'], requirement: string): MatchCheckStatus {
+  const text = normalized(requirement)
+    .replace(/[^a-z0-9]+/gu, ' ')
+    .trim();
+  const city = normalized(creator.city)
+    .replace(/[^a-z0-9]+/gu, ' ')
+    .trim();
+  const words = ` ${text} `;
+  const namesCity = /\b(?:municipio|cidade)\b/u.test(text);
+  const cityNamed =
+    city.length > 0 &&
+    words.includes(` ${city} `) &&
+    !['de', 'do', 'da', 'dos', 'das'].some((part) => words.includes(` ${city} ${part} `));
+  if (namesCity) return cityNamed ? 'met' : 'needsConfirmation';
+  if (cityNamed) return 'met';
+  const isNational =
+    /^(?:brasil|territorio nacional|pais|todo o (?:brasil|territorio nacional|pais))$/u.test(text);
+  const stateNamed =
+    words.includes(` ${creator.state.toLowerCase()} `) ||
+    words.includes(` ${normalized(UF_NAME[creator.state])} `);
+  return stateNamed || isNational ? 'met' : 'needsConfirmation';
+}
+
 function monthsBetweenDates(from: string, to: string) {
   const [fromYear = 0, fromMonth = 0, fromDay = 0] = from.split('-').map(Number);
   const [toYear = 0, toMonth = 0, toDay = 0] = to.split('-').map(Number);
@@ -65,14 +92,26 @@ const metWhen = (isMet: boolean): MatchCheckStatus => (isMet ? 'met' : 'notMet')
 
 // A rule the profile can answer, by kind; every other kind stays "to confirm".
 const answerOfRule: Partial<
-  Record<EligibilityRuleKind, (creator: Creator, detail: string, today: string) => MatchCheckStatus>
+  Record<
+    EligibilityRuleKind,
+    (creator: MatchProfile['creator'], detail: string, today: string) => MatchCheckStatus
+  >
 > = {
+  maximumAge: ({ birthDate }, detail, today) => {
+    const months = monthsStatedIn(detail);
+    if (birthDate === null || months === null) return 'needsConfirmation';
+    return metWhen(
+      Math.floor(monthsBetweenDates(birthDate, today) / 12) <= Math.floor(months / 12),
+    );
+  },
   minimumAge: ({ birthDate }, detail, today) => {
+    if (/maxim[oa]/u.test(normalized(detail))) return 'needsConfirmation';
     const months = monthsStatedIn(detail);
     if (birthDate === null || months === null) return 'needsConfirmation';
     return metWhen(monthsBetweenDates(birthDate, today) >= months);
   },
   residenceTime: ({ livesInCurrentPlaceSince }, detail, today) => {
+    if (/maxim[oa]/u.test(normalized(detail))) return 'needsConfirmation';
     const months = monthsStatedIn(detail);
     if (livesInCurrentPlaceSince === null || months === null) return 'needsConfirmation';
     // Enough time is not the right place: only a too-short time is answered.
@@ -83,6 +122,7 @@ const answerOfRule: Partial<
   publicServantExclusion: ({ isPublicServant }) =>
     isPublicServant === null ? 'needsConfirmation' : metWhen(!isPublicServant),
   minimumExperience: ({ activityStartYear }, detail, today) => {
+    if (/maxim[oa]/u.test(normalized(detail))) return 'needsConfirmation';
     const months = monthsStatedIn(detail);
     if (activityStartYear === null || months === null) return 'needsConfirmation';
     return metWhen((Number(today.slice(0, 4)) - activityStartYear) * 12 >= months);
@@ -109,6 +149,9 @@ export function matchCallNotice(
       : null;
   const documents = portfolioItems.filter((item) => item.kind === 'document');
   const hasExperiences = portfolioItems.some((item) => item.kind === 'culturalExperience');
+  const hasActivityProof = portfolioItems.some(
+    (item) => item.kind === 'culturalExperience' && item.hasProof,
+  );
 
   function paperCheck(
     kind: MatchRequirementCheck['kind'],
@@ -117,19 +160,20 @@ export function matchCallNotice(
     // Not a paper a portfolio keeps (a proposal, a form), or `other`: two "others" are not one.
     if (!portfolioKind.success || portfolioKind.data === 'other')
       return { status: 'needsConfirmation', paperValidity: null };
+    if (portfolioKind.data === 'portfolioOrActivityProof' && hasActivityProof)
+      return { status: 'met', paperValidity: null };
     if (portfolioKind.data === 'curriculum' && hasExperiences)
       return { status: 'met', paperValidity: null };
     const ofKind = documents.filter((document) => document.documentKind === portfolioKind.data);
-    const registered = ofKind.filter((document) => {
-      const status = portfolioDocumentStatus(document, today);
-      return status === 'registered' || status === 'expiring';
-    });
+    const registered = ofKind.filter(
+      ({ hasFile, validUntil }) => hasFile && (validUntil === null || validUntil >= today),
+    );
     if (registered.length === 0) {
-      const isExpired = ofKind.some(
-        (document) => portfolioDocumentStatus(document, today) === 'expired',
-      );
+      const isExpired = ofKind.some(({ validUntil }) => validUntil !== null && validUntil < today);
       return { status: 'notMet', paperValidity: isExpired ? 'expired' : null };
     }
+    if (portfolioKind.data === 'identity')
+      return { status: 'needsConfirmation', paperValidity: null };
     const lastsUntilClose = registered.some(
       ({ validUntil }) => validUntil === null || closesOn === null || validUntil >= closesOn,
     );
@@ -164,17 +208,32 @@ export function matchCallNotice(
         ? 'met'
         : 'needsConfirmation';
 
+  const residence = extraction.residenceRequirement && {
+    ...extraction.residenceRequirement,
+    status: residenceStatus(creator, extraction.residenceRequirement.value),
+  };
+
   const failsARule = eligibilityRules.some(({ status }) => status === 'notMet');
   const lacksAPaperToApply = requirements.some(
     ({ stage, status }) => stage !== 'afterSelection' && status === 'notMet',
   );
   const classification: MatchClassification = failsARule
     ? 'notEligible'
-    : lacksAPaperToApply || applicantType?.status === 'needsConfirmation'
+    : lacksAPaperToApply ||
+        applicantType?.status === 'needsConfirmation' ||
+        residence?.status === 'needsConfirmation' ||
+        artFormStatus === 'needsConfirmation'
       ? 'almostEligible'
       : 'eligible';
 
-  return { classification, applicantType, artFormStatus, requirements, eligibilityRules };
+  return {
+    classification,
+    applicantType,
+    residence,
+    artFormStatus,
+    requirements,
+    eligibilityRules,
+  };
 }
 
 /** The largest amount one project gets; the call's total budget is not a project's amount. */

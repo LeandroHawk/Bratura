@@ -7,7 +7,7 @@ import { Button, Dialog, Heading } from '@bratura/ui';
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { removePortfolioItem, setPortfolioItem } from '@/features/common/data/demoStore';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
-import type { FormField } from './formFields';
+import type { FormField } from './form-fields';
 import { RecordDetails } from './RecordDetails';
 import { RecordFormDialog } from './RecordFormDialog';
 

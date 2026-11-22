@@ -1,3 +1,9 @@
+import { CULTURAL_QA_PROFILES } from '@bratura/shared/entities/creator/demo/five-cultural-profiles.fixture';
+import {
+  matchProfileFromPortfolio,
+  MatchProfileSchema,
+} from '@bratura/shared/entities/match/profile';
+import { portfolioItemsMax } from '@bratura/shared/entities/portfolio-item/entity';
 import { callNoticeCardsPageMax } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
 import { callNoticeHighlightsCount } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-highlights/query';
 import type { CallNoticeExtraction } from '@bratura/shared/entities/call-notice-extraction/entity';
@@ -474,7 +480,7 @@ describe('callNoticeCounters', () => {
     });
     await withCall(t, { closesInDays: -4 });
     expect(await t.query(api.matching.callNoticeCounters, {})).toEqual({
-      open: 2,
+      open: 3,
       closingSoon: 1,
       isNew: 1,
       byClassification: { eligible: 2, almostEligible: 1, notEligible: 0 },
@@ -542,7 +548,7 @@ describe('callNoticeDetails', () => {
           {
             kind: 'identity',
             stage: 'registration',
-            status: 'met',
+            status: 'needsConfirmation',
             quote: 'documento de identidade',
           },
           { kind: 'cnpjOrMei', stage: 'afterSelection', status: 'notMet', quote: 'cartão do CNPJ' },
@@ -578,5 +584,124 @@ describe('callNoticeDetails', () => {
     await expect(t.query(api.matching.callNoticeDetails, { callNoticeId })).rejects.toMatchObject({
       data: { code: 'notFound' },
     });
+  });
+});
+
+describe('QA integration: five cultural profiles', () => {
+  test.each(CULTURAL_QA_PROFILES)(
+    '$key: details use the supplied profile and react to portfolio changes',
+    async ({ creator, portfolioItems, years }) => {
+      const t = convexTest(schema, modules);
+      const callNoticeId = await withCall(t, {
+        closesInDays: 20,
+        extraction: extracted({
+          applicantTypes: { value: [creator.applicantType], quote: 'tipo de proponente fictício' },
+          artForms: [
+            {
+              value: creator.mainCulturalArea === 'other' ? 'any' : creator.mainCulturalArea!,
+              quote: 'área cultural fictícia',
+            },
+          ],
+          residenceRequirement: { value: 'Ceará', quote: 'Residentes no Ceará' },
+          requirements: [
+            { ...missingPaperToApply, kind: 'bankAccount' },
+            { ...missingPaperToApply, kind: 'portfolioOrActivityProof' },
+          ],
+          eligibilityRules:
+            years === null
+              ? []
+              : [
+                  {
+                    kind: 'minimumExperience',
+                    detail: `atuação de ${years} anos`,
+                    quote: `comprovar ${years} anos`,
+                  },
+                ],
+        }),
+      });
+      const profile = matchProfileFromPortfolio(creator, portfolioItems);
+      const before = await t.query(api.matching.callNoticeDetails, { callNoticeId, profile });
+      expect(before.classification).toBe('almostEligible');
+      expect(
+        before.matchChecks?.requirements.find((r) => r.kind === 'portfolioOrActivityProof')?.status,
+      ).toBe('met');
+      profile.portfolioItems.push({
+        kind: 'document',
+        documentKind: 'bankAccount',
+        validUntil: null,
+        hasFile: true,
+      });
+      const after = await t.query(api.matching.callNoticeDetails, { callNoticeId, profile });
+      expect(after.classification).toBe('eligible');
+      expect(after.matchChecks?.requirements.find((r) => r.kind === 'bankAccount')?.status).toBe(
+        'met',
+      );
+      const incompatible = {
+        ...profile,
+        creator: {
+          ...profile.creator,
+          state: 'SP' as const,
+          city: 'Santos',
+          mainCulturalArea: 'audiovisual' as const,
+        },
+      };
+      expect(
+        (await t.query(api.matching.callNoticeDetails, { callNoticeId, profile: incompatible }))
+          .classification,
+      ).toBe('almostEligible');
+      expect(
+        (
+          await t.query(api.matching.callNoticeDetails, {
+            callNoticeId,
+            profile: { ...profile, creator: { ...profile.creator, isPublicServant: null } },
+          })
+        ).matchChecks,
+      ).not.toBeNull();
+    },
+  );
+
+  test('the public profile strips private content and bounds its items', () => {
+    const { creator, portfolioItems } = CULTURAL_QA_PROFILES[0]!;
+    const profile = matchProfileFromPortfolio(creator, portfolioItems);
+    expect(JSON.stringify(profile)).not.toContain(creator.email);
+    expect(JSON.stringify(profile)).not.toContain(creator.fullName!);
+    expect(JSON.stringify(profile)).not.toContain('https://');
+    expect(
+      MatchProfileSchema.safeParse({
+        ...profile,
+        portfolioItems: Array.from(
+          { length: portfolioItemsMax + 1 },
+          () => profile.portfolioItems[0],
+        ),
+      }).success,
+    ).toBe(false);
+  });
+
+  test('the open counter and classification counters include calls without a closing date', async () => {
+    const t = convexTest(schema, modules);
+    await withCall(t, { closesInDays: 2 });
+    await withCall(t, { closesInDays: null });
+    await withCall(t, { closesInDays: 40_000 });
+    await withCall(t, { closesInDays: -1 });
+    const list = await t.query(api.matching.callNoticeCards, everyOpenCall);
+    const counters = await t.query(api.matching.callNoticeCounters, {});
+    expect(counters.open).toBe(list.page.length);
+    expect(counters.byClassification.eligible).toBe(
+      list.page.filter((c) => c.classification === 'eligible').length,
+    );
+  });
+
+  test('light cards keep their art forms without reading an extraction', async () => {
+    const t = convexTest(schema, modules);
+    const callNoticeId = await withCall(t, { closesInDays: 20 });
+    await t.run(async (ctx) => {
+      const row = await ctx.db
+        .query('callNoticeExtractions')
+        .withIndex('by_call_notice', (q) => q.eq('callNoticeId', callNoticeId))
+        .unique();
+      await ctx.db.delete(row!._id);
+    });
+    const list = await t.query(api.matching.callNoticeCards, everyOpenCall);
+    expect(list.page[0]?.artForms).toEqual(['crafts']);
   });
 });

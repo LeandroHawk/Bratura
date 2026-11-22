@@ -14,8 +14,9 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Badge, type BadgeTone } from '@bratura/ui';
 import { useState } from 'react';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { formattedPlainDate } from '@/features/common/utils/format';
-import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
+import { formattedPlainDate } from '@bratura/shared/primitives/code/calendar/format';
+
+import type { FormField } from '@/features/portfolio/pages/sections/common/form-fields';
 import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { DOCUMENTS_CONTENT } from './content';

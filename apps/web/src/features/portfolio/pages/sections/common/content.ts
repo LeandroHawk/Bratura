@@ -13,6 +13,9 @@ const ptBR = {
   onePerLine: 'Um por linha.',
   oneLinkPerLine: 'Um endereço por linha.',
   onePersonPerLine: 'Uma pessoa por linha: nome, função.',
+  invalidAmount: 'Digite um valor em reais, como 1.500,00.',
+  itemLimit:
+    'Limite de 100 registros nesta demonstração. Edite ou exclua um registro para continuar.',
   amountInReais: 'Em reais, como 15.000,00.',
   chooseFile: 'Escolher arquivo',
   chooseFiles: 'Escolher arquivos',
@@ -46,6 +49,8 @@ export const PORTFOLIO_COMMON_CONTENT: Record<Locale, typeof ptBR> = {
     onePerLine: 'One per line.',
     oneLinkPerLine: 'One address per line.',
     onePersonPerLine: 'One person per line: name, role.',
+    invalidAmount: 'Type an amount in reais, such as 1,500.00.',
+    itemLimit: 'This demo allows 100 records. Edit or delete a record to continue.',
     amountInReais: 'In reais, like 15.000,00.',
     chooseFile: 'Choose a file',
     chooseFiles: 'Choose files',

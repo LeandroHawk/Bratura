@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { validationMessage } from '../../../../primitives/code/validation-message/validation-message';
 import { nullableString, requiredString } from '../../../../primitives/code/string/fields';
 import { requiredHttpUrl } from '../../../../primitives/code/url/fields';
 import { AttachedFileSchema } from '../../../../primitives/domain/attached-file/fields';
@@ -28,11 +27,7 @@ export const CreatorCulturalProfileFields = z.object({
   /** Free words: "xilogravura", "renda de bilro", "viola caipira". */
   artisticLanguagesAndTechniques: z.array(requiredString('short')).max(culturalProfileListMax),
   /** The year the cultural work began; the years of experience are derived from it, not stored. */
-  activityStartYear: z
-    .int()
-    .min(culturalActivityStartYearMin)
-    .refine((year) => year <= new Date().getFullYear(), validationMessage('yearInTheFuture'))
-    .nullable(),
+  activityStartYear: z.int().min(culturalActivityStartYearMin).nullable(),
   activityDescription: nullableString(),
   // What the calls' most common rules ask (minimum age, time living in the place, public servants
   // barred): optional, asked in the portfolio and never at sign-up; matching answers a rule with

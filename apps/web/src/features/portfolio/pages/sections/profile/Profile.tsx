@@ -1,5 +1,9 @@
 'use client';
 
+import { CreatorRegistrationFields } from '@bratura/shared/entities/creator/fragments/registration/fields';
+
+import { CulturalProfileFormSchema } from './profile.schema';
+
 import type {
   Creator,
   CreatorCulturalProfile,
@@ -7,16 +11,15 @@ import type {
 } from '@bratura/shared/entities/creator/entity';
 import { CulturalAreaEnum } from '@bratura/shared/entities/creator/enums/cultural-area/enum';
 import { ApplicantTypeEnum } from '@bratura/shared/primitives/domain/applicant-type/enum';
-import { CreatorCulturalProfileFields } from '@bratura/shared/entities/creator/fragments/cultural-profile/fields';
 import { parseWithMessages } from '@bratura/shared/messages/messages';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { UfEnum } from '@bratura/shared/primitives/external/uf/enum';
 import { Button, Card, Heading } from '@bratura/ui';
 import { useState } from 'react';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { UF_NAME } from '@/features/common/content/uf-names';
+import { UF_NAME } from '@bratura/shared/primitives/external/uf/names';
 import { saveCreatorFields } from '@/features/common/data/demoStore';
-import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
+import type { FormField } from '@/features/portfolio/pages/sections/common/form-fields';
 import { RecordDetails } from '@/features/portfolio/pages/sections/common/RecordDetails';
 import { RecordFormDialog } from '@/features/portfolio/pages/sections/common/RecordFormDialog';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
@@ -26,6 +29,7 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
   const content = PROFILE_CONTENT[locale];
   const labels = CREATOR_LABELS[locale];
   const [isEditing, setIsEditing] = useState(false);
+  const [editingRegistration, setEditingRegistration] = useState(false);
   const titleId = `${PORTFOLIO_SECTION_IDS.profile}-title`;
   const areas = { values: CulturalAreaEnum.options, labels: labels.culturalArea };
 
@@ -85,6 +89,9 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
             </Heading>
             <p className="text-small text-muted-foreground">{content.registrationLead}</p>
           </div>
+          <Button size="sm" variant="ghost" onClick={() => setEditingRegistration(true)}>
+            {content.editRegistration}
+          </Button>
           <RecordDetails
             locale={locale}
             fields={registrationFields}
@@ -93,6 +100,18 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
           />
         </Card>
       </div>
+      {editingRegistration && (
+        <RecordFormDialog
+          locale={locale}
+          title={content.registrationTitle}
+          fields={registrationFields}
+          labels={content.registration}
+          initialValues={creator}
+          parse={(values) => parseWithMessages(CreatorRegistrationFields, values, locale)}
+          onSave={saveCreatorFields}
+          onClose={() => setEditingRegistration(false)}
+        />
+      )}
       {isEditing && (
         <RecordFormDialog
           locale={locale}
@@ -100,7 +119,7 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
           fields={profileFields}
           labels={content.fields}
           initialValues={creator}
-          parse={(values) => parseWithMessages(CreatorCulturalProfileFields, values, locale)}
+          parse={(values) => parseWithMessages(CulturalProfileFormSchema, values, locale)}
           onSave={saveCreatorFields}
           onClose={() => setIsEditing(false)}
         />

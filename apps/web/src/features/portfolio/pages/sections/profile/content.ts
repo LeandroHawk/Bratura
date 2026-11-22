@@ -4,6 +4,7 @@ const ptBR = {
   title: 'Perfil cultural',
   lead: 'Como você se apresenta. Um edital lê isto antes de ler o seu projeto. Nascimento, tempo de residência e serviço público são opcionais: servem para conferir as regras de idade, moradia e impedimento dos editais.',
   edit: 'Editar perfil cultural',
+  editRegistration: 'Editar cadastro',
   registrationTitle: 'Do seu cadastro',
   registrationLead: 'O que os editais são conferidos com você: quem se inscreve e onde.',
   registration: {
@@ -36,6 +37,7 @@ export const PROFILE_CONTENT: Record<Locale, typeof ptBR> = {
     title: 'Cultural profile',
     lead: 'How you present yourself. A call reads this before it reads your project. Birth date, time of residence and public service are optional: they answer the calls’ rules on age, residence and who is barred.',
     edit: 'Edit cultural profile',
+    editRegistration: 'Edit registration',
     registrationTitle: 'From your sign-up',
     registrationLead: 'What the calls are checked against: who applies and where.',
     registration: {

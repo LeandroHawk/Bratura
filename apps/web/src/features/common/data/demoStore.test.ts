@@ -81,3 +81,31 @@ describe('demoStore', () => {
     expect(store.accountReplacedByExample(FICTIONAL_CREATOR)).toBeNull();
   });
 });
+
+test('sign-up cannot replace a stored portfolio without explicit confirmation', async () => {
+  const store = await storeOver();
+  store.loadExample(example);
+  const before = stored.get(STORAGE_KEY);
+  expect(store.signUp(signUpArgs)).toBe(false);
+  expect(stored.get(STORAGE_KEY)).toBe(before);
+  expect(store.signUp(signUpArgs, true)).toBe(true);
+  expect(JSON.parse(stored.get(STORAGE_KEY) ?? '{}').portfolioItems).toEqual([]);
+});
+
+test('editing an item keeps its position and refuses a new item at the limit', async () => {
+  const { portfolioItemsMax } = await import('@bratura/shared/entities/portfolio-item/entity');
+  const store = await storeOver();
+  store.loadExample(example);
+  const items = FICTIONAL_CREATOR_PORTFOLIO_ITEMS;
+  const first = items[0]!;
+  expect(store.setPortfolioItem(first)).toBe(true);
+  expect(
+    JSON.parse(stored.get(STORAGE_KEY) ?? '{}').portfolioItems.map(
+      (item: { clientItemId: string }) => item.clientItemId,
+    ),
+  ).toEqual(items.map((item) => item.clientItemId));
+  for (let i = items.length; i < portfolioItemsMax; i++)
+    expect(store.setPortfolioItem({ ...first, clientItemId: `qa-${i}` })).toBe(true);
+  expect(store.setPortfolioItem({ ...first, clientItemId: 'over-limit' })).toBe(false);
+  expect(store.setPortfolioItem(first)).toBe(true);
+});

@@ -20,8 +20,8 @@ features/
                                browser until Convex has them (see below)
     hooks/                     useContractForm: a form's draft parsed by its contract
     styles/                    globals.css
-    utils/                     locale paths and params, load-google-font, form-text (masks,
-                               text → contract value), format (dates, amounts)
+    utils/                     locale paths and params, load-google-font, form-text
+                               (text → contract value), format (amounts; dates use shared calendar)
   landing/  not-found/  styleguide/
   account/                     sign-up and sign-in
   portfolio/                   the cultural portfolio: profile, experiences, projects, documents
@@ -29,13 +29,12 @@ features/
                                cards, filters and details (`sections/common/`)
 ```
 
-⚠️ **Until the backend has creators, the signed-in area is a demo in the browser.** Every read
-and write of the creator, the portfolio and the saved calls goes through
-`common/data/demoStore.ts` (localStorage, parsed by the contract; no password is kept), the calls
-are fictional samples (`call-notices/data/sampleCallNotices.ts`) and their fit is computed by
-`call-notices/data/standInMatching.ts`. These three files are the swap points for Convex: the
-screens read contract-shaped data and do not change. The stand-in breaks "the backend computes"
-on purpose and is deleted when `matching` exists.
+⚠️ **Until the backend has creators, the signed-in area is a browser demo.** Creator, portfolio
+and saved-call changes go through `common/data/demoStore.ts`; logout removes the local data.
+The call lists and counters read Convex's fixed fictional Dona Maria matches. Details send only
+`MatchProfileSchema` facts derived by `matchProfileFromPortfolio`, bounded by `portfolioItemsMax`:
+no e-mail, names, descriptions, links or file metadata. Matching runs in the backend. Uploads keep
+metadata in the browser; no uploaded bytes or private accounts are persisted in Convex yet.
 
 ## The anatomy of a feature
 
@@ -56,6 +55,7 @@ The landing today:
 ```
 landing/pages/              Landing.page.tsx fits the sections, in page order
   sections/hero/            the promise and an example call
+  sections/call-highlights/ bounded public call reads, composed beside the example by the page
   sections/how-it-works/    the product flow as four museum rooms
   sections/why-it-matters/  the problem, as a call's ticket without and with Bratura
   sections/business-model/  who uses and who pays, as a theatre: stage, curtains, audience

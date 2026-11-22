@@ -9,9 +9,10 @@ import {
 import { parseWithMessages } from '@bratura/shared/messages/messages';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { UfEnum } from '@bratura/shared/primitives/external/uf/enum';
-import { UF_NAME } from '@/features/common/content/uf-names';
-import { formattedPlainDate } from '@/features/common/utils/format';
-import type { FormField } from '@/features/portfolio/pages/sections/common/formFields';
+import { UF_NAME } from '@bratura/shared/primitives/external/uf/names';
+import { formattedPlainDate } from '@bratura/shared/primitives/code/calendar/format';
+
+import type { FormField } from '@/features/portfolio/pages/sections/common/form-fields';
 import { PortfolioItemsSection } from '@/features/portfolio/pages/sections/common/PortfolioItemsSection';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { PORTFOLIO_COMMON_CONTENT } from '@/features/portfolio/pages/sections/common/content';

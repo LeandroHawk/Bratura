@@ -1,3 +1,4 @@
+import { matchProfileFromPortfolio } from '@bratura/shared/entities/match/profile';
 import {
   CallNoticeCardsQueryFromBraturaPortalArgsSchema,
   CallNoticeCardsQueryFromBraturaPortalReturnsSchema,
@@ -36,6 +37,7 @@ import { appError } from './lib/appError';
 import { internalZodMutation, publicZodQuery } from './lib/builders';
 import {
   closeRange,
+  dayInMs,
   closesAtForOrdering,
   deadlineForCreators,
   isInCloseFilter,
@@ -52,12 +54,11 @@ import {
 // functions through `internal`.
 
 /** The one profile until `creators` exists: the fictional creator (competition rule 6.9). */
-const profile: MatchProfile = {
-  creator: FICTIONAL_CREATOR,
-  portfolioItems: FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
-};
+const profile: MatchProfile = matchProfileFromPortfolio(
+  FICTIONAL_CREATOR,
+  FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
+);
 
-const dayInMs = 24 * 60 * 60 * 1000;
 /** An open call closes soon when its close is this many days away or fewer. */
 export const closesSoonWithinDays = 7;
 /** A call first seen this many days ago or fewer is new. */
@@ -91,6 +92,7 @@ async function storeMatchOfCallNotice(ctx: MutationCtx, callNoticeId: Id<'callNo
     closesAtForOrdering: closesAtForOrdering(callNotice, now),
     largestAmountPerProjectInCents: largestAmountPerProjectInCents(extraction),
     callNoticeFirstSeenAt: callNotice.firstSeenAt,
+    artForms: [...new Set(extraction.artForms.map(({ value }) => value))],
     computedAt: now,
   };
   if (known) await ctx.db.replace(known._id, row);
@@ -144,6 +146,18 @@ export const recomputeMatches = internalZodMutation({
 
 // The reads --------------------------------------------------------------------------------------
 
+function callNoticeTiming(callNotice: Doc<'callNotices'>, now: number) {
+  const deadline = deadlineForCreators(callNotice, now);
+  return {
+    deadline,
+    isNew: callNotice.firstSeenAt >= now - newCallNoticeWithinDays * dayInMs,
+    closesSoon:
+      deadline === 'open' &&
+      callNotice.registrationCloses !== null &&
+      callNotice.registrationCloses.at <= now + closesSoonWithinDays * dayInMs,
+  };
+}
+
 /** The card of a match's call; `null` when the call or its source is gone. */
 async function cardOfMatch(
   ctx: QueryCtx,
@@ -152,13 +166,7 @@ async function cardOfMatch(
 ): Promise<CallNoticeCard | null> {
   const callNotice = await ctx.db.get(match.callNoticeId);
   if (!callNotice) return null;
-  const [source, extraction] = await Promise.all([
-    ctx.db.get(callNotice.sourceId),
-    ctx.db
-      .query('callNoticeExtractions')
-      .withIndex('by_call_notice', (index) => index.eq('callNoticeId', match.callNoticeId))
-      .unique(),
-  ]);
+  const source = await ctx.db.get(callNotice.sourceId);
   if (!source) return null;
   const deadline = deadlineForCreators(callNotice, now);
   return {
@@ -169,14 +177,9 @@ async function cardOfMatch(
     registrationCloses: callNotice.registrationCloses,
     firstSeenAt: callNotice.firstSeenAt,
     organizer: source.name,
-    isNew: callNotice.firstSeenAt >= now - newCallNoticeWithinDays * dayInMs,
-    deadline,
-    closesSoon:
-      deadline === 'open' &&
-      callNotice.registrationCloses !== null &&
-      callNotice.registrationCloses.at <= now + closesSoonWithinDays * dayInMs,
+    ...callNoticeTiming(callNotice, now),
     largestAmountPerProjectInCents: match.largestAmountPerProjectInCents,
-    artForms: [...new Set(extraction?.artForms.map(({ value }) => value))],
+    artForms: match.artForms ?? [],
     classification: matchClassificationOnDeadline(match.classification, deadline),
   };
 }
@@ -302,7 +305,7 @@ export const callNoticeCounters = publicZodQuery({
           index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
         );
     const [open, closingSoon, isNew, ...byClassification] = await Promise.all([
-      countUpToCeiling(closingBetween(now, now + openEndedRegistrationAfterMs)),
+      countUpToCeiling(closingBetween(now, Number.MAX_SAFE_INTEGER)),
       countUpToCeiling(closingBetween(now, now + closesSoonWithinDays * dayInMs)),
       countUpToCeiling(
         ctx.db
@@ -338,7 +341,7 @@ export const callNoticeCounters = publicZodQuery({
 export const callNoticeDetails = publicZodQuery({
   args: CallNoticeDetailsQueryFromBraturaPortalArgsSchema,
   returns: CallNoticeDetailsQueryFromBraturaPortalReturnsSchema,
-  handler: async (ctx, { callNoticeId }) => {
+  handler: async (ctx, { callNoticeId, profile: requestedProfile }) => {
     const now = Date.now();
     const callNotice = await ctx.db.get(callNoticeId);
     const source = callNotice && (await ctx.db.get(callNotice.sourceId));
@@ -350,7 +353,7 @@ export const callNoticeDetails = publicZodQuery({
     const deadline = deadlineForCreators(callNotice, now);
     const match =
       extraction?.isCreatorCall?.value === true
-        ? matchCallNotice(profile, extraction, callNotice, now)
+        ? matchCallNotice(requestedProfile ?? profile, extraction, callNotice, now)
         : null;
     const { classification = null, ...matchChecks } = match ?? {};
     return {
@@ -366,12 +369,7 @@ export const callNoticeDetails = publicZodQuery({
       firstSeenAt: callNotice.firstSeenAt,
       lastSeenAt: callNotice.lastSeenAt,
       organizer: source.name,
-      isNew: callNotice.firstSeenAt >= now - newCallNoticeWithinDays * dayInMs,
-      deadline,
-      closesSoon:
-        deadline === 'open' &&
-        callNotice.registrationCloses !== null &&
-        callNotice.registrationCloses.at <= now + closesSoonWithinDays * dayInMs,
+      ...callNoticeTiming(callNotice, now),
       largestAmountPerProjectInCents: extraction && largestAmountPerProjectInCents(extraction),
       artForms: [...new Set(extraction?.artForms.map(({ value }) => value))],
       extraction,

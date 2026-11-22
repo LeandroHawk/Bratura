@@ -1,4 +1,4 @@
-import type { Uf } from '@bratura/shared/primitives/external/uf/enum';
+import type { Uf } from './enum';
 
 /** The states' names, proper nouns written the same in every locale. */
 export const UF_NAME: Record<Uf, string> = {

@@ -5,7 +5,8 @@ import type { CulturalExperiencePortfolioItem } from '@bratura/shared/entities/p
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Card, Heading } from '@bratura/ui';
 import type { CSSProperties } from 'react';
-import { formattedPlainDate } from '@/features/common/utils/format';
+import { formattedPlainDate } from '@bratura/shared/primitives/code/calendar/format';
+
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
 import { PORTFOLIO_COMMON_CONTENT } from '@/features/portfolio/pages/sections/common/content';
 import { SMART_PORTFOLIO_CONTENT } from './content';

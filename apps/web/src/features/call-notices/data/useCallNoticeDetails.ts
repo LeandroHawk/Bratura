@@ -1,3 +1,5 @@
+import { matchProfileFromPortfolio } from '@bratura/shared/entities/match/profile';
+import { useDemoState } from '@/features/common/data/demoStore';
 import { api } from '@bratura/backend/api';
 import type { CallNoticeCard } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
 import {
@@ -11,7 +13,16 @@ import { useMemo } from 'react';
 export function useCallNoticeDetails(
   callNoticeId: CallNoticeCard['callNoticeId'],
 ): CallNoticeDetails | null {
-  const details = useQuery(api.matching.callNoticeDetails, { callNoticeId });
+  const state = useDemoState();
+  const profile = useMemo(
+    () =>
+      state?.creator ? matchProfileFromPortfolio(state.creator, state.portfolioItems) : undefined,
+    [state],
+  );
+  const details = useQuery(api.matching.callNoticeDetails, {
+    callNoticeId,
+    ...(profile ? { profile } : {}),
+  });
   return useMemo(
     () => (details === undefined ? null : CallNoticeDetailsSchema.parse(details)),
     [details],

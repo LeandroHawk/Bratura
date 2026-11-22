@@ -174,3 +174,25 @@ one would do, open the discussion in the PR or with the team. Known open points:
 - When a list must be filtered by art form, applicant type, text or "amount informed": copy the
   field to `matches` with its index (a search index for the title); never filter a whole list in
   the browser.
+
+## Demo profile boundary and next triggers
+
+`callNoticeDetails` accepts an optional `MatchProfileSchema`, derived from creator and portfolio
+entities. `matchProfileFromPortfolio` strips identities, biography, descriptions, links and file
+metadata before the public query; only facts needed by matching cross the wire. This is a demo
+calculation, never an ownership assertion. Lists/counters use the fixed fictional creator.
+`matches.artForms` is an optional cached list for older rows; run `recomputeMatches` after deploying
+to populate it. The cards never read the extraction for that list.
+
+## Open for brainstorming — demo exit
+
+- When creator-owned persistence is implemented: create `creators` and `portfolioItems` from the
+  shared entities, key matches by authenticated creator, replace `demoStore` and move private
+  reads to `creatorQuery` with centralized owner checks.
+- When WorkOS login and backend accounts are scheduled after 30/11: resolve the caller in builders,
+  implement real sessions and account lifecycle, and replace the browser-only gate.
+- When organization support is approved: add multiple profiles and memberships per account and
+  enable `organizationRecords` / `groupRepresentation` for those profiles.
+- When notification classification is unified: first inspect development `userNotifications` for
+  `matchStatus: 'almost'`, migrate old rows with the owning developer, then derive the notification
+  values from `MatchClassificationEnum`. No deployment was inspected or migrated in this audit.

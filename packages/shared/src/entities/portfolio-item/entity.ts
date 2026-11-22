@@ -16,3 +16,6 @@ export const PortfolioItemSchema = z.discriminatedUnion('kind', [
 
 export type PortfolioItem = z.infer<typeof PortfolioItemSchema>;
 export type PortfolioItemKind = PortfolioItem['kind'];
+
+/** Bounds the browser demo and the profile sent to a public matching query. */
+export const portfolioItemsMax = 100;

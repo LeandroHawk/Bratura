@@ -9,7 +9,7 @@ import {
   matchClosesAtWithResultPosted,
 } from '@bratura/shared/entities/match/entity';
 
-const dayInMs = 24 * 60 * 60 * 1000;
+export const dayInMs = 24 * 60 * 60 * 1000;
 
 /**
  * The step a list's bounds move in. A page's cursor only continues a query with the same bounds:
