@@ -68,9 +68,11 @@ async function withCall(
     closesInDays,
     firstSeenDaysAgo = 30,
     extraction = extracted(),
+    resultPosted,
   }: {
     title?: string;
     closesInDays: number | null;
+    resultPosted?: boolean;
     firstSeenDaysAgo?: number;
     extraction?: Extracted | null;
   },
@@ -101,6 +103,7 @@ async function withCall(
       firstSeenAt: NOW - firstSeenDaysAgo * dayInMs,
       lastSeenAt: NOW,
       closedWhenFirstSeen: false,
+      ...(resultPosted === undefined ? {} : { resultPosted }),
     });
     if (extraction)
       await ctx.db.insert('callNoticeExtractions', {
@@ -224,6 +227,39 @@ describe('callNoticeCards', () => {
       ]);
     },
   );
+
+  test.each([
+    ['no close', null],
+    ['a close still ahead', 5],
+  ])('a call whose result is posted is closed, with %s', async (_close, closesInDays) => {
+    const t = convexTest(schema, modules);
+    const callNoticeId = await withCall(t, {
+      title: 'resultado publicado',
+      closesInDays,
+      resultPosted: true,
+    });
+    await withCall(t, { title: 'fechou ontem', closesInDays: -1 });
+    expect(await titlesOf(t)).toEqual([]);
+    expect(await titlesOf(t, { closes: 'closed' })).toEqual([
+      'fechou ontem',
+      'resultado publicado',
+    ]);
+    const { page } = await t.query(api.matching.callNoticeCards, {
+      ...everyOpenCall,
+      closes: 'closed',
+    });
+    expect(page[1]).toMatchObject({
+      deadline: 'closed',
+      closesSoon: false,
+      classification: 'notEligible',
+    });
+    expect(await t.query(api.matching.callNoticeDetails, { callNoticeId })).toMatchObject({
+      deadline: 'closed',
+      classification: 'notEligible',
+    });
+    expect(await t.query(api.matching.callNoticeCounters, {})).toMatchObject({ open: 0 });
+    expect(await t.query(api.matching.callNoticeHighlights, {})).toEqual([]);
+  });
 
   test('a page stops at the rows it may read: the filter never walks the whole table', async () => {
     const t = convexTest(schema, modules);

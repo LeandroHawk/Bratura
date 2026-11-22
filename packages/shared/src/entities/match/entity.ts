@@ -11,6 +11,12 @@ import { MatchClassificationEnum } from './enums/classification/enum';
 export const matchClosesAtWithoutClose = Number.MAX_SAFE_INTEGER;
 
 /**
+ * `closesAtForOrdering` of a call whose source posted a result and prints no past close: before
+ * every real one, so the same index lists it as closed, after the calls with a known close.
+ */
+export const matchClosesAtWithResultPosted = 0;
+
+/**
  * Writes: `matching.ts` only, from the call's extraction and the profile. One row per call for
  * creators: there is one profile until `creators` exists (the fictional creator), then a row per
  * creator and call. Light on purpose: the lists and counters read many rows; the itemized checks

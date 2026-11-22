@@ -1,5 +1,13 @@
 import type { CallNoticeCloseFilter } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
-import { matchClosesAtWithoutClose } from '@bratura/shared/entities/match/entity';
+import type { CallNotice } from '@bratura/shared/entities/call-notice/entity';
+import {
+  callNoticeDeadline,
+  type CallNoticeDeadline,
+} from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
+import {
+  matchClosesAtWithoutClose,
+  matchClosesAtWithResultPosted,
+} from '@bratura/shared/entities/match/entity';
 
 const dayInMs = 24 * 60 * 60 * 1000;
 
@@ -42,4 +50,25 @@ export function isInCloseFilter({
   if (closes === 'closed') return closesAt < now;
   const days = closesWithinDays[closes];
   return closesAt >= now && (days === undefined || closesAt <= now + days * dayInMs);
+}
+
+type ClosingForCreators = Pick<CallNotice, 'registrationCloses' | 'resultPosted'>;
+
+/** A call's deadline as a creator reads it: a posted result closes it, with or without a close. */
+export function deadlineForCreators(
+  callNotice: ClosingForCreators,
+  now: number,
+): CallNoticeDeadline {
+  return callNotice.resultPosted === true ? 'closed' : callNoticeDeadline(callNotice, now);
+}
+
+/** A match's `closesAtForOrdering`: in the past whenever `deadlineForCreators` reads `closed`. */
+export function closesAtForOrdering(
+  { registrationCloses, resultPosted }: ClosingForCreators,
+  now: number,
+) {
+  if (resultPosted !== true) return registrationCloses?.at ?? matchClosesAtWithoutClose;
+  return registrationCloses !== null && registrationCloses.at < now
+    ? registrationCloses.at
+    : matchClosesAtWithResultPosted;
 }

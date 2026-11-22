@@ -21,15 +21,11 @@ import {
   SavedCallNoticeCardsQueryFromBraturaPortalArgsSchema,
   SavedCallNoticeCardsQueryFromBraturaPortalReturnsSchema,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/saved-call-notice-cards/query';
-import {
-  callNoticeDeadline,
-  openEndedRegistrationAfterMs,
-} from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
+import { openEndedRegistrationAfterMs } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import {
   FICTIONAL_CREATOR,
   FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
 } from '@bratura/shared/entities/creator/demo/fictional-creator';
-import { matchClosesAtWithoutClose } from '@bratura/shared/entities/match/entity';
 import { MatchClassificationEnum } from '@bratura/shared/entities/match/enums/classification/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { z } from 'zod';
@@ -38,7 +34,12 @@ import type { Doc, Id } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { appError } from './lib/appError';
 import { internalZodMutation, publicZodQuery } from './lib/builders';
-import { closeRange, isInCloseFilter } from './model/matching/closeRange';
+import {
+  closeRange,
+  closesAtForOrdering,
+  deadlineForCreators,
+  isInCloseFilter,
+} from './model/matching/closeRange';
 import {
   largestAmountPerProjectInCents,
   matchCallNotice,
@@ -87,7 +88,7 @@ async function storeMatchOfCallNotice(ctx: MutationCtx, callNoticeId: Id<'callNo
   const row = {
     callNoticeId,
     classification: matchCallNotice(profile, extraction, callNotice, now).classification,
-    closesAtForOrdering: callNotice.registrationCloses?.at ?? matchClosesAtWithoutClose,
+    closesAtForOrdering: closesAtForOrdering(callNotice, now),
     largestAmountPerProjectInCents: largestAmountPerProjectInCents(extraction),
     callNoticeFirstSeenAt: callNotice.firstSeenAt,
     computedAt: now,
@@ -159,7 +160,7 @@ async function cardOfMatch(
       .unique(),
   ]);
   if (!source) return null;
-  const deadline = callNoticeDeadline(callNotice, now);
+  const deadline = deadlineForCreators(callNotice, now);
   return {
     callNoticeId: callNotice._id,
     title: callNotice.title,
@@ -346,7 +347,7 @@ export const callNoticeDetails = publicZodQuery({
       .query('callNoticeExtractions')
       .withIndex('by_call_notice', (index) => index.eq('callNoticeId', callNoticeId))
       .unique();
-    const deadline = callNoticeDeadline(callNotice, now);
+    const deadline = deadlineForCreators(callNotice, now);
     const match =
       extraction?.isCreatorCall?.value === true
         ? matchCallNotice(profile, extraction, callNotice, now)

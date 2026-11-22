@@ -39,7 +39,7 @@ export const CallNoticeCardSchema = z.object({
   }).shape,
   /** The source's name: who publishes the call. */
   organizer: SourceIdentityFields.shape.name,
-  /** `callNoticeDeadline` on the server's clock. */
+  /** `callNoticeDeadline` on the server's clock; `closed` once the source posts a result. */
   deadline: CallNoticeDeadlineEnum,
   /** Open, with the close a few days away: the server decides how few. */
   closesSoon: z.boolean(),
