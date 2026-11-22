@@ -3,7 +3,7 @@ import { RoomLabel } from '@/features/landing/pages/sections/common/RoomLabel';
 import { FUTURE_PLANS_CONTENT, type FuturePlanId } from './content';
 
 /** Plans that are a door of their own; every other plan works in every room. */
-const ENTRANCES: readonly FuturePlanId[] = ['whatsapp'];
+const ENTRANCES: readonly FuturePlanId[] = ['telegram'];
 /** Dashed, as on an architect's plan: what is planned but not built. */
 const PLANNED_DASH = '4 3';
 /** A stretch of the front wall; as thick as the building's `border-4`. */
@@ -35,7 +35,7 @@ function Door({ name, planned }: { name: string; planned: boolean }) {
   );
 }
 
-/** The product as one building: the same rooms for everyone, entered by the site or WhatsApp. */
+/** The product as one building: the same rooms for everyone, entered by the site or Telegram. */
 export function FloorPlan({ locale, roomCount }: { locale: Locale; roomCount: number }) {
   const { floorPlan, plans } = FUTURE_PLANS_CONTENT[locale];
   const ids = Object.keys(plans) as FuturePlanId[];

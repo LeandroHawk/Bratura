@@ -101,9 +101,9 @@ Known next steps, each with the trigger that makes it real; add yours:
 7. **Document expiry** (when a document-expiry notification kind exists): warn before a stored
    `validUntil`. Today nothing sends it: the portfolio and a call's details only mark a paper
    expired or expiring (`portfolioDocumentStatus`, `paperValidity`).
-7. **Web inbox** (when the app gets a shell): the unread counter over `userNotifications` —
+8. **Web inbox** (when the app gets a shell): the unread counter over `userNotifications` —
    `listForUser` is already there, ordered newest first.
-8. **Caps per user and per organization** (when organizations pay, the multi-profile panel): the
+9. **Caps per user and per organization** (when organizations pay, the multi-profile panel): the
    3-a-day recipient cap fits a creator, not an org — decide one row per creator or per call, and
    whether the cap keys the recipient or the org. Also a hard cap on the claim side: today
    `confirmDeliverySent` spends quota without checking it, so two concurrent runs can pass
