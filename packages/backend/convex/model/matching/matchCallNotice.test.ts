@@ -519,6 +519,7 @@ describe('matchCallNotice: a state answers residence only when it is named alone
   test.each([
     ['Limoeiro do Norte/CE', 'Juazeiro do Norte', 'CE'],
     ['Porto Velho/RO', 'Ariquemes', 'RO'],
+    ['São Paulo - SP', 'Campinas', 'SP'],
     ['Cachoeiro de Itapemirim e da Região Sul do Estado do Espírito Santo', 'Vitória', 'ES'],
   ] as const)('%s for %s/%s: to confirm', (value, city, state) => {
     expect(residenceOf(value, city, state).residence?.status).toBe('needsConfirmation');

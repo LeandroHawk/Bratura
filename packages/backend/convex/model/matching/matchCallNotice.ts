@@ -78,7 +78,10 @@ function residenceStatus(creator: MatchProfile['creator'], requirement: string):
   const state = text.replace(/^estado d[aeo] /u, '');
   const uf = creator.state.toLowerCase();
   const stateName = plainWords(UF_NAME[creator.state]);
-  const stateNamed = [uf, stateName, `${stateName} ${uf}`].includes(state);
+  // "São Paulo - SP" is also a city: name plus abbreviation counts only after "Estado do".
+  const statePrefixed = state !== text;
+  const stateNamed =
+    [uf, stateName].includes(state) || (statePrefixed && state === `${stateName} ${uf}`);
   return stateNamed || isNational ? 'met' : 'needsConfirmation';
 }
 
