@@ -47,7 +47,6 @@ export function closeText(
   { deadline, registrationCloses }: Pick<CallNoticeCard, 'deadline' | 'registrationCloses'>,
   locale: Locale,
 ) {
-  if (deadline === 'openEnded')
-    return locale === 'pt-BR' ? 'sem data de encerramento' : 'no closing date';
+  if (deadline === 'openEnded') return CALL_NOTICES_CONTENT[locale].openEndedClose;
   return registrationCloses === null ? null : registrationCloseDateText(registrationCloses, locale);
 }

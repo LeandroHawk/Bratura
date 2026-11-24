@@ -18,6 +18,7 @@ const ptBR = {
   unavailable: 'Os editais estão indisponíveis no momento. Tente atualizar a página mais tarde.',
   loading: 'Carregando os editais…',
   anyArtForm: 'Todas as áreas culturais',
+  openEndedClose: 'sem data de encerramento',
   status: {
     open: 'Aberto',
     closingSoon: 'Encerrando em breve',
@@ -177,6 +178,7 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
     unavailable: 'Calls are unavailable at the moment. Try reloading the page later.',
     loading: 'Loading the calls…',
     anyArtForm: 'Every cultural area',
+    openEndedClose: 'no closing date',
     status: {
       open: 'Open',
       closingSoon: 'Closing soon',
