@@ -52,32 +52,34 @@ describe('withOrderedPeriod', () => {
 });
 
 describe('portfolioDocumentStatus', () => {
-  const file = { fileName: 'ccmei.pdf', mediaType: 'application/pdf', sizeInBytes: 1 };
+  const hasFile = true;
 
   test('expired wins over a file sent', () => {
-    expect(portfolioDocumentStatus({ validUntil: '2026-01-01', file }, '2026-01-02')).toBe(
+    expect(portfolioDocumentStatus({ validUntil: '2026-01-01', hasFile }, '2026-01-02')).toBe(
       'expired',
     );
   });
 
   test('valid through its last day, and expiring in its last 30', () => {
-    expect(portfolioDocumentStatus({ validUntil: '2026-01-01', file }, '2026-01-01')).toBe(
+    expect(portfolioDocumentStatus({ validUntil: '2026-01-01', hasFile }, '2026-01-01')).toBe(
       'expiring',
     );
-    expect(portfolioDocumentStatus({ validUntil: '2026-01-31', file }, '2026-01-01')).toBe(
+    expect(portfolioDocumentStatus({ validUntil: '2026-01-31', hasFile }, '2026-01-01')).toBe(
       'expiring',
     );
-    expect(portfolioDocumentStatus({ validUntil: '2026-02-01', file }, '2026-01-01')).toBe(
+    expect(portfolioDocumentStatus({ validUntil: '2026-02-01', hasFile }, '2026-01-01')).toBe(
       'registered',
     );
   });
 
   test('a paper that does not expire is registered', () => {
-    expect(portfolioDocumentStatus({ validUntil: null, file }, '2026-01-01')).toBe('registered');
+    expect(portfolioDocumentStatus({ validUntil: null, hasFile }, '2026-01-01')).toBe('registered');
   });
 
   test('pending while only listed', () => {
-    expect(portfolioDocumentStatus({ validUntil: null, file: null }, '2026-01-01')).toBe('pending');
+    expect(portfolioDocumentStatus({ validUntil: null, hasFile: false }, '2026-01-01')).toBe(
+      'pending',
+    );
   });
 });
 

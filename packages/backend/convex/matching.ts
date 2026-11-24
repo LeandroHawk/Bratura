@@ -1,4 +1,7 @@
-import { matchProfileFromPortfolio } from '@bratura/shared/entities/match/profile';
+import {
+  matchProfileFromPortfolio,
+  type MatchProfile,
+} from '@bratura/shared/entities/match/profile';
 import {
   CallNoticeCardsQueryFromBraturaPortalArgsSchema,
   CallNoticeCardsQueryFromBraturaPortalReturnsSchema,
@@ -43,10 +46,10 @@ import {
   isInCloseFilter,
 } from './model/matching/closeRange';
 import {
+  distinctArtFormValues,
   largestAmountPerProjectInCents,
   matchCallNotice,
   matchClassificationOnDeadline,
-  type MatchProfile,
 } from './model/matching/matchCallNotice';
 
 // Matching: how each call for creators fits the profile. The only writer of `matches`, and the
@@ -92,7 +95,7 @@ async function storeMatchOfCallNotice(ctx: MutationCtx, callNoticeId: Id<'callNo
     closesAtForOrdering: closesAtForOrdering(callNotice, now),
     largestAmountPerProjectInCents: largestAmountPerProjectInCents(extraction),
     callNoticeFirstSeenAt: callNotice.firstSeenAt,
-    artForms: [...new Set(extraction.artForms.map(({ value }) => value))],
+    artForms: distinctArtFormValues(extraction),
     computedAt: now,
   };
   if (known) await ctx.db.replace(known._id, row);
@@ -371,7 +374,7 @@ export const callNoticeDetails = publicZodQuery({
       organizer: source.name,
       ...callNoticeTiming(callNotice, now),
       largestAmountPerProjectInCents: extraction && largestAmountPerProjectInCents(extraction),
-      artForms: [...new Set(extraction?.artForms.map(({ value }) => value))],
+      artForms: distinctArtFormValues(extraction),
       extraction,
       classification: classification && matchClassificationOnDeadline(classification, deadline),
       matchChecks: match && (matchChecks as Omit<typeof match, 'classification'>),

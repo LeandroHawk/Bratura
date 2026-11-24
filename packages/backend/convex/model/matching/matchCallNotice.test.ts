@@ -15,7 +15,7 @@ import {
   monthsStatedIn,
 } from './matchCallNotice';
 
-type MatchProfile = { creator: Creator; portfolioItems: PortfolioItem[] };
+type CreatorWithPortfolio = { creator: Creator; portfolioItems: PortfolioItem[] };
 
 const NOW = Date.UTC(2026, 10, 15, 15);
 const dayInMs = 24 * 60 * 60 * 1000;
@@ -61,12 +61,12 @@ const call = (overrides: Partial<Extracted> = {}): Extracted => ({
   ...overrides,
 });
 
-const donaMaria: MatchProfile = {
+const donaMaria: CreatorWithPortfolio = {
   creator: FICTIONAL_CREATOR,
   portfolioItems: FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
 };
 
-const withCreator = (creator: Partial<MatchProfile['creator']>): MatchProfile => ({
+const withCreator = (creator: Partial<CreatorWithPortfolio['creator']>): CreatorWithPortfolio => ({
   ...donaMaria,
   creator: { ...FICTIONAL_CREATOR, ...creator },
 });
@@ -74,7 +74,7 @@ const withCreator = (creator: Partial<MatchProfile['creator']>): MatchProfile =>
 const withDocument = (
   documentKind: Extract<PortfolioItem, { kind: 'document' }>['documentKind'],
   validUntil: string | null,
-): MatchProfile => ({
+): CreatorWithPortfolio => ({
   ...donaMaria,
   portfolioItems: [
     ...FICTIONAL_CREATOR_PORTFOLIO_ITEMS.filter(
@@ -105,7 +105,7 @@ const statusesOf = (extraction: Extracted, profile = donaMaria) =>
 
 describe('matchCallNotice: the stage of a requirement', () => {
   test('six papers to apply the portfolio holds and eight asked after selection: eligible', () => {
-    const profile: MatchProfile = {
+    const profile: CreatorWithPortfolio = {
       ...donaMaria,
       portfolioItems: [
         ...withDocument('bankAccount', null).portfolioItems,
@@ -498,10 +498,67 @@ describe('review regressions: residence, age and activity proof', () => {
     ]);
   });
 
-  test('a CPF alone never confirms an RG or CNH requirement', () => {
+  test('a registered identity paper is to confirm, whatever the call asks', () => {
     const result = match(
       call({ requirements: [{ ...requirement('identity'), detail: 'RG ou CNH com foto' }] }),
     );
     expect(result.requirements[0]?.status).toBe('needsConfirmation');
+  });
+});
+
+describe('matchCallNotice: a state answers residence only when it is named alone', () => {
+  const residenceOf = (value: string, city: string, state: Creator['state']) =>
+    match(call({ residenceRequirement: { value, quote: value } }), withCreator({ city, state }));
+
+  test("a city in the creator's state is to confirm, and lowers the call", () => {
+    const result = residenceOf('Morada Nova – CE', 'Juazeiro do Norte', 'CE');
+    expect(result.residence?.status).toBe('needsConfirmation');
+    expect(result.classification).toBe('almostEligible');
+  });
+
+  test.each([
+    ['Limoeiro do Norte/CE', 'Juazeiro do Norte', 'CE'],
+    ['Porto Velho/RO', 'Ariquemes', 'RO'],
+    ['Cachoeiro de Itapemirim e da Região Sul do Estado do Espírito Santo', 'Vitória', 'ES'],
+  ] as const)('%s for %s/%s: to confirm', (value, city, state) => {
+    expect(residenceOf(value, city, state).residence?.status).toBe('needsConfirmation');
+  });
+
+  test.each([
+    ['Estado do Ceará', 'Juazeiro do Norte', 'CE'],
+    ['Ceará', 'Juazeiro do Norte', 'CE'],
+    ['Estado do Rio de Janeiro', 'Niterói', 'RJ'],
+  ] as const)('%s for %s/%s: met', (value, city, state) => {
+    expect(residenceOf(value, city, state).residence?.status).toBe('met');
+  });
+
+  test('the city rule still answers a city named with its state', () => {
+    expect(residenceOf('Morada Nova – CE', 'Morada Nova', 'CE').residence?.status).toBe('met');
+  });
+});
+
+describe('matchCallNotice: maximum age only from a stated ceiling', () => {
+  const fiftyEightYearsOld = withCreator({ birthDate: '1968-03-12' });
+  const statusOfMaximumAge = (detail: string) =>
+    match(call({ eligibilityRules: [rule('maximumAge', detail)] }), fiftyEightYearsOld)
+      .eligibilityRules[0]?.status;
+
+  test('a minimum worded under maximum age is to confirm', () => {
+    expect(
+      statusOfMaximumAge(
+        'coletivos informais representados por pessoas menores de 18 (dezoito) anos não podem participar',
+      ),
+    ).toBe('needsConfirmation');
+  });
+
+  test.each([
+    'Até 27 anos de idade',
+    'Tenham, no máximo, 35 (trinta e cinco) anos completos na data de inscrição',
+  ])('%s is answered', (detail) => {
+    expect(statusOfMaximumAge(detail)).toBe('notMet');
+  });
+
+  test('a word that contains "ate" is not "até"', () => {
+    expect(statusOfMaximumAge('debate com 27 anos de idade')).toBe('needsConfirmation');
   });
 });

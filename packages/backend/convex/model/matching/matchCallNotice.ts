@@ -18,10 +18,9 @@ import type {
 } from '@bratura/shared/entities/match/enums/check-status/enum';
 import type { MatchClassification } from '@bratura/shared/entities/match/enums/classification/enum';
 import { PortfolioDocumentKindEnum } from '@bratura/shared/entities/portfolio-item/enums/document-kind/enum';
+import { portfolioDocumentStatus } from '@bratura/shared/entities/portfolio-item/kinds/document/variant';
 import { plainDateInSaoPaulo } from '@bratura/shared/primitives/code/calendar/calendar';
-
-/** Who a call is matched against: the account and its portfolio. */
-export type { MatchProfile } from '@bratura/shared/entities/match/profile';
+import { plainText } from '../../lib/text';
 
 type ExtractedForMatching = Pick<
   CallNoticeExtraction,
@@ -54,18 +53,18 @@ export function monthsStatedIn(detail: string): number | null {
   return Number(amount) * (unit.toLowerCase().startsWith('ano') ? 12 : 1);
 }
 
-function normalized(text: string) {
-  return text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
-}
+const plainWords = (text: string) =>
+  plainText(text)
+    .replace(/[^a-z0-9]+/gu, ' ')
+    .trim();
 
-/** A place name must be complete; a city restriction cannot be satisfied by its state. */
+/**
+ * A place name must be complete; a city restriction cannot be satisfied by its state, and a state
+ * answers only when the text names that state alone ("Morada Nova – CE" is a city in it).
+ */
 function residenceStatus(creator: MatchProfile['creator'], requirement: string): MatchCheckStatus {
-  const text = normalized(requirement)
-    .replace(/[^a-z0-9]+/gu, ' ')
-    .trim();
-  const city = normalized(creator.city)
-    .replace(/[^a-z0-9]+/gu, ' ')
-    .trim();
+  const text = plainWords(requirement);
+  const city = plainWords(creator.city);
   const words = ` ${text} `;
   const namesCity = /\b(?:municipio|cidade)\b/u.test(text);
   const cityNamed =
@@ -76,9 +75,9 @@ function residenceStatus(creator: MatchProfile['creator'], requirement: string):
   if (cityNamed) return 'met';
   const isNational =
     /^(?:brasil|territorio nacional|pais|todo o (?:brasil|territorio nacional|pais))$/u.test(text);
+  const state = text.replace(/^estado d[aeo] /u, '');
   const stateNamed =
-    words.includes(` ${creator.state.toLowerCase()} `) ||
-    words.includes(` ${normalized(UF_NAME[creator.state])} `);
+    state === creator.state.toLowerCase() || state === plainWords(UF_NAME[creator.state]);
   return stateNamed || isNational ? 'met' : 'needsConfirmation';
 }
 
@@ -90,6 +89,15 @@ function monthsBetweenDates(from: string, to: string) {
 
 const metWhen = (isMet: boolean): MatchCheckStatus => (isMet ? 'met' : 'notMet');
 
+/** A minimum rule worded as a maximum ("há, no máximo, 2 anos") is never read as a minimum. */
+const namesAMaximum = (detail: string) => /maxim[oa]/u.test(plainText(detail));
+
+/** "Até 27 anos", "no máximo 35 anos": a ceiling; "menores de 18 anos não podem" is not one. */
+function statesACeiling(detail: string) {
+  const words = new Set(plainWords(detail).split(' '));
+  return ['ate', 'maximo', 'maxima'].some((word) => words.has(word)) && !words.has('nao');
+}
+
 // A rule the profile can answer, by kind; every other kind stays "to confirm".
 const answerOfRule: Partial<
   Record<
@@ -98,6 +106,7 @@ const answerOfRule: Partial<
   >
 > = {
   maximumAge: ({ birthDate }, detail, today) => {
+    if (!statesACeiling(detail)) return 'needsConfirmation';
     const months = monthsStatedIn(detail);
     if (birthDate === null || months === null) return 'needsConfirmation';
     return metWhen(
@@ -105,13 +114,13 @@ const answerOfRule: Partial<
     );
   },
   minimumAge: ({ birthDate }, detail, today) => {
-    if (/maxim[oa]/u.test(normalized(detail))) return 'needsConfirmation';
+    if (namesAMaximum(detail)) return 'needsConfirmation';
     const months = monthsStatedIn(detail);
     if (birthDate === null || months === null) return 'needsConfirmation';
     return metWhen(monthsBetweenDates(birthDate, today) >= months);
   },
   residenceTime: ({ livesInCurrentPlaceSince }, detail, today) => {
-    if (/maxim[oa]/u.test(normalized(detail))) return 'needsConfirmation';
+    if (namesAMaximum(detail)) return 'needsConfirmation';
     const months = monthsStatedIn(detail);
     if (livesInCurrentPlaceSince === null || months === null) return 'needsConfirmation';
     // Enough time is not the right place: only a too-short time is answered.
@@ -122,7 +131,7 @@ const answerOfRule: Partial<
   publicServantExclusion: ({ isPublicServant }) =>
     isPublicServant === null ? 'needsConfirmation' : metWhen(!isPublicServant),
   minimumExperience: ({ activityStartYear }, detail, today) => {
-    if (/maxim[oa]/u.test(normalized(detail))) return 'needsConfirmation';
+    if (namesAMaximum(detail)) return 'needsConfirmation';
     const months = monthsStatedIn(detail);
     if (activityStartYear === null || months === null) return 'needsConfirmation';
     return metWhen((Number(today.slice(0, 4)) - activityStartYear) * 12 >= months);
@@ -164,12 +173,12 @@ export function matchCallNotice(
       return { status: 'met', paperValidity: null };
     if (portfolioKind.data === 'curriculum' && hasExperiences)
       return { status: 'met', paperValidity: null };
-    const ofKind = documents.filter((document) => document.documentKind === portfolioKind.data);
-    const registered = ofKind.filter(
-      ({ hasFile, validUntil }) => hasFile && (validUntil === null || validUntil >= today),
-    );
+    const ofKind = documents
+      .filter((document) => document.documentKind === portfolioKind.data)
+      .map((document) => ({ ...document, status: portfolioDocumentStatus(document, today) }));
+    const registered = ofKind.filter(({ status }) => status !== 'expired' && status !== 'pending');
     if (registered.length === 0) {
-      const isExpired = ofKind.some(({ validUntil }) => validUntil !== null && validUntil < today);
+      const isExpired = ofKind.some(({ status }) => status === 'expired');
       return { status: 'notMet', paperValidity: isExpired ? 'expired' : null };
     }
     if (portfolioKind.data === 'identity')
@@ -243,4 +252,11 @@ export function largestAmountPerProjectInCents({
   return amountsPerProject.length === 0
     ? null
     : Math.max(...amountsPerProject.map(({ amountInCents }) => amountInCents));
+}
+
+/** The call's art forms, each once: the extraction lists one per passage that names it. */
+export function distinctArtFormValues(
+  extraction: Pick<CallNoticeExtraction, 'artForms'> | null,
+): CallNoticeExtraction['artForms'][number]['value'][] {
+  return [...new Set(extraction?.artForms.map(({ value }) => value))];
 }

@@ -48,14 +48,14 @@ export const portfolioDocumentExpiringWithinDays = 30;
 /**
  * Where a paper stands on `today` (`YYYY-MM-DD`, read in São Paulo): `expired` past its validity,
  * `pending` while no file was sent, `expiring` in its last days, `registered` otherwise. Derived,
- * never stored.
+ * never stored; the documents screen and matching both read it.
  */
 export function portfolioDocumentStatus(
-  { validUntil, file }: Pick<DocumentPortfolioItem, 'validUntil' | 'file'>,
+  { validUntil, hasFile }: Pick<DocumentPortfolioItem, 'validUntil'> & { hasFile: boolean },
   today: string,
 ): PortfolioDocumentStatus {
   if (validUntil !== null && validUntil < today) return 'expired';
-  if (file === null) return 'pending';
+  if (!hasFile) return 'pending';
   const expiresSoon =
     validUntil !== null &&
     validUntil <= plainDateDaysAfter({ date: today, days: portfolioDocumentExpiringWithinDays });

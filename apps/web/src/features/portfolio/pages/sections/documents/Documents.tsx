@@ -58,7 +58,10 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
       fields={fields}
       parse={(values) => parseWithMessages(DocumentFormSchema, values, locale)}
       rowFromItem={(item) => {
-        const status = portfolioDocumentStatus(item, today);
+        const status = portfolioDocumentStatus(
+          { validUntil: item.validUntil, hasFile: item.file !== null },
+          today,
+        );
         return {
           title: item.description,
           meta: [
