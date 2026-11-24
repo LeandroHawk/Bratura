@@ -528,6 +528,7 @@ describe('matchCallNotice: a state answers residence only when it is named alone
     ['Estado do Ceará', 'Juazeiro do Norte', 'CE'],
     ['Ceará', 'Juazeiro do Norte', 'CE'],
     ['Estado do Rio de Janeiro', 'Niterói', 'RJ'],
+    ['Estado do Ceará (CE)', 'Juazeiro do Norte', 'CE'],
   ] as const)('%s for %s/%s: met', (value, city, state) => {
     expect(residenceOf(value, city, state).residence?.status).toBe('met');
   });

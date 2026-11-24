@@ -76,8 +76,9 @@ function residenceStatus(creator: MatchProfile['creator'], requirement: string):
   const isNational =
     /^(?:brasil|territorio nacional|pais|todo o (?:brasil|territorio nacional|pais))$/u.test(text);
   const state = text.replace(/^estado d[aeo] /u, '');
-  const stateNamed =
-    state === creator.state.toLowerCase() || state === plainWords(UF_NAME[creator.state]);
+  const uf = creator.state.toLowerCase();
+  const stateName = plainWords(UF_NAME[creator.state]);
+  const stateNamed = [uf, stateName, `${stateName} ${uf}`].includes(state);
   return stateNamed || isNational ? 'met' : 'needsConfirmation';
 }
 
