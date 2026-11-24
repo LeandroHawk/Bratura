@@ -1,4 +1,6 @@
+import type { ParsedWithMessages } from '@bratura/shared/messages/messages';
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
+import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import {
   amountInCentsFromInput,
   linkFromInput,
@@ -7,6 +9,7 @@ import {
   nullableTextFromInput,
   peopleFromInput,
 } from '@/features/common/utils/form-text';
+import { PORTFOLIO_COMMON_CONTENT } from './content';
 
 /**
  * How one field of the contract is typed in a form. `lines` and `links` are lists typed one per
@@ -79,6 +82,32 @@ export function valuesFromDraft(fields: FormField[], draft: FormDraft): Record<s
     else values[name] = nullableTextFromInput(typed);
   }
   return values;
+}
+
+/** A typed record checked against the contract; an amount that is not in reais is said first. */
+export function parseRecordDraft<Value>({
+  fields,
+  draft,
+  parse,
+  locale,
+}: {
+  fields: FormField[];
+  draft: FormDraft;
+  parse: (values: Record<string, unknown>) => ParsedWithMessages<Value>;
+  locale: Locale;
+}): ParsedWithMessages<Value> {
+  const unreadAmount = fields.find(
+    ({ name, control }) =>
+      control === 'amount' &&
+      typeof draft[name] === 'string' &&
+      Number.isNaN(amountInCentsFromInput(draft[name])),
+  );
+  if (unreadAmount)
+    return {
+      success: false,
+      messageByPath: { [unreadAmount.name]: PORTFOLIO_COMMON_CONTENT[locale].invalidAmount },
+    };
+  return parse(valuesFromDraft(fields, draft));
 }
 
 /** The message of a field or, for a list, of its first entry that failed (`links.2`). */

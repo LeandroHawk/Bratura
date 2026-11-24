@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { draftFromValues, valuesFromDraft } from './form-fields';
+import { describe, expect, it, test } from 'vitest';
+import { draftFromValues, parseRecordDraft, valuesFromDraft } from './form-fields';
 
 describe('valuesFromDraft', () => {
   it('keeps a comma inside a link, and gives a bare address its scheme', () => {
@@ -57,5 +57,20 @@ describe('valuesFromDraft', () => {
     expect(draftFromValues([...fields], { isPublicServant: false })).toEqual({
       isPublicServant: 'no',
     });
+  });
+});
+
+describe('parseRecordDraft', () => {
+  test.each([
+    ['pt-BR', 'Digite um valor em reais, como 1.500,00.'],
+    ['en', 'Type an amount in reais, such as 1,500.00.'],
+  ] as const)('an amount with a third decimal is refused in %s', (locale, message) => {
+    const parsed = parseRecordDraft({
+      fields: [{ name: 'amount', control: 'amount' }],
+      draft: { amount: '1.500,005' },
+      parse: () => ({ success: true, value: null }),
+      locale,
+    });
+    expect(parsed).toEqual({ success: false, messageByPath: { amount: message } });
   });
 });

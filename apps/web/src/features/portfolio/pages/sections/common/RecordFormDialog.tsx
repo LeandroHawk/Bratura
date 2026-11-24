@@ -5,9 +5,8 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Dialog } from '@bratura/ui';
 import { useContractForm } from '@/features/common/hooks/useContractForm';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
-import { amountInCentsFromInput } from '@/features/common/utils/form-text';
 import { FormFields } from './FormFields';
-import { draftFromValues, valuesFromDraft, type FormField } from './form-fields';
+import { draftFromValues, parseRecordDraft, type FormField } from './form-fields';
 
 /**
  * A record of the portfolio edited in a dialog. Mount it when the dialog opens (and give it a
@@ -36,17 +35,7 @@ export function RecordFormDialog<Value>({
   const content = PORTFOLIO_COMMON_CONTENT[locale];
   const { draft, setField, messageByPath, setMessageByPath, formRef, submit } = useContractForm({
     initialDraft: draftFromValues(fields, initialValues),
-    parse: (typed) => {
-      const invalid = fields.find(
-        ({ name, control }) =>
-          control === 'amount' &&
-          typeof typed[name] === 'string' &&
-          Number.isNaN(amountInCentsFromInput(typed[name] as string)),
-      );
-      if (invalid)
-        return { success: false, messageByPath: { [invalid.name]: content.invalidAmount } };
-      return parse(valuesFromDraft(fields, typed));
-    },
+    parse: (typed) => parseRecordDraft({ fields, draft: typed, parse, locale }),
     onValid: (value) => {
       if (onSave(value) === false) setMessageByPath({ _form: content.itemLimit });
       else onClose();
