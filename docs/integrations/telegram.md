@@ -120,7 +120,8 @@ Known next steps, each with the trigger that makes it real; add yours:
     same call listed on two sources would notify twice — dedupe keys will need the canonical id,
     not the source's.
 13. **`newEligibleCall.matchStatus`** (when matching exists): the variant carries `eligible` /
-    `almost` already; the writer decides which, and the message changes with it.
+    `almostEligible` (from `MatchClassificationEnum`) already; the writer decides which, and the
+    message changes with it.
 14. **A post-selection kind** (when a "selected"/"approved" status exists): creators want to hear
     when they are selected — a kind nobody renders today.
 15. **Idempotent `sendMessage`** (when the token goes live): a send that times out may have

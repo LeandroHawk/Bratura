@@ -43,7 +43,7 @@ const drafts = {
     userId,
     dedupeKey: 'new:2',
     callNoticeId,
-    matchStatus: 'almost',
+    matchStatus: 'almostEligible',
   },
   deadlineSoon: {
     kind: 'deadlineSoon',
