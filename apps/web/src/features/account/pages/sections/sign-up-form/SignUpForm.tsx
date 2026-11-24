@@ -11,13 +11,13 @@ import { parseWithMessages } from '@bratura/shared/messages/messages';
 import { ApplicantTypeEnum } from '@bratura/shared/primitives/domain/applicant-type/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { UfEnum } from '@bratura/shared/primitives/external/uf/enum';
-import { Button, Card, Dialog, SelectField, TextField } from '@bratura/ui';
+import { Button, Card, SelectField, TextField } from '@bratura/ui';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/features/common/config/routes';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { UF_NAME } from '@bratura/shared/primitives/external/uf/names';
-import { signUp } from '@/features/common/data/demoStore';
+import { keptAccountEmail, signUp } from '@/features/common/data/demoStore';
 import { useContractForm } from '@/features/common/hooks/useContractForm';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { SIGN_UP_FORM_CONTENT } from './content';
@@ -35,42 +35,23 @@ export function SignUpForm({ locale }: { locale: Locale }) {
   const content = SIGN_UP_FORM_CONTENT[locale];
   const labels = CREATOR_LABELS[locale];
   const router = useRouter();
-  const [pending, setPending] = useState<SignUpMutationFromBraturaPortalArgs | null>(null);
+  // The new account takes the place of the one this browser keeps: asked before, never silent.
+  const [pending, setPending] = useState<{
+    registration: SignUpMutationFromBraturaPortalArgs;
+    replacedEmail: string;
+  } | null>(null);
   const openPortfolio = () => router.push(localizedPathFromLocale(locale, ROUTES.portfolio));
   const { draft, setField, messageByPath, formRef, submit } = useContractForm({
     initialDraft: EMPTY_DRAFT,
     parse: (typed) => parseWithMessages(SignUpMutationFromBraturaPortalArgsSchema, typed, locale),
     onValid: (registration) => {
       if (signUp(registration)) openPortfolio();
-      else setPending(registration);
+      else setPending({ registration, replacedEmail: keptAccountEmail() ?? '' });
     },
   });
 
   return (
     <>
-      {pending && (
-        <Dialog
-          open
-          onClose={() => setPending(null)}
-          title={content.replaceTitle}
-          closeLabel={content.close}
-        >
-          <p>{content.replaceLead}</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button
-              onClick={() => {
-                signUp(pending, true);
-                openPortfolio();
-              }}
-            >
-              {content.confirmReplace}
-            </Button>
-            <Button variant="ghost" onClick={() => setPending(null)}>
-              {content.cancel}
-            </Button>
-          </div>
-        </Dialog>
-      )}
       <Card as="section" className="rise-in p-6 sm:p-8">
         <form ref={formRef} onSubmit={submit} noValidate className="grid gap-6">
           <div className="grid items-start gap-4 sm:grid-cols-2">
@@ -138,6 +119,25 @@ export function SignUpForm({ locale }: { locale: Locale }) {
             />
           </div>
 
+          {pending && (
+            <div className="grid justify-items-start gap-3" role="alert">
+              <p className="text-small">{content.replacesAccount(pending.replacedEmail)}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    signUp(pending.registration, true);
+                    openPortfolio();
+                  }}
+                >
+                  {content.confirmReplace}
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setPending(null)}>
+                  {content.cancel}
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <Button type="submit">{content.submit}</Button>
             <p className="text-small text-muted-foreground">

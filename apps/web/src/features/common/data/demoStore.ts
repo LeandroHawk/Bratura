@@ -104,8 +104,13 @@ export function useDemoState(): DemoState | null {
  * The e-mail of the account `loadExample` would erase, or `null` when there is none to lose (no
  * account, or the example itself): the screen asks before loading the example over one.
  */
+/** The e-mail of the account this browser keeps, if any. */
+export function keptAccountEmail(): string | null {
+  return currentState().creator?.email ?? null;
+}
+
 export function accountReplacedByExample(example: Pick<Creator, 'email'>): string | null {
-  const stored = currentState().creator?.email ?? null;
+  const stored = keptAccountEmail();
   return stored === example.email ? null : stored;
 }
 

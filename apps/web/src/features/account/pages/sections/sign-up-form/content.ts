@@ -1,12 +1,10 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
-  replaceTitle: 'Substituir o cadastro deste navegador?',
-  replaceLead:
-    'Criar outro cadastro apaga o cadastro atual, o portfólio e os editais salvos deste navegador.',
+  replacesAccount: (email: string) =>
+    `Este navegador guarda o cadastro de ${email}. Criar outro cadastro apaga esse cadastro, o portfólio e os editais salvos.`,
   confirmReplace: 'Apagar e criar cadastro',
   cancel: 'Cancelar',
-  close: 'Fechar',
   title: 'Crie seu cadastro de demonstração',
   lead: 'Quem se inscreve, onde e em que área. Os detalhes dos editais conferem seu perfil; as listas usam o exemplo da Dona Maria.',
   demoNotice:
@@ -25,12 +23,10 @@ const ptBR = {
 export const SIGN_UP_FORM_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
-    replaceTitle: 'Replace this browser’s account?',
-    replaceLead:
-      'Creating another account erases the current account, portfolio and saved calls in this browser.',
+    replacesAccount: (email) =>
+      `This browser keeps the account of ${email}. Creating another account erases that account, its portfolio and its saved calls.`,
     confirmReplace: 'Erase and create account',
     cancel: 'Cancel',
-    close: 'Close',
     title: 'Create your demo account',
     lead: 'Who applies, where and in which area. Call details check your profile; lists use Dona Maria’s example.',
     demoNotice:
