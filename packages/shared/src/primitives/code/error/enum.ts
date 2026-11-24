@@ -8,6 +8,7 @@ import { z } from 'zod';
 export const AppErrorCodeEnum = z.enum([
   'invalidInput', // the args broke the contract; `issues` says where
   'notFound',
+  'unauthenticated', // nobody signed in; the front offers sign-in
   'forbidden',
   'conflict', // it already exists, or changed meanwhile
   'unavailable', // an outside service did not answer (Mapas, Firecrawl, Telegram, Gemini)

@@ -10,11 +10,15 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
+  mutation,
+  query,
   type ActionCtx,
   type MutationCtx,
   type QueryCtx,
 } from '../_generated/server';
+import type { Doc } from '../_generated/dataModel';
 import { appError } from './appError';
+import { requireUser } from './auth';
 
 /**
  * The args as callers see them: Convex's reading of the Zod shape, where a documentId is an `Id`.
@@ -84,3 +88,51 @@ export const internalZodAction = <Args extends z.ZodObject, Returns extends z.Zo
     CallerArgs<Args>,
     Promise<z.output<Returns>>
   >;
+
+// Public: callable from the browser. `publicZod*` is for what anyone may call (sign-in, public
+// reads); `userZod*` resolves the caller's `users` row into `ctx.user` first — a private
+// function picks the builder, it does not check auth by hand (`docs/security.md` §1).
+
+/** A private handler's ctx: everything the base ctx has, plus the caller's row. */
+export type UserQueryCtx = QueryCtx & { user: Doc<'users'> };
+export type UserMutationCtx = MutationCtx & { user: Doc<'users'> };
+
+export const publicZodQuery = <Args extends z.ZodObject, Returns extends z.ZodType>(
+  definition: ZodFunction<QueryCtx, Args, Returns>,
+) =>
+  query(parsedWithZod(definition) as never) as RegisteredQuery<
+    'public',
+    CallerArgs<Args>,
+    Promise<z.output<Returns>>
+  >;
+
+export const publicZodMutation = <Args extends z.ZodObject, Returns extends z.ZodType>(
+  definition: ZodFunction<MutationCtx, Args, Returns>,
+) =>
+  mutation(parsedWithZod(definition) as never) as RegisteredMutation<
+    'public',
+    CallerArgs<Args>,
+    Promise<z.output<Returns>>
+  >;
+
+export const userZodQuery = <Args extends z.ZodObject, Returns extends z.ZodType>(
+  definition: ZodFunction<UserQueryCtx, Args, Returns>,
+) =>
+  query(
+    parsedWithZod({
+      ...definition,
+      handler: async (ctx: QueryCtx, args: z.output<Args>) =>
+        await definition.handler({ ...ctx, user: await requireUser(ctx) }, args),
+    }) as never,
+  ) as RegisteredQuery<'public', CallerArgs<Args>, Promise<z.output<Returns>>>;
+
+export const userZodMutation = <Args extends z.ZodObject, Returns extends z.ZodType>(
+  definition: ZodFunction<UserMutationCtx, Args, Returns>,
+) =>
+  mutation(
+    parsedWithZod({
+      ...definition,
+      handler: async (ctx: MutationCtx, args: z.output<Args>) =>
+        await definition.handler({ ...ctx, user: await requireUser(ctx) }, args),
+    }) as never,
+  ) as RegisteredMutation<'public', CallerArgs<Args>, Promise<z.output<Returns>>>;

@@ -8,9 +8,13 @@ import type { Id } from './_generated/dataModel';
 
 type TestBackend = ReturnType<typeof convexTest>;
 
-/** A real `users` row. */
+/** A real `users` row; the token is a fixture value, never a provider's. */
 export async function withUser(t: TestBackend): Promise<Id<'users'>> {
-  return await t.mutation(internal.users.recordUser, {});
+  return await t.mutation(internal.users.recordUser, {
+    tokenIdentifier: `fixture|${Math.random().toString(36).slice(2, 10)}`,
+    name: null,
+    email: null,
+  });
 }
 
 /** The user's Telegram row in `userMessageChannels`, opted in — how the demo creator is seeded. */

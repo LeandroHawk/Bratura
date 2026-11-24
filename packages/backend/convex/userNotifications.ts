@@ -12,7 +12,13 @@ import { requiredInstant } from '@bratura/shared/primitives/code/time/instant/fi
 import type { GenericId } from 'convex/values';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { appError } from './lib/appError';
-import { internalZodMutation, internalZodQuery } from './lib/builders';
+import { assertUserOwns } from './lib/auth';
+import {
+  internalZodMutation,
+  internalZodQuery,
+  userZodMutation,
+  userZodQuery,
+} from './lib/builders';
 import { reserveDelivery } from './notificationDeliveries';
 
 // The web inbox's only writer. A trigger (matching, the deadline cron, an amended call, an admin
@@ -124,4 +130,40 @@ export const listForUser = internalZodQuery({
     (await userNotificationsOf(ctx, userId).collect()).sort(
       (a, b) => b._creationTime - a._creationTime,
     ),
+});
+
+const MyNotificationsQueryArgsSchema = z.object({});
+
+/**
+ * The caller's notifications, newest first — the inbox's public read. The owner comes from the
+ * signed identity, never an arg, so it cannot return someone else's rows.
+ */
+export const myNotifications = userZodQuery({
+  args: MyNotificationsQueryArgsSchema,
+  returns: ListForUserQueryReturnsSchema,
+  handler: async (ctx): Promise<ListForUserResult> =>
+    (await userNotificationsOf(ctx, ctx.user._id).collect()).sort(
+      (a, b) => b._creationTime - a._creationTime,
+    ),
+});
+
+const MarkMyNotificationReadMutationArgsSchema = z.object({
+  notificationId: documentId('userNotifications'),
+});
+const MarkMyNotificationReadMutationReturnsSchema = z.null();
+
+/**
+ * Marks the caller's notification read; `notFound` for a missing row, `forbidden` for someone
+ * else's. Reading it again keeps the first time.
+ */
+export const markMyNotificationRead = userZodMutation({
+  args: MarkMyNotificationReadMutationArgsSchema,
+  returns: MarkMyNotificationReadMutationReturnsSchema,
+  handler: async (ctx, { notificationId }): Promise<null> => {
+    const notification = await ctx.db.get(notificationId);
+    if (!notification) throw appError({ code: 'notFound' });
+    assertUserOwns(notification, ctx.user);
+    if (notification.readAt === null) await ctx.db.patch(notificationId, { readAt: Date.now() });
+    return null;
+  },
 });

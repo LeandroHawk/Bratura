@@ -55,7 +55,7 @@ export default defineSchema({
     'by_user_and_channel',
     ['userId', 'channel'],
   ),
-  users: defineTable(zodToConvex(UserSchema)),
+  users: defineTable(zodToConvex(UserSchema)).index('by_token', ['tokenIdentifier']),
   organizations: defineTable(zodToConvex(OrganizationSchema)).index('by_slug', ['slug']),
   memberships: defineTable(zodToConvex(MembershipSchema)).index('by_organization_and_user', [
     'organizationId',

@@ -37,7 +37,11 @@ describe('addOrganizationMember', () => {
       slug: 'demo-assoc',
       name: 'Associação Demo',
     });
-    const userId = await t.mutation(internal.users.recordUser, {});
+    const userId = await t.mutation(internal.users.recordUser, {
+      tokenIdentifier: 'fixture|member',
+      name: null,
+      email: null,
+    });
     return { organizationId, userId };
   };
 
