@@ -148,9 +148,6 @@ Known gaps, in no order; add yours:
   four tables that carry their data.
 - Owner checks: today's `notify`, `sendPendingDeliveries` and friends are internal; when login
   lands and they become public, each must confirm the caller owns the `userId` it touches.
-
-## Open for brainstorming — creator privacy
-
 - When real accounts replace the browser demo: authenticate with WorkOS and enforce ownership in
   the shared builders before enabling private persistence, uploads or public portfolio pages.
 - When quota-related profile fields are proposed: keep quota self-declaration unrecorded; the
@@ -159,3 +156,4 @@ Known gaps, in no order; add yours:
 - When diagnosing public profile queries: arguments include birth date and residence facts needed
   by rules, so never log arguments or send them to third-party providers. Keep portfolio text,
   identity, contact information, links and uploaded bytes out of the query DTO.
+
