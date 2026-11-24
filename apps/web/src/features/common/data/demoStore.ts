@@ -114,12 +114,16 @@ export function accountReplacedByExample(example: Pick<Creator, 'email'>): strin
   return stored === example.email ? null : stored;
 }
 
-/** Creates the demo account from the sign-up, signed in. */
+/**
+ * Creates the demo account from the sign-up, signed in. A kept account is replaced only when it is
+ * still the one the person confirmed erasing (`replacedEmail`); another tab may have changed it.
+ */
 export function signUp(
   { mainCulturalArea, ...registration }: SignUpMutationFromBraturaPortalArgs,
-  replaceExisting = false,
+  replacedEmail: string | null = null,
 ): boolean {
-  if (currentState().creator !== null && !replaceExisting) return false;
+  const kept = keptAccountEmail();
+  if (kept !== null && kept !== replacedEmail) return false;
   setState({
     ...EMPTY_STATE,
     creator: { ...registration, ...emptyCulturalProfile, mainCulturalArea },

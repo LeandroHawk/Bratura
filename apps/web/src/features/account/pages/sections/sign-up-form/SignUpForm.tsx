@@ -49,6 +49,15 @@ export function SignUpForm({ locale }: { locale: Locale }) {
       else setPending({ registration, replacedEmail: keptAccountEmail() ?? '' });
     },
   });
+  // A confirmation answers the registration it was asked for: an edit asks for a new submit.
+  const editField = (name: keyof typeof EMPTY_DRAFT, value: string) => {
+    setPending(null);
+    setField(name, value);
+  };
+  const confirmReplace = (confirmed: NonNullable<typeof pending>) => {
+    if (signUp(confirmed.registration, confirmed.replacedEmail)) openPortfolio();
+    else setPending({ ...confirmed, replacedEmail: keptAccountEmail() ?? '' });
+  };
 
   return (
     <>
@@ -59,7 +68,7 @@ export function SignUpForm({ locale }: { locale: Locale }) {
               label={content.applicantType}
               name="applicantType"
               value={draft.applicantType}
-              onChange={(event) => setField('applicantType', event.target.value)}
+              onChange={(event) => editField('applicantType', event.target.value)}
               error={messageByPath.applicantType}
             >
               <option value="">{labels.chooseOne}</option>
@@ -73,7 +82,7 @@ export function SignUpForm({ locale }: { locale: Locale }) {
               label={content.mainCulturalArea}
               name="mainCulturalArea"
               value={draft.mainCulturalArea}
-              onChange={(event) => setField('mainCulturalArea', event.target.value)}
+              onChange={(event) => editField('mainCulturalArea', event.target.value)}
               error={messageByPath.mainCulturalArea}
             >
               <option value="">{labels.chooseOne}</option>
@@ -88,7 +97,7 @@ export function SignUpForm({ locale }: { locale: Locale }) {
               name="state"
               autoComplete="address-level1"
               value={draft.state}
-              onChange={(event) => setField('state', event.target.value)}
+              onChange={(event) => editField('state', event.target.value)}
               error={messageByPath.state}
             >
               <option value="">{labels.chooseOne}</option>
@@ -103,7 +112,7 @@ export function SignUpForm({ locale }: { locale: Locale }) {
               name="city"
               autoComplete="address-level2"
               value={draft.city}
-              onChange={(event) => setField('city', event.target.value)}
+              onChange={(event) => editField('city', event.target.value)}
               error={messageByPath.city}
             />
             <TextField
@@ -114,7 +123,7 @@ export function SignUpForm({ locale }: { locale: Locale }) {
               autoComplete="email"
               className="sm:col-span-2"
               value={draft.email}
-              onChange={(event) => setField('email', event.target.value)}
+              onChange={(event) => editField('email', event.target.value)}
               error={messageByPath.email}
             />
           </div>
@@ -123,13 +132,7 @@ export function SignUpForm({ locale }: { locale: Locale }) {
             <div className="grid justify-items-start gap-3" role="alert">
               <p className="text-small">{content.replacesAccount(pending.replacedEmail)}</p>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    signUp(pending.registration, true);
-                    openPortfolio();
-                  }}
-                >
+                <Button size="sm" onClick={() => confirmReplace(pending)}>
                   {content.confirmReplace}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setPending(null)}>

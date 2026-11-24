@@ -90,7 +90,9 @@ test('sign-up cannot replace a stored portfolio without explicit confirmation', 
   expect(stored.get(STORAGE_KEY)).toBe(before);
   // The screen names the account the confirmation erases.
   expect(store.keptAccountEmail()).toBe(FICTIONAL_CREATOR.email);
-  expect(store.signUp(signUpArgs, true)).toBe(true);
+  expect(store.signUp(signUpArgs, 'someone-else@example.com')).toBe(false);
+  expect(stored.get(STORAGE_KEY)).toBe(before);
+  expect(store.signUp(signUpArgs, FICTIONAL_CREATOR.email)).toBe(true);
   expect(JSON.parse(stored.get(STORAGE_KEY) ?? '{}').portfolioItems).toEqual([]);
 });
 
