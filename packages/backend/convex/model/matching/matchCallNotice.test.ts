@@ -558,6 +558,12 @@ describe('matchCallNotice: maximum age only from a stated ceiling', () => {
     expect(statusOfMaximumAge(detail)).toBe('notMet');
   });
 
+  test('a ceiling that is refused is to confirm', () => {
+    expect(statusOfMaximumAge('Pessoas de até 17 anos não podem participar')).toBe(
+      'needsConfirmation',
+    );
+  });
+
   test('a word that contains "ate" is not "até"', () => {
     expect(statusOfMaximumAge('debate com 27 anos de idade')).toBe('needsConfirmation');
   });

@@ -1,9 +1,9 @@
-import { CreatorSchema } from '../entity';
-import { FICTIONAL_CREATOR } from './fictional-creator';
-import { PortfolioItemSchema } from '../../portfolio-item/entity';
+import { CreatorSchema } from '@bratura/shared/entities/creator/entity';
+import { FICTIONAL_CREATOR } from '@bratura/shared/entities/creator/demo/fictional-creator';
+import { PortfolioItemSchema } from '@bratura/shared/entities/portfolio-item/entity';
 
-/** Isolated QA identities; these accounts are never inserted in a production deployment. */
-export const CULTURAL_QA_PROFILES = [
+/** Five fictional creators, one per cultural profile: test data, never inserted in a deployment. */
+export const FIVE_CULTURAL_PROFILES = [
   {
     key: 'actor',
     name: 'Ator QA',

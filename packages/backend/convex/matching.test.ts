@@ -1,4 +1,4 @@
-import { CULTURAL_QA_PROFILES } from '@bratura/shared/entities/creator/demo/five-cultural-profiles.fixture';
+import { FIVE_CULTURAL_PROFILES } from './five-cultural-profiles.fixture';
 import {
   matchProfileFromPortfolio,
   MatchProfileSchema,
@@ -588,7 +588,7 @@ describe('callNoticeDetails', () => {
 });
 
 describe('QA integration: five cultural profiles', () => {
-  test.each(CULTURAL_QA_PROFILES)(
+  test.each(FIVE_CULTURAL_PROFILES)(
     '$key: details use the supplied profile and react to portfolio changes',
     async ({ creator, portfolioItems, years }) => {
       const t = convexTest(schema, modules);
@@ -661,7 +661,7 @@ describe('QA integration: five cultural profiles', () => {
   );
 
   test('the public profile strips private content and bounds its items', () => {
-    const { creator, portfolioItems } = CULTURAL_QA_PROFILES[0]!;
+    const { creator, portfolioItems } = FIVE_CULTURAL_PROFILES[0]!;
     const profile = matchProfileFromPortfolio(creator, portfolioItems);
     expect(JSON.stringify(profile)).not.toContain(creator.email);
     expect(JSON.stringify(profile)).not.toContain(creator.fullName!);
