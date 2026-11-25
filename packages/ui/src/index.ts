@@ -8,6 +8,7 @@ export {
 } from './components/Button/Button';
 export { Card } from './components/Card/Card';
 export { Checkbox } from './components/Checkbox/Checkbox';
+export { ClosedRoom } from './components/ClosedRoom/ClosedRoom';
 export { Collapse } from './components/Collapse/Collapse';
 export { Container } from './components/Container/Container';
 export { Corridor, CorridorDoor } from './components/Corridor/Corridor';
@@ -21,6 +22,7 @@ export {
   type HangingSignProps,
 } from './components/HangingSign/HangingSign';
 export { Heading, type HeadingSize } from './components/Heading/Heading';
+export { Loading } from './components/Loading/Loading';
 export { LOGO_LETTER_COLORS, Logo, SLOGAN, type LogoProps } from './components/Logo/Logo';
 export {
   LOGO_SPLAT_SEED,

@@ -9,6 +9,7 @@ import { useCallNoticeCounters } from '@/features/call-notices/data/useCallNotic
 import { useSavedCallNoticeCards } from '@/features/call-notices/data/useSavedCallNoticeCards';
 import { SignedInArea, type SignedInState } from '@/features/common/components/app/SignedInArea';
 import { BackendData } from '@/features/common/components/BackendData';
+import { RoomUnderRestoration } from '@/features/common/components/restoration/RoomUnderRestoration';
 import { ROUTES } from '@/features/common/config/routes';
 import { setSavedCallNotice } from '@/features/common/data/demoStore';
 import { CallNoticeCard } from './sections/common/CallNoticeCard';
@@ -156,7 +157,21 @@ export function CallNoticesScreen({ locale, view }: { locale: Locale; view: Call
   return (
     <SignedInArea locale={locale} currentPath={VIEW[view].path}>
       {(state) => (
-        <BackendData unavailable={<p role="status">{CALL_NOTICES_CONTENT[locale].unavailable}</p>}>
+        <BackendData
+          unavailable={
+            <RoomUnderRestoration
+              locale={locale}
+              message={CALL_NOTICES_CONTENT[locale].unavailable}
+            />
+          }
+          failed={(retry) => (
+            <RoomUnderRestoration
+              locale={locale}
+              message={CALL_NOTICES_CONTENT[locale].failed}
+              retry={retry}
+            />
+          )}
+        >
           <CallNotices locale={locale} view={view} state={state} />
         </BackendData>
       )}

@@ -8,12 +8,14 @@
 @import './theme/light-switch.css';
 @import './components/Button/button.css';
 @import './components/Checkbox/checkbox.css';
+@import './components/ClosedRoom/closed-room.css';
 @import './components/Collapse/collapse.css';
 @import './components/Corridor/corridor.css';
 @import './components/Dialog/dialog.css';
 @import './components/ExitSign/exit-sign.css';
 @import './components/Field/field.css';
 @import './components/Logo/logo.css';
+@import './components/Loading/loading.css';
 @import './components/HangingSign/hanging-sign.css';
 @import './components/MuseumMap/museum-map.css';
 @import './components/PullCord/pull-cord.css';

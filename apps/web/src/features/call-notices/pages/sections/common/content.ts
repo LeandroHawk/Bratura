@@ -17,6 +17,7 @@ const ptBR = {
   fictionalProfileNotice:
     'As listas e contadores usam o portfólio fictício da Dona Maria. Os detalhes conferem o seu portfólio deste navegador.',
   unavailable: 'Os editais estão indisponíveis no momento. Tente atualizar a página mais tarde.',
+  failed: 'Os editais não carregaram agora. Pode ser a conexão; tente de novo em instantes.',
   loading: 'Carregando os editais…',
   anyArtForm: 'Todas as áreas culturais',
   openEndedClose: 'sem data de encerramento',
@@ -182,6 +183,7 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
     fictionalProfileNotice:
       'Lists and counters use Dona Maria’s fictional portfolio. Details check your portfolio from this browser.',
     unavailable: 'Calls are unavailable at the moment. Try reloading the page later.',
+    failed: 'The calls did not load just now. It may be the connection; try again in a moment.',
     loading: 'Loading the calls…',
     anyArtForm: 'Every cultural area',
     openEndedClose: 'no closing date',

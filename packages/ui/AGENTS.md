@@ -22,7 +22,9 @@ Two themes named after a museum: **Acervo** (light, parchment, the default) and 
 walnut and brass, when someone pulls the cord). The house objects are physical: the theme is a
 **light pull cord** (`PullCord`), the language a **market-stall sign** (`HangingSign`). A new
 control prefers an object from that room to a generic widget; it hangs from the top edge, lit or
-not by the cord's glow.
+not by the cord's glow. The way around is the building: a corridor of doors (`Corridor`), a floor
+plan on a phone (`MuseumMap`), an exit sign to leave (`ExitSign`); waiting is the tab's "B"
+breathing (`Loading`), a failure a room roped off for restoration (`ClosedRoom`).
 
 ## Tokens
 

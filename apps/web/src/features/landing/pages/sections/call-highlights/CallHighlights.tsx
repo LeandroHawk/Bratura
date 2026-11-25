@@ -16,6 +16,7 @@ import { SectionColumns } from '@/features/landing/pages/sections/common/Section
 import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
 import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
 import { RUBBER_STAMP_CLASS_NAME } from '@/features/landing/pages/sections/common/rubberStampClassName';
+import { RoomUnderRestoration } from '@/features/common/components/restoration/RoomUnderRestoration';
 import { CALL_HIGHLIGHTS_CONTENT } from './content';
 
 /** Seconds the landing keeps its highlights; the page's `revalidate` must be the same number. */
@@ -158,7 +159,11 @@ export async function CallHighlights({ locale }: { locale: Locale }) {
       <SectionColumns id={SECTION_IDS.callHighlights}>
         {intro}
         <div className="grid content-start justify-items-start gap-6">
-          {calls === null ? <p role="status">{copy.unavailable}</p> : <p>{copy.empty}</p>}
+          {calls === null ? (
+            <RoomUnderRestoration locale={locale} message={copy.unavailable} />
+          ) : (
+            <p>{copy.empty}</p>
+          )}
           {viewAll}
         </div>
       </SectionColumns>

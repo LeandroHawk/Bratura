@@ -23,7 +23,7 @@ features/
     styles/                    globals.css
     utils/                     locale paths and params, load-google-font, form-text
                                (text → contract value), format (amounts; dates use shared calendar)
-  landing/  not-found/  styleguide/
+  landing/  not-found/  route-error/  styleguide/
   account/                     sign-up and sign-in
   portfolio/                   the cultural portfolio: profile, experiences, projects, documents
   call-notices/                the calls matched to the portfolio and every call, over the same
@@ -36,6 +36,19 @@ The call lists and counters read Convex's fixed fictional Dona Maria matches. De
 `MatchProfileSchema` facts derived by `matchProfileFromPortfolio`, bounded by `portfolioItemsMax`:
 no e-mail, names, descriptions, links or file metadata. Matching runs in the backend. Uploads keep
 metadata in the browser; no uploaded bytes or private accounts are persisted in Convex yet.
+
+## Waiting and failing
+
+- **Waiting is `Loading`** from `@bratura/ui` (the tab icon's mark, breathing, over a label): a
+  screen, a dialog, a list's next page (`inline`). Never a bare "Carregando…" paragraph. A number
+  still on its way inside a counter stays "…": a mark per card is noise.
+- **A Convex read in the browser goes through `BackendData`**: `unavailable` (no backend
+  configured) and `failed(retry)` (a read or a render threw) each draw `RoomUnderRestoration` with
+  the screen's own message; only `failed` can try again. A read on the server (the landing's
+  highlights, `fetchQuery`) catches its own failure and draws it without a retry. Anything else
+  that fails uses `RoomUnderRestoration` too.
+- **A page that throws is caught by `app/[lang]/error.tsx`** (same room, "try again" and the way
+  home). Not the 404: there the room does not exist; here it exists and is closed for now.
 
 ## The anatomy of a feature
 
