@@ -1,0 +1,225 @@
+import { convexTest } from 'convex-test';
+import {
+  ianaTimeZone,
+  type IanaTimeZone,
+} from '@bratura/shared/primitives/code/time/time-zone/fields';
+import { describe, expect, test } from 'vitest';
+import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
+import schema from './schema';
+import { modules } from './test.setup';
+import { federalMapasSource } from './model/sources/registry';
+
+const recordCallNotice = internal.callNotices.recordCallNotice;
+
+const inFortaleza = (at: number, precision: 'day' | 'minute') => ({
+  at,
+  timeZone: ianaTimeZone.parse('America/Fortaleza'),
+  precision,
+});
+
+const listing = (sourceId: Id<'sources'>) => ({
+  sourceId,
+  externalId: '4321',
+  title: 'Edital de Difusão Cultural 2026',
+  summary: null,
+  officialUrl: 'https://mapa.cultura.gov.br/oportunidade/4321/',
+  documentUrls: [],
+  registrationOpens: inFortaleza(Date.UTC(2026, 10, 1, 3), 'day'),
+  registrationCloses: inFortaleza(Date.UTC(2026, 11, 2, 2, 59), 'minute'),
+});
+
+async function withSource() {
+  const t = convexTest(schema, modules);
+  const sourceId = await t.run((ctx) => ctx.db.insert('sources', federalMapasSource));
+  return { t, sourceId };
+}
+
+describe('recordCallNotice', () => {
+  test('stores a new call notice with when it was first and last seen', async () => {
+    const { t, sourceId } = await withSource();
+    await t.mutation(recordCallNotice, listing(sourceId));
+    const [stored] = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(stored).toMatchObject(listing(sourceId));
+    expect(stored?.firstSeenAt).toBe(stored?.lastSeenAt);
+  });
+
+  test('a call notice read again stays one row, updated in place', async () => {
+    const { t, sourceId } = await withSource();
+    const first = await t.mutation(recordCallNotice, listing(sourceId));
+    expect(first.isNew).toBe(true);
+    const again = await t.mutation(recordCallNotice, {
+      ...listing(sourceId),
+      title: 'Edital de Difusão Cultural 2026 (retificado)',
+    });
+    const stored = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(again).toEqual({ callNoticeId: first.callNoticeId, isNew: false });
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.title).toBe('Edital de Difusão Cultural 2026 (retificado)');
+  });
+
+  test('stores whether the call was closed when first seen: an open one stays open, a closed one reopens on an extension', async () => {
+    const { t, sourceId } = await withSource();
+    const flagOf = async (externalId: string) =>
+      (await t.run((ctx) => ctx.db.query('callNotices').collect())).find(
+        (stored) => stored.externalId === externalId,
+      )?.closedWhenFirstSeen;
+    const open = listing(sourceId);
+    await t.mutation(recordCallNotice, open);
+    await t.mutation(recordCallNotice, { ...open, resultPosted: true });
+    expect(await flagOf(open.externalId)).toBe(false);
+
+    const withResult = { ...listing(sourceId), externalId: '4322', resultPosted: true };
+    await t.mutation(recordCallNotice, withResult);
+    expect(await flagOf('4322')).toBe(true);
+
+    const closed = {
+      ...listing(sourceId),
+      externalId: '4323',
+      registrationCloses: inFortaleza(Date.now() - 1000, 'minute'),
+    };
+    await t.mutation(recordCallNotice, closed);
+    expect(await flagOf('4323')).toBe(true);
+    await t.mutation(recordCallNotice, {
+      ...closed,
+      registrationCloses: listing(sourceId).registrationCloses,
+    });
+    expect(await flagOf('4323')).toBe(false);
+  });
+
+  test('a closed call does not reopen when one run misses its close or its result', async () => {
+    const { t, sourceId } = await withSource();
+    const rowOf = async (externalId: string) =>
+      (await t.run((ctx) => ctx.db.query('callNotices').collect())).find(
+        (stored) => stored.externalId === externalId,
+      );
+
+    const withResult = {
+      ...listing(sourceId),
+      externalId: '5001',
+      registrationCloses: null,
+      resultPosted: true,
+    };
+    await t.mutation(recordCallNotice, withResult);
+    await t.mutation(recordCallNotice, { ...withResult, resultPosted: undefined });
+    expect((await rowOf('5001'))?.closedWhenFirstSeen).toBe(true);
+    expect((await rowOf('5001'))?.resultPosted).toBeUndefined();
+
+    const closedByDate = {
+      ...listing(sourceId),
+      externalId: '5002',
+      registrationCloses: inFortaleza(Date.now() - 1000, 'minute'),
+    };
+    await t.mutation(recordCallNotice, closedByDate);
+    await t.mutation(recordCallNotice, { ...closedByDate, registrationCloses: null });
+    expect((await rowOf('5002'))?.closedWhenFirstSeen).toBe(true);
+
+    await t.mutation(recordCallNotice, {
+      ...closedByDate,
+      registrationCloses: listing(sourceId).registrationCloses,
+      resultPosted: true,
+    });
+    expect((await rowOf('5002'))?.closedWhenFirstSeen).toBe(true);
+  });
+
+  test('tracking comes from the server, never from the caller', async () => {
+    const { t, sourceId } = await withSource();
+    await expect(
+      // @ts-expect-error lastSeenAt is the server's: tsc refuses it too
+      t.mutation(recordCallNotice, { ...listing(sourceId), lastSeenAt: 0 }),
+    ).rejects.toThrow();
+  });
+
+  // The rule across fields that convex-helpers' zCustom* builders drop: ours keeps it.
+  test('rejects a registration window that closes before it opens', async () => {
+    const { t, sourceId } = await withSource();
+    await expect(
+      t.mutation(recordCallNotice, {
+        ...listing(sourceId),
+        registrationOpens: inFortaleza(Date.UTC(2026, 11, 10), 'day'),
+        registrationCloses: inFortaleza(Date.UTC(2026, 11, 1), 'day'),
+      }),
+    ).rejects.toThrow(/registrationCloses/);
+  });
+
+  test('trims text before storing, a Zod overwrite the Convex validator cannot express', async () => {
+    const { t, sourceId } = await withSource();
+    await t.mutation(recordCallNotice, { ...listing(sourceId), title: '  Edital das Artes  ' });
+    const stored = await t.run((ctx) => ctx.db.query('callNotices').first());
+    expect(stored?.title).toBe('Edital das Artes');
+  });
+
+  test('accepts a window with an end the source did not give', async () => {
+    const { t, sourceId } = await withSource();
+    await t.mutation(recordCallNotice, { ...listing(sourceId), registrationOpens: null });
+    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
+  });
+
+  test('rejects a link a creator could not open safely', async () => {
+    const { t, sourceId } = await withSource();
+    await expect(
+      t.mutation(recordCallNotice, { ...listing(sourceId), officialUrl: 'javascript:alert(1)' }),
+    ).rejects.toThrow(/invalidInput/);
+  });
+
+  test('rejects a zone the runtime does not know', async () => {
+    const { t, sourceId } = await withSource();
+    await expect(
+      t.mutation(recordCallNotice, {
+        ...listing(sourceId),
+        // Cast on purpose: the brand stops this at compile time; the test proves the runtime does
+        // too.
+        registrationCloses: {
+          ...inFortaleza(0, 'day'),
+          timeZone: 'America/Atlantis' as IanaTimeZone,
+        },
+      }),
+    ).rejects.toThrow(/unknownTimeZone/);
+  });
+
+  test('rejects an id from another table as the source', async () => {
+    const { t, sourceId } = await withSource();
+    const { callNoticeId } = await t.mutation(recordCallNotice, listing(sourceId));
+    await expect(
+      t.mutation(recordCallNotice, {
+        ...listing(sourceId),
+        // @ts-expect-error a call notice id is not a source id: tsc refuses it too
+        sourceId: callNoticeId,
+      }),
+    ).rejects.toThrow(/sourceId|Validator|table/i);
+  });
+});
+
+describe('backfillClosedWhenFirstSeen', () => {
+  test('sets the flag on rows recorded before it, by their close, through its index', async () => {
+    const { t, sourceId } = await withSource();
+    const now = Date.now();
+    const row = (externalId: string, closesAt: number | null) => ({
+      ...listing(sourceId),
+      externalId,
+      registrationOpens: null,
+      registrationCloses: closesAt === null ? null : inFortaleza(closesAt, 'minute'),
+      firstSeenAt: now,
+      lastSeenAt: now,
+    });
+    await t.run(async (ctx) => {
+      await ctx.db.insert('callNotices', row('closed', now - 1000));
+      await ctx.db.insert('callNotices', row('open', now + 1000));
+      await ctx.db.insert('callNotices', row('undated', null));
+    });
+    expect(await t.mutation(internal.callNotices.backfillClosedWhenFirstSeen, {})).toEqual({
+      updated: 3,
+      done: true,
+    });
+    const stored = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(Object.fromEntries(stored.map((s) => [s.externalId, s.closedWhenFirstSeen]))).toEqual({
+      closed: true,
+      open: false,
+      undated: false,
+    });
+    expect(await t.mutation(internal.callNotices.backfillClosedWhenFirstSeen, {})).toEqual({
+      updated: 0,
+      done: true,
+    });
+  });
+});

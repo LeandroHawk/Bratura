@@ -1,0 +1,315 @@
+import type { CallNotice } from '@bratura/shared/entities/call-notice/entity';
+import { callNoticeDeadline } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
+import { ReadCallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-document/entity';
+import { CallNoticeDocumentTextSchema } from '@bratura/shared/entities/call-notice-document-text/entity';
+import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
+import { documentId } from '@bratura/shared/primitives/code/id/fields';
+import { z } from 'zod';
+import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
+import type { ActionCtx } from './_generated/server';
+import { textOfReadDocument } from './documents';
+import { internalZodAction, internalZodMutation, internalZodQuery } from './lib/builders';
+import { requiredEnv } from './lib/env';
+import {
+  extractionPrompt,
+  extractionPromptVersion,
+  extractionTextFromDocuments,
+} from './model/callNoticeExtraction/prompt';
+import {
+  ChosenCallNoticeIdsSchema,
+  closedWhenFirstSeen,
+  queueOrder,
+} from './model/callNoticeDocuments/selection';
+import { verifyExtractionAnswer } from './model/callNoticeExtraction/verify';
+import { generateJson } from './model/llm/generateJson';
+
+// Extraction, by hand: each call notice's read documents → its fields through `model/llm/`, each
+// value kept only when the source text proves it (`model/callNoticeExtraction/verify.ts`). The only
+// writer of `callNoticeExtractions`. Return types are written out: this module calls its own
+// functions through `internal`.
+
+const CheckLlmCredentialsActionArgsSchema = z.object({});
+const CheckLlmCredentialsActionReturnsSchema = z.literal(true);
+
+/** Proves this deployment's LLM key answers JSON. Spends one free-tier call; reads no source. */
+export const checkLlmCredentials = internalZodAction({
+  args: CheckLlmCredentialsActionArgsSchema,
+  returns: CheckLlmCredentialsActionReturnsSchema,
+  handler: async () => {
+    const answer = await generateJson('Answer exactly {"ok": true}.');
+    z.object({ ok: z.literal(true) }).parse(answer);
+    return true as const;
+  },
+});
+
+// What is left to extract ----------------------------------------------------------------------
+
+const sortedHashes = (documents: { markdownHash: string }[]) =>
+  documents.map(({ markdownHash }) => markdownHash).sort();
+
+const ReadDocumentKeySchema = ReadCallNoticeDocumentSchema.pick({
+  callNoticeId: true,
+  role: true,
+  markdownHash: true,
+});
+type ReadDocumentKey = z.infer<typeof ReadDocumentKeySchema>;
+
+/**
+ * Rows per page of read documents. A row not yet moved by `moveDocumentTextsToOwnTable` carries its
+ * Markdown (up to 900 kB); the bytes cap below keeps a page under Convex's 16 MiB read limit.
+ */
+export const readDocumentKeysPageSize = 100;
+const readDocumentKeysPageBytes = 8 * 1024 * 1024;
+
+const ListReadDocumentKeysPageQueryArgsSchema = z.object({ cursor: z.string().nullable() });
+const ListReadDocumentKeysPageQueryReturnsSchema = z.object({
+  keys: z.array(ReadDocumentKeySchema),
+  continueCursor: z.string(),
+  isDone: z.boolean(),
+});
+type ReadDocumentKeysPage = z.infer<typeof ListReadDocumentKeysPageQueryReturnsSchema>;
+
+/** One page of read documents' keys: what the queue needs to pick, never their text. */
+export const listReadDocumentKeysPage = internalZodQuery({
+  args: ListReadDocumentKeysPageQueryArgsSchema,
+  returns: ListReadDocumentKeysPageQueryReturnsSchema,
+  handler: async (ctx, { cursor }): Promise<ReadDocumentKeysPage> => {
+    const { page, continueCursor, isDone } = await ctx.db
+      .query('callNoticeDocuments')
+      .withIndex('by_status', (index) => index.eq('status', 'read'))
+      .paginate({
+        cursor,
+        numItems: readDocumentKeysPageSize,
+        maximumBytesRead: readDocumentKeysPageBytes,
+      });
+    const keys = page.flatMap((document) =>
+      document.status === 'read'
+        ? [
+            {
+              callNoticeId: document.callNoticeId,
+              role: document.role,
+              markdownHash: document.markdownHash,
+            },
+          ]
+        : [],
+    );
+    return { keys, continueCursor, isDone };
+  },
+});
+
+/** Only these call notices, picked by hand: `closedWhenFirstSeen` does not hold for them. */
+const ChosenCallNoticesFields = z.object({ callNoticeIds: ChosenCallNoticeIdsSchema.optional() });
+
+const SelectCallNoticesToExtractQueryArgsSchema = ChosenCallNoticesFields.extend({
+  readDocuments: z.array(ReadDocumentKeySchema),
+});
+const CallNoticesToExtractSchema = z.array(documentId('callNotices'));
+
+/**
+ * Of the call notices these read documents belong to, those never extracted or extracted from
+ * other documents or an older prompt, in `queueOrder`; a call with no real deadline (`openEnded`)
+ * never, nor one closed when first seen unless picked by hand.
+ */
+export const selectCallNoticesToExtract = internalZodQuery({
+  args: SelectCallNoticesToExtractQueryArgsSchema,
+  returns: CallNoticesToExtractSchema,
+  handler: async (ctx, { readDocuments, callNoticeIds }): Promise<Id<'callNotices'>[]> => {
+    const now = Date.now();
+    const chosen = callNoticeIds && new Set(callNoticeIds);
+    const byCallNotice = new Map<Id<'callNotices'>, ReadDocumentKey[]>();
+    for (const document of readDocuments) {
+      const documents = byCallNotice.get(document.callNoticeId) ?? [];
+      documents.push(document);
+      byCallNotice.set(document.callNoticeId, documents);
+    }
+
+    const toExtract: (Pick<CallNotice, 'registrationCloses'> & {
+      callNoticeId: Id<'callNotices'>;
+    })[] = [];
+    for (const [callNoticeId, documents] of byCallNotice) {
+      if (chosen && !chosen.has(callNoticeId)) continue;
+      if (!documents.some(({ role }) => role === 'callNotice')) continue;
+      const callNotice = await ctx.db.get(callNoticeId);
+      if (!callNotice || callNoticeDeadline(callNotice, now) === 'openEnded') continue;
+      if (!chosen && closedWhenFirstSeen(callNotice)) continue;
+      const extracted = await ctx.db
+        .query('callNoticeExtractions')
+        .withIndex('by_call_notice', (index) => index.eq('callNoticeId', callNoticeId))
+        .unique();
+      const isCurrent =
+        extracted?.promptVersion === extractionPromptVersion &&
+        extracted.documentHashes.join() === sortedHashes(documents).join();
+      if (isCurrent) continue;
+      toExtract.push({ callNoticeId, registrationCloses: callNotice.registrationCloses });
+    }
+    return toExtract.sort(queueOrder(now)).map(({ callNoticeId }) => callNoticeId);
+  },
+});
+
+/** Reads every read document's keys page by page, then picks the queue from them. */
+async function callNoticesToExtract(
+  ctx: ActionCtx,
+  { callNoticeIds }: z.infer<typeof ChosenCallNoticesFields>,
+): Promise<Id<'callNotices'>[]> {
+  const readDocuments: ReadDocumentKey[] = [];
+  let cursor: string | null = null;
+  for (;;) {
+    const page: ReadDocumentKeysPage = await ctx.runQuery(
+      internal.extraction.listReadDocumentKeysPage,
+      { cursor },
+    );
+    readDocuments.push(...page.keys);
+    if (page.isDone) break;
+    cursor = page.continueCursor;
+  }
+  return ctx.runQuery(internal.extraction.selectCallNoticesToExtract, {
+    readDocuments,
+    ...(callNoticeIds && { callNoticeIds }),
+  });
+}
+
+const ListCallNoticesToExtractActionArgsSchema = ChosenCallNoticesFields;
+
+/** What `extractPendingCallNotices` would extract, in its order; by hand, to count the queue. */
+export const listCallNoticesToExtract = internalZodAction({
+  args: ListCallNoticesToExtractActionArgsSchema,
+  returns: CallNoticesToExtractSchema,
+  handler: (ctx, args): Promise<Id<'callNotices'>[]> => callNoticesToExtract(ctx, args),
+});
+
+const GetExtractionInputQueryArgsSchema = z.object({ callNoticeId: documentId('callNotices') });
+const GetExtractionInputQueryReturnsSchema = z.array(
+  ReadCallNoticeDocumentSchema.pick({ url: true, role: true, markdownHash: true }).extend(
+    CallNoticeDocumentTextSchema.pick({ markdown: true }).shape,
+  ),
+);
+type ExtractionInput = z.infer<typeof GetExtractionInputQueryReturnsSchema>;
+
+/** A call notice's read documents with their text, what its extraction reads: this call's only. */
+export const getExtractionInput = internalZodQuery({
+  args: GetExtractionInputQueryArgsSchema,
+  returns: GetExtractionInputQueryReturnsSchema,
+  handler: async (ctx, { callNoticeId }): Promise<ExtractionInput> => {
+    const documents = await ctx.db
+      .query('callNoticeDocuments')
+      .withIndex('by_call_notice_and_url', (index) => index.eq('callNoticeId', callNoticeId))
+      .collect();
+    const input: ExtractionInput = [];
+    for (const document of documents) {
+      if (document.status !== 'read') continue;
+      const { url, role, markdownHash } = document;
+      input.push({ url, role, markdownHash, markdown: await textOfReadDocument(ctx, document) });
+    }
+    return input;
+  },
+});
+
+// The only writer of `callNoticeExtractions` -----------------------------------------------------
+
+const RecordExtractionMutationArgsSchema = CallNoticeExtractionSchema.omit({ extractedAt: true });
+const RecordExtractionMutationReturnsSchema = z.null();
+
+/** Stores a call notice's extraction, replacing the one before (natural key: the call notice). */
+export const recordExtraction = internalZodMutation({
+  args: RecordExtractionMutationArgsSchema,
+  returns: RecordExtractionMutationReturnsSchema,
+  handler: async (ctx, extraction) => {
+    const row = { ...extraction, extractedAt: Date.now() };
+    const known = await ctx.db
+      .query('callNoticeExtractions')
+      .withIndex('by_call_notice', (index) => index.eq('callNoticeId', extraction.callNoticeId))
+      .unique();
+    if (known) await ctx.db.replace(known._id, row);
+    else await ctx.db.insert('callNoticeExtractions', row);
+    // The extraction is what a match is computed from: a new one means a new match.
+    await ctx.scheduler.runAfter(0, internal.matching.recomputeMatchOfCallNotice, {
+      callNoticeId: extraction.callNoticeId,
+    });
+    return null;
+  },
+});
+
+// The extraction loop, by hand -------------------------------------------------------------------
+
+/** The free tier allows about 15 calls a minute: one every 5 s stays under it. */
+export const extractionSpacingMs = 5_000;
+/** Stops starting calls here: an action lives 10 min and one call may take 2 (its timeout). */
+const extractionBudgetMs = 7 * 60 * 1000;
+
+const sleep = (milliseconds: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+
+const ExtractPendingCallNoticesActionArgsSchema = ChosenCallNoticesFields.extend({
+  /** At most this many calls to the model in this run. */
+  limit: z.int().positive().max(100),
+});
+const ExtractPendingCallNoticesActionReturnsSchema = z.object({
+  extracted: z.int().nonnegative(),
+  failed: z.int().nonnegative(),
+  valuesRefused: z.int().nonnegative(),
+  left: z.int().nonnegative(),
+  stoppedBy: z.enum(['nothingLeft', 'limit', 'timeBudget']),
+});
+type ExtractPendingCallNoticesResult = z.infer<typeof ExtractPendingCallNoticesActionReturnsSchema>;
+
+/**
+ * Extracts, one call at a time, what `listCallNoticesToExtract` lists (only `callNoticeIds`, when
+ * given). A model that fails or answers no JSON is counted and logged, and the call is tried again
+ * by the next run. By hand only: `pnpm exec convex run extraction:extractPendingCallNotices
+ * '{"limit":10}'`.
+ */
+export const extractPendingCallNotices = internalZodAction({
+  args: ExtractPendingCallNoticesActionArgsSchema,
+  returns: ExtractPendingCallNoticesActionReturnsSchema,
+  handler: async (ctx, { limit, callNoticeIds }): Promise<ExtractPendingCallNoticesResult> => {
+    const model = requiredEnv('LLM_MODEL');
+    const pending = await callNoticesToExtract(ctx, { callNoticeIds });
+    const startedAt = Date.now();
+    const result: ExtractPendingCallNoticesResult = {
+      extracted: 0,
+      failed: 0,
+      valuesRefused: 0,
+      left: pending.length,
+      stoppedBy: 'nothingLeft',
+    };
+    for (const [index, callNoticeId] of pending.entries()) {
+      if (index >= limit) return { ...result, stoppedBy: 'limit' };
+      if (Date.now() - startedAt > extractionBudgetMs)
+        return { ...result, stoppedBy: 'timeBudget' };
+      if (index > 0) await sleep(extractionSpacingMs);
+
+      result.left -= 1;
+      // One call whose input cannot be built (a read document with no text) is skipped and
+      // logged; thrown, it would stop the run and stay first in every next one.
+      let documents: ExtractionInput;
+      try {
+        documents = await ctx.runQuery(internal.extraction.getExtractionInput, { callNoticeId });
+      } catch (error) {
+        console.warn('Extraction input failed', callNoticeId, error);
+        result.failed += 1;
+        continue;
+      }
+      const text = extractionTextFromDocuments(documents);
+      let answer: unknown;
+      try {
+        answer = await generateJson(extractionPrompt(text));
+      } catch (error) {
+        console.warn('Extraction failed', callNoticeId, error);
+        result.failed += 1;
+        continue;
+      }
+      const verified = verifyExtractionAnswer(answer, text);
+      result.valuesRefused += verified.valuesRefused;
+      await ctx.runMutation(internal.extraction.recordExtraction, {
+        callNoticeId,
+        documentHashes: sortedHashes(documents),
+        promptVersion: extractionPromptVersion,
+        model,
+        ...verified,
+      });
+      result.extracted += 1;
+    }
+    return result;
+  },
+});

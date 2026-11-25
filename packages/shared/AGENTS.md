@@ -5,7 +5,18 @@ product's concepts. It is the end-to-end level of "shared" (`docs/architecture.m
 belongs here only when it crosses the wire and has a consumer on the other side **today**.
 
 Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
-tables: `source`, `call-notice`, `ingestion-run`.
+tables: `source`, `call-notice`, `call-notice-counters`, `call-notice-document`,
+`call-notice-document-text`, `call-notice-extraction`, `ingestion-run`, `user`, `user-notification`, `notification-delivery`,
+`user-message-channel`, `organization`, `membership`, `billing-subscription`,
+`billing-webhook-delivery`. The billing pair's provider fields and enums live in
+`primitives/external/abacate-pay/`.
+
+⚠️ **`creator` and `portfolio-item` are here ahead of their tables**, an explicit demo exception.
+The web persists them in `features/common/data/demoStore.ts`; the backend reads the fictional
+creator and the bounded projection in `match/profile.ts`. `matchProfileFromPortfolio` is the one
+projection used by both callers, without contact information or portfolio text. The call-screen
+portal DTOs are consumed by the web and backend. When the creator tables are written, derive them
+from these same entities and replace the demo boundary with authenticated ownership.
 
 ```
 src/
@@ -15,7 +26,7 @@ src/
     fragments/                 a part of THIS entity (rules below)
     kinds/<kind>/variant.ts    one variant of an entity that is a union by kind (`source`)
     dto/<port>/<concept>/<query|mutation>.ts   args and returns of one function, per port
-                               (common/, bratura-portal/, whatsapp/: docs/contracts.md §2)
+                               (common/, bratura-portal/, telegram/: docs/contracts.md §2)
   primitives/                  no identity: two equal values are the same value
     code/  domain/  external/  → primitives/AGENTS.md
 ```
@@ -51,7 +62,7 @@ Two `callNotices` rows with the same title are not the same call; `'MEI' === 'ME
 - **A part of one entity is not a top-level thing.** The evidence quote attached to each
   extracted field has no table and is not a universal value: it is a fragment of the call notice.
 - **Planned tables** (`docs/plan.md`, What to build): `sources`, `callNotices`, `ingestionRuns`,
-  `creators`, `portfolioItems`, `matches`, `applicationKits`, `alerts`, `organizations`,
+  `creators`, `portfolioItems`, `matches`, `applicationKits`, `organizations`,
   `memberships`. Each becomes `entities/<kebab-name>/` when its table is written.
 
 ## Fields compose upwards, entities spread them
@@ -96,7 +107,7 @@ With pieces this project will need (none exists yet):
 | piece                                        | mentions        | decides about     | lives in                                 |
 | -------------------------------------------- | --------------- | ----------------- | ---------------------------------------- |
 | `MeiStatusEnum`                              | —               | MEI registration  | `primitives/external/mei-status/`        |
-| `CallRequirementEnum` (MEI, SICAB, CCMEI…)   | MEI, SICAB      | what a call asks  | `entities/call-notice/enums/`            |
+| `RequirementKindEnum` (CNPJ/MEI, SICAB…)     | MEI, SICAB      | what a call asks  | `entities/call-notice/enums/` (exists)   |
 | "is this creator eligible for this call?"    | MEI, the call   | a **match**       | backend `matching/`, not `shared`        |
 
 The naive rule, "it goes where the value it names lives", is wrong: the eligibility check names
@@ -123,8 +134,8 @@ silently carries less than the row. Name a subset when the same list appears a s
   against the contract schema and renders `error.message`; no message is written in a component.
   Re-describing a schema by hand on the front is how a sibling project ended up showing Zod's
   English default messages to Portuguese users.
-- ⚠️ **Open: messages in two languages.** "Text lives in the Zod declaration" and "copy exists in
-  pt-BR and en" meet at the first form. Decide then (`docs/architecture.md`, Open).
+- **Messages in two languages**: a field carries no text, a rule of our own names its message
+  (`validationMessage('endsBeforeItStarts')`), and `src/messages/` has the text per locale (Messages, below).
 - **"If A then B exists"** → `z.discriminatedUnion` first. **"A compared with B"** (the
   registration window closes after it opens) → a `with…` function next to the entity that adds the
   `refine`, so both sides run one check (`withOrderedRegistrationWindow`). Never on the entity
@@ -156,12 +167,19 @@ and en copy: a Zod error map per locale (issue code and its numbers → text) an
 `params: { message: '<key>' }`. The map is applied where an error is shown (a form's parse, a
 caught `appError`), with the reader's locale. Zod's built-in `pt` locale is not used: it is
 European Portuguese and reads like a log ("Demasiado grande: esperava que o texto tivesse <= 5
-caracteres"). Born with the first form; until then only the team reads errors, raw.
+caracteres"). The web applies it in `useContractForm` (`features/common/hooks/`).
+
+Notification copy lives here too: `messages/user-notification/` renders a `userNotification`
+into `{ title, body, link }` per kind and locale, from content `content.ts` builds once (the
+call's cleaned title, its official link, its close). The web inbox shows it; a channel only
+formats it. The map is typed `Record<UserNotification['kind'], …>`: a new kind without a
+message fails `tsc`.
 
 ## Naming
 
 - **Every subject is a folder, even with one file**, and the file name says the nature:
-  `entity.ts`, `enum.ts`, `fields.ts`, `dto.ts`. Growing then adds a file; it never rewrites a
+  `entity.ts`, `enum.ts`, `fields.ts`, `dto.ts`, and `<subject>.ts` for its functions
+  (`calendar.ts`). Growing then adds a file; it never rewrites a
   consumer's import. Promoting a 19-consumer file to a folder later cost 21 import rewrites in a
   sibling project.
 - **The symbol suffix says the nature too**: a Zod enum ends in `...Enum` (`LocaleEnum`); what

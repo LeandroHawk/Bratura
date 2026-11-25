@@ -17,7 +17,8 @@ describe('requiredString', () => {
   });
 
   test('takes a named size, never a number', () => {
-    // @ts-expect-error a ceiling is picked from textLengths, so it cannot be raised at the call site
+    // @ts-expect-error a ceiling is picked from textLengths, so it cannot be raised at the call
+    // site
     requiredString(1_000_000);
   });
 });

@@ -1,0 +1,292 @@
+import { convexTest } from 'convex-test';
+import type { Source } from '@bratura/shared/entities/source/entity';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { internal } from './_generated/api';
+import { ingestionRunLeaseMs } from './ingestion';
+import { mapasOpportunity } from './model/mapasCulturais/mapasOpportunity.fixture';
+import schema from './schema';
+import {
+  cearaMapasSource,
+  federalMapasSource,
+  maranhaoSecmaSource,
+  pernambucoMapasSource,
+} from './model/sources/registry';
+import { modules } from './test.setup';
+
+const newsSite: Source = {
+  kind: 'newsSite',
+  slug: 'news',
+  name: 'News',
+  isActive: true,
+  robotsCheckedOn: '2026-11-13',
+  termsCheckedOn: '2026-11-13',
+  siteUrl: 'https://example.com.br',
+};
+
+function mapasAnswers(body: unknown, status = 200) {
+  const fetchMock = vi.fn<typeof fetch>(
+    async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json' },
+      }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+async function withSource(source: Source = federalMapasSource) {
+  const t = convexTest(schema, modules);
+  const sourceId = await t.run((ctx) => ctx.db.insert('sources', source));
+  return { t, sourceId };
+}
+
+const runsOf = (t: ReturnType<typeof convexTest>) =>
+  t.run((ctx) => ctx.db.query('ingestionRuns').collect());
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
+
+describe('scheduleDailyIngestion', () => {
+  test('reads every active source that has a reader, each in its own run', async () => {
+    vi.useFakeTimers();
+    mapasAnswers([mapasOpportunity()]);
+    const t = convexTest(schema, modules);
+    await t.run(async (ctx) => {
+      for (const source of [
+        federalMapasSource,
+        cearaMapasSource,
+        { ...pernambucoMapasSource, isActive: false },
+        newsSite,
+      ]) {
+        await ctx.db.insert('sources', source);
+      }
+    });
+
+    expect(await t.action(internal.ingestion.scheduleDailyIngestion, {})).toBe(2);
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+    const runs = await t.run((ctx) => ctx.db.query('ingestionRuns').collect());
+    expect(runs.map((run) => run.status)).toEqual(['succeeded', 'succeeded']);
+  });
+});
+
+describe('ingestMapasCulturaisInstance', () => {
+  test('an instance that answers only from Brazil is read through Firecrawl, never directly', async () => {
+    vi.stubEnv('FIRECRAWL_API_KEY', 'fc-key');
+    const { t, sourceId } = await withSource({
+      ...federalMapasSource,
+      answersOnlyFromBrazil: true,
+    });
+    const fetchMock = vi.fn<typeof fetch>(
+      async (_input, init) =>
+        new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              rawHtml: JSON.stringify([mapasOpportunity()]),
+              metadata: {
+                url: String(JSON.parse(String(init?.body)).url),
+                statusCode: 200,
+                contentType: 'application/json',
+              },
+            },
+          }),
+        ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
+      'succeeded',
+    );
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toEqual([
+      'https://api.firecrawl.dev/v2/scrape',
+    ]);
+    const asked = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { url: string };
+    expect(new URL(asked.url).origin).toBe('https://mapa.cultura.gov.br');
+    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
+  });
+
+  test('records every call notice of the year, closed ones too, and closes the run with its counts', async () => {
+    const { t, sourceId } = await withSource();
+    const closedInJanuary = {
+      date: '2026-01-10 23:59:00.000000',
+      timezone_type: 3,
+      timezone: 'Etc/GMT+3',
+    };
+    const fetchMock = mapasAnswers([
+      mapasOpportunity(),
+      mapasOpportunity({
+        id: 99,
+        registrationFrom: { ...closedInJanuary, date: '2026-01-02 00:01:00.000000' },
+        registrationTo: closedInJanuary,
+      }),
+    ]);
+
+    expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
+      'succeeded',
+    );
+
+    const asked = new URL(String(fetchMock.mock.calls[0]?.[0]));
+    expect(asked.origin + asked.pathname).toBe('https://mapa.cultura.gov.br/api/opportunity/find');
+    expect(asked.searchParams.get('@select')).not.toContain('owner');
+    const recorded = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(
+      recorded.map(({ externalId, registrationCloses }) => [externalId, registrationCloses?.at]),
+    ).toEqual([
+      ['4321', Date.UTC(2026, 10, 16, 2, 59)],
+      ['99', Date.UTC(2026, 0, 11, 2, 59)],
+    ]);
+    expect(await runsOf(t)).toMatchObject([
+      { status: 'succeeded', callNoticesSeen: 2, callNoticesNew: 2, callNoticesRejected: 0 },
+    ]);
+  });
+
+  test('a second run finds the same call notices: nothing new, still one row each', async () => {
+    const { t, sourceId } = await withSource();
+    mapasAnswers([mapasOpportunity()]);
+    await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId });
+    await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId });
+    expect(await t.run((ctx) => ctx.db.query('callNotices').collect())).toHaveLength(1);
+    expect((await runsOf(t))[1]).toMatchObject({ callNoticesSeen: 1, callNoticesNew: 0 });
+  });
+
+  test('counts and skips an entry the contract refuses, and records the rest', async () => {
+    const { t, sourceId } = await withSource();
+    mapasAnswers([
+      mapasOpportunity(),
+      mapasOpportunity({ id: 2, singleUrl: 'javascript:alert(1)' }),
+      { id: 3 },
+      mapasOpportunity({
+        id: 4,
+        registrationTo: { date: '2026-11-15 23:59:00.000000', timezone: 'America/Atlantis' },
+      }),
+    ]);
+    expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
+      'succeeded',
+    );
+    expect(await runsOf(t)).toMatchObject([
+      { status: 'succeeded', callNoticesSeen: 4, callNoticesNew: 1, callNoticesRejected: 3 },
+    ]);
+  });
+
+  test('an instance that answers an error fails the run and says why', async () => {
+    const { t, sourceId } = await withSource();
+    mapasAnswers({ error: 'down' }, 503);
+    expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
+      'failed',
+    );
+    expect(await runsOf(t)).toMatchObject([
+      { status: 'failed', failureReason: 'mapa.cultura.gov.br answered HTTP 503' },
+    ]);
+  });
+
+  test('an inactive source is skipped without a run', async () => {
+    const { t, sourceId } = await withSource({ ...federalMapasSource, isActive: false });
+    const fetchMock = mapasAnswers([]);
+    expect(await t.action(internal.ingestion.ingestMapasCulturaisInstance, { sourceId })).toBe(
+      'skipped',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await runsOf(t)).toEqual([]);
+  });
+});
+
+describe('the run lease', () => {
+  const start = internal.ingestion.startIngestionRun;
+
+  test('a source with a run going gets no second one', async () => {
+    const { t, sourceId } = await withSource();
+    expect(await t.mutation(start, { sourceId })).not.toBeNull();
+    expect(await t.mutation(start, { sourceId })).toBeNull();
+  });
+
+  test('a run past the lease is closed as failed and replaced', async () => {
+    const { t, sourceId } = await withSource();
+    await t.run((ctx) =>
+      ctx.db.insert('ingestionRuns', {
+        sourceId,
+        startedAt: Date.now() - ingestionRunLeaseMs - 1,
+        status: 'running',
+        callNoticesSeen: 0,
+        callNoticesNew: 0,
+        callNoticesRejected: 0,
+      }),
+    );
+    expect(await t.mutation(start, { sourceId })).not.toBeNull();
+    const runs = await runsOf(t);
+    expect(runs.map((run) => run.status)).toEqual(['failed', 'running']);
+  });
+
+  test('a run already closed cannot be closed again', async () => {
+    const { t, sourceId } = await withSource();
+    const runId = await t.mutation(start, { sourceId });
+    const counts = { callNoticesSeen: 0, callNoticesNew: 0, callNoticesRejected: 0 };
+    await t.mutation(internal.ingestion.finishIngestionRun, {
+      runId: runId!,
+      ...counts,
+    });
+    await expect(
+      t.mutation(internal.ingestion.finishIngestionRun, { runId: runId!, ...counts }),
+    ).rejects.toThrow(/conflict/);
+  });
+});
+
+describe('ingestOfficialPage', () => {
+  const docs = 'https://cultura.ma.gov.br/uploads/secma/docs';
+
+  test('records each call the listing names, with its documents and their link text; one posting a result as closed when first seen', async () => {
+    vi.useFakeTimers({ now: Date.UTC(2026, 10, 15) });
+    const html = [
+      `<a href="${docs}/EDITAL_CHAMAMENTO_04_2026.pdf">EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA</a>`,
+      `<a href="${docs}/AVISO_RESULTADO_03_2026.pdf">AVISO DE RESULTADO SELEÇÃO PÚBLICA Nº 03/2026</a>`,
+      `<a href="${docs}/EDITAL_SELECAO_03_2026.pdf">EDITAL DE SELEÇÃO PÚBLICA Nº 03/2026</a>`,
+    ].join('');
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(html, { headers: { 'content-type': 'text/html; charset=UTF-8' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const { t, sourceId } = await withSource(maranhaoSecmaSource);
+
+    expect(await t.action(internal.ingestion.ingestOfficialPage, { sourceId })).toBe('succeeded');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const notices = await t.run((ctx) => ctx.db.query('callNotices').collect());
+    expect(notices).toMatchObject([
+      {
+        externalId: 'chamamento 4/2026',
+        title: 'EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA',
+        officialUrl: maranhaoSecmaSource.listingUrl,
+        documentUrls: [`${docs}/EDITAL_CHAMAMENTO_04_2026.pdf`],
+        documentLabels: [
+          {
+            url: `${docs}/EDITAL_CHAMAMENTO_04_2026.pdf`,
+            label: 'EDITAL DE CHAMAMENTO PÚBLICO Nº 04/2026 - ARTE NA ESCOLA',
+          },
+        ],
+        registrationCloses: null,
+        closedWhenFirstSeen: false,
+      },
+      {
+        externalId: 'selecao 3/2026',
+        title: 'EDITAL DE SELEÇÃO PÚBLICA Nº 03/2026',
+        registrationCloses: null,
+        resultPosted: true,
+        closedWhenFirstSeen: true,
+      },
+    ]);
+  });
+
+  test('a listing that answers an error fails the run and says why', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async () => new Response('', { status: 503 })),
+    );
+    const { t, sourceId } = await withSource(maranhaoSecmaSource);
+    expect(await t.action(internal.ingestion.ingestOfficialPage, { sourceId })).toBe('failed');
+    const [run] = await runsOf(t);
+    expect(run).toMatchObject({ status: 'failed', failureReason: expect.stringContaining('503') });
+  });
+});

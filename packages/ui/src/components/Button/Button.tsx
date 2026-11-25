@@ -1,7 +1,9 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from 'react';
 
 export type ButtonVariant = 'primary' | 'ghost';
-/** `sm` for a secondary control beside content (a toggle under an illustration), not a page action. */
+/**
+ * `sm` for a secondary control beside content (a toggle under an illustration), not a page action.
+ */
 export type ButtonSize = 'md' | 'sm';
 
 // Hover lifts the button off the page like a paper cut-out (hard shadow); pressing glues it back.

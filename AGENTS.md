@@ -37,10 +37,10 @@ it). **Read the one for the folder you are about to change before creating a fil
 | `docs/contracts.md`          | ports, DTO folders, the row the front sends, function builders, writers and readers |
 | `docs/security.md`           | ownership, abuse, prompt injection, personal data, fetch, errors, dependencies |
 | `docs/data-sources.md`       | allowed and excluded sources, the Mapas API                        |
-| `docs/integrations/`         | Firecrawl, WhatsApp (Nvoip)                                        |
+| `docs/integrations/`         | Firecrawl, Telegram, AbacatePay                                     |
 | `docs/plan.md`               | until 30/11: product, competition rules, tools, dates              |
 | `docs/product.md`            | the idea, track fit, competitors, who pays, phases (owner: the PO) |
-| `docs/review.md`             | reviewing any change: owners to open, four lenses, repo checks     |
+| `docs/review.md`             | reviewing any change: owners, four lenses, backend, repo checks    |
 
 **Every one of these is open for brainstorming**, security above all: question a rule in the PR or
 with the team instead of working around it.

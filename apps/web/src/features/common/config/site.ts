@@ -1,12 +1,13 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { SLOGAN } from '@bratura/ui';
 
-/** Public origin of the site. Vercel sets the production domain at build time; locally it is localhost. */
+/**
+ * Public origin of the site. Vercel sets the production domain at build time; locally it is
+ * localhost.
+ */
 export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : 'http://localhost:3000';
-
-export const REPO_URL = 'https://github.com/LeandroHawk/Bratura';
 
 /** The slogan in each locale; the name, Bratura, is the same in all of them. */
 export const SITE_SLOGAN: Record<Locale, string> = {
@@ -31,3 +32,17 @@ export const TAGLINE: Record<Locale, string> = {
 };
 
 export const TEAM = ['Atilio Almeida', 'Leandro', 'Kaik', 'João Victor'] as const;
+
+/** The tools the product runs on, named in the footer; sponsors of Hack Brasil 2026 first. */
+export const BUILT_WITH = {
+  sponsors: [
+    { name: 'Firecrawl', url: 'https://www.firecrawl.dev' },
+    { name: 'Convex', url: 'https://www.convex.dev' },
+    { name: 'AbacatePay', url: 'https://www.abacatepay.com' },
+  ],
+  others: [
+    { name: 'Gemini', url: 'https://ai.google.dev' },
+    { name: 'Vercel', url: 'https://vercel.com' },
+    { name: 'Telegram', url: 'https://telegram.org' },
+  ],
+} as const;

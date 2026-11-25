@@ -17,4 +17,8 @@ export const ianaTimeZone = z
       }
     },
     { params: { message: 'unknownTimeZone' } },
-  );
+  )
+  .brand<'IanaTimeZone'>();
+
+/** A zone that passed `ianaTimeZone`: a plain string does not type-check where one is expected. */
+export type IanaTimeZone = z.infer<typeof ianaTimeZone>;

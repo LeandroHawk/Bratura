@@ -1,6 +1,9 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
-/** Accessibility features planned but not built yet: other ways through the same rooms, not new ones. */
+/**
+ * Accessibility features planned but not built yet: other ways through the same rooms, not new
+ * ones.
+ */
 const ptBR = {
   title: 'Outras formas de visitar',
   lead: 'Planejado para depois do essencial, se o prazo da maratona permitir.',
@@ -23,10 +26,10 @@ const ptBR = {
       medium: 'Voz do próprio celular ou computador',
       text: 'Um botão em cada parte importante lê o texto em voz alta, para quem enxerga mas tem dificuldade de ler. Sem custo e sem instalar nada.',
     },
-    whatsapp: {
-      title: 'WhatsApp',
-      medium: 'O mesmo Bratura, no app que você já usa',
-      text: 'Com o acervo já montado no site, veja pela conversa os editais em que você é apto, faça a inscrição e receba aviso assim que um edital novo abrir.',
+    telegram: {
+      title: 'Telegram',
+      medium: 'O mesmo Bratura, numa conversa com o nosso robô',
+      text: 'Com o acervo já montado no site, receba pelo Telegram o aviso de um edital novo em que você é apto, do que falta para outro e do prazo chegando, com o link para o site.',
     },
   },
 };
@@ -57,10 +60,10 @@ export const FUTURE_PLANS_CONTENT: Record<Locale, typeof ptBR> = {
         medium: "The phone's or computer's own voice",
         text: 'A button on each important part reads the text aloud, for people who can see the page but find reading hard. No cost, nothing to install.',
       },
-      whatsapp: {
-        title: 'WhatsApp',
-        medium: 'The same Bratura, in the app you already use',
-        text: 'Once your portfolio is set up on the site, see the calls you are eligible for, apply, and get an alert as soon as a new call opens, all in the chat.',
+      telegram: {
+        title: 'Telegram',
+        medium: 'The same Bratura, in a chat with our bot',
+        text: 'Once your portfolio is set up on the site, get on Telegram the alert of a new call you are eligible for, of what another one is missing and of a deadline coming, with the link to the site.',
       },
     },
   },

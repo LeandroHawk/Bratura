@@ -1,23 +1,67 @@
 # packages/backend — Convex
 
-The backend: tables, ingestion, matching, alerts. It computes; the web and the WhatsApp bot display
+The backend: tables, ingestion, matching, alerts. It computes; the web and the Telegram bot display
 what it stores. Cross-folder reasoning stays in `docs/architecture.md`; how functions are declared
 in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 
 ```
 convex/
-  schema.ts       tables, derived from the Zod entities in packages/shared
-  builders.ts     the function builders (Zod args/returns, and auth once there is a caller)
-  ingestion/      sources, call notices, Mapas Culturais client, Firecrawl client, classification
-  http.ts         WhatsApp webhook (GET verify + POST messages)                  (not yet)
-  crons.ts        scheduled ingestion and deadline alerts                       (not yet)
-  portfolio/      uploads, timeline, portfolio PDF, public page data            (not yet)
-  matching/       eligibility and gaps per creator × call                       (not yet)
-  alerts/         deadline alerts (Resend e-mail, WhatsApp)                     (not yet)
-  orgs/           organizations and memberships                                 (not yet)
-  llm/            the provider adapter (Gemini free tier) and its prompts       (not yet)
+  schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
+  crons.ts        the daily matching (10:00 UTC); ingestion paused (I/O cap)   } entry files:
+  http.ts         routes only (Telegram webhook, Firecrawl webhooks: not yet)   } fixed names
+  lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts,
+                  sha256.ts, text.ts (plain text, cut to a ceiling), monthNames.ts: no functions
+
+  sources.ts      the sources the team registers and ingestion reads
+  callNotices.ts  the call notice's only writer
+  ingestion.ts    the daily schedule, one action per source kind, the run lease (`ingestionRuns`)
+  documents.ts    which documents are worth credits, the read by hand, `callNoticeDocuments` and
+                  its text, `callNoticeDocumentTexts`
+  pdfText.ts      "use node": a PDF's text layer read on its source's host (the parser needs Node)
+  telegram.ts     Telegram through the Bot API                                  (skeleton)
+  extraction.ts   a call notice's fields from its documents (the LLM), by hand: `callNoticeExtractions`
+  userNotifications.ts        what to tell a user: the only writer of `userNotifications`
+  userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
+  notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
+  users.ts                    the user's only writer
+  matching.ts     how each call for creators fits the profile: the only writer of `matches` and
+                  `callNoticeCounters`, and the reads the call screens make (cards, details,
+                  counters, highlights)
+  organizations.ts            the organization's only writer (`organizations`, `memberships`)
+  billing.ts                  the panel subscription's only writer (`billingSubscriptions`,
+                              `billingWebhookDeliveries`), the AbacatePay webhook's handler
+  portfolio.ts                                                                 (not yet)
+
+  model/          plain TypeScript the files above call: never a Convex function
+    ingestion/       runSourceIngestion.ts, the loop every source kind shares
+    mapasCulturais/  client.ts (the API), payload.ts (its Zod), listing.ts, date.ts
+    officialPage/    client.ts (the page, via sourceHost/), html.ts (links, headings), discovery.ts, payload.ts, listing.ts,
+                     registrationClose.ts (the close a page prints)
+    sourceHost/      fetchOnSourceHost.ts: the only fetch whose URL a source's data chooses (its own host;
+                     through Firecrawl from Brazil for a source that answers only from there)
+    pdfText/         a PDF's text layer (unpdf), for a read Firecrawl answered nearly empty
+    firecrawl/       client.ts, payload.ts
+    callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
+    callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
+    matching/        matchCallNotice.ts: one call against one profile, by objective rules (no I/O)
+    telegram/        sendMessage.ts (the only import), client.ts + payload.ts (the Bot API:
+                     getMe, sendMessage); the text is `shared/messages/user-notification`
+    sources/         registry.ts: every source the team checked, what `registerSource` copies
+    llm/             generateJson.ts (the only import), chatCompletions.ts (+ payload), evidence.ts
+    abacatePay/      client.ts + payload.ts (the billing API), signature.ts (the webhook's HMAC):
+                     docs/integrations/abacate-pay.md
   _generated/     written by the Convex CLI; committed, never edited by hand
 ```
+
+**A root file is a door; `model/` is what the doors share** (Convex's "Best Practices": thin
+functions over plain helpers). A subject's functions and its table's `ctx.db` live in one root file,
+its tests beside it (`ingestion.ts` is the only writer of `ingestionRuns`). `model/` is named by
+what it talks to: an outside API (`mapasCulturais/`, `firecrawl/`, `telegram/`) or a loop several doors
+run (`ingestion/`). **A provider we may swap is named by what it does** (`llm/`): doors import one
+neutral function (`llm/generateJson.ts`), which alone picks the client and reads its key; a fixed
+one is named by itself (`mapasCulturais/` is the source). A channel is named by what it does and
+keeps its provider inside when it has one (`telegram/` talks to the Bot API directly). A root file
+past ~6 functions becomes a folder of the same name, one file per door.
 
 ## Running it
 
@@ -33,41 +77,112 @@ deployment in the team's Convex project comes when the web app needs one. Settin
 `.env.local` (`CONVEX_DEPLOYMENT`, `CONVEX_URL`), never committed. It is not the root `pnpm dev`:
 that would start an interactive login inside turbo for anyone who has not set Convex up.
 
-Secrets (`FIRECRAWL_API_KEY`, the Gemini key) live **only** in the deployment's environment:
-`pnpm exec convex env set NAME` with no value prompts for it, so it stays out of shell history.
+Run one ingestion by hand, against the deployment `pnpm convex` points at:
+
+```bash
+pnpm exec convex run ingestion:ingestMapasCulturaisInstance '{"sourceId":"…"}'
+pnpm exec convex run ingestion:scheduleDailyIngestion '{}'
+```
+
+Read call notices' documents, then extract them, by hand (Firecrawl credits and the LLM's free
+tier, never by cron yet); each returns what it did and what is left, so run it again for the rest:
+
+```bash
+pnpm exec convex run documents:readPendingDocuments '{"creditCeiling":200}'
+pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10}'
+```
+
+After deploying `closedWhenFirstSeen` (the queue's index), set it on older rows, until `done`:
+
+```bash
+pnpm exec convex run callNotices:backfillClosedWhenFirstSeen '{}'
+```
+
+After deploying `callNoticeDocumentTexts`, move each read document's Markdown into it, until
+`done` (about 4 MB a run); a follow-up PR removes the old `markdown` field and its fallback:
+
+```bash
+pnpm exec convex run documents:moveDocumentTextsToOwnTable '{}'
+```
+
+Match every call for creators again (it runs daily at 10:00 UTC and after each extraction; by
+hand after changing a rule or the fictional creator), until `done`:
+
+```bash
+pnpm exec convex run matching:recomputeMatches '{"cursor":null}'
+```
+
+When it is done it stores the screens' counters in their one row (`callNoticeCounters`), so they
+are as fresh as the last recompute; an extraction or a moved close shows in them the next day.
+Store them again by hand with `pnpm exec convex run matching:storeCallNoticeCounters '{}'`.
+
+`_generated/` without a Convex account: `CONVEX_AGENT_MODE=anonymous pnpm exec convex dev --once`
+(a local backend).
+
+A call closed when first seen is in neither queue; read and extract a sample picked by hand:
+
+```bash
+pnpm exec convex run documents:readChosenCallNotices '{"callNoticeIds":["…"],"creditCeiling":200}'
+pnpm exec convex run extraction:extractPendingCallNotices '{"limit":10,"callNoticeIds":["…"]}'
+```
+
+Billing deliveries a scheduled process never finished (`processedAt` still null) can be re-run
+by hand, a bounded batch at a time:
+
+```bash
+pnpm exec convex run billing:reprocessUnprocessedDeliveries '{}'
+```
+
+Secrets (`FIRECRAWL_API_KEY`, `TELEGRAM_BOT_TOKEN`, `LLM_API_KEY`, `ABACATE_PAY_API_KEY`,
+`ABACATE_PAY_WEBHOOK_SECRET`) live
+**only** in the deployment's environment: `pnpm exec convex env set NAME` with no value prompts for
+it, so it stays out of shell history. A function reads one with `requiredEnv` (`lib/env.ts`).
+The LLM is configuration, not code: `LLM_BASE_URL` (any provider in the OpenAI chat format;
+Gemini's is `https://generativelanguage.googleapis.com/v1beta/openai`), `LLM_MODEL` (what AI
+Studio lists for the key's project) and `LLM_API_KEY`.
+`convex run telegram:checkTelegramCredentials '{}'` and `convex run extraction:checkLlmCredentials
+'{}'` prove a key works (the second spends one free-tier call).
 
 ## Rules
 
 - **A table is its entity's Zod**: `defineTable(zodToConvex(EntitySchema))`. Never a validator
   written beside the entity (`docs/architecture.md` §3).
-- **Every function goes through a builder** in `builders.ts`, with Zod `args` and `returns`. Only
-  internal builders exist today: callable from other functions, crons, the CLI and the dashboard,
-  never from a browser.
+- **Every function goes through a builder** in `lib/builders.ts`, with Zod `args` and `returns`. The
+  internal builders are callable from other functions, crons, the CLI and the dashboard, never from
+  a browser. `publicZodQuery` is the one a browser may call, with no caller: its handler reads only
+  what a visitor may see, a page or a bounded index range at a time (`docs/contracts.md` §3).
 - **A reference to another row is `documentId('table')`** (`@bratura/shared/primitives/code/id/fields`):
   its type is `Id<'table'>`, the table stores `v.id('table')`, and an id from the wrong table fails
   both `tsc` and the write. A natural key (`sources.slug`) is for people and seeds, never a reference.
 - **Outside input is parsed at the edge**, in the module that reads it, with a local Zod schema:
-  Mapas responses and Firecrawl output in `ingestion/`, webhooks in `http.ts`, LLM output in `llm/`.
+  `payload.ts` beside the client in `model/` (Mapas, Firecrawl, Telegram), webhooks in their subject's
+  file, LLM output in `model/llm/`.
 - **Nothing is invented**: a field the source does not give is `null`.
 - **A write sends only its own fragments.** `recordCallNotice` takes the listing and the registration
   window; tracking is set by the server and refused from a caller. Which stage writes which
   fragment: `docs/architecture.md`, Call notice lifecycle.
-- **Module files are camelCase** (`ingestion/callNotices.ts`): Convex rejects a hyphen in a module
+- **Module files are camelCase** (`model/mapasCulturais/`): Convex rejects a hyphen in a module
   path ("can only contain alphanumeric characters, underscores, or periods").
-- **An expected failure is `throw appError({ code })`** (`appError.ts`), never a returned
+- **An expected failure is `throw appError({ code })`** (`lib/appError.ts`), never a returned
   `success: false` (the mutation's writes would commit) and never a text. The builder throws
-  `invalidInput` with Zod's issues; `addSource` throws `conflict`. Codes and HTTP statuses:
+  `invalidInput` with Zod's issues; `registerSource` throws `notFound`. Codes and HTTP statuses:
   `docs/architecture.md`, Errors.
 - **Every `fetch` to the outside has a timeout** (`AbortSignal.timeout`), and every side effect
   outside Convex follows an idempotency pattern: `docs/architecture.md`, Idempotency and
   concurrency.
-- **Args are an object.** An entity that is a union (`SourceSchema`) goes under a key:
-  `addSource({ source })`.
+- **A module that schedules or calls its own functions writes its handlers' return types**
+  (`ingestion.ts`, `model/ingestion/runSourceIngestion.ts`): without them TypeScript cannot type the generated API and turns all of `internal`
+  into `any`, silently disabling every `Id` check in the package.
+- **A big field nobody decides on gets its own table** (`callNoticeDocumentTexts`): Convex reads
+  whole rows, so a text beside a status makes every queue pay for it (`docs/architecture.md`, The
+  database is Convex).
+- **Args are an object**, even with one field (`registerSource({ slug })`); an entity that is a
+  union goes under a key (`{ source }`).
 
-## The Zod bridge: what is checked where (tested in `ingestion/*.test.ts`)
+## The Zod bridge: what is checked where (tested in `callNotices.test.ts`)
 
 `zodToConvex` turns an entity into a Convex validator, which is **only a shape**: `slug` becomes
-`v.string()`, the regex is gone. Our builders (`builders.ts`) close the gap:
+`v.string()`, the regex is gone. Our builders (`lib/builders.ts`) close the gap:
 
 1. **Convex checks the shape** and rejects unknown keys, before any code runs.
 2. **The whole Zod `args` schema parses**: field rules (`regex`, `z.url({ protocol })`, `.min`)
@@ -87,6 +202,7 @@ Errors, invariants.
 
 `convex-test` runs the real functions against the real schema in memory, in the edge runtime
 (`vitest.config.ts`). `convex/test.setup.ts` lists the modules for it. A test sits next to the
-module it covers (`ingestion/sources.test.ts`); shared test data is a `*.fixture.ts` beside them
-(`ingestion/source.fixture.ts`). The Convex CLI skips any file name with two dots, so tests and
-fixtures never deploy.
+module it covers (`sources.test.ts`, `model/firecrawl/client.test.ts`); shared test data is a
+`*.fixture.ts` beside them (`model/mapasCulturais/mapasOpportunity.fixture.ts`); sources come
+from `model/sources/registry.ts`, the production list. The Convex CLI skips any file name with two
+dots, so tests and fixtures never deploy.

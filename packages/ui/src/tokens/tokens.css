@@ -40,6 +40,10 @@
   --bt-oak-700: #6a4123;
   --bt-twine-300: #d9bd8c;
   --bt-twine-500: #a8834c;
+  --bt-dune-300: #ddc08a;
+  --bt-dune-700: #8f5418;
+  --bt-terracotta-300: #ffa878;
+  --bt-terracotta-600: #9a4a2c;
   --bt-glow-100: #ffe2a0;
   --bt-glow-200: #ffd98a;
   --bt-red-400: #ff4d6d;
@@ -90,6 +94,13 @@
   --bt-wood-ink: var(--bt-parchment-50);
   --bt-wood-shadow: var(--bt-walnut-700);
   --bt-twine: var(--bt-twine-500);
+  --bt-board: var(--bt-twine-500);
+  /* The collection's cabinet: dark walnut in both themes, so its brass labels read on it. */
+  --bt-cabinet: var(--bt-walnut-800);
+  /* The sand accent: golden dune in Acervo, deep terracotta in Galeria, written on the page's
+     paper. Its ink labels and group titles; its edge is the hairline between items. */
+  --bt-sand-ink: var(--bt-dune-700);
+  --bt-sand-edge: var(--bt-dune-300);
   --bt-glow: var(--bt-glow-100);
   --bt-curtain: var(--bt-velvet-600);
   --bt-curtain-fold: var(--bt-velvet-900);
@@ -137,6 +148,10 @@
   --bt-wood-ink: var(--bt-parchment-50);
   --bt-wood-shadow: var(--bt-walnut-950);
   --bt-twine: var(--bt-twine-300);
+  --bt-board: var(--bt-twine-500);
+  --bt-cabinet: var(--bt-walnut-800);
+  --bt-sand-ink: var(--bt-terracotta-300);
+  --bt-sand-edge: var(--bt-terracotta-600);
   --bt-glow: var(--bt-glow-200);
   --bt-curtain: var(--bt-velvet-600);
   --bt-curtain-fold: var(--bt-velvet-900);
@@ -188,6 +203,10 @@
   --color-wood-ink: var(--bt-wood-ink);
   --color-wood-shadow: var(--bt-wood-shadow);
   --color-twine: var(--bt-twine);
+  --color-board: var(--bt-board);
+  --color-cabinet: var(--bt-cabinet);
+  --color-sand-ink: var(--bt-sand-ink);
+  --color-sand-edge: var(--bt-sand-edge);
   --color-glow: var(--bt-glow);
   --color-curtain: var(--bt-curtain);
   --color-curtain-fold: var(--bt-curtain-fold);

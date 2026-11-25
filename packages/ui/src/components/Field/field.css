@@ -1,0 +1,96 @@
+@layer components {
+  .bt-control-frame {
+    position: relative;
+    display: block;
+  }
+
+  .bt-control {
+    transition:
+      border-color 0.15s ease-out,
+      translate 0.15s ease-out;
+  }
+  .bt-control::placeholder {
+    color: var(--bt-muted-foreground);
+    opacity: 1;
+  }
+
+  /* The logo's paint, dragged under the field from left to right when it takes focus. Brand
+     colours on purpose: red, yellow and blue alone mean missing, soon and open. */
+  .bt-control-stroke {
+    position: absolute;
+    inset: auto 14px -5px;
+    height: 4px;
+    border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+    background: linear-gradient(
+      90deg,
+      var(--bt-logo-green),
+      var(--bt-logo-yellow) 55%,
+      var(--bt-logo-blue)
+    );
+    pointer-events: none;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  .bt-control:focus-visible + .bt-control-stroke {
+    transform: scaleX(1);
+  }
+
+  /* The platform's arrow is replaced by one drawn in the text colour, so it follows the theme. */
+  .bt-select {
+    appearance: none;
+    padding-right: 2.5rem;
+    background-image:
+      linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+      right 1.25rem top 50%,
+      right 0.9rem top 50%;
+    background-size: 0.36rem 0.36rem;
+    background-repeat: no-repeat;
+  }
+
+  /* A refused value: the message drops in under the field, which shakes its head once. */
+  .bt-field-error {
+    animation: bt-field-error-in 0.25s ease-out both;
+  }
+  /* The message is written in the text colour (red on parchment is too faint to read); a red
+     mark before it and the red border carry the status. */
+  .bt-field-error::before {
+    content: '';
+    display: inline-block;
+    width: 0.55em;
+    height: 0.55em;
+    margin-right: 0.45em;
+    border-radius: 50%;
+    background: var(--bt-status-missing);
+  }
+  .bt-control[aria-invalid='true'] {
+    animation: bt-control-refuse 0.3s ease-out;
+  }
+  @keyframes bt-field-error-in {
+    from {
+      opacity: 0;
+      translate: 0 -4px;
+    }
+  }
+  @keyframes bt-control-refuse {
+    30% {
+      translate: -4px 0;
+    }
+    65% {
+      translate: 3px 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bt-control,
+    .bt-control-stroke {
+      transition: none;
+    }
+    .bt-field-error,
+    .bt-control[aria-invalid='true'] {
+      animation: none;
+    }
+  }
+}

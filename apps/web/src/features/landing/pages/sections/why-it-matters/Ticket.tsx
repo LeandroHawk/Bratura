@@ -1,4 +1,5 @@
 import { Heading, Tag } from '@bratura/ui';
+import { RUBBER_STAMP_CLASS_NAME } from '@/features/landing/pages/sections/common/rubberStampClassName';
 import type { TicketKind, TicketsContent } from './content';
 
 /** A punched notch on the perforation, cut in the page's background colour. */
@@ -15,8 +16,9 @@ function Notch({ edge }: { edge: 'top' | 'bottom' }) {
 const LABEL = 'text-caption text-ticket-muted';
 
 /**
- * A theatre ticket for a public call, paid in documents. Label and stamp: red without Bratura, green
- * with it. `topNotch` off for the ticket in front of a stack, or it cuts a hole over the one behind.
+ * A theatre ticket for a public call, paid in documents. Label and stamp: red without Bratura,
+ * green with it. `topNotch` off for the ticket in front of a stack, or it cuts a hole over the one
+ * behind.
  */
 export function Ticket({
   tickets,
@@ -91,7 +93,7 @@ function Stamp({ text, accent }: { text: string; accent: string }) {
   const line = 'block @min-[156px]:inline';
   return (
     <span
-      className={`-ml-4 -rotate-12 justify-self-start rounded-md border-2 border-current px-2 py-0.5 font-display text-caption font-bold whitespace-nowrap uppercase @min-[96px]:-ml-3 @min-[156px]:ml-0 ${accent}`}
+      className={`${RUBBER_STAMP_CLASS_NAME} -ml-4 -rotate-12 whitespace-nowrap @min-[96px]:-ml-3 @min-[156px]:ml-0 ${accent}`}
       style={{ fontSize }}
     >
       <span className={line}>{lines[0]}</span> <span className={line}>{lines[1]}</span>

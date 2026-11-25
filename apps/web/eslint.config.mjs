@@ -1,7 +1,7 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
-import { tsconfigRootDirConfig } from '@bratura/eslint-config';
+import { commentWidthConfig, tsconfigRootDirConfig } from '@bratura/eslint-config';
 
 export default defineConfig([
   ...nextVitals,
@@ -25,4 +25,5 @@ export default defineConfig([
     },
   },
   tsconfigRootDirConfig(import.meta.dirname),
+  commentWidthConfig,
 ]);

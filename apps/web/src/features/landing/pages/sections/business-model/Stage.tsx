@@ -4,7 +4,10 @@ import { type ReactNode, useRef } from 'react';
 import { Drapes, FOLDS_BACKGROUND } from './Curtains';
 import { useCurtains } from './useCurtains';
 
-/** Closed: panels cover the stage at once. Open: they slide away; without the attribute they are already away. */
+/**
+ * Closed: panels cover the stage at once. Open: they slide away; without the attribute they are
+ * already away.
+ */
 const PANEL_MOTION =
   'group-data-[curtain=closed]:translate-x-0 group-data-[curtain=open]:transition-transform group-data-[curtain=open]:duration-[1600ms] group-data-[curtain=open]:ease-[cubic-bezier(0.65,0,0.35,1)]';
 

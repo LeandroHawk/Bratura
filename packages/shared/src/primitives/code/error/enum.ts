@@ -10,7 +10,7 @@ export const AppErrorCodeEnum = z.enum([
   'notFound',
   'forbidden',
   'conflict', // it already exists, or changed meanwhile
-  'unavailable', // an outside service did not answer (Mapas, Firecrawl, Nvoip, Gemini)
+  'unavailable', // an outside service did not answer (Mapas, Firecrawl, Telegram, Gemini)
 ]);
 
 export type AppErrorCode = z.infer<typeof AppErrorCodeEnum>;

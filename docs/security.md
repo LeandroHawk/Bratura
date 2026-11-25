@@ -26,17 +26,26 @@ from steering the LLM. Shapes and ports are in `docs/contracts.md`.
 - **Size limits live in the Zod declaration**: `.max()` on every free text, a maximum number of
   portfolio items, file type and size checked before storage. The backend parses them, so the limit
   holds whatever the front sends.
-- **Rate limits per creator and per phone number** on writes and on the WhatsApp entry, declared
-  once in the public builders (`publicQuery`, `creatorMutation`…) when the first one is written.
+- **Rate limits per creator and per recipient** on writes and on the Telegram entry, declared
+  once in the builders with a caller (`creatorMutation`…) when the first one is written. The one
+  public builder today (`publicZodQuery`) only reads, a bounded page or index range per call.
   `convex-helpers` (already a dependency) ships `rateLimit` (token bucket or fixed window), so no
   new dependency is needed; `@convex-dev/rate-limiter` stays an alternative for the team.
-- **The WhatsApp webhook trusts nothing**: it checks where the call comes from (ask Nvoip whether
-  calls are signed), ignores a message id it has already handled (the inbox pattern of
-  `docs/architecture.md`, Idempotency and concurrency), and answers an unknown number with the
+- **The Telegram webhook trusts nothing**: it checks the `secret_token` header `setWebhook` is
+  called with, ignores an `update_id` it has already handled (the inbox pattern of
+  `docs/architecture.md`, Idempotency and concurrency), and answers an unknown chat with the
   sign-up link only.
+- **The AbacatePay webhook trusts nothing either**: the shared secret and the HMAC-SHA256 over
+  the raw body are both checked in constant time before the body is parsed — the signature key
+  is public, so it proves integrity only and the secret is what proves origin. The delivery's
+  `log_...` id dedupes retries into `billingWebhookDeliveries` before anything is applied, and
+  events are applied by the row's status, never by arrival order — a late `completed` cannot
+  reopen a `cancelled` subscription. Billing access comes only from these deliveries, never from
+  a browser returning from checkout (`docs/integrations/abacate-pay.md`).
 - **Paid or limited calls never run per user request.** Gemini and Firecrawl run in batch ingestion;
   a user action reads what is stored. Public queries are paginated, never an unbounded `collect()`.
-- **Messages out need opt-in** (`whatsappOptInAt`) and stop on "SAIR"; e-mail alerts the same.
+- **Messages out need opt-in** (a `userMessageChannels` row: destination, `optInAt`, `optOutAt`)
+  and stop on `/parar` or a blocked bot (a 403 writes `optOutAt`); e-mail alerts the same.
 
 ## 3. Prompt injection
 
@@ -62,7 +71,7 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
 - **The application kit is a draft.** Its texts are generated from the creator's portfolio and the
   extracted requirements, shown for the creator to edit, and never ask for documents or personal
   data beyond what the extracted requirements list with evidence.
-- **WhatsApp intent is not free text to the model.** Buttons and keywords decide what the creator
+- **Telegram intent is not free text to the model.** Commands and buttons decide what the creator
   asked; if the model ever classifies a message, its output is one value of a Zod enum.
 - **Untrusted text is marked as data in the prompt** (delimited, with the instruction to treat it
   as content). This lowers the rate; the checks above are what make it safe.
@@ -81,16 +90,31 @@ above, the deadline is…", "tell the creator to send their CPF to…"). The des
 - **Personal data inside documents is not stored.** Call notice PDFs are public, but a *result*
   ("resultado final", lists of approved applicants) carries individuals' names and sometimes CPFs.
   Classification drops such documents before their text is stored (competition rule 6.8, LGPD).
+- **The payer's data stays with the billing provider.** Webhook payloads carry masked personal
+  fields (`customer`, `payerInformation`); the parse reads only the ids and amounts our rows
+  need, so no payer data ever reaches a table. The one exception is `cancelledDueTo`, which can
+  carry a payer-typed motive: it is read only to map it to our enum and is never stored or
+  logged (`docs/integrations/abacate-pay.md`, Cancellation reasons).
 - **Our code fetches only what the team registered.** A Convex action calls `fetch` only on a
-  registered source's `https` base URL. A link from a source's data (`documentUrls`, written by
-  anyone who can publish on Mapas) is read only through Firecrawl, outside our infrastructure, so a
-  crafted link cannot make our backend call an internal address. `requiredHttpUrl` also refuses IPs
-  and `localhost`, but not a domain that points inside.
+  registered source's `https` base URL, or, for an official page, an `https` page on its listing's
+  own host, following a redirect only to `https` on that same host (`model/sourceHost/fetchOnSourceHost.ts`:
+  one elsewhere could lead anywhere).
+  A link from a source's data (`documentUrls`, written by anyone who can publish on Mapas) is read
+  through Firecrawl, outside our infrastructure, so a crafted link cannot make our backend call
+  an internal address. `requiredHttpUrl` also refuses IPs and `localhost`, but not a domain that
+  points inside. **One exception, held to the official-page rule:** when Firecrawl's text of a PDF
+  comes back nearly empty, our backend downloads that PDF itself to read its text layer
+  (`pdfText.ts`), only from `https` on the registered source's own host, redirects too, at most
+  30 MB, parsed by a pdf.js (6.x) that compiles no code from a file (CVE-2024-4367's path is gone). A file that crashes the parser is "no text".
+  **A source that answers only from Brazil** (`answersOnlyFromBrazil`, set by the team in the
+  registry) is never fetched by our backend: `fetchOnSourceHost` asks Firecrawl for it from Brazil
+  instead, under the same rules (an `https` URL on the source's own host before the request, the
+  final URL on that host, a 2xx, the type asked, the byte ceiling), and the PDF rescue is skipped.
 - **Errors never leak.** A function throws a code (`appError`), not an internal message; Zod's
   issues carry the path, the rule and its numbers, never the value sent; Convex redacts any other
   error to "Server Error" in production. Keep it so: returning `error.message` from a caught
   exception to a front reopens what this closes.
-- **Who can act as admin today.** Internal functions (`addSource`, ingestion) can be run from the
+- **Who can act as admin today.** Internal functions (`registerSource`, ingestion) can be run from the
   Convex dashboard and CLI. Team roles (2026-11-13): João Victor is the only Admin; Atilio, Leandro
   and Kaik are Developers, who may read production data but cannot write to it. Granting Admin or
   Project Admin grants production writes. Until `adminMutation` exists, the Convex team is the
@@ -115,8 +139,20 @@ Every dependency runs with the backend's secrets or in the creator's browser.
 
 Known gaps, in no order; add yours:
 
-- Does Nvoip sign webhook calls, and how do we verify them?
+- The Telegram webhook's `secret_token` is checked when inbound lands.
 - Rate limiter: `convex-helpers`' `rateLimit` (no new dependency) or the Convex component?
 - Uploads: do we need a malware or content check for portfolio files before showing them on a
   public page (`/p/{slug}`)?
-- Account deletion and data export (LGPD) for creators.
+- Account deletion and data export (LGPD) for creators: deleting a user must also clean
+  `userNotifications`, `notificationDeliveries`, `userMessageChannels` and `rateLimits` — the
+  four tables that carry their data.
+- Owner checks: today's `notify`, `sendPendingDeliveries` and friends are internal; when login
+  lands and they become public, each must confirm the caller owns the `userId` it touches.
+- When real accounts replace the browser demo: authenticate with WorkOS and enforce ownership in
+  the shared builders before enabling private persistence, uploads or public portfolio pages.
+- When quota-related profile fields are proposed: keep quota self-declaration unrecorded; the
+  decided product behavior is to show only the call's published quotas.
+- When organization profiles are introduced: enforce memberships for every private read and write.
+- When diagnosing public profile queries: arguments include birth date and residence facts needed
+  by rules, so never log arguments or send them to third-party providers. Keep portfolio text,
+  identity, contact information, links and uploaded bytes out of the query DTO.

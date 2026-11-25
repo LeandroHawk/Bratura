@@ -7,12 +7,14 @@ import { Hero } from './sections/hero/Hero';
 import { HOW_IT_WORKS_CONTENT } from './sections/how-it-works/content';
 import { HowItWorks } from './sections/how-it-works/HowItWorks';
 import { WhyItMatters } from './sections/why-it-matters/WhyItMatters';
+import { CallHighlights } from './sections/call-highlights/CallHighlights';
 
 export function LandingPage({ locale }: { locale: Locale }) {
   return (
     <PageShell locale={locale} path="/">
       <WebApplicationJsonLd locale={locale} />
       <Hero locale={locale} />
+      <CallHighlights locale={locale} />
       <HowItWorks locale={locale} />
       <WhyItMatters locale={locale} />
       <BusinessModel locale={locale} />

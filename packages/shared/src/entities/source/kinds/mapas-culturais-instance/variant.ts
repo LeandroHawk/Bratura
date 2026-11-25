@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { requiredHttpsUrl } from '../../../../primitives/code/url/fields';
+import { SourceAccessFields } from '../../fragments/access/fields';
 import { SourceComplianceFields } from '../../fragments/compliance/fields';
 import { SourceIdentityFields } from '../../fragments/identity/fields';
 
@@ -11,6 +12,7 @@ export const MapasCulturaisInstanceSourceSchema = z.object({
   kind: z.literal('mapasCulturaisInstance'),
   ...SourceIdentityFields.shape,
   ...SourceComplianceFields.shape,
+  ...SourceAccessFields.shape,
   /** The instance's root (`https://mapa.cultura.gov.br`); the API lives under `/api/`. */
   baseUrl: requiredHttpsUrl,
 });

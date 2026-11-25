@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./api": "./convex/_generated/api.js"
+  },
   "scripts": {
     "convex": "convex dev",
     "lint": "eslint .",
@@ -13,6 +16,7 @@
     "@bratura/shared": "workspace:*",
     "convex": "catalog:",
     "convex-helpers": "catalog:",
+    "unpdf": "2.1.0",
     "zod": "catalog:"
   },
   "devDependencies": {

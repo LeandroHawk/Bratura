@@ -14,11 +14,13 @@ cultural MEI) who cannot afford a producer. The creator builds a **portfolio onc
 **profile** matched against open **calls (editais), festivals and fairs**. For each match Bratura
 explains the call in plain Portuguese, shows **what is missing** (MEI, SICAB, CCMEI, years of proven
 activity, documents), prepares an **application kit** (portfolio in the call's format, suggested
-texts, document checklist) and sends **deadline alerts** by e-mail and WhatsApp.
+texts, document checklist) and sends **deadline alerts** by e-mail and Telegram.
 
-**Who pays:** the creator never pays (no paywall on the creator side). Revenue is the multi-profile
-panel for associations, cooperatives and producers, then culture departments; sponsors in phase 2.
-Never a share of the prize, never selling data.
+**Who pays (Freemium Impact, PO decision of November 2026):** the portfolio, the eligibility
+triage and the local calls stay free for every creator. Revenue comes from the paid creator plans
+(a pass per call, a Pro subscription), the multi-profile panel for associations, cooperatives and
+producers, then culture departments; sponsors in phase 2. Never a share of the prize, never
+selling data. Only the panel's billing is built (`docs/integrations/abacate-pay.md`).
 
 ## Competition rules (Hack Brasil 2026, track Cultura & economia criativa)
 
@@ -43,9 +45,9 @@ Never a share of the prize, never selling data.
   came from (6.2); finance demos may run in test or simulation environments (6.9).
 - **Help**: mentors on Discord (`#pedir-mentoria`, `/mentoria`), listed at hackbrasil.com/mentores.
   Sponsor livestreams are optional and do not count for the score.
-- **Sponsors we use**: Firecrawl, Convex, Resend, WorkOS, Cognition (Devin), Nvoip; AbacatePay is
-  under study (`docs/product.md`). Their tools weigh the same as any tool; the prizes they give
-  are listed on hackbrasil.com.
+- **Sponsors we use**: Firecrawl, Convex, Resend, WorkOS, Cognition (Devin), AbacatePay
+  (billing, integrated backend-side in `docs/integrations/abacate-pay.md`). Their tools weigh
+  the same as any tool; the prizes they give are listed on hackbrasil.com.
 
 ## Tools and what each one does
 
@@ -54,10 +56,10 @@ Never a share of the prize, never selling data.
 | Devin | Pair programming in small PRs that follow the `AGENTS.md` files; never in production | After the competition draft is approved (the coupon comes with it) |
 | Convex | Database, functions, ingestion cron, portfolio files, `http.ts` for webhooks | First, after the Zod bridge check (`docs/architecture.md` §7) |
 | Firecrawl | Reads pages without an API and the text of every call PDF | Batch ingestion only; credits come with the draft (`docs/integrations/firecrawl.md`) |
-| Gemini (free tier) | Classifies and extracts call fields, plain summaries, kit texts | Behind `llm/` in the backend |
+| Gemini (free tier) | Classifies and extracts call fields, plain summaries, kit texts | Behind `model/llm/` in the backend |
 | WorkOS | Login (Google, e-mail code) | Can come last: the demo uses a fictional creator |
 | Resend | Deadline e-mails | With alerts |
-| Nvoip | WhatsApp templates (and inbound, if available) | A plus, owned by the WhatsApp team (`docs/integrations/whatsapp.md`) |
+| Telegram Bot API | free-text alerts (and inbound webhook) | A plus, owned by the Telegram front (`docs/integrations/telegram.md`) |
 
 ## What to build
 
@@ -69,10 +71,13 @@ Never a share of the prize, never selling data.
    `eligible` / `almost` / `not` with reasons, stored in `matches`.
 4. **Application kit**: texts from the creator's portfolio and the extracted requirements only, a
    checklist, the portfolio in the call's format.
-5. **Alerts**: e-mail at D-7 and D-1; WhatsApp templates.
+5. **Alerts**: e-mail at D-7 and D-1; Telegram messages.
+6. **Billing**: the organization panel's monthly subscription, charged per managed profile
+   through AbacatePay (hosted checkout, webhook inbox; backend only until auth).
 
 Starting tables: `sources`, `callNotices`, `ingestionRuns`, `creators`, `portfolioItems`,
-`matches`, `applicationKits`, `alerts`, `organizations`, `memberships`. Screens: onboarding,
+`matches`, `applicationKits`, `users`, `userNotifications`, `notificationDeliveries`,
+`userMessageChannels`, `organizations`, `memberships`. Screens: onboarding,
 portfolio builder, call notices (Elegível / Quase / Todos), call notice detail, kit, org panel,
 admin review. The landing still lacks the way into the app ("Começar meu portfólio", "Sou uma
 organização"), which comes with login.
@@ -85,11 +90,11 @@ organização"), which comes with login.
 | --- | --- | --- |
 | Atilio Almeida | Product owner | Product insights, research inputs, business model and monetization (`docs/product.md`) |
 | João Victor | Tech lead | Repository foundation (front-end patterns, the contract, the tools) and **Firecrawl ingestion** |
-| Leandro | Integrations developer | WhatsApp front end; helps with Firecrawl ingestion |
-| Kaik | Integrations developer | WhatsApp front end |
+| Leandro | Integrations developer | Telegram front; helps with Firecrawl ingestion |
+| Kaik | Integrations developer | Telegram front |
 
 **Firecrawl ingestion comes first.** Without calls read from the official sources there is nothing
-to match, explain or alert about: the backend, the screens and WhatsApp all consume it. Nothing of
+to match, explain or alert about: the backend, the screens and Telegram all consume it. Nothing of
 it exists yet (2026-11-13).
 
 ## Dates
@@ -101,10 +106,10 @@ there is no backend. **Proposal, to confirm with the team:**
 | --- | --- | --- |
 | 13–15/11 | `packages/backend` with Convex, Zod bridge check, `sources` / `callNotices` / `ingestionRuns`; Mapas ingestion; first PDFs through Firecrawl (free plan until the draft's credits) | João Victor, Leandro |
 | 16–18/11 | Extraction with evidence check for ~10 chosen calls, admin review, call notice list and detail with source links | João Victor, Leandro |
-| 13–18/11 | Nvoip answers (`docs/integrations/whatsapp.md`), templates submitted for approval, opt-in fields | Leandro, Kaik |
+| 17–18/11 | Telegram bot and token, opt-in fields, send outbox | Leandro, Kaik |
 | 13–18/11 | Who the demo creator is, which calls to show, pitch numbers from the data | Atilio |
 | 19–22/11 | Fictional creator, simple portfolio, matching and gaps | João Victor |
-| 19–25/11 | WhatsApp alerts from the cron; inbound "meus editais" if Nvoip allows | Leandro, Kaik |
+| 19–25/11 | Telegram alerts from the cron; inbound "meus editais" via the webhook | Leandro, Kaik |
 | 23–25/11 | Kit (texts + checklist), e-mail alerts, login | João Victor |
 | 26–27/11 | Plus: org panel, portfolio PDF, Firecrawl page sources beyond the PDFs | all |
 | 28–29/11 | Freeze, demo data, video (Portuguese, subtitled) | all |
@@ -118,7 +123,7 @@ evidence; (2) real calls from the Mapas API, public bodies only, open or closed 
 (3) one call opened: requirements in plain language crossed with the portfolio ("3 years required,
 2 with evidence", "missing CCMEI"); (4) the application kit. **Calls are pre-processed by the
 ingestion job and stored: Gemini is never called live during the demo.** Everything beyond this
-path (WhatsApp, real e-mail sends, the org panel) is a plus; Firecrawl moved from plus to first
+path (Telegram, real e-mail sends, the org panel) is a plus; Firecrawl moved from plus to first
 priority on 2026-11-13, since the PDFs are where the requirements are.
 
 ## Done means

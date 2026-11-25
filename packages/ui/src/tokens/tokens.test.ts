@@ -9,9 +9,9 @@ const css = readFileSync(new URL('./tokens.css', import.meta.url), 'utf8');
 
 /** Every file of the package with the given extensions, relative to src/. */
 function sourceFiles(pattern: RegExp): string[] {
-  return readdirSync(new URL('../', import.meta.url), { recursive: true, encoding: 'utf8' }).filter(
-    (f) => pattern.test(f) && !f.includes('.test.'),
-  );
+  return readdirSync(new URL('../', import.meta.url), { recursive: true, encoding: 'utf8' })
+    .map((f) => f.replaceAll('\\', '/'))
+    .filter((f) => pattern.test(f) && !f.includes('.test.'));
 }
 const read = (file: string) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
 

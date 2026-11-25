@@ -8,13 +8,14 @@ const ptBR = {
     turnedOff: 'Luzes apagadas: tema escuro',
     turnedOn: 'Luzes acesas: tema claro',
   } satisfies PullCordCopy,
+  homeLink: 'Bratura, página inicial',
   languageNav: 'Idioma',
   skipToContent: 'Ir para o conteúdo [1]',
   withoutJavaScript:
     'Sem JavaScript, a página funciona inteira; só a luz, a troca dos ingressos e a cortina ficam paradas.',
   madeFor: 'Feito para o Hack Brasil 2026 · Trilha Cultura & economia criativa',
-  aboutNav: 'Sobre o projeto',
-  repoLink: 'GitHub · licença MIT',
+  builtWithSponsors: 'Com os patrocinadores',
+  builtWithOthers: 'Também usamos',
 };
 
 export const LAYOUT_CONTENT: Record<Locale, typeof ptBR> = {
@@ -26,12 +27,13 @@ export const LAYOUT_CONTENT: Record<Locale, typeof ptBR> = {
       turnedOff: 'Lights off: dark theme',
       turnedOn: 'Lights on: light theme',
     },
+    homeLink: 'Bratura, home page',
     languageNav: 'Language',
     skipToContent: 'Skip to content [1]',
     withoutJavaScript:
       'Without JavaScript the whole page still works; only the light switch, the ticket swap and the curtain stay still.',
     madeFor: 'Made for Hack Brasil 2026 · Culture & creative economy track',
-    aboutNav: 'About the project',
-    repoLink: 'GitHub · MIT licence',
+    builtWithSponsors: 'With the sponsors',
+    builtWithOthers: 'Also built with',
   },
 };

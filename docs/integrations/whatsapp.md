@@ -1,4 +1,10 @@
-# WhatsApp (Nvoip)
+# WhatsApp (Nvoip) — paused
+
+> **Paused, 2026-11-17.** The WhatsApp number was banned by Meta (a terms violation that cannot
+> be appealed), so the official API left the design and Telegram became the message channel
+> (`docs/integrations/telegram.md`). This doc stays as the record of the channel's design: if
+> WhatsApp returns it comes back as a `userMessageChannels` row and a `model/whatsapp/`
+> adapter, not a migration.
 
 WhatsApp is **the second front** of Bratura: a second way into the same backend, not a separate
 service. Messages go out through **Nvoip** (team decision, 2026-11-12), which sends through the
@@ -54,14 +60,14 @@ each one in v3:
 ## How it fits the backend
 
 ```
-crons.ts ──► alerts/ ──► channel adapter ──► e-mail: Resend
-                                         └─► WhatsApp: Nvoip (fetch, token in Convex env)
+crons.ts ──► alerts.ts ──► channel adapter ──► e-mail: Resend
+                                           └─► WhatsApp: Nvoip (fetch, token in Convex env)
 http.ts ◄── Nvoip (if it forwards inbound messages) ──► local Zod parse ──► same queries as the site
 ```
 
 - **The bot reads, never computes**: it answers from `matches` and `applicationKits`, like the site,
   so both channels say the same thing.
-- **A channel adapter in `alerts/`**, like the LLM adapter in `llm/`: Nvoip can be swapped for the
+- **A channel adapter in `model/`**, like the LLM adapter in `model/llm/`: Nvoip can be swapped for the
   WhatsApp Cloud API without touching the rest.
 - **Nvoip's payload is parsed at the edge** with a local Zod schema in the module that reads it; it
   is not a DTO and not in `shared`.

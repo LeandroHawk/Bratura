@@ -2,7 +2,8 @@ import { describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 // Convex builds a table from the input side of a conversion, so an entity holds none: why and where
-// converting goes instead, `packages/shared/AGENTS.md`, Errors, invariants. `.trim()` keeps the type.
+// converting goes instead, `packages/shared/AGENTS.md`, Errors, invariants. `.trim()` keeps the
+// type.
 const entityModules = import.meta.glob(['./**/entity.ts', './**/variant.ts', './**/fields.ts'], {
   eager: true,
 });

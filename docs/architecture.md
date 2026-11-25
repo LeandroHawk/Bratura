@@ -6,7 +6,7 @@ has a folder of its own. `AGENTS.md` at the root lists the rules in one line eac
 
 Cross-cutting subjects have their own file: `docs/contracts.md` (shapes, ports, what the front
 sends), `docs/security.md` (ownership, abuse, prompt injection), `docs/data-sources.md`,
-`docs/integrations/` (Firecrawl, WhatsApp), `docs/product.md` and, until 30/11, `docs/plan.md`.
+`docs/integrations/` (Firecrawl, Telegram), `docs/product.md` and, until 30/11, `docs/plan.md`.
 
 Status: **2026-11-13.** The web app and the design system follow it. `packages/shared` holds the
 locale and the first entities (`sources`, `callNotices`, `ingestionRuns`); `packages/backend` holds
@@ -43,7 +43,7 @@ Inside a feature the idea repeats: `common/` is common **at the level of its fol
 **What decides the folder is who imports it, not whether it is deployed.** `apps/` holds what is
 deployed and imported by nobody; `packages/` holds what something imports. The Convex backend is
 deployed on its own (`convex deploy`) and still lives in `packages/backend`, because the fronts
-import its generated API (`import { api } from '@bratura/backend/convex/_generated/api'`), and an
+import its generated API (`import { api } from '@bratura/backend/api'`), and an
 app never imports another app. Convex's own monorepo template
 (`get-convex/turbo-expo-nextjs-clerk-convex-monorepo`, checked 2026-11-08) does the same:
 `apps/web`, `apps/native`, `packages/backend`.
@@ -93,16 +93,16 @@ holds across folders:
   Convex validator is **derived** from it, never written beside it. Functions are declared through
   builders that carry auth and Zod `args`/`returns` (`docs/contracts.md` §3).
 - **Every outside input is parsed at the edge**, in the module that reads it, with a local Zod
-  schema that is not an entity and not in `shared`: Mapas API responses and Firecrawl output in
-  `ingestion/`, provider webhooks in `http.ts`, LLM output in `llm/` (every field nullable, each
+  schema that is not an entity and not in `shared`: Mapas, Firecrawl and Telegram answers in the
+  `payload.ts` beside their client in `model/`, LLM output in `model/llm/` (every field nullable, each
   with a verbatim quote checked against the text: `docs/security.md` §3).
 - **Nothing is invented.** Every amount, deadline and requirement shown comes from a stored field
   with its source link; a field not found is stored as `null` and shown as "não informado".
 - **Only allowed sources**, batch crawling only: `docs/data-sources.md`.
 - **The backend computes, the web displays.** Eligibility, gaps and deadlines are computed in
-  Convex and stored (`matches`); the web and the WhatsApp bot never re-derive them.
-- **Adapters for what may change**: the LLM behind `llm/` (Gemini free tier: a queue and retries in
-  ingestion), message channels behind `alerts/` (Resend, Nvoip).
+  Convex and stored (`matches`); the web and the Telegram bot never re-derive them.
+- **Adapters for what may change**: the LLM behind `model/llm/`, any provider in the OpenAI chat format
+  chosen by the deployment's env (Gemini's API free tier today: a queue and retries in ingestion), a message channel behind `model/<channel>/` (`telegram/`; e-mail later).
 - **Ownership, abuse limits and secrets**: `docs/security.md`.
 
 ### Call notice lifecycle
@@ -113,23 +113,30 @@ fragment of `call-notice` in `packages/shared`, born with the code that writes i
 
 | stage | what it adds | writer | where it comes from | when |
 | --- | --- | --- | --- | --- |
-| listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion/` per source kind | Mapas API; an official page through Firecrawl `/map` | **now** |
-| seen | `tracking` (first and last seen) | the server, on every write | the clock | **now** |
-| document read | `document`: which of `documentUrls` is the call notice, its Markdown, hash and when it was read | `ingestion/` | Firecrawl `/scrape` | PR C |
-| extracted | `extraction`: amounts, applicant types, art forms, region, required documents, each `null` or with a verbatim quote | `llm/`, checked against the text | the document's Markdown | 16–18/11 |
-| classified | whether it is a call for creators or noise (payment forms, council elections) and why | `llm/` + rules | the extraction | 16–18/11 |
-| matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almost` / `not` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
-| alerted | not on the call notice: an `alerts` row per message sent (creator, call notice, template, channel, status), so a reminder never goes twice | `alerts/` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
+| listed | `listing` (title, official page, document links, id at the source), `registration-window` | `ingestion.ts`, one action per source kind | Mapas API (`model/mapasCulturais/`, daily cron); an official page by plain fetch of its listing and call pages (`model/officialPage/`), through Firecrawl from Brazil for a source that answers only from there | **now** |
+| seen | `tracking` (first and last seen, closed when first seen) | the server, on every write | the clock; the close and `resultPosted` as listed | **now** |
+| document read | not on the call notice: a `callNoticeDocuments` row per file read (the notice, its amendments, categories and criteria, picked by link text or file name), its hash and cost; its Markdown in a `callNoticeDocumentTexts` row of its own | `documents.ts`, run by hand | Firecrawl `/scrape` | **now** |
+| extracted and classified | not on the call notice: a `callNoticeExtractions` row per call (whether it is a call for creators or noise, amounts per project and total, applicant types, residence, art forms, requirements (kind, who is asked, at registration or after selection), eligibility rules, quotas, evaluation criteria, the close as written), each value with the source passage that proves it or dropped | `extraction.ts`, run by hand, through `model/llm/`; each value checked by `model/callNoticeExtraction/verify.ts` | the read documents' Markdown | **now** |
+| matched | not on the call notice: a `matches` row per creator × call notice, `eligible` / `almostEligible` / `notEligible` with reasons | `matching/` only | the extraction × the creator's portfolio | 19–22/11 |
+| notified | not on the call notice: a `userNotifications` row (the web inbox) plus a `notificationDeliveries` row per opted-in send (the opt-in on `userMessageChannels`), so a reminder never goes twice | `userNotifications.ts`, `userMessageChannels.ts` and `notificationDeliveries.ts` only | `matches` (`edital_compativel`, `quase_elegivel`), the window (`prazo_chegando`), a changed window or document (`edital_retificado`) | 19–25/11 |
 
 - **A source kind decides only how a call notice is listed.** From "document read" on, every call
   notice follows the same path, whichever kind listed it. A `newsSite` lists nothing: it is a
   signal that sends the team to an official source.
 - **A changed document reruns the stages after it**: a new hash means a new extraction, and an
-  amended deadline means new matches and an alert ("o prazo mudou"). For that, `recordCallNotice`
-  will report a changed window once `alerts/` exists to consume it.
-- **WhatsApp and e-mail are channels of "alerted"**, behind the adapter in `alerts/`; they read
-  what the stages stored and never compute (`docs/integrations/whatsapp.md`). Who writes and reads
-  each part, folder by folder: `docs/contracts.md` §4.
+  amended deadline means new matches and a notification ("o prazo mudou"). For that, `recordCallNotice`
+  will report a changed window once the triggers exist to consume it.
+- **A structured date beats an extracted one**: when the Mapas API gives the registration window,
+  it stays; a different date in the PDF is kept as a flagged divergence, not a replacement (user,
+  2026-11-14). The close an official page prints in its own registration sentence ("inscrições …
+  até 25 de novembro de 2026", `model/officialPage/registrationClose.ts`) counts as given by the source too
+  (user, 2026-11-18). A closed call is still read and extracted, last, if it was open when first
+  seen; one closed on arrival (by its close, or a result an official page already posts) is
+  recorded only: `docs/integrations/firecrawl.md`.
+- **Message channels are consumers of "notified"** (Telegram today, WhatsApp planned, e-mail
+  later), each behind `model/<channel>/`; they read what the stages stored and never compute
+  (`docs/integrations/telegram.md`). Who writes and reads each part, folder by folder:
+  `docs/contracts.md` §4.
 - **Creator-facing lists show only call notices classified as calls for creators**; the noise stays
   stored, for the admin review.
 
@@ -140,8 +147,15 @@ typed `Id` with indexes, serializable ACID transactions, and full-text and vecto
 are ever needed. What it lacks, and the answer here:
 
 - **No SQL joins or aggregates**: a count is a counter kept by the writer, not a scan.
-- **1 MiB per document**: a document's Markdown that may pass it goes to File Storage, the row
-  keeping its hash and link.
+- **1 MiB per document**: a call document's Markdown fits one row (the largest measured: 54k
+  characters); one past 900k is stored as a failed read, and File Storage comes if one ever is.
+- **A query reads whole rows**, and the free plan allows 1 GB of Database I/O a month: **a big
+  field that is not read to decide lives in a table of its own**. On 2026-11-20 Database I/O stood
+  at 1.67 GB, 98% reads: each document's Markdown (~17 MB over 525 rows) sat in the row both
+  queues page through to pick by status and hash. It now lives in `callNoticeDocumentTexts`, read by
+  index for one call's extraction only. The move runs by hand
+  (`documents:moveDocumentTextsToOwnTable`, until `done`); a follow-up PR then removes the old
+  `markdown` field and the fallback that reads it (`textOfReadDocument`).
 - **Per function: 16 MiB read or written, 32,000 documents scanned, 1 s of user code** in queries
   and mutations: ingestion works in batches. Actions run up to 10 min (Node) or 30 min.
 - **No unique constraint**: uniqueness is one mutation doing "look up by index → insert". Serializable
@@ -152,7 +166,7 @@ are ever needed. What it lacks, and the answer here:
 Functions are called over a WebSocket, not URLs: there is no status code and no response envelope.
 
 - **An expected failure is thrown, never returned**: `throw appError({ code })`
-  (`packages/backend/convex/appError.ts`), whose data is `AppErrorSchema` in `packages/shared`.
+  (`packages/backend/convex/lib/appError.ts`), whose data is `AppErrorSchema` in `packages/shared`.
   Throwing also undoes every write the mutation made; returning `{ success: false }` would commit
   them. The data reaches the front intact.
 - **Codes, not text**: `invalidInput` (with Zod's issues), `notFound`, `forbidden`, `conflict`,
@@ -180,8 +194,8 @@ flow.
 | --- | --- | --- | --- |
 | 1. Natural-key upsert | one mutation looks the key up in its index, then patches or inserts | a call notice from its source (`recordCallNotice`) | `sourceId` + `externalId` |
 | 2. Content-addressed work | the same input is never processed twice | reading a document (Firecrawl credits), extracting it (Gemini quota) | the document's hash |
-| 3. Outbox: reserve → act → confirm | a mutation reserves the row (`sending`), the action calls the outside, a mutation marks `sent` or `failed`; nothing is sent without a reserved row | WhatsApp and e-mail alerts | creator + call notice + template + occurrence (the D-7 of a given deadline) |
-| 4. Inbox | the provider's event id is stored first; a repeated id answers 200 and stops | Nvoip webhooks, a payment webhook if it comes | the provider's event id |
+| 3. Outbox: reserve → act → confirm | a mutation reserves the row (`sending`), the action calls the outside, a mutation marks `sent` or `failed`; nothing is sent without a reserved row | Telegram deliveries | the notification's dedupe key (user + the trigger's key) |
+| 4. Inbox | the provider's event id is stored first; a repeated id answers 200 and stops | the Telegram webhook, a payment webhook if it comes | the provider's event id |
 | 5. Lease | at most one `running` row per job; a stale one (past its time limit) may be taken over | ingestion of a source, which a cron may fire while a run is still going | `sourceId` with status `running` |
 | 6. Client intent | a front's mutation sets a state (`setX`) rather than adding one more; a create carries a natural key or one made by the client | the creator's forms (a double click) | the natural key, or a client-generated id |
 
@@ -209,7 +223,7 @@ flow.
   English loses meaning; decide per term and list it here. So far: none. An edital is a **call
   notice** (`call-notice`, `callNotices`; decided 2026-11-13); `opportunity` is only Mapas Culturais'
   name for it, used inside the Mapas client. A Convex module file cannot hold a hyphen, so modules
-  are camelCase (`ingestion/callNotices.ts`).
+  are camelCase (`callNotices.ts`).
 
 ## 6. What stops a new piece
 
@@ -246,6 +260,11 @@ flow.
   comes first; revisit after the demo works).
 - **Validation messages in two languages**: "text lives in the Zod declaration" meets "copy exists
   in pt-BR and en" at the first form.
+- **The helpers that repeat**: a claim with a lease, a loop with a time budget, a run summary
+  (`{done, failed, left, stoppedBy}`) and an HTTP error carrying a status now exist in the send
+  outbox for the fourth time across ingestion, documents, extraction and deliveries. They are
+  candidates for `lib/` the day a fifth door needs them — before that, copying keeps each door
+  readable alone.
 - **Enforcement**: these rules are prose. The ones visible in the syntax (a section importing
   another, `primitives` importing `entities`) become lint rules when they first break.
 

@@ -4,6 +4,7 @@
  */
 export const SECTION_IDS = {
   hero: 'hero',
+  callHighlights: 'editais',
   howItWorks: 'como-funciona',
   whyItMatters: 'por-que',
   businessModel: 'modelo-de-negocio',

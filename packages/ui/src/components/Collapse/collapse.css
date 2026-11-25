@@ -1,0 +1,153 @@
+@layer components {
+  /* A card-catalogue drawer, in three parts top to bottom: the label plate, the box, the edge with
+     the pull. Closed, plate and edge meet as one walnut front; open, the box grows between them and
+     the edge slides down, the way a drawer comes towards you. */
+  .bt-drawer {
+    display: grid;
+  }
+  /* No scroll anchoring inside the box: as it folds, the browser would hold the content below
+     in place and push the plate off screen. */
+  .bt-drawer-body {
+    overflow-anchor: none;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.32s ease-out;
+  }
+  .bt-drawer[data-open] > .bt-drawer-body {
+    grid-template-rows: 1fr;
+  }
+  .bt-drawer-box {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .bt-drawer-front,
+  .bt-drawer-edge {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    width: 100%;
+    cursor: pointer;
+    background: var(--bt-cabinet);
+    border: 2px solid var(--bt-wood-edge);
+  }
+  /* The raised panel's bevel, a hairline inside the front, split between plate and edge. */
+  .bt-drawer-front::before,
+  .bt-drawer-edge::before {
+    content: '';
+    position: absolute;
+    border: 1px solid color-mix(in srgb, var(--bt-wood-ink) 14%, transparent);
+    pointer-events: none;
+  }
+
+  .bt-drawer-front {
+    padding: 1rem 1rem 0.5rem;
+    text-align: center;
+    border-bottom: 0;
+    border-radius: 0.5rem 0.5rem 0 0;
+    box-shadow: inset 0 2px 0 color-mix(in srgb, var(--bt-wood-ink) 12%, transparent);
+  }
+  .bt-drawer-front::before {
+    inset: 6px 6px 0;
+    border-bottom: 0;
+    border-radius: 0.25rem 0.25rem 0 0;
+  }
+
+  .bt-drawer-edge {
+    padding: 0.375rem 1rem 0.75rem;
+    border-top: 0;
+    border-radius: 0 0 0.5rem 0.5rem;
+    box-shadow: inset 0 -4px 0 var(--bt-wood-shadow);
+  }
+  .bt-drawer-edge::before {
+    inset: 0 6px 6px;
+    border-top: 0;
+    border-radius: 0 0 0.25rem 0.25rem;
+  }
+
+  /* Open, the plate and the edge are two pieces of the front: each closes its panel's bevel. */
+  .bt-drawer[data-open] .bt-drawer-front {
+    padding-bottom: 1rem;
+  }
+  .bt-drawer[data-open] .bt-drawer-front::before {
+    bottom: 6px;
+    border-bottom: 1px solid color-mix(in srgb, var(--bt-wood-ink) 14%, transparent);
+    border-radius: 0.25rem;
+  }
+  .bt-drawer[data-open] .bt-drawer-edge {
+    padding-top: 0.75rem;
+  }
+  .bt-drawer[data-open] .bt-drawer-edge::before {
+    top: 6px;
+    border-top: 1px solid color-mix(in srgb, var(--bt-wood-ink) 14%, transparent);
+    border-radius: 0.25rem;
+  }
+
+  /* An empty brass frame screwed to the front: the title is engraved in gold inside it. */
+  .bt-drawer-label {
+    position: relative;
+    max-width: 100%;
+    padding: 0.25rem 1.375rem;
+    border: 2px solid var(--bt-cord);
+    border-radius: 0.25rem;
+    box-shadow: inset 0 0 0 1px var(--bt-cord-shade);
+  }
+  .bt-drawer-label::before,
+  .bt-drawer-label::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 35%, var(--bt-cord-highlight), var(--bt-cord-shade));
+  }
+  .bt-drawer-label::before {
+    left: 6px;
+  }
+  .bt-drawer-label::after {
+    right: 6px;
+  }
+  /* The ticket's shine, in brass: every stop keeps 4.5:1 on walnut (CONTRAST_PAIRS). */
+  .bt-drawer-title {
+    color: transparent;
+    background: linear-gradient(
+      115deg,
+      var(--bt-cord) 0%,
+      var(--bt-cord-highlight) 45%,
+      var(--bt-cord) 70%
+    );
+    background-clip: text;
+  }
+
+  .bt-drawer-pull {
+    width: 3.25rem;
+  }
+
+  /* The drawer's box: walnut sides, a paper bottom, the plate's shadow falling inside. */
+  .bt-drawer-inside {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--bt-card);
+    border-inline: 7px solid var(--bt-cabinet);
+    box-shadow:
+      inset 2px 0 0 var(--bt-wood-edge),
+      inset -2px 0 0 var(--bt-wood-edge),
+      inset 0 12px 10px -10px var(--bt-wood-shadow);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bt-drawer-body {
+      transition: none;
+    }
+  }
+  /* Forced colours drop backgrounds, and with them a text painted by `background-clip`. */
+  @media (forced-colors: active) {
+    .bt-drawer-title {
+      color: CanvasText;
+      background: none;
+    }
+  }
+}
