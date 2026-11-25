@@ -21,16 +21,16 @@ describe('Corridor', () => {
     expect(corridor).toContain('<li class="bt-corridor-room is-current">');
   });
 
-  it('names each door by its plaque only: the drawn door is hidden', () => {
+  it('names each door by the name lettered on it only: the drawn door is hidden', () => {
     expect(corridor.match(/<span class="bt-door[^"]*" aria-hidden="true">/g)).toHaveLength(3);
     expect(corridor).toContain(
-      '<span class="bt-room-plaque-caption">Sala 1</span><span class="bt-room-plaque-name"><a href="/portfolio" aria-current="page">Portfólio</a>',
+      '<span class="bt-door-label"><span class="bt-door-caption">Sala 1</span><span class="bt-door-name"><a href="/portfolio" aria-current="page">Portfólio</a>',
     );
   });
 
-  it('hangs the exit over the last door', () => {
-    expect(corridor).toContain(
-      '<div class="bt-corridor-exit"><button type="button">Saída</button><span class="bt-door is-exit"',
+  it('hangs the exit sign on the last door', () => {
+    expect(corridor).toMatch(
+      /<span class="bt-door-bar"><\/span><\/span><\/span><span class="bt-door-label"><button type="button">Saída<\/button><\/span><\/div>/,
     );
   });
 });

@@ -34,10 +34,7 @@ export function Navigation({ locale }: { locale: Locale }) {
       <p className="text-small text-muted-foreground">{content.corridor}</p>
       {/* A tablet's corridor is wider than a phone: it scrolls inside its frame, not the page. */}
       <div className="overflow-x-auto pt-2 pb-1">
-        <Corridor
-          className="min-w-max"
-          exit={<ExitSign label={appContent.exit} hint={appContent.exitHint} size="compact" />}
-        >
+        <Corridor className="min-w-max" exit={<ExitSign label={appContent.exit} size="compact" />}>
           {rooms.map((room) => (
             <CorridorDoor key={room.href} caption={room.caption} current={room.current}>
               <Link href={room.href}>{room.name}</Link>
