@@ -13,7 +13,7 @@ import { ROUTES } from '@/features/common/config/routes';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { CALL_HIGHLIGHTS_CONTENT } from './content';
 
-/** Seconds the landing keeps its highlights; the page's `revalidate` repeats it. */
+/** Seconds the landing keeps its highlights; the page's `revalidate` must be the same number. */
 export const CALL_HIGHLIGHTS_REVALIDATE_SECONDS = 300;
 
 // `fetchQuery` asks for no cache; the cache keeps the landing static, the calls in its HTML.
