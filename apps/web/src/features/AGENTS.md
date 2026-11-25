@@ -123,14 +123,16 @@ and its result list over 4; this layout is the fix they measured.
 - **Both languages land in the same change.** No i18n library.
 - **Copy shared by features goes to `common/`** with the component that renders it
   (`NewTabHint`) or to `config/site.ts` when it is site identity (`TAGLINE`, `SITE_DESCRIPTION`).
-- **Team-only pages may be one language** (`styleguide`), and say so where they are routed.
+- **Team-only pages may be one language**, and say so where they are routed.
 
 ## Layout
 
 - **Pages render inside `PageShell`** (header, main, footer; at least one screen tall, so a short
   page keeps the footer at the bottom). The header reserves the height the sign and the cord hang
   into: a page never adds top padding for them.
-  A page outside it (`/design`) gives its `<main>` `MAIN_CONTENT_ID`, where the skip link lands.
+  A page outside it (`/design`, the error page) draws its own header from the same pieces
+  (`CompactHeader`, `LanguageSwitch`) and gives its `<main>` `MAIN_CONTENT_ID`, where the skip link
+  lands. The error page stays out because an error boundary is client code shipped with every page.
 - **The look follows the house**: no small uppercase kicker above a section title; a new section
   reuses the page's grid and rhythm (heading left, content right, items split by a hairline)
   before inventing cards. Not an eyebrow plus a title on every section either: it reads as a site

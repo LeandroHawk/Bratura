@@ -33,7 +33,8 @@ breathing (`Loading`), a failure a room roped off for restoration (`ClosedRoom`)
 - **Every semantic token exists in both themes**; the test checks the names match.
 - **A new semantic token lives in four places, each tested:** both theme blocks of `tokens.css`, the
   `@theme inline` block (so it is a class: `bg-wood`, `fill-art-blue`), `COLOR_TOKENS` in
-  `tokens.ts` (the `/design` page lists it), and its label in the `/design` page's `content.ts`.
+  `tokens.ts` (the `/design` page lists it), and its label in the `content.ts` of `/design`'s
+  colours section (`styleguide/pages/sections/colors/`).
 - **A pair that carries text or meaning goes in `CONTRAST_PAIRS`** (`tokens.ts`) with its WCAG
   minimum (4.5 for text, 3 for edges and focus). The test runs every pair in both themes.
   Example: the sign's text on oak (`wood-ink` on `wood`, 5.4) and the board's edge on the wall.

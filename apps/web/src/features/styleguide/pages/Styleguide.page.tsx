@@ -1,193 +1,65 @@
-import {
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  Collapse,
-  COLOR_TOKENS,
-  Container,
-  Eyebrow,
-  Heading,
-  Logo,
-  SelectField,
-  Tag,
-  TextAreaField,
-  TextField,
-} from '@bratura/ui';
+import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
+import { Container, Heading, THEMES } from '@bratura/ui';
+import { CompactHeader } from '@/features/common/components/layout/CompactHeader';
+import { LanguageSwitch } from '@/features/common/components/layout/LanguageSwitch';
 import { MAIN_CONTENT_ID } from '@/features/common/components/layout/mainContentId';
-import { COLOR_GROUP_LABEL, COLOR_TOKEN_LABEL } from './content';
-import { DialogExample } from './DialogExample';
+import { ROUTES } from '@/features/common/config/routes';
+import { STYLEGUIDE_CONTENT } from './content';
+import { Brand } from './sections/brand/Brand';
+import { Colors } from './sections/colors/Colors';
+import { Controls } from './sections/controls/Controls';
+import { Forms } from './sections/forms/Forms';
+import { Motion } from './sections/motion/Motion';
+import { Navigation } from './sections/navigation/Navigation';
+import { Surfaces } from './sections/surfaces/Surfaces';
+import { Typography } from './sections/typography/Typography';
+import { Waiting } from './sections/waiting/Waiting';
 
-/** Token groups in the order tokens.ts lists them. */
-const COLOR_GROUPS = [...new Set(COLOR_TOKENS.map((token) => token.group))];
-
-const THEMES = [
-  { id: 'light', name: 'Claro · Acervo' },
-  { id: 'dark', name: 'Escuro · Galeria' },
-] as const;
-
-/** Living reference for @bratura/ui: every block renders once per theme, side by side. */
-export function StyleguidePage() {
+/** Living reference for @bratura/ui: every section renders once per theme, side by side. */
+export function StyleguidePage({ locale }: { locale: Locale }) {
+  const content = STYLEGUIDE_CONTENT[locale];
   return (
-    <Container as="main" id={MAIN_CONTENT_ID} className="grid gap-8 py-12">
-      <div className="grid gap-2">
-        <Heading as="h1" size="section">
-          Design system
-        </Heading>
-        <p className="max-w-[64ch] text-muted-foreground">
-          Componentes de <code>@bratura/ui</code>. O claro é o padrão e o escuro aparece quando
-          alguém puxa a corda; aqui os dois aparecem lado a lado. Os contrastes de texto são
-          verificados nos testes do pacote.
-        </p>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        {THEMES.map((theme) => (
-          <section
-            key={theme.id}
-            data-theme={theme.id}
-            aria-labelledby={`tema-${theme.id}`}
-            className="grid content-start gap-8 rounded-3xl border border-border bg-background p-6 text-foreground"
-          >
-            <Heading id={`tema-${theme.id}`} size="card">
-              {theme.name}
-            </Heading>
-
-            <div className="grid justify-items-center gap-4 py-4">
-              <Logo className="text-6xl" />
-            </div>
-
-            <div className="grid gap-3">
-              <Eyebrow as="span">Cores</Eyebrow>
-              {COLOR_GROUPS.map((group) => (
-                <div key={group} className="grid gap-2">
-                  <p className="font-display text-small italic">{COLOR_GROUP_LABEL[group]}</p>
-                  <ul className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-3">
-                    {COLOR_TOKENS.filter((token) => token.group === group).map((token) => (
-                      <li key={token.name} className="grid gap-1 text-xs">
-                        <span
-                          className="block h-12 rounded-xl border border-border"
-                          style={{ background: `var(--bt-${token.name})` }}
-                        />
-                        <span className="font-semibold">{COLOR_TOKEN_LABEL[token.name]}</span>
-                        <code className="text-muted-foreground">--bt-{token.name}</code>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid gap-3">
-              <Eyebrow as="span">Tipografia</Eyebrow>
-              <Heading as="p" size="section">
-                Fraunces nos títulos
+    <>
+      {/* Outside PageShell: the small logo home and the language sign, as the other headers. */}
+      <CompactHeader locale={locale}>
+        <div className="absolute top-0 right-4 sm:right-6">
+          <LanguageSwitch locale={locale} path={ROUTES.designSystem} size="compact" />
+        </div>
+      </CompactHeader>
+      <Container as="main" id={MAIN_CONTENT_ID} className="grid gap-8 pb-12">
+        <div className="grid gap-2">
+          <Heading as="h1" size="section" lang="en">
+            {content.title}
+          </Heading>
+          <p className="max-w-[64ch] text-muted-foreground">
+            {content.lead.before} <code>@bratura/ui</code>
+            {content.lead.after}
+          </p>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {THEMES.map((theme) => (
+            <section
+              key={theme}
+              data-theme={theme}
+              aria-labelledby={`theme-${theme}`}
+              className="grid content-start gap-8 rounded-3xl border border-border bg-background p-6 text-foreground"
+            >
+              <Heading id={`theme-${theme}`} size="card">
+                {content.themes[theme]}
               </Heading>
-              <p className="font-display text-lg italic">Fraunces itálico nas legendas</p>
-              <p>Instrument Sans no texto corrido, feito para ler bem em qualquer tela.</p>
-              <Eyebrow>Etiqueta (Eyebrow)</Eyebrow>
-            </div>
-
-            <div className="grid gap-3">
-              <Eyebrow as="span">Botões e selos</Eyebrow>
-              <div className="flex flex-wrap gap-3">
-                <Button>Começar meu acervo</Button>
-                <Button variant="ghost">Ver editais abertos</Button>
-                <Button variant="ghost" size="sm">
-                  Botão pequeno
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge tone="open">Aberto até 12/12</Badge>
-                <Badge tone="soon">Prazo curto</Badge>
-                <Badge tone="missing">Falta: CCMEI</Badge>
-                <Badge tone="neutral">Para você conferir</Badge>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Badge tone="open" variant="dot">
-                  Inscrições abertas
-                </Badge>
-                <Badge tone="soon" variant="dot">
-                  Encerra em breve
-                </Badge>
-                <Badge tone="neutral" variant="dot">
-                  Prazo não informado
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Tag>Portfólio</Tag>
-                <Tag>SICAB</Tag>
-                <Tag size="md">Kit de inscrição</Tag>
-              </div>
-            </div>
-
-            <div className="grid gap-3">
-              <Eyebrow as="span">Formulários</Eyebrow>
-              <TextField
-                label="Nome completo"
-                name={`nome-${theme.id}`}
-                hint="Como está no seu documento."
-              />
-              <TextField
-                label="CPF"
-                name={`cpf-${theme.id}`}
-                defaultValue="111.111.111-11"
-                error="Confira o CPF: os dígitos não batem."
-              />
-              <SelectField label="Estado" name={`estado-${theme.id}`} defaultValue="CE">
-                <option value="CE">Ceará</option>
-                <option value="PE">Pernambuco</option>
-              </SelectField>
-              <TextAreaField
-                label="Biografia"
-                optionalMark="(opcional)"
-                name={`biografia-${theme.id}`}
-                rows={2}
-              />
-              <Checkbox name={`lembrete-${theme.id}`} defaultChecked>
-                Lembrar do prazo de inscrição
-              </Checkbox>
-              <div>
-                <DialogExample />
-              </div>
-              <Collapse title="Vagas reservadas" count={2}>
-                <p className="text-small">A placa fica em cima; ao abrir, o puxador desce.</p>
-              </Collapse>
-              <Collapse title="Critérios de avaliação" count={3} defaultOpen>
-                <p className="text-small">Aberta: clique na placa ou no puxador para fechar.</p>
-              </Collapse>
-            </div>
-
-            <div className="grid gap-3">
-              <Eyebrow as="span">Movimento</Eyebrow>
-              <ul className="grid grid-cols-3 gap-3">
-                {['rise-in', 'um depois', 'do outro'].map((text, index) => (
-                  <li
-                    key={text}
-                    className="rise-in rounded-xl border border-border bg-card p-3 text-small"
-                    style={{ '--rise-index': index } as React.CSSProperties}
-                  >
-                    {text}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-small text-muted-foreground">
-                Itens de uma lista sobem um após o outro; o campo ganha uma pincelada ao receber
-                foco e treme ao ser recusado; o botão salvo dá um pulo. Tudo desliga com
-                &quot;reduzir movimento&quot;.
-              </p>
-            </div>
-
-            <Card className="grid gap-1">
-              <Heading as="p" size="item">
-                Card
-              </Heading>
-              <span className="text-muted-foreground">
-                Superfície para um edital, uma peça do acervo, um aviso.
-              </span>
-            </Card>
-          </section>
-        ))}
-      </div>
-    </Container>
+              <Brand locale={locale} />
+              <Colors locale={locale} />
+              <Typography locale={locale} />
+              <Controls locale={locale} />
+              <Forms locale={locale} theme={theme} />
+              <Motion locale={locale} />
+              <Waiting locale={locale} />
+              <Navigation locale={locale} />
+              <Surfaces locale={locale} />
+            </section>
+          ))}
+        </div>
+      </Container>
+    </>
   );
 }

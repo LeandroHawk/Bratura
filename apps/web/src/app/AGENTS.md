@@ -9,7 +9,7 @@ app/
   [lang]/                    the root layout's segment: pt-BR (served at /) or en (/en)
     layout.tsx               <SiteDocument>, site metadata, static params, viewport
     page.tsx                 → features/landing
-    design/page.tsx          → features/styleguide (pt-BR only; /en/design is a 404)
+    design/page.tsx          → features/styleguide (both locales, noindex)
     cadastro/  entrar/       → features/account (sign-up, sign-in)
     portfolio/               → features/portfolio (signed-in, noindex)
     compatibilidade/  editais/   → features/call-notices (signed-in, noindex)
