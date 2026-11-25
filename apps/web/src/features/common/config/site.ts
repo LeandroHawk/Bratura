@@ -32,3 +32,17 @@ export const TAGLINE: Record<Locale, string> = {
 };
 
 export const TEAM = ['Atilio Almeida', 'Leandro', 'Kaik', 'João Victor'] as const;
+
+/** The tools the product runs on, named in the footer; sponsors of Hack Brasil 2026 first. */
+export const BUILT_WITH = {
+  sponsors: [
+    { name: 'Firecrawl', url: 'https://www.firecrawl.dev' },
+    { name: 'Convex', url: 'https://www.convex.dev' },
+    { name: 'AbacatePay', url: 'https://www.abacatepay.com' },
+  ],
+  others: [
+    { name: 'Gemini', url: 'https://ai.google.dev' },
+    { name: 'Vercel', url: 'https://vercel.com' },
+    { name: 'Telegram', url: 'https://telegram.org' },
+  ],
+} as const;
