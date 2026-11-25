@@ -1,0 +1,57 @@
+@layer components {
+  /* The tab icon's mark, breathing: opacity and scale only, so the compositor animates it. */
+  .bt-loading {
+    display: grid;
+    justify-items: center;
+    gap: 0.9rem;
+    padding: 2.5rem 0;
+    color: var(--bt-muted-foreground);
+    text-align: center;
+  }
+  .bt-loading.is-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0;
+    font-size: 0.9em;
+  }
+  .bt-loading-mark {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 1.7em;
+    height: 1.4em;
+    font-size: 44px;
+    line-height: 1;
+  }
+  .bt-loading.is-inline .bt-loading-mark {
+    font-size: 20px;
+  }
+  .bt-loading-splat {
+    position: absolute;
+    inset: -0.1em -0.25em;
+    width: calc(100% + 0.5em);
+    height: calc(100% + 0.2em);
+    overflow: visible;
+  }
+  .bt-loading-mark .bt-logo-word {
+    font-family: var(--font-logo);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bt-loading-mark {
+      animation: bt-breathe 1.8s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes bt-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    scale: 0.94;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.04;
+  }
+}

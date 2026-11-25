@@ -1,0 +1,184 @@
+@layer components {
+  /* A corridor in elevation: doors on a floor line, plaques over the lintels, the exit at the end. */
+  .bt-corridor {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 0 0.75rem;
+    border-bottom: 3px solid var(--bt-foreground);
+  }
+  /* Doors give way before the corridor overflows: the gaps narrow and the plaques' names wrap. */
+  .bt-corridor-doors {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: flex-end;
+    gap: clamp(0.75rem, 4%, 1.75rem);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .bt-corridor-room,
+  .bt-corridor-exit {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+  }
+  /* Shrinks down to its plaque's longest word, never under it, so plaques never overlap. */
+  .bt-corridor-room {
+    flex: 0 1 auto;
+  }
+  .bt-corridor-exit {
+    flex-shrink: 0;
+  }
+
+  /* The room's plaque (`walnut-plaque`), a brass screw at each end. */
+  .bt-room-plaque {
+    display: grid;
+    justify-items: center;
+    padding: 3px 14px;
+    background:
+      var(--bt-brass-screw) 5px 50% / 4px 4px no-repeat,
+      var(--bt-brass-screw) calc(100% - 5px) 50% / 4px 4px no-repeat;
+    line-height: 1.15;
+    text-align: center;
+  }
+  .bt-room-plaque-caption {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .bt-room-plaque-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+  /* The plaque takes the focus ring (below): the link covers the door, so the ring marks it. */
+  .bt-room-plaque-name a {
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+  }
+  /* The plaque's link covers the whole door, drawn over the door's own layers. */
+  .bt-room-plaque-name a::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+  }
+  .bt-corridor-room:has(a:focus-visible) .bt-room-plaque {
+    outline: 3px solid var(--bt-ring);
+    outline-offset: 3px;
+  }
+  .bt-corridor-room.is-current .bt-room-plaque-name {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+
+  /* The door: an oak frame, the room beyond it, the leaf hinged on the left. */
+  .bt-door {
+    position: relative;
+    display: block;
+    width: 3.5rem;
+    height: 4.25rem;
+    border: 4px solid var(--bt-wood-edge);
+    border-bottom: 0;
+    background: var(--bt-cabinet);
+    perspective: 420px;
+    /* Seen from floor level, so the open leaf's foot stays on the floor line. */
+    perspective-origin: 50% 100%;
+  }
+  .bt-door-room {
+    position: absolute;
+    inset: 0;
+    background: var(--bt-cabinet);
+  }
+  .bt-door-leaf {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 5px;
+    padding: 6px 7px;
+    background:
+      var(--bt-wood-sheen),
+      repeating-linear-gradient(
+        90deg,
+        transparent 0 7px,
+        var(--bt-wood-grain) 7px 8px,
+        transparent 8px 15px
+      ),
+      var(--bt-wood);
+    transform-origin: left center;
+    transition: transform 0.45s cubic-bezier(0.3, 1.2, 0.5, 1);
+  }
+  .bt-door-panel {
+    border: 2px solid var(--bt-wood-grain);
+    border-radius: 2px;
+    box-shadow: inset 1px 1px 0 var(--bt-sheen-light);
+  }
+  .bt-door-knob {
+    position: absolute;
+    top: 52%;
+    right: 5px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bt-brass-ball);
+  }
+
+  /* The room being visited: door open, its light on and spilling out. */
+  .bt-corridor-room.is-current .bt-door-room {
+    background:
+      radial-gradient(ellipse 80% 70% at 50% 25%, var(--bt-glow), transparent 75%),
+      var(--bt-cabinet);
+  }
+  .bt-corridor-room.is-current .bt-door {
+    box-shadow: 0 0 18px 3px color-mix(in srgb, var(--bt-glow) 55%, transparent);
+  }
+  .bt-corridor-room.is-current .bt-door-leaf {
+    transform: rotateY(-72deg);
+  }
+  .bt-corridor-room:not(.is-current):hover .bt-door-leaf,
+  .bt-corridor-room:not(.is-current):has(a:focus-visible) .bt-door-leaf {
+    transform: rotateY(-24deg);
+  }
+
+  /* The exit door: plain, with a push bar; the sign above it is the button. */
+  .bt-door.is-exit {
+    width: 3.25rem;
+  }
+  /* The exit sign is the button; its click area covers the door under it too. */
+  .bt-corridor-exit .bt-exit::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+  }
+  /* No nudge on hover here: a moved button would hold its click area and flicker. */
+  .bt-corridor-exit .bt-exit:hover {
+    translate: none;
+  }
+  .bt-door.is-exit .bt-door-leaf {
+    display: block;
+  }
+  .bt-door-bar {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    left: 5px;
+    height: 4px;
+    border-radius: 3px;
+    background: var(--bt-brass-rail);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bt-door-leaf {
+      transition: none;
+    }
+  }
+}

@@ -64,8 +64,8 @@ a hit in a changed file is a question, not a verdict.
 # token by hand: use its class (gradients, multi-part shadows, stop-color excepted)
 rg -n 'var\(--bt-|\(--bt-' apps/web/src packages/ui/src/components -g '*.tsx'
 
-# literal colour: needs a token (known and kept: the sign's light and shade in hanging-sign.css,
-# the mask in light-switch.css)
+# literal colour: needs a token (known and kept: the wood's sheen in utilities.css, the sign's text
+# shadow in hanging-sign.css, the mask in light-switch.css)
 rg -n '#[0-9a-fA-F]{3,8}\b|rgba?\(' apps/web/src packages/ui/src -g '!tokens.css' -g '!palette.ts' \
   -g '!*.test.*'
 
@@ -75,6 +75,9 @@ rg -n 'rounded-full border' apps/web/src
 # hand-made Eyebrow
 rg -n 'tracking-\[0.1em\]' apps/web/src
 
+# hand-made text link: `text-link`; a new tab outside ExternalLink or ButtonLink needs NewTabHint
+rg -n 'underline-offset|target="_blank"' apps/web/src
+
 # a button outside Button, or a click on a non-button (not allowed; a mouse shortcut is a <button
 # tabIndex={-1} aria-hidden> beside a real one)
 rg -n '<button|onClick' apps/web/src
@@ -83,7 +86,8 @@ rg -n '<button|onClick' apps/web/src
 rg -n 'matchMedia|localStorage' apps/web/src
 
 # focus made invisible (WCAG 2.4.7): focus-ring is the visible focus, and a skip-link target needs
-# neither tabIndex nor outline-none
+# neither tabIndex nor outline-none (known and kept: a link covering a whole door or room hands its
+# ring to that object, in corridor.css and museum-map.css)
 rg -n 'outline-none|outline-hidden|outline: *(none|0)' apps/web/src packages/ui/src
 ```
 

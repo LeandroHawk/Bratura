@@ -5,7 +5,7 @@ import {
   LocaleEnum,
   type Locale,
 } from '@bratura/shared/primitives/external/locale/enum';
-import { HangingSign } from '@bratura/ui';
+import { HangingSign, type HangingSignProps } from '@bratura/ui';
 import { useSyncExternalStore } from 'react';
 import {
   localizedPathFromLocale,
@@ -40,7 +40,15 @@ function useBrowserSitePath(): SitePath | null {
  * Two locales only: with a third, this needs one sign per language. Without `path` (a 404) the
  * link starts at the home page and switches to the current address once the browser runs.
  */
-export function LanguageSwitch({ locale, path }: { locale: Locale; path?: SitePath }) {
+export function LanguageSwitch({
+  locale,
+  path,
+  size,
+}: {
+  locale: Locale;
+  path?: SitePath;
+  size?: HangingSignProps['size'];
+}) {
   const browserPath = useBrowserSitePath();
   const other = LocaleEnum.options.find((candidate) => candidate !== locale) ?? DEFAULT_LOCALE;
   return (
@@ -50,6 +58,7 @@ export function LanguageSwitch({ locale, path }: { locale: Locale; path?: SitePa
         hrefLang={other}
         front={{ ...SIGN_FACE[other], lang: other }}
         back={{ ...SIGN_FACE[locale], lang: locale }}
+        size={size}
       />
     </nav>
   );

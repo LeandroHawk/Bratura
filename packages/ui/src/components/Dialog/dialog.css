@@ -1,16 +1,41 @@
 @layer components {
+  /* Every modal sheet (this dialog, the phone's museum map): paper with an ink edge, scrolling on
+     its own in the sand's colours, the room dimmed behind it and the page held still. */
+  .bt-modal {
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 0;
+    border: 2px solid var(--bt-foreground);
+    background: var(--bt-background);
+    color: var(--bt-foreground);
+    scrollbar-color: var(--bt-sand-ink) var(--bt-sand-edge);
+  }
+  .bt-modal::backdrop {
+    background: color-mix(in srgb, var(--bt-curtain-shadow) 62%, transparent);
+    opacity: 0;
+    transition:
+      opacity 0.3s ease-out,
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
+  }
+  .bt-modal[open]::backdrop {
+    opacity: 1;
+  }
+  @starting-style {
+    .bt-modal[open]::backdrop {
+      opacity: 0;
+    }
+  }
+  :root:has(.bt-modal[open]) {
+    overflow: hidden;
+  }
+
   /* A sheet of paper put down on the page: it lands slightly turned and settles. */
   .bt-dialog {
     margin: auto;
     width: min(100% - 1.5rem, 46rem);
     max-height: min(100dvh - 1.5rem, 56rem);
-    overflow: auto;
-    overscroll-behavior: contain;
-    padding: 0;
-    border: 2px solid var(--bt-foreground);
     border-radius: 1.5rem;
-    background: var(--bt-background);
-    color: var(--bt-foreground);
     box-shadow: 6px 8px 0 var(--bt-foreground);
     opacity: 0;
     translate: 0 28px;
@@ -35,29 +60,6 @@
     }
   }
 
-  /* The room's light goes down behind the sheet. */
-  .bt-dialog::backdrop {
-    background: color-mix(in srgb, var(--bt-curtain-shadow) 62%, transparent);
-    opacity: 0;
-    transition:
-      opacity 0.3s ease-out,
-      overlay 0.3s allow-discrete,
-      display 0.3s allow-discrete;
-  }
-  .bt-dialog[open]::backdrop {
-    opacity: 1;
-  }
-  @starting-style {
-    .bt-dialog[open]::backdrop {
-      opacity: 0;
-    }
-  }
-
-  /* The page behind a modal does not scroll. */
-  :root:has(.bt-dialog[open]) {
-    overflow: hidden;
-  }
-
   .bt-dialog-close {
     transition: rotate 0.2s ease-out;
   }
@@ -67,7 +69,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .bt-dialog,
-    .bt-dialog::backdrop,
+    .bt-modal::backdrop,
     .bt-dialog-close {
       transition: none;
     }

@@ -1,0 +1,271 @@
+@layer components {
+  /* The door plaque of the room the visitor is in: walnut, brass letters, four brass screws.
+     Fixed at the bottom of the screen; tapping it unfolds the museum map. */
+  .bt-map-plaque {
+    position: fixed;
+    right: 0.75rem;
+    bottom: var(--bt-map-plaque-inset);
+    left: 0.75rem;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: var(--bt-map-plaque-height);
+    padding: 0.6rem 0.9rem;
+    border: 2px solid var(--bt-cord-shade);
+    border-radius: 6px;
+    color: var(--bt-cord-highlight);
+    background: var(--bt-wood-sheen), var(--bt-cabinet);
+    box-shadow:
+      inset 0 0 0 3px var(--bt-cabinet),
+      inset 0 0 0 4px color-mix(in srgb, var(--bt-cord) 55%, transparent),
+      0 6px 18px color-mix(in srgb, var(--bt-wood-shadow) 35%, transparent);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  /* Four screw heads, one in each corner. */
+  .bt-map-screws {
+    position: absolute;
+    inset: 5px;
+    pointer-events: none;
+    background:
+      var(--bt-brass-screw) left top / 6px 6px no-repeat,
+      var(--bt-brass-screw) right top / 6px 6px no-repeat,
+      var(--bt-brass-screw) left bottom / 6px 6px no-repeat,
+      var(--bt-brass-screw) right bottom / 6px 6px no-repeat;
+  }
+  .bt-map-number {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: var(--bt-cabinet);
+    background: var(--bt-brass-disc);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .bt-map-room-name {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.15;
+  }
+  .bt-map-caption {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .bt-map-name {
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .bt-map-open {
+    display: grid;
+    flex-shrink: 0;
+    justify-items: center;
+    gap: 2px;
+    padding-left: 0.75rem;
+    border-left: 1.5px solid color-mix(in srgb, var(--bt-cord) 60%, transparent);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .bt-map-icon {
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+
+  /* Unfolded: the map opens up from the bottom edge. */
+  .bt-map-sheet {
+    margin: auto auto 0;
+    width: min(100% - 1rem, 32rem);
+    max-width: none;
+    max-height: calc(100dvh - 2rem);
+    border-bottom: 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+    transform-origin: bottom center;
+    opacity: 0;
+    scale: 1 0.2;
+    transition:
+      opacity 0.2s ease-out,
+      scale 0.35s cubic-bezier(0.3, 1.3, 0.5, 1),
+      overlay 0.35s allow-discrete,
+      display 0.35s allow-discrete;
+  }
+  .bt-map-sheet[open] {
+    opacity: 1;
+    scale: 1 1;
+  }
+  @starting-style {
+    .bt-map-sheet[open] {
+      opacity: 0;
+      scale: 1 0.2;
+    }
+  }
+  /* Clipped: the light cord's glow spreads wider than the sheet and would make it scroll. */
+  .bt-map-paper {
+    overflow: clip;
+    display: grid;
+    gap: 1.25rem;
+    padding: 1.25rem 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+  }
+
+  /* The floor plan, on squared drafting paper: rooms wall to wall, doorways in the walls. */
+  .bt-map-plan {
+    display: grid;
+    padding: 0.75rem;
+    border-radius: 6px;
+    background:
+      linear-gradient(var(--bt-sand-edge) 1px, transparent 1px) 0 0 / 16px 16px,
+      linear-gradient(90deg, var(--bt-sand-edge) 1px, transparent 1px) 0 0 / 16px 16px,
+      var(--bt-card);
+  }
+  .bt-map-rooms {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    border: 3px solid var(--bt-foreground);
+    list-style: none;
+  }
+  .bt-map-room {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 64px;
+    padding: 0.6rem 0.85rem;
+    background: var(--bt-card);
+  }
+  /* A wall with a doorway between two rooms. */
+  .bt-map-room + .bt-map-room {
+    border-top: 3px solid var(--bt-foreground);
+  }
+  .bt-map-room + .bt-map-room::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 1.25rem;
+    width: 2.25rem;
+    height: 3px;
+    background: var(--bt-card);
+  }
+  /* The light stays in its room: clipped at the walls, the doorway above kept. */
+  .bt-map-room.is-current {
+    clip-path: inset(-3px 0 0 0);
+    min-height: 104px;
+    background: color-mix(in srgb, var(--bt-glow) 22%, var(--bt-card));
+  }
+  .bt-map-room-label {
+    display: grid;
+    gap: 2px;
+    justify-items: start;
+  }
+  .bt-map-room-caption {
+    color: var(--bt-sand-ink);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .bt-map-room-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  /* The room takes the focus ring (below): the link covers it, so the ring outlines the room. */
+  .bt-map-room-title a {
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+  }
+  .bt-map-room-title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+  .bt-map-room:has(a:focus-visible) {
+    outline: 3px solid var(--bt-ring);
+    outline-offset: -3px;
+  }
+  .bt-map-room.is-current .bt-map-room-title {
+    text-decoration: underline;
+    text-decoration-color: var(--bt-sand-ink);
+    text-decoration-thickness: 3px;
+    text-underline-offset: 5px;
+  }
+  .bt-map-here {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+    color: var(--bt-sand-ink);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .bt-map-pin {
+    width: 12px;
+    height: 16px;
+    fill: var(--bt-sand-ink);
+  }
+  .bt-map-pin circle {
+    fill: var(--bt-card);
+  }
+  /* The cord hangs from the room's ceiling, above the room's own link. */
+  .bt-map-fixture {
+    position: relative;
+    z-index: 1;
+    margin-top: -0.6rem;
+  }
+  /* The cord's label centred under its pull, in the flow: beside it, it covered the room name. */
+  .bt-map-fixture .bt-pull.is-compact .bt-pull-label {
+    position: static;
+    margin-top: 2px;
+  }
+
+  /* The building's door in the bottom wall, the exit sign over it. */
+  .bt-map-exit {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -3px;
+    padding-right: 0.75rem;
+  }
+  .bt-map-exit::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 1rem;
+    width: 7.5rem;
+    height: 3px;
+    background: var(--bt-card);
+  }
+  .bt-map-exit > * {
+    margin-top: 0.75rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bt-map-sheet,
+    .bt-map-sheet[open] {
+      scale: 1 1;
+      transition: none;
+    }
+  }
+  @media print {
+    .bt-map {
+      display: none;
+    }
+  }
+}

@@ -9,12 +9,13 @@ app/
   [lang]/                    the root layout's segment: pt-BR (served at /) or en (/en)
     layout.tsx               <SiteDocument>, site metadata, static params, viewport
     page.tsx                 → features/landing
-    design/page.tsx          → features/styleguide (pt-BR only; /en/design is a 404)
+    design/page.tsx          → features/styleguide (both locales, noindex)
     cadastro/  entrar/       → features/account (sign-up, sign-in)
     portfolio/               → features/portfolio (signed-in, noindex)
     compatibilidade/  editais/   → features/call-notices (signed-in, noindex)
     opengraph-image.tsx      → share-art/share-card (one card per locale)
     not-found.tsx            → features/not-found, locale from next/root-params
+    error.tsx                → features/route-error: any page that throws (client; locale from useParams)
     [...missing]/page.tsx    any unknown path under a locale: calls notFound()
   global-not-found.tsx       URLs no route matches; renders outside [lang]
   icon.tsx  apple-icon.tsx   → share-art/brand-icon (one drawing, two sizes)

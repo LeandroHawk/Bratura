@@ -1,65 +1,28 @@
-import type { ColorTokenGroup, ColorTokenName } from '@bratura/ui';
+import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
+import type { Theme } from '@bratura/ui';
 
-/** The /design page is in Portuguese only, like the rest of the design system's reference. */
-export const COLOR_GROUP_LABEL: Record<ColorTokenGroup, string> = {
-  base: 'Base',
-  status: 'Status',
-  logo: 'Logo',
-  sign: 'Placa de madeira',
-  board: 'Quadro de avisos',
-  cabinet: 'Gaveteiro do acervo',
-  sand: 'Areia (Duna · Arenito forte)',
-  cord: 'Cordinha de luz',
-  stage: 'Palco',
-  ticket: 'Ingresso',
-  art: 'Arte em cena',
+const ptBR = {
+  title: 'Design system',
+  description: 'Tokens e componentes do @bratura/ui nos temas claro (Acervo) e escuro (Galeria).',
+  lead: {
+    before: 'Componentes de',
+    after:
+      '. O claro é o padrão e o escuro aparece quando alguém puxa a corda; aqui os dois aparecem lado a lado. Os contrastes de texto são verificados nos testes do pacote.',
+  },
+  themes: { light: 'Claro · Acervo', dark: 'Escuro · Galeria' } satisfies Record<Theme, string>,
 };
 
-export const COLOR_TOKEN_LABEL: Record<ColorTokenName, string> = {
-  background: 'Fundo da página',
-  foreground: 'Texto',
-  card: 'Card',
-  'muted-foreground': 'Texto secundário',
-  border: 'Borda',
-  primary: 'Ação principal',
-  'primary-foreground': 'Texto na ação principal',
-  ring: 'Anel de foco',
-  'status-open': 'Aberto',
-  'status-open-foreground': 'Texto em aberto',
-  'status-soon': 'Prazo curto',
-  'status-soon-foreground': 'Texto em prazo curto',
-  'status-missing': 'Falta',
-  'status-missing-foreground': 'Texto em falta',
-  'logo-green': 'Verde',
-  'logo-yellow': 'Amarelo',
-  'logo-blue': 'Azul',
-  'logo-outline': 'Contorno',
-  wood: 'Madeira',
-  'wood-grain': 'Veio',
-  'wood-edge': 'Borda',
-  'wood-ink': 'Texto',
-  'wood-shadow': 'Sombra',
-  twine: 'Barbante',
-  board: 'Cortiça do quadro',
-  cabinet: 'Nogueira da gaveta',
-  'sand-ink': 'Tinta da areia',
-  'sand-edge': 'Filete da areia',
-  cord: 'Latão',
-  'cord-shade': 'Latão na sombra',
-  'cord-highlight': 'Latão no brilho',
-  glow: 'Luz',
-  curtain: 'Cortina',
-  'curtain-fold': 'Dobra da cortina',
-  'curtain-shadow': 'Sombra da cortina',
-  ticket: 'Papel',
-  'ticket-shine': 'Brilho',
-  'ticket-ink': 'Texto',
-  'ticket-muted': 'Texto secundário',
-  'ticket-edge': 'Borda',
-  'ticket-stamp': 'Carimbo · só com produtor',
-  'ticket-stamp-ready': 'Carimbo · inscrição pronta',
-  'art-green': 'Verde',
-  'art-yellow': 'Amarelo',
-  'art-blue': 'Azul',
-  'art-red': 'Vermelho',
+export const STYLEGUIDE_CONTENT: Record<Locale, typeof ptBR> = {
+  'pt-BR': ptBR,
+  en: {
+    title: 'Design system',
+    description:
+      'Tokens and components of @bratura/ui in the light (Acervo) and dark (Galeria) themes.',
+    lead: {
+      before: 'The components of',
+      after:
+        '. Light is the default and dark appears when someone pulls the cord; here both stand side by side. Text contrast is checked by the package tests.',
+    },
+    themes: { light: 'Light · Acervo', dark: 'Dark · Galeria' },
+  },
 };

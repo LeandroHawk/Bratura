@@ -22,7 +22,9 @@ Two themes named after a museum: **Acervo** (light, parchment, the default) and 
 walnut and brass, when someone pulls the cord). The house objects are physical: the theme is a
 **light pull cord** (`PullCord`), the language a **market-stall sign** (`HangingSign`). A new
 control prefers an object from that room to a generic widget; it hangs from the top edge, lit or
-not by the cord's glow.
+not by the cord's glow. The way around is the building: a corridor of doors (`Corridor`), a floor
+plan on a phone (`MuseumMap`), an exit sign to leave (`ExitSign`); waiting is the tab's "B"
+breathing (`Loading`), a failure a room roped off for restoration (`ClosedRoom`).
 
 ## Tokens
 
@@ -31,7 +33,8 @@ not by the cord's glow.
 - **Every semantic token exists in both themes**; the test checks the names match.
 - **A new semantic token lives in four places, each tested:** both theme blocks of `tokens.css`, the
   `@theme inline` block (so it is a class: `bg-wood`, `fill-art-blue`), `COLOR_TOKENS` in
-  `tokens.ts` (the `/design` page lists it), and its label in the `/design` page's `content.ts`.
+  `tokens.ts` (the `/design` page lists it), and its label in the `content.ts` of `/design`'s
+  colours section (`styleguide/pages/sections/colors/`).
 - **A pair that carries text or meaning goes in `CONTRAST_PAIRS`** (`tokens.ts`) with its WCAG
   minimum (4.5 for text, 3 for edges and focus). The test runs every pair in both themes.
   Example: the sign's text on oak (`wood-ink` on `wood`, 5.4) and the board's edge on the wall.
@@ -47,6 +50,13 @@ not by the cord's glow.
   keeps 4.5:1. The "ready to apply" stamp (`--bt-ticket-stamp-ready`) is a dark green, darker
   on gold, kept apart from the logo's green. Both stamps are in `CONTRAST_PAIRS`. The panels that
   close the stage cast `--bt-curtain-shadow`.
+- **Materials that are not a colour live once in `utilities.css`**: the wood's sheen
+  (`--bt-wood-sheen`), brass hardware (`--bt-brass-ball`, `--bt-brass-screw`, `--bt-brass-disc`
+  for a number, `--bt-brass-rod` standing and `--bt-brass-rail` lying) and the walnut plaque with
+  brass letters (`walnut-plaque`). A component reuses them instead of redrawing. A size another
+  package must leave room for is exposed the same way: `museum-map-clearance` pads a page's end
+  above the phone's fixed map plaque.
+  The exit sign is emergency green (`--bt-exit`), the same in both themes.
 - **Painted things on stage use `--bt-art-*`, never the logo's tokens.** The scenery's art (a
   painting, a quilt) is a material too, the same in both themes; today it borrows the flag's colours
   and the curtain's velvet, but through its own names, so the logo can change without repainting it.
@@ -69,6 +79,8 @@ not by the cord's glow.
 - **`Badge` means a status, `Tag` means nothing but itself.** A status (open, closing soon, missing)
   is a `Badge`, coloured by its status token. Any other pill (a document, an included feature) is
   a `Tag`, bordered in its own text colour so it fits any surface. Neither is styled by hand.
+- **A link in running text takes the `text-link` utility** (underline, weight, focus ring), on an
+  `<a>` or a router's link; a link to another site is the web's `ExternalLink`.
 - **A real element for the real job.** `HangingSign` is an `<a href hreflang>`; its animation never
   replaces the link (modified clicks and reduced motion follow it at once). `PullCord` is a
   `<button>` whose visible label is its accessible name, and it announces the result.

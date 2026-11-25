@@ -101,7 +101,7 @@
     height: 6px;
     margin-top: -3px;
     border-radius: 999px;
-    background: radial-gradient(circle at 35% 35%, var(--bt-cord-highlight), var(--bt-cord-shade));
+    background: var(--bt-brass-ball);
   }
   .bt-drawer-label::before {
     left: 6px;

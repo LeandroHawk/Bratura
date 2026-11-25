@@ -8,7 +8,8 @@ import { MatchClassificationEnum } from '@bratura/shared/entities/match/enums/cl
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Checkbox, SelectField } from '@bratura/ui';
 import type { CallNoticeCardsFilter } from '@/features/call-notices/data/useCallNoticeCards';
-import { CALL_NOTICES_CONTENT } from './content';
+import { CALL_NOTICE_LABELS } from '@/features/call-notices/pages/sections/common/content';
+import { CALL_NOTICE_FILTERS_CONTENT } from './content';
 
 /** What the person chose: the server's filter, or only the calls they saved. */
 export type CallNoticeFilterValues = CallNoticeCardsFilter & { onlySaved: boolean };
@@ -36,8 +37,8 @@ export function CallNoticeFilters({
   shownCount: number | null;
   hasMore: boolean;
 }) {
-  const content = CALL_NOTICES_CONTENT[locale];
-  const copy = content.filters;
+  const copy = CALL_NOTICE_FILTERS_CONTENT[locale];
+  const labels = CALL_NOTICE_LABELS[locale];
 
   return (
     <search aria-label={copy.title} className="grid gap-4 print:hidden">
@@ -60,7 +61,7 @@ export function CallNoticeFilters({
           <option value={ANY}>{copy.any}</option>
           {MatchClassificationEnum.options.map((classification) => (
             <option key={classification} value={classification}>
-              {content.classification[classification]}
+              {labels.classification[classification]}
             </option>
           ))}
         </SelectField>
@@ -90,7 +91,7 @@ export function CallNoticeFilters({
         >
           {CallNoticeSortEnum.options.map((sort) => (
             <option key={sort} value={sort}>
-              {content.sort[sort]}
+              {copy.sortOption[sort]}
             </option>
           ))}
         </SelectField>
@@ -105,7 +106,12 @@ export function CallNoticeFilters({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p role="status" className="font-semibold">
-          {shownCount === null ? content.loading : copy.shown(shownCount, hasMore)}
+          {/* The list under it says it is loading; this count waits quietly, like the counters. */}
+          {shownCount === null ? (
+            <span aria-hidden="true">…</span>
+          ) : (
+            copy.shown(shownCount, hasMore)
+          )}
         </p>
         <Button size="sm" variant="ghost" onClick={() => setFilters(defaultFilters)}>
           {copy.clear}

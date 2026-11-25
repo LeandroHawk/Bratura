@@ -1,12 +1,12 @@
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { ReactNode } from 'react';
+import { ExternalLink } from '@/features/common/components/ExternalLink';
+import { NotInformed } from '@/features/common/components/NotInformed';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { formattedPlainDate } from '@bratura/shared/primitives/code/calendar/format';
 import { formattedAmountInCents } from '@/features/common/utils/format';
 import type { FormField } from './form-fields';
-
-const LINK = 'rounded-sm font-semibold underline underline-offset-4 focus-ring break-all';
 
 function shownValue(value: unknown, { control, options }: FormField, locale: Locale): ReactNode {
   const labels = CREATOR_LABELS[locale];
@@ -27,9 +27,9 @@ function shownValue(value: unknown, { control, options }: FormField, locale: Loc
               // A stored list read back, never reordered: its position is the stable key.
               <li key={index}>
                 {control === 'links' ? (
-                  <a href={text} target="_blank" rel="noreferrer" className={LINK}>
+                  <ExternalLink href={text} locale={locale} className="break-all">
                     {text}
-                  </a>
+                  </ExternalLink>
                 ) : (
                   (options?.labels[text] ?? text)
                 )}
@@ -60,7 +60,6 @@ export function RecordDetails({
   labels: Record<string, string>;
   values: Record<string, unknown>;
 }) {
-  const { notInformed } = CREATOR_LABELS[locale];
   return (
     <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
       {fields.map((field) => (
@@ -69,9 +68,7 @@ export function RecordDetails({
             {labels[field.name] ?? field.name}
           </dt>
           <dd className="whitespace-pre-line">
-            {shownValue(values[field.name], field, locale) ?? (
-              <span className="text-muted-foreground">{notInformed}</span>
-            )}
+            {shownValue(values[field.name], field, locale) ?? <NotInformed locale={locale} />}
           </dd>
         </div>
       ))}
