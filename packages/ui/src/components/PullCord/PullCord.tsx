@@ -19,14 +19,25 @@ export type PullCordCopy = {
   turnedOn: string;
 };
 
-export function PullCord({ copy, className = '' }: { copy: PullCordCopy; className?: string }) {
+/** `compact` shortens the cord and moves the label up beside the mount, for a short header. */
+export function PullCord({
+  copy,
+  size = 'default',
+  className = '',
+}: {
+  copy: PullCordCopy;
+  size?: 'default' | 'compact';
+  className?: string;
+}) {
   const dark = useTheme() === 'dark';
   // Bumped on every pull; used as a key so the tug animation restarts each time.
   const [pulls, setPulls] = useState(0);
   // Read out after a pull: focus stays on the cord, so the page change itself is not announced.
   const [announcement, setAnnouncement] = useState('');
   return (
-    <div className={`bt-pull ${dark ? 'is-dark' : ''} ${className}`}>
+    <div
+      className={`bt-pull ${dark ? 'is-dark' : ''} ${size === 'compact' ? 'is-compact' : ''} ${className}`}
+    >
       <span className="bt-pull-beam" aria-hidden="true" />
       <button
         type="button"
