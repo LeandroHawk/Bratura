@@ -9,7 +9,10 @@ import { signOut } from '@/features/common/data/demoStore';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { APP_CONTENT } from './content';
 
-/** The museum's exit sign: erases the demo's browser data and goes back to the home page. */
+/**
+ * The museum's exit sign: erases the demo's browser data and goes back to the home page. The
+ * corridor's `compact` sign says only "Saída"; the phone's map keeps the line under it.
+ */
 export function SignOutButton({
   locale,
   size,
@@ -24,7 +27,7 @@ export function SignOutButton({
   return (
     <ExitSign
       label={content.exit}
-      hint={content.exitHint}
+      hint={size === 'compact' ? undefined : content.exitHint}
       size={size}
       className={className}
       onClick={() => {

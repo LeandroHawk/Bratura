@@ -15,7 +15,7 @@ export function ExitSign({
   label: string;
   /** A smaller line under it that says what leaving does. */
   hint?: string;
-  /** `compact` is a smaller sign, hung over a door at the corridor's scale. */
+  /** `compact` is a smaller sign, hung on a door at the corridor's scale. */
   size?: 'default' | 'compact';
 }) {
   return (
