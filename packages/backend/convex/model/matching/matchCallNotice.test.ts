@@ -530,8 +530,21 @@ describe('matchCallNotice: a state answers residence only when it is named alone
     ['Ceará', 'Juazeiro do Norte', 'CE'],
     ['Estado do Rio de Janeiro', 'Niterói', 'RJ'],
     ['Estado do Ceará (CE)', 'Juazeiro do Norte', 'CE'],
+    ['Estado de São Paulo', 'Campinas', 'SP'],
+    ['SP', 'Campinas', 'SP'],
   ] as const)('%s for %s/%s: met', (value, city, state) => {
     expect(residenceOf(value, city, state).residence?.status).toBe('met');
+  });
+
+  test.each([
+    ['São Paulo', 'Campinas', 'SP'],
+    ['Rio de Janeiro', 'Niterói', 'RJ'],
+  ] as const)('%s alone for %s/%s may be the city: to confirm', (value, city, state) => {
+    expect(residenceOf(value, city, state).residence?.status).toBe('needsConfirmation');
+  });
+
+  test('a state named like a city in it answers its own city', () => {
+    expect(residenceOf('São Paulo', 'São Paulo', 'SP').residence?.status).toBe('met');
   });
 
   test('the city rule still answers a city named with its state', () => {

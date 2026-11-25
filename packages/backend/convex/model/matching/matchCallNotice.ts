@@ -11,6 +11,7 @@ import {
 } from '@bratura/shared/entities/call-notice/fragments/registration-window/fields';
 import type { CallNoticeExtraction } from '@bratura/shared/entities/call-notice-extraction/entity';
 import type { MatchProfile } from '@bratura/shared/entities/match/profile';
+import type { Uf } from '@bratura/shared/primitives/external/uf/enum';
 import { UF_NAME } from '@bratura/shared/primitives/external/uf/names';
 import type {
   MatchCheckStatus,
@@ -53,6 +54,9 @@ export function monthsStatedIn(detail: string): number | null {
   return Number(amount) * (unit.toLowerCase().startsWith('ano') ? 12 : 1);
 }
 
+/** States with a city of the same name inside them: "São Paulo" alone may mean the city. */
+const STATES_NAMED_LIKE_A_CITY_IN_THEM: ReadonlySet<Uf> = new Set(['SP', 'RJ', 'GO', 'AP']);
+
 const plainWords = (text: string) =>
   plainText(text)
     .replace(/[^a-z0-9]+/gu, ' ')
@@ -80,8 +84,11 @@ function residenceStatus(creator: MatchProfile['creator'], requirement: string):
   const stateName = plainWords(UF_NAME[creator.state]);
   // "São Paulo - SP" is also a city: name plus abbreviation counts only after "Estado do".
   const statePrefixed = state !== text;
+  const nameAloneMayBeACity = STATES_NAMED_LIKE_A_CITY_IN_THEM.has(creator.state);
   const stateNamed =
-    [uf, stateName].includes(state) || (statePrefixed && state === `${stateName} ${uf}`);
+    state === uf ||
+    (state === stateName && (statePrefixed || !nameAloneMayBeACity)) ||
+    (statePrefixed && state === `${stateName} ${uf}`);
   return stateNamed || isNational ? 'met' : 'needsConfirmation';
 }
 
