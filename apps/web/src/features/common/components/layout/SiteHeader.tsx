@@ -11,7 +11,7 @@ import { LanguageSwitch } from './LanguageSwitch';
 export function SiteHeader({ locale, path }: { locale: Locale; path?: SitePath }) {
   return (
     // Tall enough for the sign and the cord hanging over it, so no page has to make room for them.
-    <Container as="header" className="relative h-44 sm:h-36 lg:h-24">
+    <Container as="header" className="relative h-44 sm:h-36 lg:h-32">
       <div className="absolute top-0 right-[164px] sm:right-[280px]">
         <LanguageSwitch locale={locale} path={path} />
       </div>
