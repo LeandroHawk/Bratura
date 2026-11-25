@@ -187,7 +187,7 @@ one would do, open the discussion in the PR or with the team. Known open points:
 - When organization support is approved: add multiple profiles and memberships per account and
   enable `organizationRecords` / `groupRepresentation` for those profiles.
 
-## Demo profile boundary and next triggers
+## Demo profile boundary
 
 `callNoticeDetails` accepts an optional `MatchProfileSchema`, derived from creator and portfolio
 entities. `matchProfileFromPortfolio` strips identities, biography, descriptions, links and file

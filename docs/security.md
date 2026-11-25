@@ -156,4 +156,3 @@ Known gaps, in no order; add yours:
 - When diagnosing public profile queries: arguments include birth date and residence facts needed
   by rules, so never log arguments or send them to third-party providers. Keep portfolio text,
   identity, contact information, links and uploaded bytes out of the query DTO.
-
