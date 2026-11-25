@@ -49,7 +49,7 @@ one document. Bratura is the same ticket, with the way to each document.
 | **Room 1** | **Your portfolio** | Photos, links, documents or audio, told whatever way is easiest. The AI arranges them into a dated timeline, and every activity keeps its proof. |
 | **Room 2** | **The right calls** | The portfolio is the profile, matched against open calls, festivals and fairs: *eligible*, *almost eligible* or *not eligible*, always with the reason. |
 | **Room 3** | **What is missing** | Amount, deadline, who can apply and which documents, in plain language. Missing a SICAB or a CCMEI? Bratura shows where and how to get it. |
-| **Room 4** | **Ready to apply** | The portfolio in the format each call asks for, texts suggested only from the creator's own work, the document checklist, and a reminder by e-mail and WhatsApp before the deadline. |
+| **Room 4** | **Ready to apply** | The portfolio in the format each call asks for, texts suggested only from the creator's own work, the document checklist, and a reminder by e-mail and Telegram before the deadline. |
 
 ### Nothing is made up
 
@@ -66,14 +66,18 @@ Bratura says *"não informado"*.
   </picture>
 </a>
 
-Creators never pay, for anything. The bill goes to those who serve many creators or distribute the
-money for culture, because they win when more people apply properly:
+Bratura runs on a **Freemium Impact** model—never taking a percentage of prize money or selling
+creators' personal data. Essential access is always free so independent artists and artisans can
+build their portfolio and find where they qualify; revenue comes from advanced application workflows
+and from organizations serving multiple creators or distributing cultural funds:
 
 | Seat | Who | How they pay |
 |---|---|---|
-| Row A · main revenue | Associations, cooperatives and producers | Per managed profile, for a panel that follows many creators at once |
-| Row B · expansion | City culture departments | Annual contract: fuller applications, fewer disqualified ones, a map of cultural demand |
-| Box seats · phase 2 | Sponsoring companies | Subscription, to find organized projects for the Rouanet law or ProAC |
+| **General admission · Free** | Independent creators and beginners | **R$ 0, always:** guided portfolio, eligibility radar, document checklists and local calls |
+| **Front row · Freemium Pro** | Active artists and independent producers | **Pay-per-call** (on-demand application kit) or **Pro subscription** for unlimited call adaptations and post-award checklists |
+| **Row A · Main B2B revenue** | Associations, cooperatives and production houses | **Monthly/annual subscription** per managed portfolio tier, with a multi-profile panel to submit and track many creators at once |
+| **Row B · B2G expansion** | City culture departments and public bodies | **Annual contract:** fuller applications, fewer disqualified ones, and a live map of local cultural demand |
+| **Box seats · Phase 2** | Sponsoring companies and post-award partners | **Subscription** to match verified projects for tax-incentive laws (Rouanet / ProAC), plus opt-in referrals (MEI accounting, business accounts) after selection |
 
 ## Where the calls come from
 
@@ -81,10 +85,13 @@ Only open sources that allow automated access, with robots.txt and terms checked
 
 | Source | How |
 |---|---|
-| Mapas Culturais: federal, Ceará, Pernambuco, Santo André, Canindé | Public JSON API |
-| The edital PDFs those APIs link to | Firecrawl |
-| São Paulo city culture calls · Amigos da Arte (SP state) · Goiás craft fairs | Firecrawl |
-| The creator's own uploads | Convex storage, with consent |
+| 33 Mapas Culturais instances: federal, states and cities | Public JSON API |
+| 95 official pages of culture departments, foundations and public bodies | Plain fetch; Firecrawl from Brazil for pages that answer only there |
+| The call notices' PDFs and annexes | Firecrawl, or the PDF's own text layer when Firecrawl answers nearly empty |
+| The creator's portfolio | What the creator enters; in the demo it stays in the browser |
+
+34 more sources were checked and stay off, the reason written beside each one (terms, timeouts, a
+reader still missing) in [`registry.ts`](packages/backend/convex/model/sources/registry.ts).
 
 Left out on purpose: platforms whose terms forbid extraction (Prosas, social networks), sources that
 block crawlers, and anything that exposes personal data. The demo stars a **fictional** creator,
@@ -92,33 +99,40 @@ Dona Maria.
 
 ## How it is built
 
-**Live today:** the landing page in Portuguese and English, the design system and its `/design`
-reference, CI. **Being built for the hackathon:** the Convex backend (ingestion, portfolio,
-matching, alerts) and the app screens.
+**Live today**, in Portuguese and English, on real calls read from official sources: the landing
+page, sign-in and sign-up as a browser demo, the portfolio, the call lists (*eligible*, *almost*,
+*all*) and each call's requirements crossed with the portfolio, plus the design system and its
+`/design` reference. Behind them, the Convex backend: ingestion, extraction, matching, the
+notification outbox with Telegram delivery, and AbacatePay billing for the organization panel.
+**Next:** the application kit, real sign-in with WorkOS, the creator plans, the Telegram bot that
+answers, e-mail alerts.
 
 ```
  Web (Next.js) ───┐                       ┌── Mapas Culturais APIs
- WhatsApp ────────┼──►  Convex backend  ◄─┼── official pages and PDFs (Firecrawl)
- E-mail (Resend) ─┘   ingestion · portfolio · matching · alerts
-                      database · cron · vector search · file storage
- Login: WorkOS         LLM: Gemini API, free tier, behind a swappable adapter
+ Telegram ────────┼──►  Convex backend  ◄─┼── official pages and PDFs (Firecrawl)
+ E-mail (Resend) ─┘   ingestion · extraction · matching · alerts · billing
+                      database · cron · HTTP actions (webhooks)
+ Login: WorkOS         LLM: Gemini API, behind a swappable adapter
+ Billing: AbacatePay
 ```
 
-- **Ingestion**, on a schedule: fetch the calls, read each PDF, let the LLM classify it (a real
-  call for creators or an admin form?) and extract the requirements as Zod-validated JSON with a verbatim
-  quote for every field, then store them with the source link and an embedding.
-- **Matching is rules, not guesses:** region, applicant type, art form, deadline, MEI, SICAB,
-  CCMEI. The LLM reads PDFs, organizes portfolios and drafts texts; the backend computes, the web
-  displays.
-- **WhatsApp is not a separate service:** its webhook is a Convex HTTP action sharing the web app's
-  logic.
+- **Ingestion**: each source's listing on a schedule; reading each PDF and extracting it run in
+  batches under a credit ceiling. The LLM classifies a document (a real call for creators or an
+  admin form?) and extracts the requirements as Zod-validated JSON with a verbatim quote for every
+  value, checked against the text: a value without its quote is dropped.
+- **Matching is rules, not guesses:** region, applicant type, art form, deadline, age, MEI, SICAB,
+  CCMEI. The LLM only reads the calls; the backend computes, the web displays.
+- **Telegram is not a separate service:** alerts leave through an outbox in Convex (one row per
+  delivery, retries, opt-out when the bot is blocked); what triggers them and the bot that answers
+  come next.
 
 | Layer | Tech |
 |---|---|
 | Web | Next.js (App Router), TypeScript, Tailwind CSS 4, Vercel |
-| Backend and database | Convex: queries, mutations, actions, cron, vector index, file storage, HTTP actions |
-| Auth · e-mail · messaging | WorkOS AuthKit · Resend · WhatsApp through Nvoip |
-| Crawling · AI | Firecrawl · Gemini API (free tier) |
+| Backend and database | Convex: queries, mutations, actions, cron, HTTP actions |
+| Auth · e-mail · messaging | WorkOS AuthKit (next) · Resend (next) · Telegram Bot API |
+| Billing | AbacatePay: hosted checkout, signed webhooks |
+| Crawling · AI | Firecrawl · Gemini API, through an OpenAI-format adapter |
 | Contract | Zod: one schema per concept, shared by web and backend |
 
 ### Repository map
@@ -127,7 +141,7 @@ matching, alerts) and the app screens.
 apps/web/             Next.js: src/app routes, src/features holds one folder per screen
 packages/ui/          @bratura/ui, the design system (its living reference is /design)
 packages/shared/      the contract: Zod entities and primitives for web and backend
-packages/backend/     next: Convex schema, ingestion, portfolio, matching, alerts, WhatsApp
+packages/backend/     Convex: schema, ingestion, extraction, matching, alerts, Telegram, billing
 docs/                 architecture, contracts, security, data sources, integrations, the plan to 30/11
 docs/review.md        the checklist every change is reviewed against
 ```
@@ -145,8 +159,9 @@ pnpm dev        # http://localhost:3000, Portuguese at / and English at /en
 pnpm check      # lint, typecheck, tests and build: what CI runs
 ```
 
-The backend will add a Convex deployment and keys for WorkOS, Firecrawl, Resend, Gemini and
-Nvoip (WhatsApp), with a `.env.example` to copy. Keys live in Convex and Vercel, never in the repo.
+The backend runs on Convex ([`packages/backend/AGENTS.md`](packages/backend/AGENTS.md)); its keys
+(Firecrawl, Gemini, Telegram, AbacatePay) live in the Convex deployment, the web's in Vercel
+([`apps/web/.env.example`](apps/web/.env.example)). Never in the repo.
 
 ## Other ways to visit: accessibility
 
@@ -157,19 +172,19 @@ Planned after the essentials, if the deadline allows:
   on Portuguese pages, and only when asked for.
 - **Listen:** a button on each part that matters reads it aloud with the device's own voice (Web
   Speech API), for people who see the page but find reading hard. No cost, nothing to install.
-- **WhatsApp** as a second front end: two front ends (site and WhatsApp), one backend. For someone
-  already signed up with a portfolio: see the calls they are eligible for, apply, and get an alert
-  when a new call opens, in the app they already use. Signing up and building the portfolio over
-  WhatsApp may come later, once what the portfolio is has been decided.
+- **Telegram** as a second way in: one backend, two doors (the site and Telegram). For someone
+  already signed up with a portfolio: the alert of a new call they are eligible for, what is
+  missing and the deadline, in an app they already use. The delivery is built; what triggers each
+  alert and the bot that answers come next.
 
 ## Team
 
 | Who | Role | Focus |
 |---|---|---|
 | **Atilio Almeida** | Product owner | The idea, product insights, research inputs, business model and monetization |
-| **João Victor** | Tech lead | Repository foundation (front-end patterns, the contract, the tools we use) and Firecrawl ingestion |
-| **Leandro** | Integrations developer | WhatsApp front end; helps with Firecrawl ingestion |
-| **Kaik** | Integrations developer | WhatsApp front end |
+| **João Victor** | Tech lead | Repository foundation (front-end patterns, the contract, the tools we use), ingestion and extraction, the data |
+| **Leandro** | Front end | Sign-in, portfolio, call screens and matching, the landing |
+| **Kaik** | Integrations developer | Telegram alerts, AbacatePay billing, sign-in |
 
 Authorship, originality and the use of AI are in the [manifesto](MANIFEST.md).
 

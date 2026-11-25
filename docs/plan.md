@@ -16,9 +16,11 @@ explains the call in plain Portuguese, shows **what is missing** (MEI, SICAB, CC
 activity, documents), prepares an **application kit** (portfolio in the call's format, suggested
 texts, document checklist) and sends **deadline alerts** by e-mail and Telegram.
 
-**Who pays:** the creator never pays (no paywall on the creator side). Revenue is the multi-profile
-panel for associations, cooperatives and producers, then culture departments; sponsors in phase 2.
-Never a share of the prize, never selling data.
+**Who pays (Freemium Impact, PO decision of November 2026):** the portfolio, the eligibility
+triage and the local calls stay free for every creator. Revenue comes from the paid creator plans
+(a pass per call, a Pro subscription), the multi-profile panel for associations, cooperatives and
+producers, then culture departments; sponsors in phase 2. Never a share of the prize, never
+selling data. Only the panel's billing is built (`docs/integrations/abacate-pay.md`).
 
 ## Competition rules (Hack Brasil 2026, track Cultura & economia criativa)
 
