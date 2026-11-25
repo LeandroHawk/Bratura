@@ -9,3 +9,6 @@ export const ROUTES = {
   matches: '/compatibilidade',
   callNotices: '/editais',
 } as const satisfies Record<string, SitePath>;
+
+/** The pages open to a visitor: the sitemap lists them, the phone map's ground floor shows them. */
+export const PUBLIC_PATHS = [ROUTES.home, ROUTES.signUp, ROUTES.signIn] as const;

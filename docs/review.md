@@ -83,7 +83,8 @@ rg -n '<button|onClick' apps/web/src
 rg -n 'matchMedia|localStorage' apps/web/src
 
 # focus made invisible (WCAG 2.4.7): focus-ring is the visible focus, and a skip-link target needs
-# neither tabIndex nor outline-none
+# neither tabIndex nor outline-none (known and kept: a link covering a whole door or room hands its
+# ring to that object, in corridor.css and museum-map.css)
 rg -n 'outline-none|outline-hidden|outline: *(none|0)' apps/web/src packages/ui/src
 ```
 

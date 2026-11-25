@@ -9,6 +9,15 @@ const ptBR = {
     turnedOn: 'Luzes acesas: tema claro',
   } satisfies PullCordCopy,
   homeLink: 'Bratura, página inicial',
+  map: {
+    label: 'Mapa',
+    title: 'Mapa do museu',
+    closeLabel: 'Fechar o mapa',
+    here: 'Você está aqui',
+    groundFloor: 'Térreo',
+    lobby: 'Saguão',
+    offMap: 'Fora do mapa',
+  },
   languageNav: 'Idioma',
   skipToContent: 'Ir para o conteúdo [1]',
   withoutJavaScript:
@@ -28,6 +37,15 @@ export const LAYOUT_CONTENT: Record<Locale, typeof ptBR> = {
       turnedOn: 'Lights on: light theme',
     },
     homeLink: 'Bratura, home page',
+    map: {
+      label: 'Map',
+      title: 'Museum map',
+      closeLabel: 'Close the map',
+      here: 'You are here',
+      groundFloor: 'Ground floor',
+      lobby: 'Lobby',
+      offMap: 'Off the map',
+    },
     languageNav: 'Language',
     skipToContent: 'Skip to content [1]',
     withoutJavaScript:

@@ -47,6 +47,13 @@ not by the cord's glow.
   keeps 4.5:1. The "ready to apply" stamp (`--bt-ticket-stamp-ready`) is a dark green, darker
   on gold, kept apart from the logo's green. Both stamps are in `CONTRAST_PAIRS`. The panels that
   close the stage cast `--bt-curtain-shadow`.
+- **Materials that are not a colour live once in `utilities.css`**: the wood's sheen
+  (`--bt-wood-sheen`), brass hardware (`--bt-brass-ball`, `--bt-brass-screw`, `--bt-brass-disc`
+  for a number, `--bt-brass-rod` standing and `--bt-brass-rail` lying) and the walnut plaque with
+  brass letters (`walnut-plaque`). A component reuses them instead of redrawing. A size another
+  package must leave room for is exposed the same way: `museum-map-clearance` pads a page's end
+  above the phone's fixed map plaque.
+  The exit sign is emergency green (`--bt-exit`), the same in both themes.
 - **Painted things on stage use `--bt-art-*`, never the logo's tokens.** The scenery's art (a
   painting, a quilt) is a material too, the same in both themes; today it borrows the flag's colours
   and the curtain's velvet, but through its own names, so the logo can change without repainting it.

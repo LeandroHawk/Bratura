@@ -1,52 +1,35 @@
-'use client';
-
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Button } from '@bratura/ui';
+import { Corridor, CorridorDoor } from '@bratura/ui';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ROUTES } from '@/features/common/config/routes';
-import { signOut } from '@/features/common/data/demoStore';
 import { localizedPathFromLocale, type SitePath } from '@/features/common/utils/locale-path';
+import { APP_PAGES, appRoomFromPage } from './appPages';
 import { APP_CONTENT } from './content';
+import { SignOutButton } from './SignOutButton';
 
-const PAGES = [
-  { path: ROUTES.portfolio, label: 'portfolio' },
-  { path: ROUTES.matches, label: 'matches' },
-  { path: ROUTES.callNotices, label: 'callNotices' },
-] as const;
-
-/** The signed-in area's pages and the way out; the current page is marked for screen readers. */
+/**
+ * The signed-in area's rooms as doors along a corridor, the exit at its end; the current page is
+ * marked for screen readers. From `md` up only: on a phone the bottom map carries both.
+ */
 export function AppNav({ locale, currentPath }: { locale: Locale; currentPath: SitePath }) {
   const content = APP_CONTENT[locale];
-  const router = useRouter();
   return (
-    <nav
-      aria-label={content.nav}
-      className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-4 print:hidden"
-    >
-      <ul className="flex flex-wrap gap-x-5 gap-y-2">
-        {PAGES.map(({ path, label }) => (
-          <li key={path}>
-            <Link
-              href={localizedPathFromLocale(locale, path)}
-              aria-current={path === currentPath ? 'page' : undefined}
-              className="bt-app-nav-link rounded-sm py-1 font-body font-semibold text-muted-foreground focus-ring hover:text-foreground aria-[current=page]:text-foreground"
-            >
-              {content[label]}
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          signOut();
-          router.push(localizedPathFromLocale(locale, ROUTES.home));
-        }}
-      >
-        {content.signOut}
-      </Button>
+    <nav aria-label={content.nav} className="mt-8 hidden md:block print:hidden">
+      <Corridor exit={<SignOutButton locale={locale} size="compact" />}>
+        {APP_PAGES.map((page, index) => {
+          const room = appRoomFromPage(locale, page, index);
+          const isCurrent = room.path === currentPath;
+          return (
+            <CorridorDoor key={room.path} caption={room.caption} current={isCurrent}>
+              <Link
+                href={localizedPathFromLocale(locale, room.path)}
+                aria-current={isCurrent ? 'page' : undefined}
+              >
+                {room.name}
+              </Link>
+            </CorridorDoor>
+          );
+        })}
+      </Corridor>
     </nav>
   );
 }

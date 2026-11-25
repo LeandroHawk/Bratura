@@ -10,7 +10,7 @@ describe('Dialog', () => {
   );
 
   it('is the platform’s dialog, named by its title', () => {
-    const titleId = html.match(/<dialog class="bt-dialog" aria-labelledby="([^"]+)"/)?.[1];
+    const titleId = html.match(/<dialog class="bt-modal bt-dialog" aria-labelledby="([^"]+)"/)?.[1];
     expect(titleId).toBeTruthy();
     expect(html).toContain(`<h2 id="${titleId}"`);
   });
