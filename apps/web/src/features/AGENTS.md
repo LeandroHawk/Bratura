@@ -15,6 +15,7 @@ features/
                                site-metadata.ts, routes.ts (every path, once),
                                portfolio-section-ids.ts
     content/                   names several features show: profile types, cultural areas,
+                               a call's flags (closing soon, new),
                                document kinds, states
     data/                      demoStore.ts: the creator, portfolio and saved calls kept in the
                                browser until Convex has them (see below)
@@ -55,13 +56,13 @@ The landing today:
 ```
 landing/pages/              Landing.page.tsx fits the sections, in page order
   sections/hero/            the promise and an example call
-  sections/call-highlights/ bounded public call reads, composed beside the example by the page
+  sections/call-highlights/ three real calls, as scrolls pinned to the lobby's notice board
   sections/how-it-works/    the product flow as four museum rooms
   sections/why-it-matters/  the problem, as a call's ticket without and with Bratura
   sections/business-model/  who uses and who pays, as a theatre: stage, curtains, audience
   sections/future-plans/    other ways to visit, as a floor plan: two entrances, one building
   sections/common/          what two sections share: section frames and ids, the wall label,
-                            the room label
+                            the room label, a rubber stamp's ink
 ```
 
 A section holds everything of its region, flat; the file name says the kind. Kind subfolders

@@ -90,6 +90,7 @@
   --bt-wood-ink: var(--bt-parchment-50);
   --bt-wood-shadow: var(--bt-walnut-700);
   --bt-twine: var(--bt-twine-500);
+  --bt-board: var(--bt-twine-500);
   --bt-glow: var(--bt-glow-100);
   --bt-curtain: var(--bt-velvet-600);
   --bt-curtain-fold: var(--bt-velvet-900);
@@ -137,6 +138,7 @@
   --bt-wood-ink: var(--bt-parchment-50);
   --bt-wood-shadow: var(--bt-walnut-950);
   --bt-twine: var(--bt-twine-300);
+  --bt-board: var(--bt-twine-500);
   --bt-glow: var(--bt-glow-200);
   --bt-curtain: var(--bt-velvet-600);
   --bt-curtain-fold: var(--bt-velvet-900);
@@ -188,6 +190,7 @@
   --color-wood-ink: var(--bt-wood-ink);
   --color-wood-shadow: var(--bt-wood-shadow);
   --color-twine: var(--bt-twine);
+  --color-board: var(--bt-board);
   --color-glow: var(--bt-glow);
   --color-curtain: var(--bt-curtain);
   --color-curtain-fold: var(--bt-curtain-fold);

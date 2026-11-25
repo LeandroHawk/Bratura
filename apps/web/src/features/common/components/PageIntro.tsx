@@ -9,6 +9,7 @@ export function PageIntro({
   title,
   titleId,
   lead,
+  className = '',
   children,
 }: {
   locale: Locale;
@@ -16,10 +17,12 @@ export function PageIntro({
   /** For a section that names itself after this heading (`aria-labelledby`). */
   titleId?: string;
   lead: string;
+  /** Added to the wrapper: the hero lays the logo, title, lead and actions on its own grid. */
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="grid justify-items-start gap-7">
+    <div className={`grid justify-items-start gap-7 ${className}`}>
       <Logo
         slogan={{ text: SITE_SLOGAN[locale], lang: locale }}
         className="text-[clamp(48px,9vw,76px)]"

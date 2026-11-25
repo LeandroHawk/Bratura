@@ -38,6 +38,8 @@ not by the cord's glow.
 - **An object in the room keeps its material in both themes and adapts only its edge.** The sign is
   the same oak in Acervo and Galeria; `--bt-wood-edge` and `--bt-twine` change so it stays cut out
   from the wall. The cord does the same with brass (`--bt-cord-*`).
+  The notice board on the landing is cork (`--bt-board`) in a frame of the sign's oak, the same
+  in both themes; the sheets pinned to it are cards, so they follow the theme.
   The stage curtain is velvet (`--bt-curtain`, `--bt-curtain-fold`), a deep crimson kept apart
   from `--bt-status-missing`: red-for-missing stays the bright red of the statuses.
   The ticket (`--bt-ticket-*`) is parchment in Acervo and a golden ticket, brass, in Galeria;

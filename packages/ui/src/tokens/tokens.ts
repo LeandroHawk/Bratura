@@ -27,6 +27,7 @@ export const COLOR_TOKENS = [
   { group: 'sign', name: 'wood-ink' },
   { group: 'sign', name: 'wood-shadow' },
   { group: 'sign', name: 'twine' },
+  { group: 'board', name: 'board' },
   { group: 'cord', name: 'cord' },
   { group: 'cord', name: 'cord-shade' },
   { group: 'cord', name: 'cord-highlight' },
@@ -72,6 +73,9 @@ export const CONTRAST_PAIRS = [
   { fg: 'wood-ink', bg: 'wood', min: 4.5 },
   { fg: 'wood-ink', bg: 'wood-grain', min: 4.5 },
   { fg: 'wood-edge', bg: 'background', min: 3 },
+  // The notice board: a sheet's edge against the cork, and the "new" stamp on a sheet.
+  { fg: 'card', bg: 'board', min: 3 },
+  { fg: 'status-open', bg: 'card', min: 4.5 },
   // The ticket's stamps and labels ("only with a producer", "ready to apply"): bold text on it.
   { fg: 'ticket-stamp', bg: 'ticket', min: 4.5 },
   { fg: 'ticket-stamp-ready', bg: 'ticket', min: 4.5 },

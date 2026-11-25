@@ -11,6 +11,7 @@ import type {
 import type { MatchClassification } from '@bratura/shared/entities/match/enums/classification/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { CallNoticeStatus } from './callNoticeTexts';
+import { CALL_NOTICE_FLAG_LABELS } from '@/features/common/content/call-notice-flags';
 
 const ptBR = {
   fictionalProfileNotice:
@@ -21,7 +22,7 @@ const ptBR = {
   openEndedClose: 'sem data de encerramento',
   status: {
     open: 'Aberto',
-    closingSoon: 'Encerrando em breve',
+    closingSoon: CALL_NOTICE_FLAG_LABELS['pt-BR'].closesSoon,
     openEnded: 'Sem data para encerrar',
     closed: 'Encerrado',
     notInformed: 'Prazo não informado',
@@ -69,7 +70,7 @@ const ptBR = {
     published: 'No Bratura desde',
     opens: 'Abertura das inscrições',
     closes: 'Encerramento das inscrições',
-    isNew: 'Novo',
+    isNew: CALL_NOTICE_FLAG_LABELS['pt-BR'].isNew,
     details: 'Ver detalhes',
     checkEligibility: 'Verificar minha elegibilidade',
     save: 'Salvar edital',
@@ -181,7 +182,7 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
     openEndedClose: 'no closing date',
     status: {
       open: 'Open',
-      closingSoon: 'Closing soon',
+      closingSoon: CALL_NOTICE_FLAG_LABELS.en.closesSoon,
       openEnded: 'No closing date',
       closed: 'Closed',
       notInformed: 'Deadline not informed',
@@ -229,7 +230,7 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
       published: 'On Bratura since',
       opens: 'Registration opens',
       closes: 'Registration closes',
-      isNew: 'New',
+      isNew: CALL_NOTICE_FLAG_LABELS.en.isNew,
       details: 'See details',
       checkEligibility: 'Check my eligibility',
       save: 'Save call',

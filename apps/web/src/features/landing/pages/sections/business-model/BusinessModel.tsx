@@ -71,7 +71,7 @@ export function BusinessModel({ locale }: { locale: Locale }) {
           <p className="font-display text-xl font-bold">{audience.label}</p>
           <p className="max-w-[70ch] text-small text-muted-foreground">{audience.channels}</p>
         </div>
-        <ul className="grid gap-8 md:grid-cols-3 md:gap-6">
+        <ul className="grid gap-8 md:grid-cols-2 md:gap-6 xl:grid-cols-4">
           {audience.rows.map((row) => (
             <li key={row.title} className="grid content-start gap-2 border-t border-border pt-5">
               <Seats box={row.box} />
