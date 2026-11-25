@@ -28,6 +28,9 @@ export const COLOR_TOKENS = [
   { group: 'sign', name: 'wood-shadow' },
   { group: 'sign', name: 'twine' },
   { group: 'board', name: 'board' },
+  { group: 'cabinet', name: 'cabinet' },
+  { group: 'sand', name: 'sand-ink' },
+  { group: 'sand', name: 'sand-edge' },
   { group: 'cord', name: 'cord' },
   { group: 'cord', name: 'cord-shade' },
   { group: 'cord', name: 'cord-highlight' },
@@ -76,6 +79,12 @@ export const CONTRAST_PAIRS = [
   // The notice board: a sheet's edge against the cork, and the "new" stamp on a sheet.
   { fg: 'card', bg: 'board', min: 3 },
   { fg: 'status-open', bg: 'card', min: 4.5 },
+  // The cabinet's drawers: the brass label and the shine of its gold title on walnut.
+  { fg: 'cord', bg: 'cabinet', min: 4.5 },
+  { fg: 'cord-highlight', bg: 'cabinet', min: 4.5 },
+  // The sand ink: labels and group titles, written on a card and on the page.
+  { fg: 'sand-ink', bg: 'card', min: 4.5 },
+  { fg: 'sand-ink', bg: 'background', min: 4.5 },
   // The ticket's stamps and labels ("only with a producer", "ready to apply"): bold text on it.
   { fg: 'ticket-stamp', bg: 'ticket', min: 4.5 },
   { fg: 'ticket-stamp-ready', bg: 'ticket', min: 4.5 },

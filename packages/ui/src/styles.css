@@ -8,6 +8,7 @@
 @import './theme/light-switch.css';
 @import './components/Button/button.css';
 @import './components/Checkbox/checkbox.css';
+@import './components/Collapse/collapse.css';
 @import './components/Dialog/dialog.css';
 @import './components/Field/field.css';
 @import './components/Logo/logo.css';

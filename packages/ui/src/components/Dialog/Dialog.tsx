@@ -36,7 +36,7 @@ export function Dialog({ open, onClose, title, titleLang, closeLabel, children }
           <h2
             id={titleId}
             lang={titleLang}
-            className="font-display text-2xl leading-tight font-bold text-balance"
+            className="min-w-0 font-display text-2xl leading-tight font-bold text-balance wrap-anywhere"
           >
             {title}
           </h2>
