@@ -9,20 +9,23 @@ import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds
 import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
 import { ExampleCall } from './ExampleCall';
 
-export function Hero({ locale, highlights }: { locale: Locale; highlights: React.ReactNode }) {
+export function Hero({ locale }: { locale: Locale }) {
   const content = HERO_CONTENT[locale];
   return (
     <Container
       as="section"
       id={SECTION_IDS.hero}
       aria-labelledby={titleIdFromSectionId(SECTION_IDS.hero)}
-      className="grid items-center gap-12 pb-20 lg:grid-cols-[1.15fr_1fr]"
+      className="grid gap-12 pb-20 lg:grid-cols-[1.15fr_1fr] lg:items-start lg:justify-items-start lg:gap-y-7"
     >
       <PageIntro
         locale={locale}
         title={TAGLINE[locale]}
         titleId={titleIdFromSectionId(SECTION_IDS.hero)}
         lead={content.lead}
+        // From `lg` its four pieces are rows of the hero, so the example starts level with the
+        // title: `row-span-3` counts them, and `gap-y-7` repeats PageIntro's own `gap-7`.
+        className="lg:contents lg:*:col-start-1"
       >
         <ul className="flex flex-wrap gap-3">
           <li>
@@ -42,9 +45,8 @@ export function Hero({ locale, highlights }: { locale: Locale; highlights: React
           </li>
         </ul>
       </PageIntro>
-      <div className="grid min-w-0 gap-10">
+      <div className="min-w-0 lg:col-start-2 lg:row-span-3 lg:row-start-2 lg:justify-self-stretch">
         <ExampleCall locale={locale} />
-        {highlights}
       </div>
     </Container>
   );

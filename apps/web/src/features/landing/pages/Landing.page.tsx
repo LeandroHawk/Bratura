@@ -13,7 +13,8 @@ export function LandingPage({ locale }: { locale: Locale }) {
   return (
     <PageShell locale={locale} path="/">
       <WebApplicationJsonLd locale={locale} />
-      <Hero locale={locale} highlights={<CallHighlights locale={locale} />} />
+      <Hero locale={locale} />
+      <CallHighlights locale={locale} />
       <HowItWorks locale={locale} />
       <WhyItMatters locale={locale} />
       <BusinessModel locale={locale} />
