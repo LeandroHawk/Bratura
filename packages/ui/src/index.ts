@@ -8,6 +8,7 @@ export {
 } from './components/Button/Button';
 export { Card } from './components/Card/Card';
 export { Checkbox } from './components/Checkbox/Checkbox';
+export { Collapse } from './components/Collapse/Collapse';
 export { Container } from './components/Container/Container';
 export { Dialog } from './components/Dialog/Dialog';
 export { Eyebrow } from './components/Eyebrow/Eyebrow';

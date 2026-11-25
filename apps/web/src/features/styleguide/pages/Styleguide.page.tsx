@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   Checkbox,
+  Collapse,
   COLOR_TOKENS,
   Container,
   Eyebrow,
@@ -99,6 +100,18 @@ export function StyleguidePage() {
                 <Badge tone="open">Aberto até 12/12</Badge>
                 <Badge tone="soon">Prazo curto</Badge>
                 <Badge tone="missing">Falta: CCMEI</Badge>
+                <Badge tone="neutral">Para você conferir</Badge>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Badge tone="open" variant="dot">
+                  Inscrições abertas
+                </Badge>
+                <Badge tone="soon" variant="dot">
+                  Encerra em breve
+                </Badge>
+                <Badge tone="neutral" variant="dot">
+                  Prazo não informado
+                </Badge>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Tag>Portfólio</Tag>
@@ -136,6 +149,12 @@ export function StyleguidePage() {
               <div>
                 <DialogExample />
               </div>
+              <Collapse title="Vagas reservadas" count={2}>
+                <p className="text-small">A placa fica em cima; ao abrir, o puxador desce.</p>
+              </Collapse>
+              <Collapse title="Critérios de avaliação" count={3} defaultOpen>
+                <p className="text-small">Aberta: clique na placa ou no puxador para fechar.</p>
+              </Collapse>
             </div>
 
             <div className="grid gap-3">
