@@ -26,6 +26,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Not Next internals, files with an extension (robots.txt, sitemap.xml, the manifest), the
-  // locale-free icon routes, or the WorkOS callback route, which handleAuth() answers itself.
-  matcher: ['/((?!_next|icon|apple-icon|callback|.*\\..*).*)'],
+  // locale-free icon routes, or the auth routes at the root (callback, login).
+  matcher: ['/((?!_next|icon|apple-icon|callback|login|.*\\..*).*)'],
 };

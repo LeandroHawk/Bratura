@@ -16,6 +16,7 @@ import type * as extraction from "../extraction.js";
 import type * as http from "../http.js";
 import type * as ingestion from "../ingestion.js";
 import type * as lib_appError from "../lib/appError.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as lib_builders from "../lib/builders.js";
 import type * as lib_env from "../lib/env.js";
 import type * as lib_httpError from "../lib/httpError.js";
@@ -75,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   ingestion: typeof ingestion;
   "lib/appError": typeof lib_appError;
+  "lib/auth": typeof lib_auth;
   "lib/builders": typeof lib_builders;
   "lib/env": typeof lib_env;
   "lib/httpError": typeof lib_httpError;

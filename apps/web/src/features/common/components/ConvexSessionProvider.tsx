@@ -13,22 +13,23 @@ import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 const convex = convexUrl === undefined ? null : new ConvexReactClient(convexUrl);
 
-/** The WorkOS session as Convex's auth hook: the AuthKit access token is the JWT Convex checks. */
+/** The WorkOS session as Convex's auth hook (Convex's documented pattern for AuthKit). */
 function useAuthFromWorkos() {
-  const { user, loading: userLoading } = useAuth();
-  const { accessToken, loading: tokenLoading, refresh } = useAccessToken();
+  const { user, loading } = useAuth();
+  const { getAccessToken, refresh } = useAccessToken();
   const fetchAccessToken = useCallback(
     async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
-      if (!forceRefreshToken && accessToken !== undefined) return accessToken;
-      return (await refresh()) ?? null;
+      if (!user) return null;
+      try {
+        if (forceRefreshToken) return (await refresh()) ?? null;
+        return (await getAccessToken()) ?? null;
+      } catch {
+        return null;
+      }
     },
-    [accessToken, refresh],
+    [user, refresh, getAccessToken],
   );
-  return {
-    isLoading: userLoading || tokenLoading,
-    isAuthenticated: user !== null && accessToken !== undefined,
-    fetchAccessToken,
-  };
+  return { isLoading: loading, isAuthenticated: user !== null, fetchAccessToken };
 }
 
 /** On every sign-in, `users:store` find-or-creates the caller's row — the first login needs it. */
@@ -43,7 +44,10 @@ function StoreUserOnSignIn() {
     }
     if (stored.current) return;
     stored.current = true;
-    void store({});
+    void store({}).catch((error: unknown) => {
+      stored.current = false;
+      console.error('users:store failed', error);
+    });
   }, [isAuthenticated, store]);
   return null;
 }
