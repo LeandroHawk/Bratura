@@ -21,6 +21,9 @@ import { CALL_NOTICES_CONTENT } from './sections/common/content';
 import { MatchSummary } from './sections/match-summary/MatchSummary';
 import { OverviewCounters } from './sections/overview-counters/OverviewCounters';
 
+/** The pins, one colour of the logo per card, in list order. */
+const BOARD_PIN_COLOURS = ['bg-logo-green', 'bg-logo-yellow', 'bg-logo-blue'];
+
 /** The two screens over the same calls: the fit with the portfolio first, or every call. */
 export type CallNoticesView = 'matches' | 'overview';
 
@@ -91,12 +94,17 @@ function CallNotices({
       />
       {shown?.length === 0 && <p className="text-muted-foreground">{content.filters.noResults}</p>}
       {shown !== null && shown.length > 0 && (
-        <ul className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+        // The cards pinned to the lobby's cork board, the landing's notice board: same materials.
+        <ul className="grid items-start gap-8 rounded-xl border-[6px] border-wood bg-board p-3 pt-6 shadow-lifted outline-2 outline-wood-edge sm:border-[10px] sm:p-6 sm:pt-8 md:grid-cols-2 xl:grid-cols-3">
           {shown.map((callNotice, index) => {
             const { callNoticeId } = callNotice;
             const isSaved = savedById.has(callNoticeId);
             return (
-              <li key={callNoticeId}>
+              <li key={callNoticeId} className="relative">
+                <span
+                  className={`absolute -top-2.5 left-1/2 z-10 size-5 -translate-x-1/2 rounded-full border-2 border-foreground shadow-cutout ${BOARD_PIN_COLOURS[index % BOARD_PIN_COLOURS.length]}`}
+                  aria-hidden="true"
+                />
                 <CallNoticeCard
                   locale={locale}
                   callNotice={callNotice}

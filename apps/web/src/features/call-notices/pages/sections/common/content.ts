@@ -123,10 +123,11 @@ const ptBR = {
       'Os documentos deste edital não foram lidos pelo Bratura (a fonte não permite a leitura automática, ou ela ainda não aconteceu). Confira tudo na página oficial.',
     notCreatorCall:
       'Este edital não parece ser para artistas e grupos com projeto próprio: não conferimos a sua elegibilidade.',
-    eligibilityTitle: 'Análise de elegibilidade',
+    whoCanApplyTitle: 'Quem pode participar',
     eligibilityLead:
       'Conferência por regras objetivas, item a item, com o trecho do edital que pede cada um.',
-    quoteLabel: 'O edital diz:',
+    quoteToggle: 'Trecho do edital',
+    portfolioHas: (held: number, asked: number) => `${held} de ${asked} no seu portfólio`,
     checkStatus: {
       met: 'Atendido',
       notMet: 'Não atendido',
@@ -147,23 +148,26 @@ const ptBR = {
       'O seu tipo de inscrição não está na lista que lemos. A lista pode estar incompleta: confira no edital.',
     artFormToConfirm:
       'As áreas culturais do seu perfil não estão entre as que lemos neste edital: confira no edital.',
-    toApplyTitle: 'Para se inscrever',
-    afterSelectionTitle: 'Se for selecionado',
+    toApplyTitle: 'Documentos para se inscrever',
+    afterSelectionTitle: 'Documentos se for selecionado',
     afterSelectionLead: 'Pedidos só depois do resultado: não contam para a sua elegibilidade.',
     listNone: 'O edital não lista nenhum.',
-    rulesTitle: 'Regras de participação',
     quotasTitle: 'Vagas reservadas',
     quotasLead:
       'O Bratura não guarda autodeclaração: confira no edital se você se enquadra em alguma.',
     quotaShare: 'Reserva',
     updatePortfolio: 'Atualizar meu portfólio',
-    annexesTitle: 'Página oficial e anexos',
-    officialPage: 'Acessar a página oficial de inscrição',
+    annexesTitle: 'Anexos do edital',
+    officialPage: 'Página oficial de inscrição',
     annex: (position: number) => `Anexo ${position}`,
     deadline: 'Prazo final para inscrição',
     aiTitle: 'Onde tirar cada documento e textos sugeridos',
     aiLead: 'Em breve. Nada aqui é inventado: enquanto não existir, não aparece.',
-    alertsTitle: 'Alertas e acompanhamento',
+    passCta: 'Montar minha inscrição',
+    passCardNote: 'Passe Edital: Pix ou cartão, pelo AbacatePay. Demonstração, nada é cobrado.',
+    passDetailsNote:
+      'Passe Edital: Pix ou cartão, pelo AbacatePay. Demonstração, nada é cobrado; a montagem da inscrição chega em breve.',
+    alertsTitle: 'Alertas',
     alertsLead:
       'Nesta demonstração a escolha fica guardada neste navegador e nenhuma mensagem é enviada. Com a conta, o lembrete chega pelo canal que você ativar (hoje, o Telegram).',
     saveCall: 'Salvar este edital',
@@ -284,10 +288,11 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
         'Bratura did not read this call’s documents (the source does not allow automated reading, or it has not happened yet). Check everything on the official page.',
       notCreatorCall:
         'This call does not seem to be for artists and groups with their own project: we did not check your eligibility.',
-      eligibilityTitle: 'Eligibility analysis',
+      whoCanApplyTitle: 'Who can take part',
       eligibilityLead:
         'Checked by objective rules, item by item, with the passage of the call that asks for each.',
-      quoteLabel: 'The call says:',
+      quoteToggle: 'The call’s passage',
+      portfolioHas: (held, asked) => `${held} of ${asked} in your portfolio`,
       checkStatus: { met: 'Met', notMet: 'Not met', needsConfirmation: 'For you to check' },
       paperStatus: {
         met: 'You already have it',
@@ -304,23 +309,26 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
         'Your applicant type is not on the list we read. The list may be incomplete: check the call.',
       artFormToConfirm:
         'The cultural areas of your profile are not among those we read in this call: check the call.',
-      toApplyTitle: 'To apply',
-      afterSelectionTitle: 'If you are selected',
+      toApplyTitle: 'Documents to apply',
+      afterSelectionTitle: 'Documents if you are selected',
       afterSelectionLead: 'Asked only after the result: they do not count for your eligibility.',
       listNone: 'The call lists none.',
-      rulesTitle: 'Participation rules',
       quotasTitle: 'Reserved places',
       quotasLead:
         'Bratura keeps no self-declaration: check in the call whether one applies to you.',
       quotaShare: 'Reserved',
       updatePortfolio: 'Update my portfolio',
-      annexesTitle: 'Official page and annexes',
-      officialPage: 'Go to the official registration page',
+      annexesTitle: 'The call’s annexes',
+      officialPage: 'Official registration page',
       annex: (position) => `Annex ${position}`,
       deadline: 'Final registration deadline',
       aiTitle: 'Where to get each document and suggested texts',
       aiLead: 'Coming soon. Nothing here is invented: until it exists, it does not show.',
-      alertsTitle: 'Alerts and follow-up',
+      passCta: 'Build my application',
+      passCardNote: 'Call Pass: Pix or card, through AbacatePay. Demo, nothing is charged.',
+      passDetailsNote:
+        'Call Pass: Pix or card, through AbacatePay. Demo, nothing is charged; building the application comes soon.',
+      alertsTitle: 'Alerts',
       alertsLead:
         'In this demo the choice is kept in this browser and no message is sent. With an account, the reminder arrives through the channel you turn on (today, Telegram).',
       saveCall: 'Save this call',

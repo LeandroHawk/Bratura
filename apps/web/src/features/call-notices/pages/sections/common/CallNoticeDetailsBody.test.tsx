@@ -128,8 +128,8 @@ describe('CallNoticeDetailsBody', () => {
 
   test('lists what to send to apply and what only if selected, each with its passage', () => {
     const html = text(read);
-    const toApply = html.indexOf('Para se inscrever');
-    const afterSelection = html.indexOf('Se for selecionado');
+    const toApply = html.lastIndexOf('Documentos para se inscrever');
+    const afterSelection = html.indexOf('Documentos se for selecionado');
     expect(toApply).toBeGreaterThan(-1);
     expect(afterSelection).toBeGreaterThan(toApply);
     expect(html.indexOf('cópia do RG')).toBeLessThan(afterSelection);
@@ -140,10 +140,51 @@ describe('CallNoticeDetailsBody', () => {
     expect(html).toContain('vence antes do fim das inscrições');
   });
 
+  test('lists a missing document before one the portfolio holds, whatever the call’s order', () => {
+    const html = text(read);
+    expect(html.indexOf('cópia do CPF')).toBeLessThan(html.indexOf('cópia do RG'));
+  });
+
+  test('sums up the documents to apply, leaving out those asked only after selection', () => {
+    const html = text(read);
+    expect(html).toContain('1 de 2 no seu portfólio');
+    expect(html).toContain('Falta: 1');
+    expect(html).toContain('Para você conferir: 0');
+  });
+
+  test('names each status once, over its group, instead of on every document', () => {
+    const html = text(read);
+    expect(html).toMatch(/<h4[^>]*><span[^>]*bg-status-missing[^>]*><\/span>Falta<span[^>]*>\(1\)/);
+    expect(html).toMatch(
+      /<h4[^>]*><span[^>]*bg-status-open[^>]*><\/span>Você já tem<span[^>]*>\(1\)/,
+    );
+    expect(html.match(/>Falta</g)).toHaveLength(1);
+  });
+
+  test('starts with every section folded, so the summary is what shows first', () => {
+    const html = text(read);
+    expect(html).not.toContain('aria-expanded="true"');
+    for (const title of ['Sobre o edital', 'Quem pode participar', 'Vagas reservadas'])
+      expect(html).toMatch(new RegExp(`aria-expanded="false"[^>]*>.*?${title}`));
+  });
+
   test('shows the rules and the reserved places with their passages', () => {
     const html = text(read);
     expect(html).toContain('maiores de 18 anos');
     expect(html).toContain('reserva de 20% para mulheres');
+  });
+
+  test('puts the official page in the summary, above every drawer, read or not', () => {
+    for (const details of [read, notRead]) {
+      const html = text(details);
+      const official = html.indexOf('href="https://cultura.example.gov.br/edital"');
+      expect(official).toBeGreaterThan(-1);
+      expect(official).toBeLessThan(html.indexOf('class="bt-drawer"'));
+    }
+  });
+
+  test('keeps the annexes in a drawer of their own, counted', () => {
+    expect(text(read)).toContain('Anexos do edital<span class="font-body font-normal"> (1)</span>');
   });
 
   test('names an annex by its label and the total budget as the call’s total', () => {

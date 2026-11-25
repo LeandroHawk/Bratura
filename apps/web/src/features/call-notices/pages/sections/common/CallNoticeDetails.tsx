@@ -3,10 +3,10 @@
 import type { CallNoticeCard } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
 import type { SavedCallNotice as SavedCallNoticeRow } from '@bratura/shared/entities/call-notice/dto/bratura-portal/saved-call-notice/mutation';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Checkbox, Dialog } from '@bratura/ui';
+import { Checkbox, Dialog, Heading } from '@bratura/ui';
 import { useCallNoticeDetails } from '@/features/call-notices/data/useCallNoticeDetails';
 import { CALL_NOTICE_LANGUAGE } from './callNoticeTexts';
-import { CallNoticeDetailsBody, DetailsSection } from './CallNoticeDetailsBody';
+import { CallNoticeDetailsBody } from './CallNoticeDetailsBody';
 import { CALL_NOTICES_CONTENT } from './content';
 
 type SavedCallNotice = Pick<SavedCallNoticeRow, 'remindersOn'>;
@@ -39,15 +39,19 @@ export function CallNoticeDetails({
       titleLang={CALL_NOTICE_LANGUAGE}
       closeLabel={copy.close}
     >
-      <div className="grid gap-8">
+      <div className="grid gap-6">
         {details ? (
           <CallNoticeDetailsBody locale={locale} details={details} />
         ) : (
           <p role="status">{copy.loading}</p>
         )}
 
-        <DetailsSection title={copy.alertsTitle} lead={copy.alertsLead}>
-          <div className="grid gap-2">
+        {/* A preference, not something to read: the dialog's footer, under the sand's hairline. */}
+        <section className="grid gap-2 border-t border-sand-edge pt-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Heading as="h3" size="item" className="text-sand-ink">
+              {copy.alertsTitle}
+            </Heading>
             <Checkbox
               checked={saved !== null}
               onChange={(event) =>
@@ -63,7 +67,8 @@ export function CallNoticeDetails({
               {copy.reminders}
             </Checkbox>
           </div>
-        </DetailsSection>
+          <p className="text-caption text-muted-foreground">{copy.alertsLead}</p>
+        </section>
       </div>
     </Dialog>
   );
