@@ -1,4 +1,6 @@
-export type Theme = 'light' | 'dark';
+/** Light (Acervo) first: the default; dark (Galeria) when someone pulls the cord. */
+export const THEMES = ['light', 'dark'] as const;
+export type Theme = (typeof THEMES)[number];
 
 export const THEME_STORAGE_KEY = 'bratura-theme';
 

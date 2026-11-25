@@ -41,7 +41,13 @@ export { PullCord, type PullCordCopy } from './components/PullCord/PullCord';
 export { Tag, type TagSize } from './components/Tag/Tag';
 
 // Theme
-export { restoreSavedTheme, THEME_STORAGE_KEY, themeInitScript, type Theme } from './theme/script';
+export {
+  restoreSavedTheme,
+  THEME_STORAGE_KEY,
+  THEMES,
+  themeInitScript,
+  type Theme,
+} from './theme/script';
 export { switchTheme, useTheme } from './theme/useTheme';
 
 // Tokens
