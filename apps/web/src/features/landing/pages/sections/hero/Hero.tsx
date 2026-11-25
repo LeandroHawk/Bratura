@@ -34,11 +34,6 @@ export function Hero({ locale }: { locale: Locale }) {
             </ButtonLink>
           </li>
           <li>
-            <ButtonLink href={localizedPathFromLocale(locale, ROUTES.signIn)} variant="ghost">
-              {content.signIn}
-            </ButtonLink>
-          </li>
-          <li>
             <ButtonLink href={`#${SECTION_IDS.howItWorks}`} variant="ghost">
               {content.howItWorks}
             </ButtonLink>

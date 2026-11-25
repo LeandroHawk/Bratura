@@ -1,5 +1,7 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Badge, Card, Eyebrow, Heading } from '@bratura/ui';
+import { Badge, ButtonLink, Card, Eyebrow, Heading } from '@bratura/ui';
+import { ROUTES } from '@/features/common/config/routes';
+import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { HERO_CONTENT } from './content';
 
 /**
@@ -42,6 +44,13 @@ export function ExampleCall({ locale }: { locale: Locale }) {
           <span className="font-semibold text-status-missing">{content.missing}</span>
         </li>
       </ul>
+      <ButtonLink
+        size="sm"
+        href={localizedPathFromLocale(locale, ROUTES.signIn)}
+        className="justify-self-start"
+      >
+        {content.demoLink}
+      </ButtonLink>
     </Card>
   );
 }
