@@ -32,8 +32,10 @@ export function Navigation({ locale }: { locale: Locale }) {
   return (
     <StyleguideBlock title={content.title}>
       <p className="text-small text-muted-foreground">{content.corridor}</p>
-      <div className="pt-2">
+      {/* A tablet's corridor is wider than a phone: it scrolls inside its frame, not the page. */}
+      <div className="overflow-x-auto pt-2 pb-1">
         <Corridor
+          className="min-w-max"
           exit={<ExitSign label={appContent.exit} hint={appContent.exitHint} size="compact" />}
         >
           {rooms.map((room) => (

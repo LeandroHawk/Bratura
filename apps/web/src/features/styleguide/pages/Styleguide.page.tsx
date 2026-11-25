@@ -26,7 +26,7 @@ export function StyleguidePage({ locale }: { locale: Locale }) {
           <LanguageSwitch locale={locale} path={ROUTES.designSystem} size="compact" />
         </div>
       </CompactHeader>
-      <Container as="main" id={MAIN_CONTENT_ID} className="grid gap-8 pb-12">
+      <Container as="main" id={MAIN_CONTENT_ID} className="grid grid-cols-1 gap-8 pb-12">
         <div className="grid gap-2">
           <Heading as="h1" size="section" lang="en">
             {content.title}
@@ -36,13 +36,13 @@ export function StyleguidePage({ locale }: { locale: Locale }) {
             {content.lead.after}
           </p>
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {THEMES.map((theme) => (
             <section
               key={theme}
               data-theme={theme}
               aria-labelledby={`theme-${theme}`}
-              className="grid content-start gap-8 rounded-3xl border border-border bg-background p-6 text-foreground"
+              className="grid grid-cols-1 content-start gap-8 rounded-3xl border border-border bg-background p-6 text-foreground"
             >
               <Heading id={`theme-${theme}`} size="card">
                 {content.themes[theme]}
