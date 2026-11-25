@@ -1,21 +1,31 @@
+import { authkit, applyResponseHeaders, partitionAuthkitHeaders } from '@workos-inc/authkit-nextjs';
 import { DEFAULT_LOCALE, LocaleEnum } from '@bratura/shared/primitives/external/locale/enum';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * The default locale has no prefix: `/` is served by `app/[lang]` as `/pt-BR`, by rewrite, so the
- * public URL (and every link already shared) stays the same. Prefixed paths pass through.
+ * AuthKit runs on every request first (its session lives in this proxy; the headers carry the
+ * signed user to the server components). Then, the default locale has no prefix: `/` is served
+ * by `app/[lang]` as `/pt-BR`, by rewrite, so the public URL stays the same.
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const { headers } = await authkit(request);
+  const { requestHeaders, responseHeaders } = partitionAuthkitHeaders(request, headers);
+
   const { pathname } = request.nextUrl;
   const firstSegment = pathname.split('/')[1] ?? '';
-  if (LocaleEnum.safeParse(firstSegment).success) return;
-  const url = request.nextUrl.clone();
-  url.pathname = `/${DEFAULT_LOCALE}${pathname === '/' ? '' : pathname}`;
-  return NextResponse.rewrite(url);
+  const response = LocaleEnum.safeParse(firstSegment).success
+    ? NextResponse.next({ request: { headers: requestHeaders } })
+    : (() => {
+        const url = request.nextUrl.clone();
+        url.pathname = `/${DEFAULT_LOCALE}${pathname === '/' ? '' : pathname}`;
+        return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+      })();
+  applyResponseHeaders(response, responseHeaders);
+  return response;
 }
 
 export const config = {
-  // Not Next internals, files with an extension (robots.txt, sitemap.xml, the manifest) or the
-  // locale-free icon routes (icon, apple-icon), which all live at the root of app/.
-  matcher: ['/((?!_next|icon|apple-icon|.*\\..*).*)'],
+  // Not Next internals, files with an extension (robots.txt, sitemap.xml, the manifest), the
+  // locale-free icon routes, or the WorkOS callback route, which handleAuth() answers itself.
+  matcher: ['/((?!_next|icon|apple-icon|callback|.*\\..*).*)'],
 };

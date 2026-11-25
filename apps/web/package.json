@@ -11,8 +11,12 @@
     "typecheck": "next typegen && tsc"
   },
   "dependencies": {
+    "@bratura/backend": "workspace:*",
     "@bratura/shared": "workspace:*",
     "@bratura/ui": "workspace:*",
+    "@workos-inc/authkit-nextjs": "4.6.3",
+    "@workos-inc/node": "12.3.0",
+    "convex": "catalog:",
     "next": "^16.4.5",
     "react": "catalog:",
     "react-dom": "catalog:"

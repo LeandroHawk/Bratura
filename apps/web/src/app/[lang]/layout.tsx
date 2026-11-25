@@ -1,6 +1,7 @@
 import { LocaleEnum } from '@bratura/shared/primitives/external/locale/enum';
 import { LIGHT_THEME_COLORS } from '@bratura/ui';
 import type { Metadata, Viewport } from 'next';
+import { ConvexSessionProvider } from '@/features/common/components/ConvexSessionProvider';
 import { SiteDocument } from '@/features/common/components/layout/SiteDocument';
 import { siteMetadataFromLocale } from '@/features/common/config/site-metadata';
 import { localeFromParams } from '@/features/common/utils/locale-from-params';
@@ -19,5 +20,9 @@ export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Prom
 export const viewport: Viewport = { themeColor: LIGHT_THEME_COLORS.background };
 
 export default async function RootLayout({ children, params }: LayoutProps<'/[lang]'>) {
-  return <SiteDocument locale={await localeFromParams(params)}>{children}</SiteDocument>;
+  return (
+    <SiteDocument locale={await localeFromParams(params)}>
+      <ConvexSessionProvider>{children}</ConvexSessionProvider>
+    </SiteDocument>
+  );
 }
