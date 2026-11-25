@@ -7,7 +7,7 @@ in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 ```
 convex/
   schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
-  crons.ts        the daily ingestion (09:00 UTC), then matching (10:00 UTC)   } entry files:
+  crons.ts        the daily matching (10:00 UTC); ingestion paused (I/O cap)   } entry files:
   http.ts         routes only (Telegram webhook, Firecrawl webhooks: not yet)   } fixed names
   lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts,
                   sha256.ts, text.ts (plain text, cut to a ceiling), monthNames.ts: no functions
@@ -104,7 +104,7 @@ After deploying `callNoticeDocumentTexts`, move each read document's Markdown in
 pnpm exec convex run documents:moveDocumentTextsToOwnTable '{}'
 ```
 
-Match every call for creators again (it runs daily after ingestion and after each extraction; by
+Match every call for creators again (it runs daily at 10:00 UTC and after each extraction; by
 hand after changing a rule or the fictional creator), until `done`:
 
 ```bash
