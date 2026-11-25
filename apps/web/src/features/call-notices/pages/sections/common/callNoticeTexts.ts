@@ -23,7 +23,7 @@ export const STATUS_TONE: Record<CallNoticeStatus, BadgeTone> = {
   closingSoon: 'soon',
   openEnded: 'open',
   closed: 'missing',
-  notInformed: 'soon',
+  notInformed: 'neutral',
 };
 
 export const CLASSIFICATION_TONE: Record<CallNoticeCard['classification'], BadgeTone> = {
