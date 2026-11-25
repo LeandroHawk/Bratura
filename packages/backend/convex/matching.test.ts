@@ -219,7 +219,21 @@ describe('recomputeMatches', () => {
 });
 
 describe('callNoticeCards', () => {
-  test.each(['closestDeadline', 'largestAmount', 'newest'] as const)(
+  test('best fit first: the eligible calls, then the almost eligible, each closing first', async () => {
+    const t = convexTest(schema, modules);
+    const almost = extracted({ requirements: [missingPaperToApply] });
+    await withCall(t, { title: 'quase, fecha em 2', closesInDays: 2, extraction: almost });
+    await withCall(t, { title: 'elegível, fecha em 9', closesInDays: 9 });
+    await withCall(t, { title: 'fechou ontem', closesInDays: -1 });
+    await withCall(t, { title: 'elegível, fecha em 4', closesInDays: 4 });
+    expect(await titlesOf(t, { sort: 'bestFit' })).toEqual([
+      'elegível, fecha em 4',
+      'elegível, fecha em 9',
+      'quase, fecha em 2',
+    ]);
+  });
+
+  test.each(['bestFit', 'closestDeadline', 'largestAmount', 'newest'] as const)(
     'a closed call is listed as not eligible alone, whatever fit is stored (%s)',
     async (sort) => {
       const t = convexTest(schema, modules);

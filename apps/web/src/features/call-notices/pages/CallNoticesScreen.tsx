@@ -28,13 +28,14 @@ const VIEW: Record<
   CallNoticesView,
   { path: typeof ROUTES.matches | typeof ROUTES.callNotices; filters: CallNoticeFilterValues }
 > = {
-  // A closed call is never one "for you": the fit opens on what can still be applied to.
+  // A closed call is never one "for you": the fit opens on what can still be applied to, the
+  // eligible calls first.
   matches: {
     path: ROUTES.matches,
     filters: {
       classification: null,
       closes: 'stillOpen',
-      sort: 'closestDeadline',
+      sort: 'bestFit',
       onlySaved: false,
     },
   },

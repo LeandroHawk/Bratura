@@ -31,7 +31,10 @@ import {
   FICTIONAL_CREATOR,
   FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
 } from '@bratura/shared/entities/creator/demo/fictional-creator';
-import { MatchClassificationEnum } from '@bratura/shared/entities/match/enums/classification/enum';
+import {
+  MatchClassificationEnum,
+  type MatchClassification,
+} from '@bratura/shared/entities/match/enums/classification/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
@@ -72,6 +75,14 @@ export const callNoticeCardsRowsReadMax = 500;
 
 // The writer -------------------------------------------------------------------------------------
 
+/** "Best fit first": eligible, almost, not, and last a call already closed when matched. */
+const fitRankByClassification: Record<MatchClassification, number> = {
+  eligible: 0,
+  almostEligible: 1,
+  notEligible: 2,
+};
+const closedFitRank = 3;
+
 /** Stores the call's match, or removes it when the call is not (or no longer) one for creators. */
 async function storeMatchOfCallNotice(ctx: MutationCtx, callNoticeId: Id<'callNotices'>) {
   const [callNotice, extraction, known] = await Promise.all([
@@ -90,13 +101,18 @@ async function storeMatchOfCallNotice(ctx: MutationCtx, callNoticeId: Id<'callNo
     return;
   }
   const now = Date.now();
+  const { classification } = matchCallNotice(profile, extraction, callNotice, now);
   const row = {
     callNoticeId,
-    classification: matchCallNotice(profile, extraction, callNotice, now).classification,
+    classification,
     closesAtForOrdering: closesAtForOrdering(callNotice, now),
     largestAmountPerProjectInCents: largestAmountPerProjectInCents(extraction),
     callNoticeFirstSeenAt: callNotice.firstSeenAt,
     artForms: distinctArtFormValues(extraction),
+    fitRankForOrdering:
+      deadlineForCreators(callNotice, now) === 'closed'
+        ? closedFitRank
+        : fitRankByClassification[classification],
     computedAt: now,
   };
   if (known) await ctx.db.replace(known._id, row);
@@ -190,10 +206,11 @@ async function cardOfMatch(
 
 /**
  * The calls for creators, a page at a time. Closing first, the close filter and the classification
- * are one index range; by amount or by newest, the index gives the order and the server keeps the
- * rows of the filter while it reads the page. The range is `closeRange`'s, steady between pages;
- * the exact close is checked on each row. A closed call never comes as `eligible`. A page stops at
- * `callNoticeCardsRowsReadMax` rows read, full or not: the next one goes on from there.
+ * are one index range; best fit first, by amount or by newest, the index gives the order and the
+ * server keeps the rows of the filter while it reads the page. The range is `closeRange`'s, steady
+ * between pages; the exact close is checked on each row. A closed call never comes as `eligible`.
+ * A page stops at `callNoticeCardsRowsReadMax` rows read, full or not: the next one goes on from
+ * there.
  */
 export const callNoticeCards = publicZodQuery({
   args: CallNoticeCardsQueryFromBraturaPortalArgsSchema,
@@ -207,36 +224,52 @@ export const callNoticeCards = publicZodQuery({
     const { from, to } = closeRange({ closes, now });
     // The most recently closed first; every other list from the nearest close on.
     const closingOrder = closes === 'closed' ? 'desc' : 'asc';
+    // Best fit first within one classification, or among closed calls (all `notEligible`), is the
+    // closing order.
+    const order =
+      sort === 'bestFit' && (storedClassification !== null || closes === 'closed')
+        ? 'closestDeadline'
+        : sort;
     const matches =
-      sort === 'closestDeadline'
-        ? storedClassification === null
-          ? ctx.db
-              .query('matches')
-              .withIndex('by_closes', (index) =>
-                index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
-              )
-              .order(closingOrder)
-          : ctx.db
-              .query('matches')
-              .withIndex('by_classification_and_closes', (index) =>
-                index
-                  .eq('classification', storedClassification)
-                  .gte('closesAtForOrdering', from)
-                  .lte('closesAtForOrdering', to),
-              )
-              .order(closingOrder)
-        : ctx.db
+      order === 'bestFit'
+        ? ctx.db
             .query('matches')
-            .withIndex(sort === 'largestAmount' ? 'by_largest_amount' : 'by_first_seen')
-            .order('desc')
+            .withIndex('by_fit_and_closes')
             .filter((row) =>
               row.and(
                 row.gte(row.field('closesAtForOrdering'), from),
                 row.lte(row.field('closesAtForOrdering'), to),
-                storedClassification === null ||
-                  row.eq(row.field('classification'), storedClassification),
               ),
-            );
+            )
+        : order === 'closestDeadline'
+          ? storedClassification === null
+            ? ctx.db
+                .query('matches')
+                .withIndex('by_closes', (index) =>
+                  index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
+                )
+                .order(closingOrder)
+            : ctx.db
+                .query('matches')
+                .withIndex('by_classification_and_closes', (index) =>
+                  index
+                    .eq('classification', storedClassification)
+                    .gte('closesAtForOrdering', from)
+                    .lte('closesAtForOrdering', to),
+                )
+                .order(closingOrder)
+          : ctx.db
+              .query('matches')
+              .withIndex(order === 'largestAmount' ? 'by_largest_amount' : 'by_first_seen')
+              .order('desc')
+              .filter((row) =>
+                row.and(
+                  row.gte(row.field('closesAtForOrdering'), from),
+                  row.lte(row.field('closesAtForOrdering'), to),
+                  storedClassification === null ||
+                    row.eq(row.field('classification'), storedClassification),
+                ),
+              );
     const result = await matches.paginate({
       ...paginationOpts,
       maximumRowsRead: callNoticeCardsRowsReadMax,

@@ -52,7 +52,8 @@ export default defineSchema({
     .index('by_closes', ['closesAtForOrdering'])
     .index('by_classification_and_closes', ['classification', 'closesAtForOrdering'])
     .index('by_largest_amount', ['largestAmountPerProjectInCents'])
-    .index('by_first_seen', ['callNoticeFirstSeenAt']),
+    .index('by_first_seen', ['callNoticeFirstSeenAt'])
+    .index('by_fit_and_closes', ['fitRankForOrdering', 'closesAtForOrdering']),
   callNoticeCounters: defineTable(zodToConvex(CallNoticeCountersSchema)),
   userNotifications: defineTable(zodToConvex(UserNotificationSchema)).index(
     'by_user_and_dedupe_key',
