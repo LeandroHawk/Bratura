@@ -2,9 +2,9 @@
 
 The **billing provider** of Bratura — the first payment gateway in the project. It charges the
 **organization panel** only: a monthly subscription whose quantity is the number of creators the
-organization manages (the "per managed profile" price). The creator side is free and never
-touches it (`docs/product.md`, Who pays). Backend only so far: no screen builds the checkout, the
-provider hosts it.
+organization manages (the "per managed profile" price). The paid creator plans of the Freemium
+Impact model (`docs/plan.md`, Who pays) are not built: nothing here charges a creator yet. Backend
+only so far: no screen builds the checkout, the provider hosts it.
 
 ## Scope
 
