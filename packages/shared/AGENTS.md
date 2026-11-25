@@ -11,6 +11,13 @@ tables: `source`, `call-notice`, `call-notice-document`, `call-notice-document-t
 `billing-webhook-delivery`. The billing pair's provider fields and enums live in
 `primitives/external/abacate-pay/`.
 
+⚠️ **`creator` and `portfolio-item` are here ahead of their tables**, an explicit demo exception.
+The web persists them in `features/common/data/demoStore.ts`; the backend reads the fictional
+creator and the bounded projection in `match/profile.ts`. `matchProfileFromPortfolio` is the one
+projection used by both callers, without contact information or portfolio text. The call-screen
+portal DTOs are consumed by the web and backend. When the creator tables are written, derive them
+from these same entities and replace the demo boundary with authenticated ownership.
+
 ```
 src/
   entities/<entity>/           has a table: identity, lifecycle, an owner      (with the backend)
@@ -127,8 +134,8 @@ silently carries less than the row. Name a subset when the same list appears a s
   against the contract schema and renders `error.message`; no message is written in a component.
   Re-describing a schema by hand on the front is how a sibling project ended up showing Zod's
   English default messages to Portuguese users.
-- ⚠️ **Open: messages in two languages.** "Text lives in the Zod declaration" and "copy exists in
-  pt-BR and en" meet at the first form. Decide then (`docs/architecture.md`, Open).
+- **Messages in two languages**: a field carries no text, a rule of our own names its message
+  (`validationMessage('endsBeforeItStarts')`), and `src/messages/` has the text per locale (Messages, below).
 - **"If A then B exists"** → `z.discriminatedUnion` first. **"A compared with B"** (the
   registration window closes after it opens) → a `with…` function next to the entity that adds the
   `refine`, so both sides run one check (`withOrderedRegistrationWindow`). Never on the entity
@@ -160,7 +167,7 @@ and en copy: a Zod error map per locale (issue code and its numbers → text) an
 `params: { message: '<key>' }`. The map is applied where an error is shown (a form's parse, a
 caught `appError`), with the reader's locale. Zod's built-in `pt` locale is not used: it is
 European Portuguese and reads like a log ("Demasiado grande: esperava que o texto tivesse <= 5
-caracteres"). Born with the first form; until then only the team reads errors, raw.
+caracteres"). The web applies it in `useContractForm` (`features/common/hooks/`).
 
 Notification copy lives here too: `messages/user-notification/` renders a `userNotification`
 into `{ title, body, link }` per kind and locale, from content `content.ts` builds once (the

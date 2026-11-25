@@ -24,6 +24,14 @@ const ptBR = {
       'Chegamos a eles pelo Sebrae e pelas secretarias, que já dão oficinas de edital, e pelas associações de artesãos, que trazem muitos criadores de uma vez. Os editais da PNAB abrem em épocas previsíveis.',
     rows: [
       {
+        seat: 'Parcerias',
+        box: false,
+        role: 'Depois da seleção · em breve',
+        title: 'Contabilidade, bancos e certidões',
+        pays: 'Encaminhamento por escolha do criador',
+        text: 'Contabilidade para MEI, conta PJ e emissão de certidões. O encaminhamento só acontece com o clique do criador.',
+      },
+      {
         seat: 'Fila A',
         box: false,
         role: 'Receita principal',
@@ -70,6 +78,14 @@ export const BUSINESS_MODEL_CONTENT: Record<Locale, typeof ptBR> = {
       channels:
         'We reach them through Sebrae and the culture departments, which already run workshops on calls, and through artisan associations, which bring many creators at once. PNAB calls open in predictable seasons.',
       rows: [
+        {
+          seat: 'Partners',
+          box: false,
+          role: 'After selection · coming soon',
+          title: 'Accounting, banks and certificates',
+          pays: 'Referral chosen by the creator',
+          text: 'MEI accounting, business bank accounts and clearance certificates. A referral happens only when the creator clicks.',
+        },
         {
           seat: 'Row A',
           box: false,

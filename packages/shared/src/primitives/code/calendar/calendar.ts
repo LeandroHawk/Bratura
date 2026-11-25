@@ -17,6 +17,13 @@ export function plainDateInSaoPaulo(instant: number) {
   return saoPauloDateFormatter.format(instant);
 }
 
+/** The calendar day `days` after `date` (`YYYY-MM-DD`): counted in UTC, a day has no zone. */
+export function plainDateDaysAfter({ date, days }: { date: string; days: number }) {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + days);
+  return day.toISOString().slice(0, 10);
+}
+
 // One formatter per zone, built once: building one costs far more than formatting with it. The
 // locale pins the Gregorian calendar and Latin digits; `h23` keeps midnight 00, never 24.
 const formatterByZone = new Map<string, Intl.DateTimeFormat>();
@@ -64,4 +71,33 @@ export function instantFromPlainDateTimeInZone(dateTime: PlainDateTime, timeZone
   const asUtc = Date.UTC(year, month - 1, day, hour, minute, second);
   const firstGuess = asUtc - offsetAt(asUtc, timeZone);
   return asUtc - offsetAt(firstGuess, timeZone);
+}
+
+const partsInSaoPaulo = (instant: number) => {
+  const parts = formatterFor('America/Sao_Paulo').formatToParts(instant);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((candidate) => candidate.type === type)?.value ?? '';
+  return {
+    year: part('year'),
+    day: part('day'),
+    month: part('month'),
+    hour: part('hour'),
+    minute: part('minute'),
+  };
+};
+
+/**
+ * The day and, for a `minute` deadline, the time a person reads it at, in São Paulo: the one
+ * reading of a call's close. A `minute` deadline at 00:00 means "until the end of the previous
+ * day" (`docs/data-sources.md`), so it is read one minute back. `time` is `null` for a `day`.
+ */
+export function deadlinePartsInSaoPaulo(deadline: { at: number; precision: 'day' | 'minute' }) {
+  const parts = partsInSaoPaulo(deadline.at);
+  if (deadline.precision === 'day')
+    return { year: parts.year, day: parts.day, month: parts.month, time: null };
+  const { year, day, month, hour, minute } =
+    Number(parts.hour) === 0 && Number(parts.minute) === 0
+      ? partsInSaoPaulo(deadline.at - 60_000)
+      : parts;
+  return { year, day, month, time: { hour: hour.padStart(2, '0'), minute } };
 }

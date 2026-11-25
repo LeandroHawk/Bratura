@@ -7,8 +7,11 @@ export {
   type ButtonVariant,
 } from './components/Button/Button';
 export { Card } from './components/Card/Card';
+export { Checkbox } from './components/Checkbox/Checkbox';
 export { Container } from './components/Container/Container';
+export { Dialog } from './components/Dialog/Dialog';
 export { Eyebrow } from './components/Eyebrow/Eyebrow';
+export { Fieldset, SelectField, TextAreaField, TextField } from './components/Field/Field';
 export { Heading, type HeadingSize } from './components/Heading/Heading';
 export { Tag, type TagSize } from './components/Tag/Tag';
 export { LOGO_LETTER_COLORS, Logo, SLOGAN, type LogoProps } from './components/Logo/Logo';

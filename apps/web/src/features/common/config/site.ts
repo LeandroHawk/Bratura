@@ -9,8 +9,6 @@ export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : 'http://localhost:3000';
 
-export const REPO_URL = 'https://github.com/LeandroHawk/Bratura';
-
 /** The slogan in each locale; the name, Bratura, is the same in all of them. */
 export const SITE_SLOGAN: Record<Locale, string> = {
   'pt-BR': SLOGAN,

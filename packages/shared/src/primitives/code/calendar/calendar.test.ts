@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest';
 import { ianaTimeZone } from '../time/time-zone/fields';
-import { instantFromPlainDateTimeInZone, plainDateInSaoPaulo } from './calendar';
+import {
+  deadlinePartsInSaoPaulo,
+  instantFromPlainDateTimeInZone,
+  plainDateDaysAfter,
+  plainDateInSaoPaulo,
+} from './calendar';
 
 describe('plainDateInSaoPaulo', () => {
   test('is still the previous day in São Paulo until 03:00 UTC', () => {
@@ -30,5 +35,47 @@ describe('instantFromPlainDateTimeInZone', () => {
     expect(
       instantFromPlainDateTimeInZone(afterChange, ianaTimeZone.parse('America/New_York')),
     ).toBe(Date.UTC(2026, 2, 8, 7));
+  });
+});
+
+describe('deadlinePartsInSaoPaulo', () => {
+  test('a day deadline has no time', () => {
+    const at = Date.UTC(2026, 10, 21, 2, 59);
+    expect(deadlinePartsInSaoPaulo({ at, precision: 'day' })).toEqual({
+      year: '2026',
+      day: '20',
+      month: '11',
+      time: null,
+    });
+  });
+
+  test('a minute deadline is read in São Paulo', () => {
+    const at = Date.UTC(2026, 10, 22, 2, 59);
+    expect(deadlinePartsInSaoPaulo({ at, precision: 'minute' })).toEqual({
+      year: '2026',
+      day: '21',
+      month: '11',
+      time: { hour: '23', minute: '59' },
+    });
+  });
+
+  test('midnight in São Paulo is the end of the day before', () => {
+    const at = Date.UTC(2026, 10, 21, 3, 0);
+    expect(deadlinePartsInSaoPaulo({ at, precision: 'minute' })).toEqual({
+      year: '2026',
+      day: '20',
+      month: '11',
+      time: { hour: '23', minute: '59' },
+    });
+  });
+});
+
+describe('plainDateDaysAfter', () => {
+  test('crosses a month and a year', () => {
+    expect(plainDateDaysAfter({ date: '2026-12-20', days: 30 })).toBe('2027-01-19');
+  });
+
+  test('keeps the day when nothing is added', () => {
+    expect(plainDateDaysAfter({ date: '2026-02-28', days: 0 })).toBe('2026-02-28');
   });
 });

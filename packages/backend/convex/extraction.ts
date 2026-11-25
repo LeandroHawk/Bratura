@@ -222,6 +222,10 @@ export const recordExtraction = internalZodMutation({
       .unique();
     if (known) await ctx.db.replace(known._id, row);
     else await ctx.db.insert('callNoticeExtractions', row);
+    // The extraction is what a match is computed from: a new one means a new match.
+    await ctx.scheduler.runAfter(0, internal.matching.recomputeMatchOfCallNotice, {
+      callNoticeId: extraction.callNoticeId,
+    });
     return null;
   },
 });

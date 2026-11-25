@@ -8,14 +8,33 @@ this, where does its data come from".
 features/
   common/                      used by several features, or by app/
     components/                layout/ (SiteDocument, PageShell, SiteHeader, SiteFooter,
-                               LanguageSwitch), share-art/ (OG card, icons), InlineScript,
+                               LanguageSwitch), app/ (SignedInArea, AppNav: the frame of the
+                               signed-in pages), share-art/ (OG card, icons), InlineScript,
                                NewTabHint, PageIntro (logo + h1 + lead + actions)
     config/                    site.ts (URL, title, description, tagline, team),
-                               site-metadata.ts
+                               site-metadata.ts, routes.ts (every path, once),
+                               portfolio-section-ids.ts
+    content/                   names several features show: profile types, cultural areas,
+                               document kinds, states
+    data/                      demoStore.ts: the creator, portfolio and saved calls kept in the
+                               browser until Convex has them (see below)
+    hooks/                     useContractForm: a form's draft parsed by its contract
     styles/                    globals.css
-    utils/                     locale paths and params, load-google-font
+    utils/                     locale paths and params, load-google-font, form-text
+                               (text → contract value), format (amounts; dates use shared calendar)
   landing/  not-found/  styleguide/
+  account/                     sign-up and sign-in
+  portfolio/                   the cultural portfolio: profile, experiences, projects, documents
+  call-notices/                the calls matched to the portfolio and every call, over the same
+                               cards, filters and details (`sections/common/`)
 ```
+
+⚠️ **Until the backend has creators, the signed-in area is a browser demo.** Creator, portfolio
+and saved-call changes go through `common/data/demoStore.ts`; logout removes the local data.
+The call lists and counters read Convex's fixed fictional Dona Maria matches. Details send only
+`MatchProfileSchema` facts derived by `matchProfileFromPortfolio`, bounded by `portfolioItemsMax`:
+no e-mail, names, descriptions, links or file metadata. Matching runs in the backend. Uploads keep
+metadata in the browser; no uploaded bytes or private accounts are persisted in Convex yet.
 
 ## The anatomy of a feature
 
@@ -36,6 +55,7 @@ The landing today:
 ```
 landing/pages/              Landing.page.tsx fits the sections, in page order
   sections/hero/            the promise and an example call
+  sections/call-highlights/ bounded public call reads, composed beside the example by the page
   sections/how-it-works/    the product flow as four museum rooms
   sections/why-it-matters/  the problem, as a call's ticket without and with Bratura
   sections/business-model/  who uses and who pays, as a theatre: stage, curtains, audience
@@ -63,7 +83,7 @@ and its result list over 4; this layout is the fix they measured.
    the UI (a dialog open, a filter's draft) lives in the section that uses it, or in a
    `common/hooks/` when several do. Hooks receive data already parsed: the boundary parses.
 5. **Kind folders (`components/`, `config/`, `styles/`, `utils/`, `hooks/`, `data/`) are born with
-   their first file**, at the level that needs them. `common/` has no `hooks/` or `data/` yet.
+   their first file**, at the level that needs them.
 6. **`features/common` never imports a feature.** The tagline is in `config/site.ts` because both
    the landing and the share card show it; the card cannot reach into `landing/`.
 

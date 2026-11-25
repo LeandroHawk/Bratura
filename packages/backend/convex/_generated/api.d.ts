@@ -22,6 +22,7 @@ import type * as lib_httpError from "../lib/httpError.js";
 import type * as lib_monthNames from "../lib/monthNames.js";
 import type * as lib_sha256 from "../lib/sha256.js";
 import type * as lib_text from "../lib/text.js";
+import type * as matching from "../matching.js";
 import type * as model_abacatePay_client from "../model/abacatePay/client.js";
 import type * as model_abacatePay_payload from "../model/abacatePay/payload.js";
 import type * as model_abacatePay_signature from "../model/abacatePay/signature.js";
@@ -39,6 +40,8 @@ import type * as model_mapasCulturais_client from "../model/mapasCulturais/clien
 import type * as model_mapasCulturais_date from "../model/mapasCulturais/date.js";
 import type * as model_mapasCulturais_listing from "../model/mapasCulturais/listing.js";
 import type * as model_mapasCulturais_payload from "../model/mapasCulturais/payload.js";
+import type * as model_matching_closeRange from "../model/matching/closeRange.js";
+import type * as model_matching_matchCallNotice from "../model/matching/matchCallNotice.js";
 import type * as model_officialPage_client from "../model/officialPage/client.js";
 import type * as model_officialPage_discovery from "../model/officialPage/discovery.js";
 import type * as model_officialPage_html from "../model/officialPage/html.js";
@@ -81,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "lib/monthNames": typeof lib_monthNames;
   "lib/sha256": typeof lib_sha256;
   "lib/text": typeof lib_text;
+  matching: typeof matching;
   "model/abacatePay/client": typeof model_abacatePay_client;
   "model/abacatePay/payload": typeof model_abacatePay_payload;
   "model/abacatePay/signature": typeof model_abacatePay_signature;
@@ -98,6 +102,8 @@ declare const fullApi: ApiFromModules<{
   "model/mapasCulturais/date": typeof model_mapasCulturais_date;
   "model/mapasCulturais/listing": typeof model_mapasCulturais_listing;
   "model/mapasCulturais/payload": typeof model_mapasCulturais_payload;
+  "model/matching/closeRange": typeof model_matching_closeRange;
+  "model/matching/matchCallNotice": typeof model_matching_matchCallNotice;
   "model/officialPage/client": typeof model_officialPage_client;
   "model/officialPage/discovery": typeof model_officialPage_discovery;
   "model/officialPage/html": typeof model_officialPage_html;

@@ -27,7 +27,8 @@ from steering the LLM. Shapes and ports are in `docs/contracts.md`.
   portfolio items, file type and size checked before storage. The backend parses them, so the limit
   holds whatever the front sends.
 - **Rate limits per creator and per recipient** on writes and on the Telegram entry, declared
-  once in the public builders (`publicQuery`, `creatorMutation`…) when the first one is written.
+  once in the builders with a caller (`creatorMutation`…) when the first one is written. The one
+  public builder today (`publicZodQuery`) only reads, a bounded page or index range per call.
   `convex-helpers` (already a dependency) ships `rateLimit` (token bucket or fixed window), so no
   new dependency is needed; `@convex-dev/rate-limiter` stays an alternative for the team.
 - **The Telegram webhook trusts nothing**: it checks the `secret_token` header `setWebhook` is
@@ -147,3 +148,12 @@ Known gaps, in no order; add yours:
   four tables that carry their data.
 - Owner checks: today's `notify`, `sendPendingDeliveries` and friends are internal; when login
   lands and they become public, each must confirm the caller owns the `userId` it touches.
+- When real accounts replace the browser demo: authenticate with WorkOS and enforce ownership in
+  the shared builders before enabling private persistence, uploads or public portfolio pages.
+- When quota-related profile fields are proposed: keep quota self-declaration unrecorded; the
+  decided product behavior is to show only the call's published quotas.
+- When organization profiles are introduced: enforce memberships for every private read and write.
+- When diagnosing public profile queries: arguments include birth date and residence facts needed
+  by rules, so never log arguments or send them to third-party providers. Keep portfolio text,
+  identity, contact information, links and uploaded bytes out of the query DTO.
+

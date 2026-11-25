@@ -2,15 +2,20 @@ import {
   Badge,
   Button,
   Card,
+  Checkbox,
   COLOR_TOKENS,
   Container,
   Eyebrow,
   Heading,
   Logo,
+  SelectField,
   Tag,
+  TextAreaField,
+  TextField,
 } from '@bratura/ui';
 import { MAIN_CONTENT_ID } from '@/features/common/components/layout/mainContentId';
 import { COLOR_GROUP_LABEL, COLOR_TOKEN_LABEL } from './content';
+import { DialogExample } from './DialogExample';
 
 /** Token groups in the order tokens.ts lists them. */
 const COLOR_GROUPS = [...new Set(COLOR_TOKENS.map((token) => token.group))];
@@ -100,6 +105,57 @@ export function StyleguidePage() {
                 <Tag>SICAB</Tag>
                 <Tag size="md">Kit de inscrição</Tag>
               </div>
+            </div>
+
+            <div className="grid gap-3">
+              <Eyebrow as="span">Formulários</Eyebrow>
+              <TextField
+                label="Nome completo"
+                name={`nome-${theme.id}`}
+                hint="Como está no seu documento."
+              />
+              <TextField
+                label="CPF"
+                name={`cpf-${theme.id}`}
+                defaultValue="111.111.111-11"
+                error="Confira o CPF: os dígitos não batem."
+              />
+              <SelectField label="Estado" name={`estado-${theme.id}`} defaultValue="CE">
+                <option value="CE">Ceará</option>
+                <option value="PE">Pernambuco</option>
+              </SelectField>
+              <TextAreaField
+                label="Biografia"
+                optionalMark="(opcional)"
+                name={`biografia-${theme.id}`}
+                rows={2}
+              />
+              <Checkbox name={`lembrete-${theme.id}`} defaultChecked>
+                Lembrar do prazo de inscrição
+              </Checkbox>
+              <div>
+                <DialogExample />
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <Eyebrow as="span">Movimento</Eyebrow>
+              <ul className="grid grid-cols-3 gap-3">
+                {['rise-in', 'um depois', 'do outro'].map((text, index) => (
+                  <li
+                    key={text}
+                    className="rise-in rounded-xl border border-border bg-card p-3 text-small"
+                    style={{ '--rise-index': index } as React.CSSProperties}
+                  >
+                    {text}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-small text-muted-foreground">
+                Itens de uma lista sobem um após o outro; o campo ganha uma pincelada ao receber
+                foco e treme ao ser recusado; o botão salvo dá um pulo. Tudo desliga com
+                &quot;reduzir movimento&quot;.
+              </p>
             </div>
 
             <Card className="grid gap-1">

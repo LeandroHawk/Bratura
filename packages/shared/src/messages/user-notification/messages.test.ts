@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { UserNotificationDraft } from '../../entities/user-notification/entity';
 import type { ZonedInstant } from '../../primitives/code/time/zoned-instant/fields';
 import { userNotificationContentOf } from './content';
@@ -16,6 +16,8 @@ const callNoticeId = '0000000000000000000000001callNotices' as Extract<
 
 const saoPaulo = 'America/Sao_Paulo' as ZonedInstant['timeZone'];
 const now = new Date('2025-11-10T12:00:00-03:00').getTime();
+beforeEach(() => vi.useFakeTimers({ toFake: ['Date'], now }));
+afterEach(() => vi.useRealTimers());
 const closes = (iso: string): ZonedInstant => ({
   at: new Date(iso).getTime(),
   timeZone: saoPaulo,
@@ -41,7 +43,7 @@ const drafts = {
     userId,
     dedupeKey: 'new:2',
     callNoticeId,
-    matchStatus: 'almost',
+    matchStatus: 'almostEligible',
   },
   deadlineSoon: {
     kind: 'deadlineSoon',
@@ -177,4 +179,10 @@ describe('registrationCloseText', () => {
   test('no close, nothing to say', () => {
     expect(registrationCloseText(null, 'pt-BR')).toBeNull();
   });
+});
+
+test('a deadline in a different year states its year in both locales', () => {
+  const nextYear = closes('2027-01-01T00:00:00-03:00');
+  expect(registrationCloseText(nextYear, 'pt-BR')).toContain('31/12/2026');
+  expect(registrationCloseText(nextYear, 'en')).toContain('12/31/2026');
 });

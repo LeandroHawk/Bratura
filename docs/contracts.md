@@ -72,10 +72,17 @@ In a Next.js backend one wrapper (`withRoute`) declares auth, parses input, vali
 maps errors. In Bratura that is `packages/backend/convex/lib/builders.ts`: builders take Zod `args`
 and `returns`, parse both whole, and (once there is a caller) resolve auth before the handler.
 
-- **Auth is declared once, in the builder**: `publicQuery`, `creatorQuery`, `creatorMutation`,
-  `orgMemberQuery`, `adminMutation`, built in `packages/backend` beside the internal ones. The builder
-  resolves the caller and puts it in `ctx` (`ctx.creator`); a function picks a builder, it does not
-  check auth by hand. A public function is a visible choice (`publicQuery`), not a missing check.
+- **Auth is declared once, in the builder**: `publicZodQuery` (exists), then `creatorQuery`,
+  `creatorMutation`, `orgMemberQuery`, `adminMutation`, built in `packages/backend` beside the
+  internal ones. The builder resolves the caller and puts it in `ctx` (`ctx.creator`); a function
+  picks a builder, it does not check auth by hand. A public function is a visible choice
+  (`publicZodQuery`), not a missing check.
+- **`publicZodQuery` has no caller**: anyone with the deployment's URL may call it, so its handler
+  reads only what a visitor may see, a page at a time or through a bounded index range. Until the
+  sign-in exists (after 30/11) the call screens' reads are public and answer for one profile, the
+  fictional creator; "the full list needs the sign-in" is held by the web's demo sign-in only. When
+  `creators` exists, those reads move to `creatorQuery` and only `callNoticeHighlights` stays
+  public.
 - **Every function declares `args` and `returns`** from the DTOs above. The output check is what
   stops a read from leaking a field the whitelist left out.
 - **Errors**: a schema returns violations as data; the function decides what is terminal and throws
@@ -142,11 +149,12 @@ packages/backend/convex/    a root file is a door (Convex functions); model/ is 
   notificationDeliveries.ts how it left the site: the send outbox (the only writer of
                             `notificationDeliveries`)
   users.ts                  the user's only writer
+  matching.ts               how each call fits the profile (the only writer of `matches`) and the
+                            call screens' reads
   organizations.ts          the organization's only writer (`organizations`, `memberships`)
   billing.ts                the panel subscription's only writer (`billingSubscriptions`,
                             `billingWebhookDeliveries`) and the AbacatePay webhook's handler
-  telegram.ts  matching.ts                                  (telegram.ts is a skeleton; matching.ts
-                                                            comes later)
+  telegram.ts                                               (a skeleton)
 ```
 
 - **A source kind brings only what is its own** (`SourceReader` in `runSourceIngestion.ts`): how
@@ -165,3 +173,25 @@ one would do, open the discussion in the PR or with the team. Known open points:
 
 - Port names: `bratura-portal` and `telegram`, or one folder per front (`web`, `telegram`)?
 - Whether `orgs/` becomes a third port (the organization panel) or stays inside the site.
+- When the team registers a source's state and level: add them to `sources` and bring back the
+  location filters (the portal DTOs carry no `state`, `city`, `coverage` or `opportunityKind`: no
+  stored field gives them).
+- When a list must be filtered by art form, applicant type, text or "amount informed": copy the
+  field to `matches` with its index (a search index for the title); never filter a whole list in
+  the browser.
+- When creator-owned persistence is implemented: create `creators` and `portfolioItems` from the
+  shared entities, key matches by authenticated creator, replace `demoStore` and move private
+  reads to `creatorQuery` with centralized owner checks.
+- When WorkOS login and backend accounts are scheduled after 30/11: resolve the caller in builders,
+  implement real sessions and account lifecycle, and replace the browser-only gate.
+- When organization support is approved: add multiple profiles and memberships per account and
+  enable `organizationRecords` / `groupRepresentation` for those profiles.
+
+## Demo profile boundary and next triggers
+
+`callNoticeDetails` accepts an optional `MatchProfileSchema`, derived from creator and portfolio
+entities. `matchProfileFromPortfolio` strips identities, biography, descriptions, links and file
+metadata before the public query; only facts needed by matching cross the wire. This is a demo
+calculation, never an ownership assertion. Lists/counters use the fixed fictional creator.
+`matches.artForms` is an optional cached list for older rows; run `recomputeMatches` after deploying
+to populate it. The cards never read the extraction for that list.

@@ -7,7 +7,7 @@ in `docs/contracts.md` §3; ownership and abuse in `docs/security.md`.
 ```
 convex/
   schema.ts       tables, derived from the Zod entities in packages/shared      } Convex's own
-  crons.ts        the daily ingestion (09:00 UTC); deadline alerts later        } entry files:
+  crons.ts        the daily ingestion (09:00 UTC), then matching (10:00 UTC)   } entry files:
   http.ts         routes only (Telegram webhook, Firecrawl webhooks: not yet)   } fixed names
   lib/            builders.ts (Zod args/returns), appError.ts, env.ts, httpError.ts,
                   sha256.ts, text.ts (plain text, cut to a ceiling), monthNames.ts: no functions
@@ -24,10 +24,12 @@ convex/
   userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
   notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
   users.ts                    the user's only writer
+  matching.ts     how each call for creators fits the profile: the only writer of `matches`, and
+                  the reads the call screens make (cards, details, counters, highlights)
   organizations.ts            the organization's only writer (`organizations`, `memberships`)
   billing.ts                  the panel subscription's only writer (`billingSubscriptions`,
                               `billingWebhookDeliveries`), the AbacatePay webhook's handler
-  portfolio.ts  matching.ts                                                     (not yet)
+  portfolio.ts                                                                 (not yet)
 
   model/          plain TypeScript the files above call: never a Convex function
     ingestion/       runSourceIngestion.ts, the loop every source kind shares
@@ -40,6 +42,7 @@ convex/
     firecrawl/       client.ts, payload.ts
     callNoticeDocuments/  selection.ts: which calls and files are worth credits, by name (no I/O)
     callNoticeExtraction/ prompt.ts (the instructions, the text sent), verify.ts (each value vs its quote)
+    matching/        matchCallNotice.ts: one call against one profile, by objective rules (no I/O)
     telegram/        sendMessage.ts (the only import), client.ts + payload.ts (the Bot API:
                      getMe, sendMessage); the text is `shared/messages/user-notification`
     sources/         registry.ts: every source the team checked, what `registerSource` copies
@@ -101,6 +104,16 @@ After deploying `callNoticeDocumentTexts`, move each read document's Markdown in
 pnpm exec convex run documents:moveDocumentTextsToOwnTable '{}'
 ```
 
+Match every call for creators again (it runs daily after ingestion and after each extraction; by
+hand after changing a rule or the fictional creator), until `done`:
+
+```bash
+pnpm exec convex run matching:recomputeMatches '{"cursor":null}'
+```
+
+`_generated/` without a Convex account: `CONVEX_AGENT_MODE=anonymous pnpm exec convex dev --once`
+(a local backend).
+
 A call closed when first seen is in neither queue; read and extract a sample picked by hand:
 
 ```bash
@@ -129,9 +142,10 @@ Studio lists for the key's project) and `LLM_API_KEY`.
 
 - **A table is its entity's Zod**: `defineTable(zodToConvex(EntitySchema))`. Never a validator
   written beside the entity (`docs/architecture.md` §3).
-- **Every function goes through a builder** in `lib/builders.ts`, with Zod `args` and `returns`. Only
-  internal builders exist today: callable from other functions, crons, the CLI and the dashboard,
-  never from a browser.
+- **Every function goes through a builder** in `lib/builders.ts`, with Zod `args` and `returns`. The
+  internal builders are callable from other functions, crons, the CLI and the dashboard, never from
+  a browser. `publicZodQuery` is the one a browser may call, with no caller: its handler reads only
+  what a visitor may see, a page or a bounded index range at a time (`docs/contracts.md` §3).
 - **A reference to another row is `documentId('table')`** (`@bratura/shared/primitives/code/id/fields`):
   its type is `Id<'table'>`, the table stores `v.id('table')`, and an id from the wrong table fails
   both `tsc` and the write. A natural key (`sources.slug`) is for people and seeds, never a reference.
