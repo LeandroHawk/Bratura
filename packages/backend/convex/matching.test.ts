@@ -488,6 +488,30 @@ describe('callNoticeCounters', () => {
   });
 });
 
+describe('stored counters', () => {
+  test('the daily recompute stores them, and the screens read the stored row', async () => {
+    vi.useFakeTimers({ now: NOW });
+    const t = convexTest(schema, modules);
+    await withCall(t, { closesInDays: 3 });
+    await t.mutation(internal.matching.recomputeMatches, { cursor: null });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const stored = await t.run((ctx) => ctx.db.query('callNoticeCounters').collect());
+    expect(stored).toHaveLength(1);
+    await withCall(t, { closesInDays: 20 });
+    expect(await t.query(api.matching.callNoticeCounters, {})).toMatchObject({ open: 1 });
+  });
+
+  test('a second store replaces the row instead of adding one', async () => {
+    const t = convexTest(schema, modules);
+    await withCall(t, { closesInDays: 3 });
+    await t.mutation(internal.matching.storeCallNoticeCounters, {});
+    await withCall(t, { closesInDays: 20 });
+    await t.mutation(internal.matching.storeCallNoticeCounters, {});
+    expect(await t.run((ctx) => ctx.db.query('callNoticeCounters').collect())).toHaveLength(1);
+    expect(await t.query(api.matching.callNoticeCounters, {})).toMatchObject({ open: 2 });
+  });
+});
+
 describe('savedCallNoticeCards', () => {
   test('the cards of the given calls, in the order given; a call with no match is left out', async () => {
     const t = convexTest(schema, modules);

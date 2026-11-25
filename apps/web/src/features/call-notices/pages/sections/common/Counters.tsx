@@ -1,4 +1,4 @@
-import { callNoticeCounterCeiling } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-counters/query';
+import { callNoticeCounterCeiling } from '@bratura/shared/entities/call-notice-counters/entity';
 import type { CSSProperties } from 'react';
 
 /**

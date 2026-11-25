@@ -24,8 +24,9 @@ convex/
   userMessageChannels.ts      where a user is reachable: the only writer of `userMessageChannels`
   notificationDeliveries.ts   how it left the site: the only writer of `notificationDeliveries`
   users.ts                    the user's only writer
-  matching.ts     how each call for creators fits the profile: the only writer of `matches`, and
-                  the reads the call screens make (cards, details, counters, highlights)
+  matching.ts     how each call for creators fits the profile: the only writer of `matches` and
+                  `callNoticeCounters`, and the reads the call screens make (cards, details,
+                  counters, highlights)
   organizations.ts            the organization's only writer (`organizations`, `memberships`)
   billing.ts                  the panel subscription's only writer (`billingSubscriptions`,
                               `billingWebhookDeliveries`), the AbacatePay webhook's handler
@@ -110,6 +111,10 @@ hand after changing a rule or the fictional creator), until `done`:
 ```bash
 pnpm exec convex run matching:recomputeMatches '{"cursor":null}'
 ```
+
+When it is done it stores the screens' counters in their one row (`callNoticeCounters`), so they
+are as fresh as the last recompute; an extraction or a moved close shows in them the next day.
+Store them again by hand with `pnpm exec convex run matching:storeCallNoticeCounters '{}'`.
 
 `_generated/` without a Convex account: `CONVEX_AGENT_MODE=anonymous pnpm exec convex dev --once`
 (a local backend).

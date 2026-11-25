@@ -7,10 +7,11 @@ import {
   CallNoticeCardsQueryFromBraturaPortalReturnsSchema,
   type CallNoticeCard,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
+import { callNoticeCounterCeiling } from '@bratura/shared/entities/call-notice-counters/entity';
 import {
-  callNoticeCounterCeiling,
   CallNoticeCountersQueryFromBraturaPortalArgsSchema,
   CallNoticeCountersQueryFromBraturaPortalReturnsSchema,
+  type CallNoticeCounters,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-counters/query';
 import {
   CallNoticeDetailsQueryFromBraturaPortalArgsSchema,
@@ -126,9 +127,9 @@ const RecomputeMatchesMutationReturnsSchema = z.object({
 });
 
 /**
- * Every call's match again, a batch per run, scheduling itself until done: daily after ingestion
- * (a close may have moved, a paper of the profile may have expired) and by hand after extracting:
- * `pnpm exec convex run matching:recomputeMatches '{"cursor":null}'`.
+ * Every call's match again, a batch per run, scheduling itself until done, then the counters:
+ * daily after ingestion (a close may have moved, a paper of the profile may have expired) and by
+ * hand after extracting: `pnpm exec convex run matching:recomputeMatches '{"cursor":null}'`.
  */
 export const recomputeMatches = internalZodMutation({
   args: RecomputeMatchesMutationArgsSchema,
@@ -138,11 +139,11 @@ export const recomputeMatches = internalZodMutation({
       .query('callNoticeExtractions')
       .paginate({ numItems: recomputeMatchesBatch, cursor });
     for (const { callNoticeId } of page) await storeMatchOfCallNotice(ctx, callNoticeId);
-    if (!isDone) {
+    if (isDone) await ctx.scheduler.runAfter(0, internal.matching.storeCallNoticeCounters, {});
+    else
       await ctx.scheduler.runAfter(0, internal.matching.recomputeMatches, {
         cursor: continueCursor,
       });
-    }
     return { matched: page.length, done: isDone };
   },
 });
@@ -295,45 +296,74 @@ async function countUpToCeiling(rows: { take: (count: number) => Promise<unknown
   return (await rows.take(callNoticeCounterCeiling)).length;
 }
 
-/** The screens' counters, each one an index range read up to the ceiling. */
+/** Every counter the call screens show, each one an index range read up to the ceiling. */
+async function countCallNotices(ctx: QueryCtx, now: number): Promise<CallNoticeCounters> {
+  const closingBetween = (from: number, to: number) =>
+    ctx.db
+      .query('matches')
+      .withIndex('by_closes', (index) =>
+        index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
+      );
+  const [open, closingSoon, isNew, ...byClassification] = await Promise.all([
+    countUpToCeiling(closingBetween(now, Number.MAX_SAFE_INTEGER)),
+    countUpToCeiling(closingBetween(now, now + closesSoonWithinDays * dayInMs)),
+    countUpToCeiling(
+      ctx.db
+        .query('matches')
+        .withIndex('by_first_seen', (index) =>
+          index.gte('callNoticeFirstSeenAt', now - newCallNoticeWithinDays * dayInMs),
+        ),
+    ),
+    ...MatchClassificationEnum.options.map((classification) =>
+      countUpToCeiling(
+        ctx.db
+          .query('matches')
+          .withIndex('by_classification_and_closes', (index) =>
+            index.eq('classification', classification).gte('closesAtForOrdering', now),
+          ),
+      ),
+    ),
+  ]);
+  const [eligible = 0, almostEligible = 0, notEligible = 0] = byClassification;
+  return {
+    open,
+    closingSoon,
+    isNew,
+    byClassification: { eligible, almostEligible, notEligible },
+  };
+}
+
+const StoreCallNoticeCountersMutationArgsSchema = z.object({});
+
+/**
+ * Stores the counters in their one row: scheduled when the daily recompute is done, or by hand:
+ * `pnpm exec convex run matching:storeCallNoticeCounters '{}'`.
+ */
+export const storeCallNoticeCounters = internalZodMutation({
+  args: StoreCallNoticeCountersMutationArgsSchema,
+  returns: z.null(),
+  handler: async (ctx): Promise<null> => {
+    const now = Date.now();
+    const row = { ...(await countCallNotices(ctx, now)), countedAt: now };
+    const stored = await ctx.db.query('callNoticeCounters').first();
+    if (stored) await ctx.db.replace(stored._id, row);
+    else await ctx.db.insert('callNoticeCounters', row);
+    return null;
+  },
+});
+
+/**
+ * The screens' counters as the last recompute stored them: one small row instead of ~400 matches
+ * per visit. Counted live only until the first recompute after a deploy has stored them.
+ */
 export const callNoticeCounters = publicZodQuery({
   args: CallNoticeCountersQueryFromBraturaPortalArgsSchema,
   returns: CallNoticeCountersQueryFromBraturaPortalReturnsSchema,
   handler: async (ctx) => {
-    const now = Date.now();
-    const closingBetween = (from: number, to: number) =>
-      ctx.db
-        .query('matches')
-        .withIndex('by_closes', (index) =>
-          index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
-        );
-    const [open, closingSoon, isNew, ...byClassification] = await Promise.all([
-      countUpToCeiling(closingBetween(now, Number.MAX_SAFE_INTEGER)),
-      countUpToCeiling(closingBetween(now, now + closesSoonWithinDays * dayInMs)),
-      countUpToCeiling(
-        ctx.db
-          .query('matches')
-          .withIndex('by_first_seen', (index) =>
-            index.gte('callNoticeFirstSeenAt', now - newCallNoticeWithinDays * dayInMs),
-          ),
-      ),
-      ...MatchClassificationEnum.options.map((classification) =>
-        countUpToCeiling(
-          ctx.db
-            .query('matches')
-            .withIndex('by_classification_and_closes', (index) =>
-              index.eq('classification', classification).gte('closesAtForOrdering', now),
-            ),
-        ),
-      ),
-    ]);
-    const [eligible = 0, almostEligible = 0, notEligible = 0] = byClassification;
-    return {
-      open,
-      closingSoon,
-      isNew,
-      byClassification: { eligible, almostEligible, notEligible },
-    };
+    const stored = await ctx.db.query('callNoticeCounters').first();
+    if (!stored) return await countCallNotices(ctx, Date.now());
+    const { open, closingSoon, isNew, byClassification } = stored;
+    return { open, closingSoon, isNew, byClassification };
   },
 });
 
