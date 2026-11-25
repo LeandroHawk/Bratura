@@ -1,5 +1,7 @@
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Eyebrow, Heading, Tag } from '@bratura/ui';
+import { ButtonLink, Eyebrow, Heading, Tag } from '@bratura/ui';
+import { ROUTES } from '@/features/common/config/routes';
+import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
 import { SectionBand } from '@/features/landing/pages/sections/common/SectionBand';
 import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
 import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
@@ -71,7 +73,7 @@ export function BusinessModel({ locale }: { locale: Locale }) {
           <p className="font-display text-xl font-bold">{audience.label}</p>
           <p className="max-w-[70ch] text-small text-muted-foreground">{audience.channels}</p>
         </div>
-        <ul className="grid gap-8 md:grid-cols-2 md:gap-6 xl:grid-cols-4">
+        <ul className="grid gap-8 md:grid-cols-2 md:gap-x-10 md:gap-y-8">
           {audience.rows.map((row) => (
             <li key={row.title} className="grid content-start gap-2 border-t border-border pt-5">
               <Seats box={row.box} />
@@ -81,6 +83,14 @@ export function BusinessModel({ locale }: { locale: Locale }) {
               <Heading as="h3">{row.title}</Heading>
               <p className="font-display text-small text-muted-foreground italic">{row.pays}</p>
               <p className="text-small">{row.text}</p>
+              {row.demoLabel && (
+                <ButtonLink
+                  href={localizedPathFromLocale(locale, ROUTES.signIn)}
+                  className="justify-self-start"
+                >
+                  {row.demoLabel}
+                </ButtonLink>
+              )}
             </li>
           ))}
         </ul>
