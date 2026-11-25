@@ -34,6 +34,11 @@ export const MatchSchema = z.object({
   /** The call's `firstSeenAt`, copied for the "newest" index. */
   callNoticeFirstSeenAt: requiredInstant,
   artForms: z.array(CallNoticeExtractionSchema.shape.artForms.element.shape.value).optional(),
+  /**
+   * Eligible 0, almost 1, not 2, closed when matched 3: the "best fit first" index, then the close.
+   * Optional until the first recompute after the deploy that added it.
+   */
+  fitRankForOrdering: z.int().min(0).max(3).optional(),
   computedAt: requiredInstant,
 });
 

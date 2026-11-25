@@ -21,7 +21,7 @@ export const CallNoticeCloseFilterEnum = z.enum([
 export type CallNoticeCloseFilter = z.infer<typeof CallNoticeCloseFilterEnum>;
 
 /** The order of a list: each value is one index on the server. */
-export const CallNoticeSortEnum = z.enum(['closestDeadline', 'largestAmount', 'newest']);
+export const CallNoticeSortEnum = z.enum(['bestFit', 'closestDeadline', 'largestAmount', 'newest']);
 export type CallNoticeSort = z.infer<typeof CallNoticeSortEnum>;
 
 /**

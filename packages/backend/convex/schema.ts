@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from 'convex/server';
 import { rateLimitTables } from 'convex-helpers/server/rateLimit';
 import { zodToConvex } from 'convex-helpers/server/zod4';
 import { CallNoticeSchema } from '@bratura/shared/entities/call-notice/entity';
+import { CallNoticeCountersSchema } from '@bratura/shared/entities/call-notice-counters/entity';
 import { CallNoticeDocumentSchema } from '@bratura/shared/entities/call-notice-document/entity';
 import { CallNoticeDocumentTextSchema } from '@bratura/shared/entities/call-notice-document-text/entity';
 import { CallNoticeExtractionSchema } from '@bratura/shared/entities/call-notice-extraction/entity';
@@ -51,7 +52,9 @@ export default defineSchema({
     .index('by_closes', ['closesAtForOrdering'])
     .index('by_classification_and_closes', ['classification', 'closesAtForOrdering'])
     .index('by_largest_amount', ['largestAmountPerProjectInCents'])
-    .index('by_first_seen', ['callNoticeFirstSeenAt']),
+    .index('by_first_seen', ['callNoticeFirstSeenAt'])
+    .index('by_fit_and_closes', ['fitRankForOrdering', 'closesAtForOrdering']),
+  callNoticeCounters: defineTable(zodToConvex(CallNoticeCountersSchema)),
   userNotifications: defineTable(zodToConvex(UserNotificationSchema)).index(
     'by_user_and_dedupe_key',
     ['userId', 'dedupeKey'],

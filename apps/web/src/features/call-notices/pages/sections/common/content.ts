@@ -60,6 +60,7 @@ const ptBR = {
     loadingMore: 'Carregando…',
   },
   sort: {
+    bestFit: 'Mais compatíveis primeiro',
     closestDeadline: 'Prazo mais próximo',
     largestAmount: 'Maior valor por projeto',
     newest: 'Mais recentes',
@@ -220,6 +221,7 @@ export const CALL_NOTICES_CONTENT: Record<Locale, typeof ptBR> = {
       loadingMore: 'Loading…',
     },
     sort: {
+      bestFit: 'Best fit first',
       closestDeadline: 'Closest deadline',
       largestAmount: 'Largest amount per project',
       newest: 'Newest',

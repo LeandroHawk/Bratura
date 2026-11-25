@@ -7,10 +7,11 @@ import {
   CallNoticeCardsQueryFromBraturaPortalReturnsSchema,
   type CallNoticeCard,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
+import { callNoticeCounterCeiling } from '@bratura/shared/entities/call-notice-counters/entity';
 import {
-  callNoticeCounterCeiling,
   CallNoticeCountersQueryFromBraturaPortalArgsSchema,
   CallNoticeCountersQueryFromBraturaPortalReturnsSchema,
+  type CallNoticeCounters,
 } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-counters/query';
 import {
   CallNoticeDetailsQueryFromBraturaPortalArgsSchema,
@@ -30,7 +31,10 @@ import {
   FICTIONAL_CREATOR,
   FICTIONAL_CREATOR_PORTFOLIO_ITEMS,
 } from '@bratura/shared/entities/creator/demo/fictional-creator';
-import { MatchClassificationEnum } from '@bratura/shared/entities/match/enums/classification/enum';
+import {
+  MatchClassificationEnum,
+  type MatchClassification,
+} from '@bratura/shared/entities/match/enums/classification/enum';
 import { documentId } from '@bratura/shared/primitives/code/id/fields';
 import { z } from 'zod';
 import { internal } from './_generated/api';
@@ -71,6 +75,14 @@ export const callNoticeCardsRowsReadMax = 500;
 
 // The writer -------------------------------------------------------------------------------------
 
+/** "Best fit first": eligible, almost, not, and last a call already closed when matched. */
+const fitRankByClassification: Record<MatchClassification, number> = {
+  eligible: 0,
+  almostEligible: 1,
+  notEligible: 2,
+};
+const closedFitRank = 3;
+
 /** Stores the call's match, or removes it when the call is not (or no longer) one for creators. */
 async function storeMatchOfCallNotice(ctx: MutationCtx, callNoticeId: Id<'callNotices'>) {
   const [callNotice, extraction, known] = await Promise.all([
@@ -89,13 +101,18 @@ async function storeMatchOfCallNotice(ctx: MutationCtx, callNoticeId: Id<'callNo
     return;
   }
   const now = Date.now();
+  const { classification } = matchCallNotice(profile, extraction, callNotice, now);
   const row = {
     callNoticeId,
-    classification: matchCallNotice(profile, extraction, callNotice, now).classification,
+    classification,
     closesAtForOrdering: closesAtForOrdering(callNotice, now),
     largestAmountPerProjectInCents: largestAmountPerProjectInCents(extraction),
     callNoticeFirstSeenAt: callNotice.firstSeenAt,
     artForms: distinctArtFormValues(extraction),
+    fitRankForOrdering:
+      deadlineForCreators(callNotice, now) === 'closed'
+        ? closedFitRank
+        : fitRankByClassification[classification],
     computedAt: now,
   };
   if (known) await ctx.db.replace(known._id, row);
@@ -126,9 +143,9 @@ const RecomputeMatchesMutationReturnsSchema = z.object({
 });
 
 /**
- * Every call's match again, a batch per run, scheduling itself until done: daily after ingestion
- * (a close may have moved, a paper of the profile may have expired) and by hand after extracting:
- * `pnpm exec convex run matching:recomputeMatches '{"cursor":null}'`.
+ * Every call's match again, a batch per run, scheduling itself until done, then the counters:
+ * daily after ingestion (a close may have moved, a paper of the profile may have expired) and by
+ * hand after extracting: `pnpm exec convex run matching:recomputeMatches '{"cursor":null}'`.
  */
 export const recomputeMatches = internalZodMutation({
   args: RecomputeMatchesMutationArgsSchema,
@@ -138,11 +155,11 @@ export const recomputeMatches = internalZodMutation({
       .query('callNoticeExtractions')
       .paginate({ numItems: recomputeMatchesBatch, cursor });
     for (const { callNoticeId } of page) await storeMatchOfCallNotice(ctx, callNoticeId);
-    if (!isDone) {
+    if (isDone) await ctx.scheduler.runAfter(0, internal.matching.storeCallNoticeCounters, {});
+    else
       await ctx.scheduler.runAfter(0, internal.matching.recomputeMatches, {
         cursor: continueCursor,
       });
-    }
     return { matched: page.length, done: isDone };
   },
 });
@@ -189,10 +206,11 @@ async function cardOfMatch(
 
 /**
  * The calls for creators, a page at a time. Closing first, the close filter and the classification
- * are one index range; by amount or by newest, the index gives the order and the server keeps the
- * rows of the filter while it reads the page. The range is `closeRange`'s, steady between pages;
- * the exact close is checked on each row. A closed call never comes as `eligible`. A page stops at
- * `callNoticeCardsRowsReadMax` rows read, full or not: the next one goes on from there.
+ * are one index range; best fit first, by amount or by newest, the index gives the order and the
+ * server keeps the rows of the filter while it reads the page. The range is `closeRange`'s, steady
+ * between pages; the exact close is checked on each row. A closed call never comes as `eligible`.
+ * A page stops at `callNoticeCardsRowsReadMax` rows read, full or not: the next one goes on from
+ * there.
  */
 export const callNoticeCards = publicZodQuery({
   args: CallNoticeCardsQueryFromBraturaPortalArgsSchema,
@@ -206,36 +224,52 @@ export const callNoticeCards = publicZodQuery({
     const { from, to } = closeRange({ closes, now });
     // The most recently closed first; every other list from the nearest close on.
     const closingOrder = closes === 'closed' ? 'desc' : 'asc';
+    // Best fit first within one classification, or among closed calls (all `notEligible`), is the
+    // closing order.
+    const order =
+      sort === 'bestFit' && (storedClassification !== null || closes === 'closed')
+        ? 'closestDeadline'
+        : sort;
     const matches =
-      sort === 'closestDeadline'
-        ? storedClassification === null
-          ? ctx.db
-              .query('matches')
-              .withIndex('by_closes', (index) =>
-                index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
-              )
-              .order(closingOrder)
-          : ctx.db
-              .query('matches')
-              .withIndex('by_classification_and_closes', (index) =>
-                index
-                  .eq('classification', storedClassification)
-                  .gte('closesAtForOrdering', from)
-                  .lte('closesAtForOrdering', to),
-              )
-              .order(closingOrder)
-        : ctx.db
+      order === 'bestFit'
+        ? ctx.db
             .query('matches')
-            .withIndex(sort === 'largestAmount' ? 'by_largest_amount' : 'by_first_seen')
-            .order('desc')
+            .withIndex('by_fit_and_closes')
             .filter((row) =>
               row.and(
                 row.gte(row.field('closesAtForOrdering'), from),
                 row.lte(row.field('closesAtForOrdering'), to),
-                storedClassification === null ||
-                  row.eq(row.field('classification'), storedClassification),
               ),
-            );
+            )
+        : order === 'closestDeadline'
+          ? storedClassification === null
+            ? ctx.db
+                .query('matches')
+                .withIndex('by_closes', (index) =>
+                  index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
+                )
+                .order(closingOrder)
+            : ctx.db
+                .query('matches')
+                .withIndex('by_classification_and_closes', (index) =>
+                  index
+                    .eq('classification', storedClassification)
+                    .gte('closesAtForOrdering', from)
+                    .lte('closesAtForOrdering', to),
+                )
+                .order(closingOrder)
+          : ctx.db
+              .query('matches')
+              .withIndex(order === 'largestAmount' ? 'by_largest_amount' : 'by_first_seen')
+              .order('desc')
+              .filter((row) =>
+                row.and(
+                  row.gte(row.field('closesAtForOrdering'), from),
+                  row.lte(row.field('closesAtForOrdering'), to),
+                  storedClassification === null ||
+                    row.eq(row.field('classification'), storedClassification),
+                ),
+              );
     const result = await matches.paginate({
       ...paginationOpts,
       maximumRowsRead: callNoticeCardsRowsReadMax,
@@ -295,45 +329,74 @@ async function countUpToCeiling(rows: { take: (count: number) => Promise<unknown
   return (await rows.take(callNoticeCounterCeiling)).length;
 }
 
-/** The screens' counters, each one an index range read up to the ceiling. */
+/** Every counter the call screens show, each one an index range read up to the ceiling. */
+async function countCallNotices(ctx: QueryCtx, now: number): Promise<CallNoticeCounters> {
+  const closingBetween = (from: number, to: number) =>
+    ctx.db
+      .query('matches')
+      .withIndex('by_closes', (index) =>
+        index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
+      );
+  const [open, closingSoon, isNew, ...byClassification] = await Promise.all([
+    countUpToCeiling(closingBetween(now, Number.MAX_SAFE_INTEGER)),
+    countUpToCeiling(closingBetween(now, now + closesSoonWithinDays * dayInMs)),
+    countUpToCeiling(
+      ctx.db
+        .query('matches')
+        .withIndex('by_first_seen', (index) =>
+          index.gte('callNoticeFirstSeenAt', now - newCallNoticeWithinDays * dayInMs),
+        ),
+    ),
+    ...MatchClassificationEnum.options.map((classification) =>
+      countUpToCeiling(
+        ctx.db
+          .query('matches')
+          .withIndex('by_classification_and_closes', (index) =>
+            index.eq('classification', classification).gte('closesAtForOrdering', now),
+          ),
+      ),
+    ),
+  ]);
+  const [eligible = 0, almostEligible = 0, notEligible = 0] = byClassification;
+  return {
+    open,
+    closingSoon,
+    isNew,
+    byClassification: { eligible, almostEligible, notEligible },
+  };
+}
+
+const StoreCallNoticeCountersMutationArgsSchema = z.object({});
+
+/**
+ * Stores the counters in their one row: scheduled when the daily recompute is done, or by hand:
+ * `pnpm exec convex run matching:storeCallNoticeCounters '{}'`.
+ */
+export const storeCallNoticeCounters = internalZodMutation({
+  args: StoreCallNoticeCountersMutationArgsSchema,
+  returns: z.null(),
+  handler: async (ctx): Promise<null> => {
+    const now = Date.now();
+    const row = { ...(await countCallNotices(ctx, now)), countedAt: now };
+    const stored = await ctx.db.query('callNoticeCounters').first();
+    if (stored) await ctx.db.replace(stored._id, row);
+    else await ctx.db.insert('callNoticeCounters', row);
+    return null;
+  },
+});
+
+/**
+ * The screens' counters as the last recompute stored them: one small row instead of ~400 matches
+ * per visit. Counted live only until the first recompute after a deploy has stored them.
+ */
 export const callNoticeCounters = publicZodQuery({
   args: CallNoticeCountersQueryFromBraturaPortalArgsSchema,
   returns: CallNoticeCountersQueryFromBraturaPortalReturnsSchema,
   handler: async (ctx) => {
-    const now = Date.now();
-    const closingBetween = (from: number, to: number) =>
-      ctx.db
-        .query('matches')
-        .withIndex('by_closes', (index) =>
-          index.gte('closesAtForOrdering', from).lte('closesAtForOrdering', to),
-        );
-    const [open, closingSoon, isNew, ...byClassification] = await Promise.all([
-      countUpToCeiling(closingBetween(now, Number.MAX_SAFE_INTEGER)),
-      countUpToCeiling(closingBetween(now, now + closesSoonWithinDays * dayInMs)),
-      countUpToCeiling(
-        ctx.db
-          .query('matches')
-          .withIndex('by_first_seen', (index) =>
-            index.gte('callNoticeFirstSeenAt', now - newCallNoticeWithinDays * dayInMs),
-          ),
-      ),
-      ...MatchClassificationEnum.options.map((classification) =>
-        countUpToCeiling(
-          ctx.db
-            .query('matches')
-            .withIndex('by_classification_and_closes', (index) =>
-              index.eq('classification', classification).gte('closesAtForOrdering', now),
-            ),
-        ),
-      ),
-    ]);
-    const [eligible = 0, almostEligible = 0, notEligible = 0] = byClassification;
-    return {
-      open,
-      closingSoon,
-      isNew,
-      byClassification: { eligible, almostEligible, notEligible },
-    };
+    const stored = await ctx.db.query('callNoticeCounters').first();
+    if (!stored) return await countCallNotices(ctx, Date.now());
+    const { open, closingSoon, isNew, byClassification } = stored;
+    return { open, closingSoon, isNew, byClassification };
   },
 });
 

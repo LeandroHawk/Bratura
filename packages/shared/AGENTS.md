@@ -5,8 +5,8 @@ product's concepts. It is the end-to-end level of "shared" (`docs/architecture.m
 belongs here only when it crosses the wire and has a consumer on the other side **today**.
 
 Today it holds the locale, `requiredString`, `documentId`, and the entities of the first Convex
-tables: `source`, `call-notice`, `call-notice-document`, `call-notice-document-text`,
-`call-notice-extraction`, `ingestion-run`, `user`, `user-notification`, `notification-delivery`,
+tables: `source`, `call-notice`, `call-notice-counters`, `call-notice-document`,
+`call-notice-document-text`, `call-notice-extraction`, `ingestion-run`, `user`, `user-notification`, `notification-delivery`,
 `user-message-channel`, `organization`, `membership`, `billing-subscription`,
 `billing-webhook-delivery`. The billing pair's provider fields and enums live in
 `primitives/external/abacate-pay/`.

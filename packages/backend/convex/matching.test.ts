@@ -219,7 +219,21 @@ describe('recomputeMatches', () => {
 });
 
 describe('callNoticeCards', () => {
-  test.each(['closestDeadline', 'largestAmount', 'newest'] as const)(
+  test('best fit first: the eligible calls, then the almost eligible, each closing first', async () => {
+    const t = convexTest(schema, modules);
+    const almost = extracted({ requirements: [missingPaperToApply] });
+    await withCall(t, { title: 'quase, fecha em 2', closesInDays: 2, extraction: almost });
+    await withCall(t, { title: 'elegível, fecha em 9', closesInDays: 9 });
+    await withCall(t, { title: 'fechou ontem', closesInDays: -1 });
+    await withCall(t, { title: 'elegível, fecha em 4', closesInDays: 4 });
+    expect(await titlesOf(t, { sort: 'bestFit' })).toEqual([
+      'elegível, fecha em 4',
+      'elegível, fecha em 9',
+      'quase, fecha em 2',
+    ]);
+  });
+
+  test.each(['bestFit', 'closestDeadline', 'largestAmount', 'newest'] as const)(
     'a closed call is listed as not eligible alone, whatever fit is stored (%s)',
     async (sort) => {
       const t = convexTest(schema, modules);
@@ -485,6 +499,30 @@ describe('callNoticeCounters', () => {
       isNew: 1,
       byClassification: { eligible: 2, almostEligible: 1, notEligible: 0 },
     });
+  });
+});
+
+describe('stored counters', () => {
+  test('the daily recompute stores them, and the screens read the stored row', async () => {
+    vi.useFakeTimers({ now: NOW });
+    const t = convexTest(schema, modules);
+    await withCall(t, { closesInDays: 3 });
+    await t.mutation(internal.matching.recomputeMatches, { cursor: null });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const stored = await t.run((ctx) => ctx.db.query('callNoticeCounters').collect());
+    expect(stored).toHaveLength(1);
+    await withCall(t, { closesInDays: 20 });
+    expect(await t.query(api.matching.callNoticeCounters, {})).toMatchObject({ open: 1 });
+  });
+
+  test('a second store replaces the row instead of adding one', async () => {
+    const t = convexTest(schema, modules);
+    await withCall(t, { closesInDays: 3 });
+    await t.mutation(internal.matching.storeCallNoticeCounters, {});
+    await withCall(t, { closesInDays: 20 });
+    await t.mutation(internal.matching.storeCallNoticeCounters, {});
+    expect(await t.run((ctx) => ctx.db.query('callNoticeCounters').collect())).toHaveLength(1);
+    expect(await t.query(api.matching.callNoticeCounters, {})).toMatchObject({ open: 2 });
   });
 });
 
