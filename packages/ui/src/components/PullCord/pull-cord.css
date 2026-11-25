@@ -70,6 +70,16 @@
     white-space: nowrap;
     color: var(--bt-muted-foreground);
   }
+  /* Compact: a short cord, with the label beside the mount so it stays at the top of the page. */
+  .bt-pull.is-compact {
+    --bt-cord-length: 24px;
+  }
+  .bt-pull.is-compact .bt-pull-label {
+    top: 2px;
+    bottom: auto;
+    right: calc(50% + 14px);
+    font-size: 14px;
+  }
   .bt-pull-beam {
     position: absolute;
     top: 0;

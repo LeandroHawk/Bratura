@@ -26,3 +26,23 @@
     rotate: 0.5deg;
   }
 }
+
+/* Materials lit from the top left: the wood's sheen (the sign's oak) and a brass ball (a nail, a
+   knob). Declared wherever a theme is set (`/design` sets one per panel), so they resolve with that
+   theme's brass. */
+:root,
+[data-theme] {
+  --bt-sheen-light: rgb(255 255 255 / 0.12);
+  --bt-sheen-shade: rgb(0 0 0 / 0.14);
+  --bt-wood-sheen: linear-gradient(
+    160deg,
+    var(--bt-sheen-light),
+    transparent 45%,
+    var(--bt-sheen-shade)
+  );
+  --bt-brass-ball: radial-gradient(
+    circle at 35% 35%,
+    var(--bt-cord-highlight),
+    var(--bt-cord-shade)
+  );
+}

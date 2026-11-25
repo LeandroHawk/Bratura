@@ -64,8 +64,8 @@ a hit in a changed file is a question, not a verdict.
 # token by hand: use its class (gradients, multi-part shadows, stop-color excepted)
 rg -n 'var\(--bt-|\(--bt-' apps/web/src packages/ui/src/components -g '*.tsx'
 
-# literal colour: needs a token (known and kept: the sign's light and shade in hanging-sign.css,
-# the mask in light-switch.css)
+# literal colour: needs a token (known and kept: the wood's sheen in utilities.css, the sign's text
+# shadow in hanging-sign.css, the mask in light-switch.css)
 rg -n '#[0-9a-fA-F]{3,8}\b|rgba?\(' apps/web/src packages/ui/src -g '!tokens.css' -g '!palette.ts' \
   -g '!*.test.*'
 

@@ -20,6 +20,8 @@ export type HangingSignProps = {
   front: HangingSignFace;
   /** What it says once turned: the face the next page will show, so the swap looks seamless. */
   back: HangingSignFace;
+  /** `compact` is a smaller board, beside a small logo. */
+  size?: 'default' | 'compact';
   className?: string;
 };
 
@@ -34,7 +36,14 @@ const TURN_MS = 450;
  * plain link: on a normal click the board turns over first, then the browser follows `href`.
  * Modified clicks (new tab, new window) and reduced motion skip the turn.
  */
-export function HangingSign({ href, hrefLang, front, back, className = '' }: HangingSignProps) {
+export function HangingSign({
+  href,
+  hrefLang,
+  front,
+  back,
+  size = 'default',
+  className = '',
+}: HangingSignProps) {
   const [turned, setTurned] = useState(false);
 
   function turnThenFollow(event: MouseEvent<HTMLAnchorElement>) {
@@ -50,7 +59,7 @@ export function HangingSign({ href, hrefLang, front, back, className = '' }: Han
       href={href}
       hrefLang={hrefLang}
       lang={front.lang}
-      className={`bt-sign focus-ring ${className}`}
+      className={`bt-sign focus-ring ${size === 'compact' ? 'is-compact' : ''} ${className}`}
       onClick={turnThenFollow}
     >
       <span className="bt-sign-swing">
