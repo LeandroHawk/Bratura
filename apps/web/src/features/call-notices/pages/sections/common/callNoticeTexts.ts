@@ -3,7 +3,7 @@ import { registrationCloseDateText } from '@bratura/shared/messages/user-notific
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import type { BadgeTone } from '@bratura/ui';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { CALL_NOTICES_CONTENT } from './content';
+import { CALL_NOTICE_LABELS } from './content';
 
 /** What a call says of itself stays in the call's language, whatever the page's. */
 export const CALL_NOTICE_LANGUAGE = 'pt-BR';
@@ -35,7 +35,7 @@ export const CLASSIFICATION_TONE: Record<CallNoticeCard['classification'], Badge
 /** An art form's name; `any` is every area. */
 export function artFormName(artForm: CallNoticeCard['artForms'][number], locale: Locale) {
   return artForm === 'any'
-    ? CALL_NOTICES_CONTENT[locale].anyArtForm
+    ? CALL_NOTICE_LABELS[locale].anyArtForm
     : CREATOR_LABELS[locale].culturalArea[artForm];
 }
 
@@ -47,6 +47,6 @@ export function closeText(
   { deadline, registrationCloses }: Pick<CallNoticeCard, 'deadline' | 'registrationCloses'>,
   locale: Locale,
 ) {
-  if (deadline === 'openEnded') return CALL_NOTICES_CONTENT[locale].openEndedClose;
+  if (deadline === 'openEnded') return CALL_NOTICE_LABELS[locale].openEndedClose;
   return registrationCloses === null ? null : registrationCloseDateText(registrationCloses, locale);
 }

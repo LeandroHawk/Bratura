@@ -78,6 +78,8 @@ breathing (`Loading`), a failure a room roped off for restoration (`ClosedRoom`)
 - **`Badge` means a status, `Tag` means nothing but itself.** A status (open, closing soon, missing)
   is a `Badge`, coloured by its status token. Any other pill (a document, an included feature) is
   a `Tag`, bordered in its own text colour so it fits any surface. Neither is styled by hand.
+- **A link in running text takes the `text-link` utility** (underline, weight, focus ring), on an
+  `<a>` or a router's link; a link to another site is the web's `ExternalLink`.
 - **A real element for the real job.** `HangingSign` is an `<a href hreflang>`; its animation never
   replaces the link (modified clicks and reduced motion follow it at once). `PullCord` is a
   `<button>` whose visible label is its accessible name, and it announces the result.

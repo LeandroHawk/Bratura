@@ -8,9 +8,15 @@ this, where does its data come from".
 features/
   common/                      used by several features, or by app/
     components/                layout/ (SiteDocument, PageShell, SiteHeader, SiteFooter,
-                               LanguageSwitch), app/ (SignedInArea, AppNav: the frame of the
-                               signed-in pages), share-art/ (OG card, icons), InlineScript,
-                               NewTabHint, PageIntro (logo + h1 + lead + actions)
+                               LanguageSwitch, CompactHeader: the small logo's header,
+                               MuseumMapNav: the phone's bottom map), app/
+                               (SignedInArea, AppNav, SignOutButton, appPages: the frame of the
+                               signed-in pages and its rooms), share-art/ (OG card, icons),
+                               InlineScript, NewTabHint, ExternalLink (another site, new tab said),
+                               BoardPin (a sheet's pin on a cork board),
+                               NotInformed ("não informado": a value with no source),
+                               PageIntro (logo + h1 + lead + actions),
+                               restoration/ (RoomUnderRestoration: every failure's screen)
     config/                    site.ts (URL, title, description, tagline, team),
                                site-metadata.ts, routes.ts (every path, once),
                                portfolio-section-ids.ts
@@ -26,8 +32,9 @@ features/
   landing/  not-found/  route-error/  styleguide/
   account/                     sign-up and sign-in
   portfolio/                   the cultural portfolio: profile, experiences, projects, documents
-  call-notices/                the calls matched to the portfolio and every call, over the same
-                               cards, filters and details (`sections/common/`)
+  call-notices/                the calls matched to the portfolio and every call: one screen,
+                               two views, sections filters/, board/ (the cards on cork), details/
+                               (the dialog); common/ holds what board and details both say
 ```
 
 ⚠️ **Until the backend has creators, the signed-in area is a browser demo.** Creator, portfolio

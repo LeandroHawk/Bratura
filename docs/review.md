@@ -75,6 +75,9 @@ rg -n 'rounded-full border' apps/web/src
 # hand-made Eyebrow
 rg -n 'tracking-\[0.1em\]' apps/web/src
 
+# hand-made text link: `text-link`; a new tab outside ExternalLink or ButtonLink needs NewTabHint
+rg -n 'underline-offset|target="_blank"' apps/web/src
+
 # a button outside Button, or a click on a non-button (not allowed; a mouse shortcut is a <button
 # tabIndex={-1} aria-hidden> beside a real one)
 rg -n '<button|onClick' apps/web/src

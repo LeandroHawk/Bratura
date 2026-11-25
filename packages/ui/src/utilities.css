@@ -9,6 +9,16 @@
   }
 }
 
+/* A link inside running text: underlined, bold, with the focus ring. Works on an `<a>` and on a
+   router's link alike; a link to another site is the web's `ExternalLink`, which uses it. */
+@utility text-link {
+  @apply focus-ring;
+  border-radius: 0.125rem;
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-underline-offset: 4px;
+}
+
 /* An item of a list coming into view: it rises into place, each one a beat after the one before
    (set `--rise-index` on the item). */
 @utility rise-in {
