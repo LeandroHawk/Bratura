@@ -12,7 +12,7 @@ Node 22 (`.node-version`), pnpm (version pinned in `package.json`).
 
 ```bash
 pnpm install
-pnpm dev            # web app on :3000
+pnpm dev            # web app on :6767
 pnpm check          # lint + typecheck + test + build, every workspace (what CI runs)
 pnpm format         # prettier
 ```

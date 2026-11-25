@@ -22,8 +22,13 @@ const ptBR = {
   skipToContent: 'Ir para o conteúdo [1]',
   withoutJavaScript:
     'Sem JavaScript, a página funciona inteira; só a luz, a troca dos ingressos e a cortina ficam paradas.',
-  madeFor: 'Feito para o Hack Brasil 2026 · Trilha Cultura & economia criativa',
+  madeFor: 'Feito para o',
+  event: 'Hack Brasil 2026',
+  track: 'Trilha Cultura & economia criativa',
+  designSystem: 'Design system',
+  team: 'Equipe no LinkedIn',
   builtWithSponsors: 'Com os patrocinadores',
+  builtWithAgents: 'Programamos com',
   builtWithOthers: 'Também usamos',
 };
 
@@ -50,8 +55,13 @@ export const LAYOUT_CONTENT: Record<Locale, typeof ptBR> = {
     skipToContent: 'Skip to content [1]',
     withoutJavaScript:
       'Without JavaScript the whole page still works; only the light switch, the ticket swap and the curtain stay still.',
-    madeFor: 'Made for Hack Brasil 2026 · Culture & creative economy track',
+    madeFor: 'Made for',
+    event: 'Hack Brasil 2026',
+    track: 'Culture & creative economy track',
+    designSystem: 'Design system',
+    team: 'Team on LinkedIn',
     builtWithSponsors: 'With the sponsors',
+    builtWithAgents: 'Coded with',
     builtWithOthers: 'Also built with',
   },
 };

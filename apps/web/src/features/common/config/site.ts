@@ -7,7 +7,7 @@ import { SLOGAN } from '@bratura/ui';
  */
 export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : 'http://localhost:3000';
+  : 'http://localhost:6767';
 
 /** The slogan in each locale; the name, Bratura, is the same in all of them. */
 export const SITE_SLOGAN: Record<Locale, string> = {
@@ -31,14 +31,36 @@ export const TAGLINE: Record<Locale, string> = {
   en: 'Build your portfolio once. We find the funding calls.',
 };
 
-export const TEAM = ['Atilio Almeida', 'Leandro', 'Kaik', 'João Victor'] as const;
+/** The competition, in Portuguese only; `#trilhas` is its home page's list of the seven tracks. */
+export const HACK_BRASIL = {
+  url: 'https://hackbrasil.com/',
+  tracksUrl: 'https://hackbrasil.com/#trilhas',
+} as const;
 
-/** The tools the product runs on, named in the footer; sponsors of Hack Brasil 2026 first. */
+/** The team, as the footer and the structured data name them, each with the profile they gave. */
+export const TEAM = [
+  { name: 'Atilio Costa', linkedIn: 'https://www.linkedin.com/in/atilio-almeida-costa/' },
+  {
+    name: 'Leandro Felix',
+    linkedIn: 'https://www.linkedin.com/in/leandro-f%C3%A9lix-nunes-6475a1237',
+  },
+  { name: 'Kaik Maiorquino', linkedIn: 'https://www.linkedin.com/in/kpersike' },
+  { name: 'João Souza', linkedIn: 'https://www.linkedin.com/in/joao-crivoi-souza/' },
+] as const;
+
+/**
+ * The tools behind the product, named in the footer: the sponsors of Hack Brasil 2026 it runs on,
+ * the AI agents the team coded with (competition rule 6.4), the rest it runs on.
+ */
 export const BUILT_WITH = {
   sponsors: [
     { name: 'Firecrawl', url: 'https://www.firecrawl.dev' },
     { name: 'Convex', url: 'https://www.convex.dev' },
     { name: 'AbacatePay', url: 'https://www.abacatepay.com' },
+  ],
+  agents: [
+    { name: 'Claude Code', url: 'https://www.claude.com/product/claude-code' },
+    { name: 'Devin', url: 'https://devin.ai' },
   ],
   others: [
     { name: 'Gemini', url: 'https://ai.google.dev' },

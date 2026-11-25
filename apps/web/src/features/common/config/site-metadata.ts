@@ -37,11 +37,15 @@ export function siteMetadataFromLocale(locale: Locale): Metadata {
 
 /**
  * Metadata of one page under the locale layout: its name in the tab and its address in each
- * language. A page behind the sign-in (`isPersonal`) stays out of search results.
+ * language. `isHiddenFromSearch` keeps it out of search results (the signed-in pages, `/design`).
  */
 export function pageMetadataFromLocale(
   locale: Locale,
-  { path, title, isPersonal = false }: { path: SitePath; title: string; isPersonal?: boolean },
+  {
+    path,
+    title,
+    isHiddenFromSearch = false,
+  }: { path: SitePath; title: string; isHiddenFromSearch?: boolean },
 ): Metadata {
   return {
     title,
@@ -49,6 +53,6 @@ export function pageMetadataFromLocale(
       canonical: localizedPathFromLocale(locale, path),
       languages: languageAlternatesFromPath(path),
     },
-    ...(isPersonal && { robots: { index: false } }),
+    ...(isHiddenFromSearch && { robots: { index: false } }),
   };
 }

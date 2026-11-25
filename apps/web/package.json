@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 6767",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 6767",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc",
     "test": "vitest run"

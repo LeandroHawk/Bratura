@@ -155,7 +155,7 @@ Node 22 and pnpm.
 
 ```bash
 pnpm install
-pnpm dev        # http://localhost:3000, Portuguese at / and English at /en
+pnpm dev        # http://localhost:6767, Portuguese at / and English at /en
 pnpm check      # lint, typecheck, tests and build: what CI runs
 ```
 
@@ -181,10 +181,10 @@ Planned after the essentials, if the deadline allows:
 
 | Who | Role | Focus |
 |---|---|---|
-| **Atilio Almeida** | Product owner | The idea, product insights, research inputs, business model and monetization |
-| **João Victor** | Tech lead | Repository foundation (front-end patterns, the contract, the tools we use), ingestion and extraction, the data |
-| **Leandro** | Front end | Sign-in, portfolio, call screens and matching, the landing |
-| **Kaik** | Integrations developer | Telegram alerts, AbacatePay billing, sign-in |
+| **Atilio Costa** | Product owner | The idea, product insights, research inputs, business model and monetization |
+| **João Souza** | Tech lead | Repository foundation (front-end patterns, the contract, the tools we use), ingestion and extraction, the data |
+| **Leandro Felix** | Front end | Sign-in, portfolio, call screens and matching, the landing |
+| **Kaik Maiorquino** | Integrations developer | Telegram alerts, AbacatePay billing, sign-in |
 
 Authorship, originality and the use of AI are in the [manifesto](MANIFEST.md).
 

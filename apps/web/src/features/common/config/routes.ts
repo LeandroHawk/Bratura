@@ -8,6 +8,7 @@ export const ROUTES = {
   portfolio: '/portfolio',
   matches: '/compatibilidade',
   callNotices: '/editais',
+  designSystem: '/design',
 } as const satisfies Record<string, SitePath>;
 
 /** The pages open to a visitor: the sitemap lists them, the phone map's ground floor shows them. */

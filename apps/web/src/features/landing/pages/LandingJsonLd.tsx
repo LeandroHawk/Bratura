@@ -16,7 +16,7 @@ function webApplicationFromLocale(locale: Locale) {
     inLanguage: locale,
     isAccessibleForFree: true,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'BRL' },
-    creator: TEAM.map((name) => ({ '@type': 'Person', name })),
+    creator: TEAM.map(({ name, linkedIn }) => ({ '@type': 'Person', name, sameAs: linkedIn })),
   };
 }
 
