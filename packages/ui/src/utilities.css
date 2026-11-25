@@ -9,6 +9,16 @@
   }
 }
 
+/* A link inside running text: underlined, bold, with the focus ring. Works on an `<a>` and on a
+   router's link alike; a link to another site is the web's `ExternalLink`, which uses it. */
+@utility text-link {
+  @apply focus-ring;
+  border-radius: 0.125rem;
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-underline-offset: 4px;
+}
+
 /* An item of a list coming into view: it rises into place, each one a beat after the one before
    (set `--rise-index` on the item). */
 @utility rise-in {
@@ -27,11 +37,12 @@
   }
 }
 
-/* Materials lit from the top left: the wood's sheen (the sign's oak) and a brass ball (a nail, a
-   knob). Declared wherever a theme is set (`/design` sets one per panel), so they resolve with that
-   theme's brass. */
+/* Brass hardware, lit from the top left: a ball (a nail, a knob, a stanchion's top) and a screw
+   head for a plaque's corners. Declared wherever a theme is set (`/design` sets one per panel), so
+   they resolve with that theme's brass. */
 :root,
 [data-theme] {
+  /* Light from the top left over wood and walnut: the sign, the doors, the map's plaque. */
   --bt-sheen-light: rgb(255 255 255 / 0.12);
   --bt-sheen-shade: rgb(0 0 0 / 0.14);
   --bt-wood-sheen: linear-gradient(
@@ -45,4 +56,38 @@
     var(--bt-cord-highlight),
     var(--bt-cord-shade)
   );
+  --bt-brass-screw: radial-gradient(
+    circle at 40% 35%,
+    var(--bt-cord-highlight),
+    var(--bt-cord-shade) 70%
+  );
+  /* A disc that carries a walnut number: it stops at `--bt-cord`, the pair tested for contrast. */
+  --bt-brass-disc: radial-gradient(circle at 35% 30%, var(--bt-cord-highlight), var(--bt-cord) 80%);
+  /* A standing rod (a stanchion's post) and a lying one (a door's push bar). */
+  --bt-brass-rod: linear-gradient(
+    90deg,
+    var(--bt-cord-shade),
+    var(--bt-cord-highlight),
+    var(--bt-cord)
+  );
+  --bt-brass-rail: linear-gradient(var(--bt-cord-highlight), var(--bt-cord-shade));
+}
+
+/* A small walnut plaque with brass letters (a room's name, "room under restoration"). */
+@utility walnut-plaque {
+  border: 1.5px solid var(--bt-cord-shade);
+  border-radius: 4px;
+  color: var(--bt-cord-highlight);
+  background-color: var(--bt-cabinet);
+  box-shadow: 2px 3px 0 var(--bt-wood-shadow);
+}
+
+/* The room `MuseumMap`'s folded plaque takes at the bottom of a phone. A page under it ends with
+   `museum-map-clearance`, so its last line stays above the plaque. */
+:root {
+  --bt-map-plaque-height: 64px;
+  --bt-map-plaque-inset: max(0.75rem, env(safe-area-inset-bottom));
+}
+@utility museum-map-clearance {
+  padding-bottom: calc(var(--bt-map-plaque-height) + var(--bt-map-plaque-inset) + 0.75rem);
 }

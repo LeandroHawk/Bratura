@@ -2,7 +2,7 @@
 
 import type { Creator } from '@bratura/shared/entities/creator/entity';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { ButtonLink, Card, Heading } from '@bratura/ui';
+import { ButtonLink, Card, Heading, Loading } from '@bratura/ui';
 import type { ReactNode } from 'react';
 import { ROUTES } from '@/features/common/config/routes';
 import { useDemoState, type DemoState } from '@/features/common/data/demoStore';
@@ -29,7 +29,7 @@ export function SignedInArea({
   const state = useDemoState();
 
   // Before the browser's storage is read (the server's HTML and the first paint).
-  if (state === null) return <p className="text-muted-foreground">{content.loading}</p>;
+  if (state === null) return <Loading label={content.loading} />;
 
   if (!state.isSignedIn || state.creator === null)
     return (

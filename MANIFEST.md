@@ -17,10 +17,10 @@ The money for culture already exists. This project is about making it reach the 
 
 | Name | GitHub | Role |
 |---|---|---|
-| Atilio Almeida | [@handle] | Product owner: the idea, product insights, research inputs, business model and monetization |
-| João Victor | [@Joao-Crivoi](https://github.com/Joao-Crivoi) | Tech lead: repository foundation (front-end patterns, the contract, the tools we use) and Firecrawl ingestion |
-| Leandro | [@LeandroHawk](https://github.com/LeandroHawk) | Integrations developer: WhatsApp front end; helps with Firecrawl ingestion |
-| Kaik | [@handle] | Integrations developer: WhatsApp front end |
+| Atilio Costa | [@handle] | Product owner: the idea, product insights, research inputs, business model and monetization |
+| João Souza | [@Joao-Crivoi](https://github.com/Joao-Crivoi) | Tech lead: repository foundation (front-end patterns, the contract, the tools we use), ingestion and extraction, the data |
+| Leandro Felix | [@LeandroHawk](https://github.com/LeandroHawk) | Front end: sign-in, portfolio, call screens and matching, the landing |
+| Kaik Maiorquino | [@kpersike](https://github.com/kpersike) | Integrations developer: Telegram alerts, AbacatePay billing, sign-in |
 
 The intellectual property of this project belongs entirely to the team above (regulation item 11.1).
 The team warrants that the project does not infringe third-party rights (11.3).
@@ -36,7 +36,8 @@ The team warrants that the project does not infringe third-party rights (11.3).
 
 AI tools are allowed and recommended by the regulation (item 6.4). We used:
 
-- **[AI coding assistants used by the team, e.g. Claude, Devin]** for research, planning and pair programming.
+- **Claude Code** (Anthropic) for research, planning, code and reviews, and **Devin** (Cognition, a
+  Hack Brasil 2026 sponsor) for pair programming on pull requests.
 - **Google Gemini API (free tier)** inside the product, to read public calls, organize portfolios and
   suggest texts. Only public call text and the fictional demo creator are sent to it.
 
@@ -61,7 +62,8 @@ comes from the official source, with a link. When a field is not in the source, 
 ## Availability
 
 - This repository stays public until at least **15/12/2026** (item 6.7).
-- Demo: [https://…] — online throughout judging (item 7.3).
+- Demo: https://bratura.vercel.app/ (English at https://bratura.vercel.app/en) — online throughout
+  judging (item 7.3).
 - Video (≤ 3 min, no login): [https://…]
 - Repository: https://github.com/LeandroHawk/Bratura
 
@@ -71,7 +73,7 @@ comes from the official source, with a link. When a field is not in the source, 
 apps/web/           Next.js app (Vercel)
 packages/ui/        @bratura/ui design system
 packages/shared/    Zod entities and primitives shared by web and backend
-packages/backend/   Convex backend: ingestion, portfolio, matching, alerts, WhatsApp webhook
+packages/backend/   Convex: schema, ingestion, extraction, matching, alerts, Telegram, billing
 ```
 
 How the code is organised and why: `docs/architecture.md`, with contracts, security, data sources
@@ -82,9 +84,10 @@ agents: `AGENTS.md`.
 
 ```
 pnpm install
-pnpm dev                   # Next.js on http://localhost:3000
+pnpm dev                   # Next.js on http://localhost:6767
 pnpm check                 # lint, typecheck, tests and build: what CI runs
 ```
 
-The Convex backend is not in the repository yet. When it arrives, this section gains its command and
-a `.env.example` to copy (never commit real keys).
+The backend runs on Convex (`packages/backend/AGENTS.md`); its keys (Firecrawl, Gemini, Telegram,
+AbacatePay) live in the Convex deployment, the web's in Vercel (`apps/web/.env.example`). Never in
+the repository.

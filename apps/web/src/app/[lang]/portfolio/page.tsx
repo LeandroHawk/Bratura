@@ -12,7 +12,7 @@ export async function generateMetadata({
   return pageMetadataFromLocale(locale, {
     path: ROUTES.portfolio,
     title: PORTFOLIO_PAGE_TITLE[locale],
-    isPersonal: true,
+    isHiddenFromSearch: true,
   });
 }
 

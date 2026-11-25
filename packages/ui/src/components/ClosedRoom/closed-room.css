@@ -1,0 +1,96 @@
+@layer components {
+  /* A doorway roped off for restoration: brass stanchions, a velvet rope, a plaque hung on it. */
+  .bt-closed {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    padding: 2rem 0;
+    text-align: center;
+  }
+  .bt-closed-scene {
+    position: relative;
+    width: min(100%, 17rem);
+    height: 8.5rem;
+    border-bottom: 3px solid var(--bt-foreground);
+  }
+  /* A stanchion: a ball on a post on a round foot. */
+  .bt-closed-post {
+    position: absolute;
+    bottom: 0;
+    width: 10px;
+    height: 7rem;
+    border-radius: 3px 3px 0 0;
+    background: var(--bt-brass-rod);
+  }
+  .bt-closed-post::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    translate: -50% 0;
+    border-radius: 999px;
+    background: var(--bt-brass-ball);
+  }
+  .bt-closed-post::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 34px;
+    height: 7px;
+    translate: -50% 0;
+    border-radius: 999px 999px 0 0;
+    background: var(--bt-cord-shade);
+  }
+  .bt-closed-post.is-left {
+    left: 14px;
+  }
+  .bt-closed-post.is-right {
+    right: 14px;
+  }
+  .bt-closed-rope {
+    position: absolute;
+    top: 0.6rem;
+    right: 14px;
+    left: 14px;
+    width: calc(100% - 28px);
+    height: 2.6rem;
+    overflow: visible;
+  }
+  .bt-closed-rope path {
+    fill: none;
+    stroke: var(--bt-curtain);
+    stroke-width: 7;
+    stroke-linecap: round;
+  }
+  /* The plaque hangs from the rope's lowest point, a little askew. */
+  .bt-closed-plaque {
+    position: absolute;
+    top: 3rem;
+    left: 50%;
+    margin: 0;
+    padding: 6px 14px;
+    translate: -50% 0;
+    rotate: -3deg;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .bt-closed-plaque::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    width: 2px;
+    height: 0.55rem;
+    background: var(--bt-cord-shade);
+  }
+  .bt-closed-message {
+    max-width: 40ch;
+    margin: 0;
+    color: var(--bt-muted-foreground);
+  }
+}

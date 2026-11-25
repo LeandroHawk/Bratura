@@ -1,0 +1,74 @@
+@layer components {
+  /* An emergency exit sign: green box, white inner frame, running figure, the word. */
+  .bt-exit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 44px;
+    padding: 0.35rem 0.8rem 0.35rem 0.55rem;
+    border: 0;
+    border-radius: 4px;
+    color: var(--bt-exit-ink);
+    background: var(--bt-exit);
+    /* The white frame painted inside the box, and the sign's own glow. */
+    box-shadow:
+      inset 0 0 0 2px var(--bt-exit),
+      inset 0 0 0 3.5px var(--bt-exit-ink),
+      0 0 14px 1px color-mix(in srgb, var(--bt-exit) 45%, transparent);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: translate 0.2s ease-out;
+  }
+  .bt-exit-figure {
+    width: 30px;
+    height: 22px;
+    flex-shrink: 0;
+    fill: var(--bt-exit-ink);
+    stroke: var(--bt-exit-ink);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .bt-exit-figure path:not(.bt-exit-door) {
+    fill: none;
+  }
+  .bt-exit-door {
+    fill: none;
+    stroke-width: 2;
+  }
+  .bt-exit-text {
+    display: grid;
+    line-height: 1.1;
+  }
+  .bt-exit-label {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .bt-exit-hint {
+    font-size: 11px;
+    font-weight: 500;
+  }
+  /* Compact: a smaller sign, at the scale of the corridor's doors. */
+  .bt-exit.is-compact {
+    min-height: 34px;
+    padding: 0.2rem 0.6rem 0.2rem 0.45rem;
+  }
+  .bt-exit.is-compact .bt-exit-figure {
+    width: 22px;
+    height: 17px;
+  }
+  .bt-exit.is-compact .bt-exit-label {
+    font-size: 12px;
+  }
+  .bt-exit.is-compact .bt-exit-hint {
+    font-size: 10px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bt-exit:hover {
+      translate: 2px 0;
+    }
+  }
+}

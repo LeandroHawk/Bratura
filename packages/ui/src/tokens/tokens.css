@@ -101,6 +101,9 @@
      paper. Its ink labels and group titles; its edge is the hairline between items. */
   --bt-sand-ink: var(--bt-dune-700);
   --bt-sand-edge: var(--bt-dune-300);
+  /* The exit sign: emergency green with a white face, the same sign in both themes. */
+  --bt-exit: var(--bt-green-800);
+  --bt-exit-ink: var(--bt-parchment-50);
   --bt-glow: var(--bt-glow-100);
   --bt-curtain: var(--bt-velvet-600);
   --bt-curtain-fold: var(--bt-velvet-900);
@@ -152,6 +155,8 @@
   --bt-cabinet: var(--bt-walnut-800);
   --bt-sand-ink: var(--bt-terracotta-300);
   --bt-sand-edge: var(--bt-terracotta-600);
+  --bt-exit: var(--bt-green-800);
+  --bt-exit-ink: var(--bt-parchment-50);
   --bt-glow: var(--bt-glow-200);
   --bt-curtain: var(--bt-velvet-600);
   --bt-curtain-fold: var(--bt-velvet-900);
@@ -207,6 +212,8 @@
   --color-cabinet: var(--bt-cabinet);
   --color-sand-ink: var(--bt-sand-ink);
   --color-sand-edge: var(--bt-sand-edge);
+  --color-exit: var(--bt-exit);
+  --color-exit-ink: var(--bt-exit-ink);
   --color-glow: var(--bt-glow);
   --color-curtain: var(--bt-curtain);
   --color-curtain-fold: var(--bt-curtain-fold);

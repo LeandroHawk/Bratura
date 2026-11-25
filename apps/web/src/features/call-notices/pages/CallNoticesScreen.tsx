@@ -2,27 +2,24 @@
 
 import type { CallNoticeCard as CallNoticeCardData } from '@bratura/shared/entities/call-notice/dto/bratura-portal/call-notice-cards/query';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Button } from '@bratura/ui';
 import { useMemo, useState } from 'react';
 import { useCallNoticeCards } from '@/features/call-notices/data/useCallNoticeCards';
 import { useCallNoticeCounters } from '@/features/call-notices/data/useCallNoticeCounters';
 import { useSavedCallNoticeCards } from '@/features/call-notices/data/useSavedCallNoticeCards';
 import { SignedInArea, type SignedInState } from '@/features/common/components/app/SignedInArea';
 import { BackendData } from '@/features/common/components/BackendData';
+import { RoomUnderRestoration } from '@/features/common/components/restoration/RoomUnderRestoration';
 import { ROUTES } from '@/features/common/config/routes';
 import { setSavedCallNotice } from '@/features/common/data/demoStore';
-import { CallNoticeCard } from './sections/common/CallNoticeCard';
-import { CallNoticeDetails } from './sections/common/CallNoticeDetails';
+import { CALL_NOTICES_SCREEN_CONTENT } from './content';
+import { CallNoticeBoard } from './sections/board/CallNoticeBoard';
+import { CallNoticeDetails } from './sections/details/CallNoticeDetails';
 import {
   CallNoticeFilters,
   type CallNoticeFilterValues,
-} from './sections/common/CallNoticeFilters';
-import { CALL_NOTICES_CONTENT } from './sections/common/content';
+} from './sections/filters/CallNoticeFilters';
 import { MatchSummary } from './sections/match-summary/MatchSummary';
 import { OverviewCounters } from './sections/overview-counters/OverviewCounters';
-
-/** The pins, one colour of the logo per card, in list order. */
-const BOARD_PIN_COLOURS = ['bg-logo-green', 'bg-logo-yellow', 'bg-logo-blue'];
 
 /** The two screens over the same calls: the fit with the portfolio first, or every call. */
 export type CallNoticesView = 'matches' | 'overview';
@@ -57,7 +54,7 @@ function CallNotices({
   view: CallNoticesView;
   state: SignedInState;
 }) {
-  const content = CALL_NOTICES_CONTENT[locale];
+  const content = CALL_NOTICES_SCREEN_CONTENT[locale];
   const defaultFilters = VIEW[view].filters;
   const [filters, setFilters] = useState(defaultFilters);
   const [open, setOpen] = useState<CallNoticeCardData | null>(null);
@@ -92,48 +89,18 @@ function CallNotices({
         shownCount={shown?.length ?? null}
         hasMore={hasMore}
       />
-      {shown?.length === 0 && <p className="text-muted-foreground">{content.filters.noResults}</p>}
-      {shown !== null && shown.length > 0 && (
-        // The cards pinned to the lobby's cork board, the landing's notice board: same materials.
-        <ul className="grid items-start gap-8 rounded-xl border-[6px] border-wood bg-board p-3 pt-6 shadow-lifted outline-2 outline-wood-edge sm:border-[10px] sm:p-6 sm:pt-8 md:grid-cols-2 xl:grid-cols-3">
-          {shown.map((callNotice, index) => {
-            const { callNoticeId } = callNotice;
-            const isSaved = savedById.has(callNoticeId);
-            return (
-              <li key={callNoticeId} className="relative">
-                <span
-                  className={`absolute -top-2.5 left-1/2 z-10 size-5 -translate-x-1/2 rounded-full border-2 border-foreground shadow-cutout ${BOARD_PIN_COLOURS[index % BOARD_PIN_COLOURS.length]}`}
-                  aria-hidden="true"
-                />
-                <CallNoticeCard
-                  locale={locale}
-                  callNotice={callNotice}
-                  isSaved={isSaved}
-                  index={index}
-                  detailsLabel={
-                    view === 'matches' ? content.card.details : content.card.checkEligibility
-                  }
-                  onOpenDetails={() => setOpen(callNotice)}
-                  onToggleSaved={() =>
-                    setSavedCallNotice(
-                      callNoticeId,
-                      isSaved ? null : { callNoticeId, remindersOn: false },
-                    )
-                  }
-                />
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {hasMore && (
-        <div>
-          <Button variant="ghost" onClick={page.loadMore}>
-            {content.filters.loadMore}
-          </Button>
-        </div>
-      )}
-      {page.isLoadingMore && <p role="status">{content.filters.loadingMore}</p>}
+      <CallNoticeBoard
+        locale={locale}
+        callNotices={shown}
+        savedById={savedById}
+        asksEligibility={view === 'overview'}
+        loadMore={hasMore ? page.loadMore : null}
+        isLoadingMore={page.isLoadingMore}
+        onOpenDetails={setOpen}
+        onToggleSaved={({ callNoticeId }, isSaved) =>
+          setSavedCallNotice(callNoticeId, isSaved ? null : { callNoticeId, remindersOn: false })
+        }
+      />
       {open && (
         <CallNoticeDetails
           locale={locale}
@@ -156,7 +123,21 @@ export function CallNoticesScreen({ locale, view }: { locale: Locale; view: Call
   return (
     <SignedInArea locale={locale} currentPath={VIEW[view].path}>
       {(state) => (
-        <BackendData unavailable={<p role="status">{CALL_NOTICES_CONTENT[locale].unavailable}</p>}>
+        <BackendData
+          unavailable={
+            <RoomUnderRestoration
+              locale={locale}
+              message={CALL_NOTICES_SCREEN_CONTENT[locale].unavailable}
+            />
+          }
+          failed={(retry) => (
+            <RoomUnderRestoration
+              locale={locale}
+              message={CALL_NOTICES_SCREEN_CONTENT[locale].failed}
+              retry={retry}
+            />
+          )}
+        >
           <CallNotices locale={locale} view={view} state={state} />
         </BackendData>
       )}

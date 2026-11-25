@@ -56,7 +56,7 @@ export function SignInForm({ locale }: { locale: Locale }) {
               {content.noAccount}{' '}
               <Link
                 href={localizedPathFromLocale(locale, ROUTES.signUp)}
-                className="rounded-sm font-semibold text-foreground underline underline-offset-4 focus-ring"
+                className="text-link text-foreground"
               >
                 {content.signUp}
               </Link>

@@ -1,19 +1,23 @@
-import { DEFAULT_LOCALE } from '@bratura/shared/primitives/external/locale/enum';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import { StyleguidePage } from '@/features/styleguide/pages/Styleguide.page';
+import { ROUTES } from '@/features/common/config/routes';
+import { pageMetadataFromLocale } from '@/features/common/config/site-metadata';
 import { localeFromParams } from '@/features/common/utils/locale-from-params';
+import { STYLEGUIDE_CONTENT } from '@/features/styleguide/pages/content';
+import { StyleguidePage } from '@/features/styleguide/pages/Styleguide.page';
 
-export const metadata: Metadata = {
-  title: 'Design system',
-  description: 'Tokens e componentes do @bratura/ui nos temas claro (Acervo) e escuro (Galeria).',
-  // Team reference, not a page for search results.
-  robots: { index: false },
-  alternates: { canonical: '/design', languages: {} },
-};
+export async function generateMetadata({ params }: PageProps<'/[lang]/design'>): Promise<Metadata> {
+  const locale = await localeFromParams(params);
+  const content = STYLEGUIDE_CONTENT[locale];
+  return {
+    ...pageMetadataFromLocale(locale, {
+      path: ROUTES.designSystem,
+      title: content.title,
+      isHiddenFromSearch: true,
+    }),
+    description: content.description,
+  };
+}
 
-/** A team reference, written in Portuguese only: `/en/design` is a 404. */
 export default async function Page({ params }: PageProps<'/[lang]/design'>) {
-  if ((await localeFromParams(params)) !== DEFAULT_LOCALE) notFound();
-  return <StyleguidePage />;
+  return <StyleguidePage locale={await localeFromParams(params)} />;
 }

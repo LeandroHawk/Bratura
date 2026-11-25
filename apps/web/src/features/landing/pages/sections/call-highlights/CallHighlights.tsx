@@ -8,7 +8,8 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { ButtonLink, Container, Heading } from '@bratura/ui';
 import { fetchQuery } from 'convex/nextjs';
 import { unstable_cache } from 'next/cache';
-import { NewTabHint } from '@/features/common/components/NewTabHint';
+import { BoardPin } from '@/features/common/components/BoardPin';
+import { ExternalLink } from '@/features/common/components/ExternalLink';
 import { CALL_NOTICE_FLAG_LABELS } from '@/features/common/content/call-notice-flags';
 import { ROUTES } from '@/features/common/config/routes';
 import { localizedPathFromLocale } from '@/features/common/utils/locale-path';
@@ -16,6 +17,7 @@ import { SectionColumns } from '@/features/landing/pages/sections/common/Section
 import { SECTION_IDS } from '@/features/landing/pages/sections/common/sectionIds';
 import { titleIdFromSectionId } from '@/features/landing/pages/sections/common/titleIdFromSectionId';
 import { RUBBER_STAMP_CLASS_NAME } from '@/features/landing/pages/sections/common/rubberStampClassName';
+import { RoomUnderRestoration } from '@/features/common/components/restoration/RoomUnderRestoration';
 import { CALL_HIGHLIGHTS_CONTENT } from './content';
 
 /** Seconds the landing keeps its highlights; the page's `revalidate` must be the same number. */
@@ -36,9 +38,6 @@ async function callNoticeHighlights(): Promise<CallNoticeHighlight[] | null> {
   if (!process.env.NEXT_PUBLIC_CONVEX_URL) return null;
   return cachedCallNoticeHighlights().catch(() => null);
 }
-
-/** The pins, one colour of the logo per scroll, in board order. */
-const PIN_COLOURS = ['bg-logo-blue', 'bg-logo-yellow', 'bg-logo-green'] as const;
 
 /**
  * The scroll's two sides, a gentle wave mirrored left and right (a 100×100 path stretched to the
@@ -104,10 +103,7 @@ function HighlightList({ locale, calls }: { locale: Locale; calls: CallNoticeHig
           </svg>
           <Roll edge="top" />
           <Roll edge="bottom" />
-          <span
-            aria-hidden="true"
-            className={`absolute -top-2.5 left-1/2 size-5 -translate-x-1/2 rounded-full border-2 border-foreground shadow-cutout ${PIN_COLOURS[index % PIN_COLOURS.length]}`}
-          />
+          <BoardPin index={index} />
           <Stamp call={call} locale={locale} />
           <h3 className="font-display text-base leading-snug font-bold" lang="pt-BR">
             {call.title}
@@ -120,15 +116,9 @@ function HighlightList({ locale, calls }: { locale: Locale; calls: CallNoticeHig
               {registrationCloseDateText(call.registrationCloses, locale)}
             </p>
           )}
-          <a
-            href={call.officialUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="justify-self-start rounded-sm underline underline-offset-4 focus-ring"
-          >
+          <ExternalLink href={call.officialUrl} locale={locale} className="justify-self-start">
             {copy.officialPage}
-            <NewTabHint locale={locale} />
-          </a>
+          </ExternalLink>
         </li>
       ))}
     </ul>
@@ -158,7 +148,11 @@ export async function CallHighlights({ locale }: { locale: Locale }) {
       <SectionColumns id={SECTION_IDS.callHighlights}>
         {intro}
         <div className="grid content-start justify-items-start gap-6">
-          {calls === null ? <p role="status">{copy.unavailable}</p> : <p>{copy.empty}</p>}
+          {calls === null ? (
+            <RoomUnderRestoration locale={locale} message={copy.unavailable} />
+          ) : (
+            <p>{copy.empty}</p>
+          )}
           {viewAll}
         </div>
       </SectionColumns>

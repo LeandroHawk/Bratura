@@ -31,6 +31,8 @@ export const COLOR_TOKENS = [
   { group: 'cabinet', name: 'cabinet' },
   { group: 'sand', name: 'sand-ink' },
   { group: 'sand', name: 'sand-edge' },
+  { group: 'exit', name: 'exit' },
+  { group: 'exit', name: 'exit-ink' },
   { group: 'cord', name: 'cord' },
   { group: 'cord', name: 'cord-shade' },
   { group: 'cord', name: 'cord-highlight' },
@@ -85,6 +87,9 @@ export const CONTRAST_PAIRS = [
   // The sand ink: labels and group titles, written on a card and on the page.
   { fg: 'sand-ink', bg: 'card', min: 4.5 },
   { fg: 'sand-ink', bg: 'background', min: 4.5 },
+  // The exit sign's lettering, and a plaque's walnut number on its brass disc, at the darker end.
+  { fg: 'exit-ink', bg: 'exit', min: 4.5 },
+  { fg: 'cabinet', bg: 'cord', min: 4.5 },
   // The ticket's stamps and labels ("only with a producer", "ready to apply"): bold text on it.
   { fg: 'ticket-stamp', bg: 'ticket', min: 4.5 },
   { fg: 'ticket-stamp-ready', bg: 'ticket', min: 4.5 },

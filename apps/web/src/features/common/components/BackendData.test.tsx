@@ -9,7 +9,10 @@ test('an unconfigured backend renders the unavailable state without mounting que
     throw new Error('A query must not run without a provider');
   }
   const html = renderToStaticMarkup(
-    <BackendData unavailable={<p role="status">Calls unavailable</p>}>
+    <BackendData
+      unavailable={<p role="status">Calls unavailable</p>}
+      failed={() => <p role="status">Calls failed</p>}
+    >
       <QueryConsumer />
     </BackendData>,
   );

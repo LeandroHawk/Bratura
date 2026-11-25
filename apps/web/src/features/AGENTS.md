@@ -8,9 +8,15 @@ this, where does its data come from".
 features/
   common/                      used by several features, or by app/
     components/                layout/ (SiteDocument, PageShell, SiteHeader, SiteFooter,
-                               LanguageSwitch), app/ (SignedInArea, AppNav: the frame of the
-                               signed-in pages), share-art/ (OG card, icons), InlineScript,
-                               NewTabHint, PageIntro (logo + h1 + lead + actions)
+                               LanguageSwitch, CompactHeader: the small logo's header,
+                               MuseumMapNav: the phone's bottom map), app/
+                               (SignedInArea, AppNav, SignOutButton, appPages: the frame of the
+                               signed-in pages and its rooms), share-art/ (OG card, icons),
+                               InlineScript, NewTabHint, ExternalLink (another site, new tab said),
+                               BoardPin (a sheet's pin on a cork board),
+                               NotInformed ("não informado": a value with no source),
+                               PageIntro (logo + h1 + lead + actions),
+                               restoration/ (RoomUnderRestoration: every failure's screen)
     config/                    site.ts (URL, title, description, tagline, team),
                                site-metadata.ts, routes.ts (every path, once),
                                portfolio-section-ids.ts
@@ -23,11 +29,12 @@ features/
     styles/                    globals.css
     utils/                     locale paths and params, load-google-font, form-text
                                (text → contract value), format (amounts; dates use shared calendar)
-  landing/  not-found/  styleguide/
+  landing/  not-found/  route-error/  styleguide/
   account/                     sign-up and sign-in
   portfolio/                   the cultural portfolio: profile, experiences, projects, documents
-  call-notices/                the calls matched to the portfolio and every call, over the same
-                               cards, filters and details (`sections/common/`)
+  call-notices/                the calls matched to the portfolio and every call: one screen,
+                               two views, sections filters/, board/ (the cards on cork), details/
+                               (the dialog); common/ holds what board and details both say
 ```
 
 ⚠️ **Until the backend has creators, the signed-in area is a browser demo.** Creator, portfolio
@@ -36,6 +43,19 @@ The call lists and counters read Convex's fixed fictional Dona Maria matches. De
 `MatchProfileSchema` facts derived by `matchProfileFromPortfolio`, bounded by `portfolioItemsMax`:
 no e-mail, names, descriptions, links or file metadata. Matching runs in the backend. Uploads keep
 metadata in the browser; no uploaded bytes or private accounts are persisted in Convex yet.
+
+## Waiting and failing
+
+- **Waiting is `Loading`** from `@bratura/ui` (the tab icon's mark, breathing, over a label): a
+  screen, a dialog, a list's next page (`inline`). Never a bare "Carregando…" paragraph. A number
+  still on its way inside a counter stays "…": a mark per card is noise.
+- **A Convex read in the browser goes through `BackendData`**: `unavailable` (no backend
+  configured) and `failed(retry)` (a read or a render threw) each draw `RoomUnderRestoration` with
+  the screen's own message; only `failed` can try again. A read on the server (the landing's
+  highlights, `fetchQuery`) catches its own failure and draws it without a retry. Anything else
+  that fails uses `RoomUnderRestoration` too.
+- **A page that throws is caught by `app/[lang]/error.tsx`** (same room, "try again" and the way
+  home). Not the 404: there the room does not exist; here it exists and is closed for now.
 
 ## The anatomy of a feature
 
@@ -103,14 +123,16 @@ and its result list over 4; this layout is the fix they measured.
 - **Both languages land in the same change.** No i18n library.
 - **Copy shared by features goes to `common/`** with the component that renders it
   (`NewTabHint`) or to `config/site.ts` when it is site identity (`TAGLINE`, `SITE_DESCRIPTION`).
-- **Team-only pages may be one language** (`styleguide`), and say so where they are routed.
+- **Team-only pages may be one language**, and say so where they are routed.
 
 ## Layout
 
 - **Pages render inside `PageShell`** (header, main, footer; at least one screen tall, so a short
   page keeps the footer at the bottom). The header reserves the height the sign and the cord hang
   into: a page never adds top padding for them.
-  A page outside it (`/design`) gives its `<main>` `MAIN_CONTENT_ID`, where the skip link lands.
+  A page outside it (`/design`, the error page) draws its own header from the same pieces
+  (`CompactHeader`, `LanguageSwitch`) and gives its `<main>` `MAIN_CONTENT_ID`, where the skip link
+  lands. The error page stays out because an error boundary is client code shipped with every page.
 - **The look follows the house**: no small uppercase kicker above a section title; a new section
   reuses the page's grid and rhythm (heading left, content right, items split by a hairline)
   before inventing cards. Not an eyebrow plus a title on every section either: it reads as a site

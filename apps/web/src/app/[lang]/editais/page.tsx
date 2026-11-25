@@ -12,7 +12,7 @@ export async function generateMetadata({
   return pageMetadataFromLocale(locale, {
     path: ROUTES.callNotices,
     title: CALL_NOTICES_PAGE_TITLE.overview[locale],
-    isPersonal: true,
+    isHiddenFromSearch: true,
   });
 }
 

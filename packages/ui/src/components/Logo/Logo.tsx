@@ -33,6 +33,32 @@ const TONE_FILL: Record<SplatTone, string> = {
 
 const SPLAT = splatShapesFromSeed(LOGO_SPLAT_SEED);
 
+/** The logo's paint splat: the word mark's background, and the loading mark's. */
+export function LogoSplat({ className }: { className: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox={`0 0 ${SPLAT_VIEWBOX.width} ${SPLAT_VIEWBOX.height}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      {SPLAT.map((shape, i) =>
+        shape.kind === 'path' ? (
+          <path key={i} d={shape.d} className={TONE_FILL[shape.tone]} />
+        ) : (
+          <circle
+            key={i}
+            cx={shape.cx}
+            cy={shape.cy}
+            r={shape.r}
+            className={TONE_FILL[shape.tone]}
+          />
+        ),
+      )}
+    </svg>
+  );
+}
+
 export type LogoProps = {
   /**
    * The slogan curved like a smile under the word: its words and their language, so a page can
@@ -54,26 +80,7 @@ export function Logo({ slogan = { text: SLOGAN, lang: 'pt-BR' }, className = '' 
       aria-label={slogan ? `Bratura, ${slogan.text}` : 'Bratura'}
     >
       <div className="bt-logo-mark" aria-hidden="true">
-        <svg
-          className="bt-logo-splat"
-          viewBox={`0 0 ${SPLAT_VIEWBOX.width} ${SPLAT_VIEWBOX.height}`}
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          {SPLAT.map((shape, i) =>
-            shape.kind === 'path' ? (
-              <path key={i} d={shape.d} className={TONE_FILL[shape.tone]} />
-            ) : (
-              <circle
-                key={i}
-                cx={shape.cx}
-                cy={shape.cy}
-                r={shape.r}
-                className={TONE_FILL[shape.tone]}
-              />
-            ),
-          )}
-        </svg>
+        <LogoSplat className="bt-logo-splat" />
         <span className="bt-logo-word">
           {LETTERS.map((letter, i) => (
             <span key={i} className={LETTER_CLASS[LOGO_LETTER_COLORS[i]!]}>
