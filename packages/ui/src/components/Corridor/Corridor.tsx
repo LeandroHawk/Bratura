@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 
 /**
  * A museum corridor seen from the side: one door per room standing on the floor, the room's name
- * lettered on it, and the building's exit at the end, where `exit` (an `ExitSign`) hangs on the
- * last door. `children` are `CorridorDoor`s; it is a list.
+ * lettered on it, a lit sconce on the wall between two doors, and the building's exit at the end,
+ * where `exit` (an `ExitSign`) hangs on the last door. `children` are `CorridorDoor`s, a list.
  */
 export function Corridor({
   exit,
@@ -32,9 +32,9 @@ export function Corridor({
 }
 
 /**
- * One room's door with its name (`caption` over `children`, the room's link, which covers the
- * door) lettered on it. The name stays still while the leaf turns: the current room's door stands
- * open, so the name reads on its lit back wall; the others open a little on hover.
+ * One room's double door, lettered with `caption` on a small plaque over `children`, the room's
+ * link, which covers the door. The name stays still while the leaves turn: the current room's door
+ * stands open, its name on the lit back wall; the others open a little on hover.
  */
 export function CorridorDoor({
   caption,
@@ -51,11 +51,15 @@ export function CorridorDoor({
         <span className="bt-door-room" />
         <span className="bt-door-leaf">
           <span className="bt-door-panel" />
-          <span className="bt-door-knob" />
+          <span className="bt-door-panel" />
+        </span>
+        <span className="bt-door-leaf is-right">
+          <span className="bt-door-panel" />
+          <span className="bt-door-panel" />
         </span>
       </span>
       <span className="bt-door-label">
-        <span className="bt-door-caption">{caption}</span>
+        <span className="bt-door-caption walnut-plaque">{caption}</span>
         <span className="bt-door-name">{children}</span>
       </span>
     </li>
