@@ -24,8 +24,12 @@ describe('Corridor', () => {
   it('names each door by the name lettered on it only: the drawn door is hidden', () => {
     expect(corridor.match(/<span class="bt-door[^"]*" aria-hidden="true">/g)).toHaveLength(3);
     expect(corridor).toContain(
-      '<span class="bt-door-label"><span class="bt-door-caption">Sala 1</span><span class="bt-door-name"><a href="/portfolio" aria-current="page">Portfólio</a>',
+      '<span class="bt-door-label"><span class="bt-door-caption walnut-plaque">Sala 1</span><span class="bt-door-name"><a href="/portfolio" aria-current="page">Portfólio</a>',
     );
+  });
+
+  it('gives each room a double door, its leaves hinged on either jamb', () => {
+    expect(corridor.match(/<span class="bt-door-leaf is-right">/g)).toHaveLength(2);
   });
 
   it('hangs the exit sign on the last door', () => {
