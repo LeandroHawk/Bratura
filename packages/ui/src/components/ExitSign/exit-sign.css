@@ -53,16 +53,16 @@
   }
   /* Compact: a smaller sign, at the scale of the corridor's doors. */
   .bt-exit.is-compact {
-    gap: 0.4rem;
-    min-height: 28px;
-    padding: 0.15rem 0.5rem 0.15rem 0.4rem;
+    gap: 2px;
+    min-height: 22px;
+    padding: 2px 5px 2px 3px;
   }
   .bt-exit.is-compact .bt-exit-figure {
-    width: 18px;
-    height: 14px;
+    width: 13px;
+    height: 11px;
   }
   .bt-exit.is-compact .bt-exit-label {
-    font-size: 11px;
+    font-size: 10px;
   }
   .bt-exit.is-compact .bt-exit-hint {
     font-size: 10px;
