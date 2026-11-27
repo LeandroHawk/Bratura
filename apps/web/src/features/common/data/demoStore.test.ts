@@ -174,6 +174,18 @@ describe('attached files', () => {
     expect(fileStore.forgetFiles).toHaveBeenLastCalledWith(['b']);
   });
 
+  test('keeps the replaced file when the change could not be stored', async () => {
+    const store = await storeOver();
+    store.loadExample(example);
+    store.setPortfolioItem({ ...experience, attachments: [photo('a')] });
+    fileStore.forgetFiles.mockClear();
+    stored.set = () => {
+      throw new Error('QuotaExceededError');
+    };
+    store.setPortfolioItem({ ...experience, attachments: [photo('b')] });
+    expect(fileStore.forgetFiles).not.toHaveBeenCalled();
+  });
+
   test('forgets every file at sign-out', async () => {
     const store = await storeOver();
     store.loadExample(example);

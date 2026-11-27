@@ -124,14 +124,18 @@ function currentState(): DemoState {
   return state;
 }
 
-function setState(next: DemoState) {
+/** Whether the change reached storage: a file the stored copy still points at must not go. */
+function setState(next: DemoState): boolean {
   state = next;
+  let isStored = true;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
     // Storage full or blocked: the change lives until the tab closes.
+    isStored = false;
   }
   listeners.forEach((listener) => listener());
+  return isStored;
 }
 
 function subscribe(listener: () => void) {
@@ -221,8 +225,7 @@ export function saveCreatorFields(fields: CreatorRegistration | CreatorCulturalP
   const current = currentState();
   if (current.creator === null) return;
   const creator = { ...current.creator, ...fields };
-  setState({ ...current, creator });
-  forgetFilesLeftBehind([current.creator], [creator]);
+  if (setState({ ...current, creator })) forgetFilesLeftBehind([current.creator], [creator]);
 }
 
 /** Creates the item or replaces the one with the same `clientItemId`. */
@@ -238,8 +241,8 @@ export function setPortfolioItem(item: PortfolioItem): boolean {
         other.clientItemId === item.clientItemId ? parsed.data : other,
       )
     : [...current.portfolioItems, parsed.data];
-  setState({ ...current, portfolioItems });
-  forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
+  if (setState({ ...current, portfolioItems }))
+    forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
   return true;
 }
 
@@ -248,8 +251,8 @@ export function removePortfolioItem(clientItemId: string) {
   const portfolioItems = current.portfolioItems.filter(
     (item) => item.clientItemId !== clientItemId,
   );
-  setState({ ...current, portfolioItems });
-  forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
+  if (setState({ ...current, portfolioItems }))
+    forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
 }
 
 /** Saves the call or replaces how it is followed; `null` removes it from the saved ones. */
