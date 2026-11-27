@@ -54,8 +54,12 @@ export function draftFromValues(fields: FormField[], values: Record<string, unkn
     const value = values[name];
     if (control === 'checkboxes' || control === 'files') draft[name] = (value ?? []) as string[];
     else if (control === 'file') draft[name] = value ? [value as AttachedFile] : [];
-    else if (control === 'lines' || control === 'links')
-      draft[name] = ((value ?? []) as string[]).join('\n');
+    else if (control === 'lines') draft[name] = ((value ?? []) as string[]).join('\n');
+    else if (control === 'links')
+      // Typed links split at whitespace: a stored one keeps its spaces as `%20` to stay one link.
+      draft[name] = ((value ?? []) as string[])
+        .map((link) => link.replace(/\s/g, encodeURIComponent))
+        .join('\n');
     else if (control === 'people')
       draft[name] = ((value ?? []) as { name: string; role: string }[])
         .map(({ name: person, role }) => `${person}, ${role}`)

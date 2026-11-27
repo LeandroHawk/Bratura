@@ -12,6 +12,14 @@ describe('valuesFromDraft', () => {
     ]);
   });
 
+  it('keeps a stored link with a space as one link when the form is saved again', () => {
+    const fields = [{ name: 'links', control: 'links' }] as const;
+    const draft = draftFromValues([...fields], { links: ['https://example.com/meu portfolio'] });
+    expect(valuesFromDraft([...fields], draft).links).toEqual([
+      'https://example.com/meu%20portfolio',
+    ]);
+  });
+
   it('reads a list of words typed with commas or lines', () => {
     const { techniques } = valuesFromDraft([{ name: 'techniques', control: 'lines' }], {
       techniques: 'renda de bilro, bordado\nlabirinto',
