@@ -70,7 +70,10 @@ export function AttachedFilesField({
         try {
           const checked = await attachedFileFromBrowserFile(browserFile, schema, locale);
           if (!checked.success) return content.fileRefused(browserFile.name, checked.message);
-          const storageKey = await keepFile(browserFile);
+          // Kept under the type read from its bytes, so a blob: URL never opens as what the name says.
+          const storageKey = await keepFile(
+            new Blob([browserFile], { type: checked.file.mediaType }),
+          );
           onUploadsChange({ keptStorageKey: storageKey });
           return { ...checked.file, storageKey };
         } catch {
