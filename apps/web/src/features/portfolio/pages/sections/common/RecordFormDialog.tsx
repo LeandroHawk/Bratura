@@ -48,10 +48,12 @@ export function RecordFormDialog<Value>({
 }) {
   const content = PORTFOLIO_COMMON_CONTENT[locale];
   const keptHereRef = useRef<string[]>([]);
+  const isClosedRef = useRef(false);
   const [pendingUploads, setPendingUploads] = useState(0);
   const forgetUnsavedFiles = (saved: Record<string, unknown>) => {
     const savedKeys = storageKeysOf(fields, saved);
     forgetFiles(keptHereRef.current.filter((key) => !savedKeys.has(key)));
+    isClosedRef.current = true;
   };
   const closeWithoutSaving = () => {
     forgetUnsavedFiles(initialValues);
@@ -81,7 +83,10 @@ export function RecordFormDialog<Value>({
           setField={setField}
           messageByPath={messageByPath}
           onUploadsChange={(event) => {
-            if ('keptStorageKey' in event) keptHereRef.current.push(event.keptStorageKey);
+            // A file kept after the dialog closed joins no record: forget it at once.
+            if ('keptStorageKey' in event && isClosedRef.current)
+              forgetFiles([event.keptStorageKey]);
+            else if ('keptStorageKey' in event) keptHereRef.current.push(event.keptStorageKey);
             else setPendingUploads((pending) => pending + event.pendingDelta);
           }}
         />
