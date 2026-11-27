@@ -17,6 +17,7 @@ import {
 } from '@bratura/shared/entities/portfolio-item/entity';
 import {
   AttachedFileSchema,
+  AttachedImageSchema,
   type AttachedFile,
 } from '@bratura/shared/primitives/domain/attached-file/fields';
 import { useSyncExternalStore } from 'react';
@@ -77,9 +78,14 @@ function withoutRefusedFiles(value: unknown): unknown {
   const record = { ...(value as Record<string, unknown>) };
   const accepts = (file: unknown) => AttachedFileSchema.safeParse(file).success;
   if (Array.isArray(record.attachments)) record.attachments = record.attachments.filter(accepts);
-  for (const key of ['file', 'profileImage'])
-    if (record[key] !== undefined && record[key] !== null && !accepts(record[key]))
-      record[key] = null;
+  if (record.file !== undefined && record.file !== null && !accepts(record.file))
+    record.file = null;
+  if (
+    record.profileImage !== undefined &&
+    record.profileImage !== null &&
+    !AttachedImageSchema.safeParse(record.profileImage).success
+  )
+    record.profileImage = null;
   return record;
 }
 

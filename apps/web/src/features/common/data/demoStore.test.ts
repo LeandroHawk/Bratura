@@ -138,7 +138,7 @@ describe('attached files', () => {
         isSignedIn: true,
         creator: {
           ...FICTIONAL_CREATOR,
-          profileImage: { fileName: 'x', mediaType: '', sizeInBytes: 1 },
+          profileImage: { fileName: 'x.pdf', mediaType: 'application/pdf', sizeInBytes: 1 },
         },
         portfolioItems: [
           { ...experience, attachments: [{ fileName: 'old', mediaType: '', sizeInBytes: 1 }] },
