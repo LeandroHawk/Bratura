@@ -11,7 +11,7 @@ import {
 } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Button, Fieldset, Loading } from '@bratura/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { keepFile } from '@/features/common/data/demoFileStore';
 import { attachedFileFromBrowserFile } from './attached-file.mapper';
 import { AttachedFilePreview } from './AttachedFilePreview';
@@ -55,6 +55,11 @@ export function AttachedFilesField({
   const content = PORTFOLIO_COMMON_CONTENT[locale];
   const [pendingNames, setPendingNames] = useState<string[]>([]);
   const [refusals, setRefusals] = useState<string[]>([]);
+  // The files when an upload ends, not when it began: one removed meanwhile stays removed.
+  const latestFilesRef = useRef(files);
+  useEffect(() => {
+    latestFilesRef.current = files;
+  }, [files]);
   const schema = acceptsOnlyImages ? AttachedImageSchema : AttachedFileSchema;
   const accept = (acceptsOnlyImages ? attachedImageMediaTypes : attachedFileMediaTypes).join(',');
   const rules = acceptsOnlyImages
@@ -85,7 +90,8 @@ export function AttachedFilesField({
     setRefusals(results.filter((result) => typeof result === 'string'));
     setPendingNames((names) => names.slice(chosen.length));
     onUploadsChange({ pendingDelta: -chosen.length });
-    if (kept.length > 0) onChange(takesSeveral ? [...files, ...kept] : kept.slice(-1));
+    if (kept.length > 0)
+      onChange(takesSeveral ? [...latestFilesRef.current, ...kept] : kept.slice(-1));
   }
 
   return (
