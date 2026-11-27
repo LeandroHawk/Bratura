@@ -20,6 +20,12 @@ describe('valuesFromDraft', () => {
     ]);
   });
 
+  it('drops a tab inside a stored link as a browser does, so its address stays', () => {
+    const fields = [{ name: 'links', control: 'links' }] as const;
+    const draft = draftFromValues([...fields], { links: ['https://example.com/meu\tportfolio'] });
+    expect(valuesFromDraft([...fields], draft).links).toEqual(['https://example.com/meuportfolio']);
+  });
+
   it('reads a list of words typed with commas or lines', () => {
     const { techniques } = valuesFromDraft([{ name: 'techniques', control: 'lines' }], {
       techniques: 'renda de bilro, bordado\nlabirinto',
