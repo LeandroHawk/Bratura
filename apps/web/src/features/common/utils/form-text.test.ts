@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amountInCentsFromInput } from './form-text';
+import { amountInCentsFromInput, linkFromInput, linksFromInput } from './form-text';
 
 describe('amountInCentsFromInput', () => {
   it.each([
@@ -23,4 +23,18 @@ describe('amountInCentsFromInput', () => {
       expect(amountInCentsFromInput(typed)).toBeNaN();
     },
   );
+});
+
+describe('linksFromInput', () => {
+  it('splits links typed one per line or several on a line, keeping commas inside a link', () => {
+    expect(
+      linksFromInput(
+        'instagram.com/maria  facebook.com/maria\n\nhttps://example.com/mapa?centro=-7.2,-39.3',
+      ).map(linkFromInput),
+    ).toEqual([
+      'https://instagram.com/maria',
+      'https://facebook.com/maria',
+      'https://example.com/mapa?centro=-7.2,-39.3',
+    ]);
+  });
 });

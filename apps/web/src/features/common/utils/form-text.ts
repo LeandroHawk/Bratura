@@ -21,6 +21,15 @@ export function linesFromInput(text: string): string[] {
   return entriesSplitBy(text, /\n/);
 }
 
+/**
+ * Links typed one per line, or several on one line split by spaces (a pasted
+ * "instagram.com/maria facebook.com/maria"): a link holds no space. Commas stay, a link may hold
+ * them (`?centro=-7.2,-39.3`).
+ */
+export function linksFromInput(text: string): string[] {
+  return entriesSplitBy(text, /\s+/);
+}
+
 /** A link typed without its scheme (`instagram.com/maria`) gets `https://`. */
 export function linkFromInput(text: string): string {
   const trimmed = text.trim();
