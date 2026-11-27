@@ -4,6 +4,9 @@ import {
 } from '@bratura/shared/entities/creator/demo/fictional-creator';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+const fileStore = vi.hoisted(() => ({ forgetFiles: vi.fn(), forgetAllFiles: vi.fn() }));
+vi.mock('./demoFileStore', () => fileStore);
+
 const STORAGE_KEY = 'bratura.demo.v1';
 const signUpArgs = {
   email: 'joana@example.com',
@@ -31,7 +34,11 @@ async function storeOver(initial?: string) {
   return import('./demoStore');
 }
 
-beforeEach(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  vi.unstubAllGlobals();
+  fileStore.forgetFiles.mockClear();
+  fileStore.forgetAllFiles.mockClear();
+});
 
 describe('demoStore', () => {
   test.each([
@@ -112,4 +119,66 @@ test('editing an item keeps its position and refuses a new item at the limit', a
     expect(store.setPortfolioItem({ ...first, clientItemId: `qa-${i}` })).toBe(true);
   expect(store.setPortfolioItem({ ...first, clientItemId: 'over-limit' })).toBe(false);
   expect(store.setPortfolioItem(first)).toBe(true);
+});
+
+describe('attached files', () => {
+  const photo = (storageKey: string) => ({
+    fileName: `${storageKey}.jpg`,
+    mediaType: 'image/jpeg',
+    sizeInBytes: 1024,
+    storageKey,
+  });
+  const experience = FICTIONAL_CREATOR_PORTFOLIO_ITEMS.find(
+    (item) => item.kind === 'culturalExperience',
+  )!;
+
+  test('drops a file an older demo kept by name only, not the record holding it', async () => {
+    const store = await storeOver(
+      JSON.stringify({
+        isSignedIn: true,
+        creator: {
+          ...FICTIONAL_CREATOR,
+          profileImage: { fileName: 'x', mediaType: '', sizeInBytes: 1 },
+        },
+        portfolioItems: [
+          { ...experience, attachments: [{ fileName: 'old', mediaType: '', sizeInBytes: 1 }] },
+        ],
+      }),
+    );
+    expect(store.keptAccountEmail()).toBe(FICTIONAL_CREATOR.email);
+    store.saveCreatorFields({} as never);
+    const kept = JSON.parse(stored.get(STORAGE_KEY) ?? '{}');
+    expect(kept.creator.profileImage).toBeNull();
+    expect(kept.portfolioItems).toHaveLength(1);
+    expect(kept.portfolioItems[0].attachments).toEqual([]);
+  });
+
+  test('forgets a replaced profile photo and keeps the new one', async () => {
+    const store = await storeOver();
+    store.loadExample(example);
+    store.saveCreatorFields({ profileImage: photo('first') } as never);
+    store.saveCreatorFields({ profileImage: photo('second') } as never);
+    expect(fileStore.forgetFiles).toHaveBeenLastCalledWith(['first']);
+    expect(JSON.parse(stored.get(STORAGE_KEY) ?? '{}').creator.profileImage.storageKey).toBe(
+      'second',
+    );
+  });
+
+  test('forgets an event’s evidence when it is taken out or the event is deleted', async () => {
+    const store = await storeOver();
+    store.loadExample(example);
+    store.setPortfolioItem({ ...experience, attachments: [photo('a'), photo('b')] });
+    store.setPortfolioItem({ ...experience, attachments: [photo('b')] });
+    expect(fileStore.forgetFiles).toHaveBeenLastCalledWith(['a']);
+    store.removePortfolioItem(experience.clientItemId);
+    expect(fileStore.forgetFiles).toHaveBeenLastCalledWith(['b']);
+  });
+
+  test('forgets every file at sign-out', async () => {
+    const store = await storeOver();
+    store.loadExample(example);
+    fileStore.forgetAllFiles.mockClear();
+    store.signOut();
+    expect(fileStore.forgetAllFiles).toHaveBeenCalledOnce();
+  });
 });

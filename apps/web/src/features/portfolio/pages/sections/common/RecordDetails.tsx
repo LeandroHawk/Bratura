@@ -6,6 +6,7 @@ import { NotInformed } from '@/features/common/components/NotInformed';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { formattedPlainDate } from '@bratura/shared/primitives/code/calendar/format';
 import { formattedAmountInCents } from '@/features/common/utils/format';
+import { AttachedFilePreview } from './AttachedFilePreview';
 import type { FormField } from './form-fields';
 
 function shownValue(value: unknown, { control, options }: FormField, locale: Locale): ReactNode {
@@ -13,6 +14,16 @@ function shownValue(value: unknown, { control, options }: FormField, locale: Loc
   if (value === null || value === undefined || value === '') return null;
   if (Array.isArray(value)) {
     if (value.length === 0) return null;
+    if (control === 'files')
+      return (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {(value as AttachedFile[]).map((file, index) => (
+            <li key={file.storageKey ?? index}>
+              <AttachedFilePreview file={file} locale={locale} />
+            </li>
+          ))}
+        </ul>
+      );
     return (
       <ul className="grid gap-1">
         {(value as (string | AttachedFile | { name: string; role: string })[]).map(
@@ -40,7 +51,8 @@ function shownValue(value: unknown, { control, options }: FormField, locale: Loc
       </ul>
     );
   }
-  if (control === 'file') return (value as AttachedFile).fileName;
+  if (control === 'file')
+    return <AttachedFilePreview file={value as AttachedFile} locale={locale} />;
   if (control === 'date') return formattedPlainDate(String(value), locale);
   if (control === 'amount') return formattedAmountInCents(Number(value), locale);
   if (control === 'yesNo') return value === true ? labels.yes : labels.no;

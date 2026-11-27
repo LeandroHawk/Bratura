@@ -15,12 +15,19 @@ import {
   portfolioItemsMax,
   type PortfolioItem,
 } from '@bratura/shared/entities/portfolio-item/entity';
+import {
+  AttachedFileSchema,
+  type AttachedFile,
+} from '@bratura/shared/primitives/domain/attached-file/fields';
 import { useSyncExternalStore } from 'react';
+import { forgetAllFiles, forgetFiles } from './demoFileStore';
 
 /**
  * Stands in for the backend until the creator's tables and sign-in exist (after 30/11): what the
  * creator types is kept in this browser only, read back through the same contract the backend
- * will use, and erased at sign-out. No password exists. The one place to swap for Convex.
+ * will use, and erased at sign-out. No password exists. The one place to swap for Convex. The
+ * bytes of attached files live in `demoFileStore.ts`; this store forgets them when nothing points
+ * at them anymore.
  */
 export type DemoState = {
   creator: Creator | null;
@@ -38,6 +45,44 @@ const EMPTY_STATE: DemoState = {
   savedCallNotices: [],
 };
 
+/** The attached files a record points at, wherever its kind keeps them. */
+function attachedFilesIn(record: Creator | PortfolioItem | null | undefined): AttachedFile[] {
+  if (!record) return [];
+  if ('profileImage' in record) return record.profileImage ? [record.profileImage] : [];
+  if ('attachments' in record) return record.attachments;
+  return record.file ? [record.file] : [];
+}
+
+function storageKeysIn(records: (Creator | PortfolioItem | null | undefined)[]): Set<string> {
+  return new Set(
+    records.flatMap((record) => attachedFilesIn(record).flatMap((file) => file.storageKey ?? [])),
+  );
+}
+
+/** Forgets the bytes `before` pointed at and `after` no longer does. */
+function forgetFilesLeftBehind(
+  before: (Creator | PortfolioItem | null | undefined)[],
+  after: (Creator | PortfolioItem | null | undefined)[],
+) {
+  const kept = storageKeysIn(after);
+  forgetFiles([...storageKeysIn(before)].filter((key) => !kept.has(key)));
+}
+
+/**
+ * An older demo kept files by name only, with types and sizes today's contract refuses: such a file
+ * is dropped, not the record (or the whole list) that holds it.
+ */
+function withoutRefusedFiles(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value;
+  const record = { ...(value as Record<string, unknown>) };
+  const accepts = (file: unknown) => AttachedFileSchema.safeParse(file).success;
+  if (Array.isArray(record.attachments)) record.attachments = record.attachments.filter(accepts);
+  for (const key of ['file', 'profileImage'])
+    if (record[key] !== undefined && record[key] !== null && !accepts(record[key]))
+      record[key] = null;
+  return record;
+}
+
 /** Storage is outside the type system: each part is parsed, and a part that fails starts empty. */
 function stateFromStorage(): DemoState {
   let stored: Record<string, unknown> = {};
@@ -47,14 +92,18 @@ function stateFromStorage(): DemoState {
   } catch {
     // Unreadable or blocked storage: the demo starts empty.
   }
-  const creator = CreatorSchema.nullable().catch(null).parse(stored.creator);
+  const creator = CreatorSchema.nullable().catch(null).parse(withoutRefusedFiles(stored.creator));
   return {
     creator,
     isSignedIn: creator !== null && stored.isSignedIn === true,
     portfolioItems: PortfolioItemSchema.array()
       .max(portfolioItemsMax)
       .catch([])
-      .parse(stored.portfolioItems),
+      .parse(
+        Array.isArray(stored.portfolioItems)
+          ? stored.portfolioItems.map(withoutRefusedFiles)
+          : stored.portfolioItems,
+      ),
     savedCallNotices: SetSavedCallNoticeMutationFromBraturaPortalArgsSchema.array()
       .catch([])
       .parse(stored.savedCallNotices),
@@ -124,6 +173,7 @@ export function signUp(
 ): boolean {
   const kept = keptAccountEmail();
   if (kept !== null && kept !== replacedEmail) return false;
+  forgetAllFiles();
   setState({
     ...EMPTY_STATE,
     creator: { ...registration, ...emptyCulturalProfile, mainCulturalArea },
@@ -140,9 +190,13 @@ export function signIn(email: string): boolean {
   return true;
 }
 
-/** The browser keeps nothing after it: the account, the portfolio and the saved calls go. */
+/**
+ * The browser keeps nothing after it: the account, the portfolio, its files and the saved calls go.
+ * Keeping them across a sign-in needs the creator's tables and storage in Convex (after 30/11).
+ */
 export function signOut() {
   state = EMPTY_STATE;
+  forgetAllFiles();
   try {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch {
@@ -153,13 +207,16 @@ export function signOut() {
 
 /** Replaces everything with a ready-made example (the fictional Dona Maria), signed in. */
 export function loadExample(example: Pick<DemoState, 'portfolioItems'> & { creator: Creator }) {
+  forgetAllFiles();
   setState({ ...EMPTY_STATE, ...example, isSignedIn: true });
 }
 
 export function saveCreatorFields(fields: CreatorRegistration | CreatorCulturalProfile) {
   const current = currentState();
   if (current.creator === null) return;
-  setState({ ...current, creator: { ...current.creator, ...fields } });
+  const creator = { ...current.creator, ...fields };
+  setState({ ...current, creator });
+  forgetFilesLeftBehind([current.creator], [creator]);
 }
 
 /** Creates the item or replaces the one with the same `clientItemId`. */
@@ -176,15 +233,17 @@ export function setPortfolioItem(item: PortfolioItem): boolean {
       )
     : [...current.portfolioItems, parsed.data];
   setState({ ...current, portfolioItems });
+  forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
   return true;
 }
 
 export function removePortfolioItem(clientItemId: string) {
   const current = currentState();
-  setState({
-    ...current,
-    portfolioItems: current.portfolioItems.filter((item) => item.clientItemId !== clientItemId),
-  });
+  const portfolioItems = current.portfolioItems.filter(
+    (item) => item.clientItemId !== clientItemId,
+  );
+  setState({ ...current, portfolioItems });
+  forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
 }
 
 /** Saves the call or replaces how it is followed; `null` removes it from the saved ones. */

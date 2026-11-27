@@ -11,6 +11,12 @@ import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-sectio
 import { PORTFOLIO_COMMON_CONTENT } from '@/features/portfolio/pages/sections/common/content';
 import { SMART_PORTFOLIO_CONTENT } from './content';
 
+/** Prints once every image has its pixels, so the PDF does not keep a photo's empty frame. */
+async function printWithImagesDecoded() {
+  await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)));
+  window.print();
+}
+
 /** Under this many characters a biography says too little for a call's reader. */
 const SHORT_BIOGRAPHY_LENGTH = 120;
 
@@ -60,7 +66,7 @@ export function SmartPortfolio({
           <p className="max-w-[60ch] text-muted-foreground">{content.lead}</p>
         </div>
         <div className="grid justify-items-start gap-1 print:hidden sm:justify-items-end">
-          <Button size="sm" onClick={() => window.print()}>
+          <Button size="sm" onClick={() => void printWithImagesDecoded()}>
             {content.exportPdf}
           </Button>
           <p className="text-caption text-muted-foreground">{content.exportHint}</p>

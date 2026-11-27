@@ -6,9 +6,10 @@ import { useState } from 'react';
 import type { SignedInState } from '@/features/common/components/app/SignedInArea';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
+import { useKeptFileUrl } from '@/features/portfolio/pages/sections/common/useKeptFileUrl';
 import { SUMMARY_CONTENT } from './content';
 
-/** Up to two initials, for the round mark that stands where the photo will be. */
+/** Up to two initials, for the round mark that stands where no photo was attached. */
 function initialsFromName(name: string) {
   const words = name.trim().split(/\s+/);
   return [words[0], words.length > 1 ? words.at(-1) : undefined]
@@ -24,6 +25,7 @@ export function Summary({ locale, state }: { locale: Locale; state: SignedInStat
   // Read once, when the section mounts: a render must give the same answer twice.
   const [currentYear] = useState(() => new Date().getFullYear());
   const name = creator.artisticName ?? creator.fullName ?? creator.email;
+  const photoUrl = useKeptFileUrl(creator.profileImage?.storageKey);
   const hasItem = (kind: string) => portfolioItems.some((item) => item.kind === kind);
 
   const steps = [
@@ -47,12 +49,21 @@ export function Summary({ locale, state }: { locale: Locale; state: SignedInStat
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
       <div className="flex flex-wrap items-center gap-5">
-        <span
-          aria-hidden="true"
-          className="rise-in inline-flex size-24 shrink-0 items-center justify-center rounded-paint border-2 border-foreground bg-card font-display text-4xl font-bold"
-        >
-          {initialsFromName(name)}
-        </span>
+        {photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- blob: URL
+          <img
+            src={photoUrl}
+            alt={content.photoAlt(name)}
+            className="rise-in size-24 shrink-0 rounded-paint border-2 border-foreground bg-card object-cover"
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="rise-in inline-flex size-24 shrink-0 items-center justify-center rounded-paint border-2 border-foreground bg-card font-display text-4xl font-bold"
+          >
+            {initialsFromName(name)}
+          </span>
+        )}
         <div className="grid gap-1.5">
           <p className="font-semibold text-muted-foreground">{content.greeting}</p>
           <Heading as="h1" size="section">

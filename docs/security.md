@@ -142,7 +142,10 @@ Known gaps, in no order; add yours:
 - The Telegram webhook's `secret_token` is checked when inbound lands.
 - Rate limiter: `convex-helpers`' `rateLimit` (no new dependency) or the Convex component?
 - Uploads: do we need a malware or content check for portfolio files before showing them on a
-  public page (`/p/{slug}`)?
+  public page (`/p/{slug}`)? The browser demo reads a file's type from its first bytes and a
+  video's length from the browser's player; when uploads reach Convex storage, the upload action
+  must read the type and size from the stored bytes again (and the duration from the container)
+  before referencing the file, since a browser's check can be skipped.
 - Account deletion and data export (LGPD) for creators: deleting a user must also clean
   `userNotifications`, `notificationDeliveries`, `userMessageChannels` and `rateLimits` — the
   four tables that carry their data.

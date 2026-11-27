@@ -57,7 +57,7 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
     { name: 'artisticLanguagesAndTechniques', control: 'lines' },
     { name: 'activityCities', control: 'lines' },
     { name: 'externalLinks', control: 'links', isWide: true },
-    { name: 'profileImage', control: 'file', isWide: true },
+    { name: 'profileImage', control: 'file', isWide: true, acceptsOnlyImages: true },
   ] satisfies FormField<keyof CreatorCulturalProfile>[];
 
   return (
