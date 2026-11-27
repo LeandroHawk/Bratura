@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import type { Locale } from '../primitives/external/locale/enum';
+import type { ValidationMessageKey } from '../primitives/code/validation-message/validation-message';
 import { enValidationMessages } from './en';
 import { ptBRValidationMessages, type ValidationMessages } from './pt-BR';
 
@@ -70,4 +71,9 @@ export function parseWithMessages<Schema extends z.ZodType>(
   const messageByPath: Record<string, string> = {};
   for (const issue of result.error.issues) messageByPath[issue.path.join('.')] ??= issue.message;
   return { success: false, messageByPath };
+}
+
+/** The text of a rule of our own, for a check no schema runs (an image the browser cannot draw). */
+export function ruleMessage(key: ValidationMessageKey, locale: Locale): string {
+  return MESSAGES[locale].rule[key];
 }

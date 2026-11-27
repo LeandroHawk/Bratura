@@ -1,4 +1,8 @@
 import type { ValidationMessageKey } from '../primitives/code/validation-message/validation-message';
+import {
+  attachedFileMaxSizeInMegabytes,
+  attachedVideoMaxDurationInSeconds,
+} from '../primitives/domain/attached-file/fields';
 
 /** The pt-BR object is the shape: `en.ts` must carry the same keys. */
 export const ptBRValidationMessages = {
@@ -18,6 +22,12 @@ export const ptBRValidationMessages = {
     clearanceWithoutValidity: 'Uma certidão tem validade: informe até quando ela vale.',
     endsBeforeItStarts: 'O término não pode vir antes do início.',
     yearInTheFuture: 'Esse ano ainda não chegou.',
+    fileTooLarge: `Arquivo acima de ${attachedFileMaxSizeInMegabytes} MB. Envie um arquivo menor.`,
+    videoTooLong: `Vídeo com mais de ${attachedVideoMaxDurationInSeconds} segundos. Envie um trecho mais curto.`,
+    unsupportedFileType:
+      'Formato não aceito. Envie foto (JPG, PNG, WebP, GIF), vídeo (MP4, WebM, MOV), áudio (MP3, M4A, OGG, WAV) ou PDF.',
+    notAnImage: 'Envie uma imagem JPG, PNG, WebP ou GIF.',
+    unreadableFile: 'Não foi possível ler este arquivo. Ele pode estar corrompido.',
   } satisfies Record<ValidationMessageKey, string>,
 };
 
