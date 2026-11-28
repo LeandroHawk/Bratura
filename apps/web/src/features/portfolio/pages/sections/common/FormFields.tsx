@@ -2,16 +2,13 @@
 
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import { Button, Checkbox, Fieldset, SelectField, TextAreaField, TextField } from '@bratura/ui';
+import type { Dispatch, SetStateAction } from 'react';
+import type { AttachmentDialog } from '@/features/common/data/demoStore';
+import { Checkbox, Fieldset, SelectField, TextAreaField, TextField } from '@bratura/ui';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
+import { AttachedFilesField } from '@/features/portfolio/pages/sections/common/attached-files/AttachedFilesField';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
-import { fieldMessage, type FormDraft, type FormField } from './form-fields';
-
-const FILE_INPUT =
-  'block w-full cursor-pointer rounded-xl text-small text-muted-foreground focus-ring ' +
-  'file:mr-3 file:cursor-pointer file:rounded-full file:border-2 file:border-solid ' +
-  'file:border-foreground file:bg-transparent file:px-3.5 file:py-1.5 file:font-body ' +
-  'file:text-caption file:font-semibold file:text-foreground';
+import { fieldMessage, draftWithKeptFiles, type FormDraft, type FormField } from './form-fields';
 
 type CommonContent = (typeof PORTFOLIO_COMMON_CONTENT)[Locale];
 
@@ -29,6 +26,9 @@ export function FormFields({
   draft,
   setField,
   messageByPath,
+  uploads,
+  pendingUploads,
+  setDraft,
 }: {
   locale: Locale;
   fields: FormField[];
@@ -37,13 +37,16 @@ export function FormFields({
   draft: FormDraft;
   setField: (name: string, value: FormDraft[string]) => void;
   messageByPath: Record<string, string>;
+  uploads: AttachmentDialog;
+  pendingUploads: number;
+  setDraft: Dispatch<SetStateAction<FormDraft>>;
 }) {
   const content = PORTFOLIO_COMMON_CONTENT[locale];
   const { optional, chooseOne, yes, no } = CREATOR_LABELS[locale];
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {fields.map(({ name, control, isRequired, isWide, options }) => {
+      {fields.map(({ name, control, isRequired, isWide, options, fileSchema }) => {
         const typed = draft[name];
         const wide = isWide ? 'sm:col-span-2' : '';
         const texts = {
@@ -128,58 +131,30 @@ export function FormFields({
           );
         }
 
-        const files = typed as AttachedFile[];
-        const takesSeveral = control === 'files';
+        if (!fileSchema) return null;
         return (
-          <Fieldset
+          <AttachedFilesField
             key={name}
+            locale={locale}
+            name={name}
             legend={`${texts.label}${texts.optionalMark ? ` ${texts.optionalMark}` : ''}`}
-            hint={content.filesNotice}
             error={texts.error}
             className={wide}
-          >
-            {files.length > 0 && (
-              <ul className="grid gap-1.5">
-                {files.map((file, index) => (
-                  <li
-                    key={`file-${index}`}
-                    className="rise-in flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-1.5 text-small"
-                  >
-                    <span className="min-w-0 truncate">{file.fileName}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      aria-label={content.removeFile(file.fileName)}
-                      onClick={() =>
-                        setField(
-                          name,
-                          files.filter((other) => other !== file),
-                        )
-                      }
-                    >
-                      ×
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <input
-              type="file"
-              multiple={takesSeveral}
-              aria-label={`${texts.label}: ${takesSeveral ? content.chooseFiles : content.chooseFile}`}
-              className={FILE_INPUT}
-              onChange={(event) => {
-                const chosen = [...(event.target.files ?? [])].map((file) => ({
-                  fileName: file.name,
-                  mediaType: file.type,
-                  sizeInBytes: file.size,
-                }));
-                setField(name, takesSeveral ? [...files, ...chosen] : chosen);
-                // The same file can be picked again after being removed.
-                event.target.value = '';
-              }}
-            />
-          </Fieldset>
+            files={typed as AttachedFile[]}
+            takesSeveral={control === 'files'}
+            schema={fileSchema}
+            onChange={(files) =>
+              setDraft((current) => ({
+                ...current,
+                [name]: files(current[name] as AttachedFile[]),
+              }))
+            }
+            onKeptFiles={(files) =>
+              setDraft((current) => draftWithKeptFiles(current, name, files, control === 'files'))
+            }
+            uploads={uploads}
+            pendingUploads={pendingUploads}
+          />
         );
       })}
     </div>

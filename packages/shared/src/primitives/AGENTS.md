@@ -13,7 +13,7 @@ to delete them.
 | folder                | who controls it                                          | Bratura examples                                                   |
 | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------ |
 | `code/<subject>/`     | the code: data structures, parsing, formatting           | `string/`, `url/`, `id/`, `error/`, `hash/`, `time/instant/`, `time/zoned-instant/`, `calendar/` |
-| `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL, **exists**) |
+| `domain/<subject>/`   | the business, when it names a combination of code notions | `money/` (an amount in BRL, **exists**), `attached-file/` (portfolio evidence, **exists**) |
 | `external/<subject>/` | neither: law, an agency, an outside standard             | `locale/` (BCP 47, **exists**), `abacate-pay/` (the billing provider, **exists**), `cnpj/`, `uf/`, `ibge-city/`, `mei-status/` |
 
 `Math.round` does not mean money; composed with the BRL rules it becomes `money/` and gets a

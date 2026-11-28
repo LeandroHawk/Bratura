@@ -108,3 +108,6 @@ The rules that hold everywhere:
 - **People merge, agents don't.** Delete the branch after the merge; a PR stacked on it is
   retargeted first (deleting its base closes it).
 - Never commit secrets; `.env*` stays local.
+- **QA evidence goes in the PR body or a comment, never in the tree**: no screenshots, reports or
+  one-off scripts. Once merged, a binary stays in the history for good; CI refuses `docs/qa/`,
+  `.py`, `.cjs`, media outside `docs/readme/` and `apps/web/public/`, and files over 300 kB.

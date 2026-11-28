@@ -57,7 +57,12 @@ export function Projects({
     { name: 'objective', control: 'textarea', isWide: true },
     { name: 'results', control: 'textarea', isWide: true },
     { name: 'links', control: 'links', isWide: true },
-    { name: 'attachments', control: 'files', isWide: true },
+    {
+      name: 'attachments',
+      control: 'files',
+      isWide: true,
+      fileSchema: CulturalProjectPortfolioItemSchema.shape.attachments.element,
+    },
   ] satisfies FormField<keyof CulturalProjectPortfolioItem>[];
 
   return (

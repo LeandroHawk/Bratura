@@ -1,3 +1,4 @@
+import { AttachedImageSchema } from '@bratura/shared/entities/creator/fragments/cultural-profile/attached-image';
 import type { SignUpMutationFromBraturaPortalArgs } from '@bratura/shared/entities/creator/dto/bratura-portal/sign-up/mutation';
 import {
   CreatorSchema,
@@ -15,12 +16,20 @@ import {
   portfolioItemsMax,
   type PortfolioItem,
 } from '@bratura/shared/entities/portfolio-item/entity';
+import {
+  AttachedFileSchema,
+  type AttachedFile,
+} from '@bratura/shared/primitives/domain/attached-file/fields';
 import { useSyncExternalStore } from 'react';
+import {
+  forgetEveryAttachedFileBytes,
+  forgetAttachedFileBytes,
+  keepAttachedFileBytes,
+  attachedFileBytesFromStorageKey,
+} from './demoFileStore';
 
-/**
- * Stands in for the backend until the creator's tables and sign-in exist (after 30/11): what the
- * creator types is kept in this browser only, read back through the same contract the backend
- * will use, and erased at sign-out. No password exists. The one place to swap for Convex.
+/** Browser-only creator, portfolio and file persistence until Convex owns them.
+ * The one boundary to replace; sign-out erases the demo, including its IndexedDB bytes.
  */
 export type DemoState = {
   creator: Creator | null;
@@ -38,6 +47,118 @@ const EMPTY_STATE: DemoState = {
   savedCallNotices: [],
 };
 
+/** The fields of a creator or portfolio item that hold attached files, read from the contract. */
+type AttachedFileFieldName<Holder = Creator | PortfolioItem> = Holder extends unknown
+  ? {
+      [Name in keyof Holder]-?: NonNullable<Holder[Name]> extends AttachedFile | AttachedFile[]
+        ? Name
+        : never;
+    }[keyof Holder]
+  : never;
+
+/** A file field added to or renamed in the contract breaks `tsc` here until it is listed. */
+const ATTACHED_FILE_FIELDS: Record<
+  AttachedFileFieldName,
+  { schema: typeof AttachedFileSchema | typeof AttachedImageSchema; several: boolean }
+> = {
+  profileImage: { schema: AttachedImageSchema, several: false },
+  attachments: { schema: AttachedFileSchema, several: true },
+  file: { schema: AttachedFileSchema, several: false },
+};
+
+function attachedFileFieldsIn(value: unknown) {
+  if (typeof value !== 'object' || value === null) return [];
+  const record = value as Record<string, unknown>;
+  return Object.entries(ATTACHED_FILE_FIELDS)
+    .filter(([name]) => name in record)
+    .map(([name, field]) => ({
+      name,
+      ...field,
+      files: [record[name]].flat().filter((file) => file != null),
+    }));
+}
+
+function attachedFilesIn(record: unknown): AttachedFile[] {
+  return attachedFileFieldsIn(record).flatMap(({ files, schema }) =>
+    files.flatMap((file) => {
+      const parsed = schema.safeParse(file);
+      return parsed.success ? [parsed.data] : [];
+    }),
+  );
+}
+
+function storageKeysIn(records: unknown[]): Set<string> {
+  return new Set(
+    records.flatMap((record) => attachedFilesIn(record).flatMap((file) => file.storageKey ?? [])),
+  );
+}
+
+function forgetFilesLeftBehind(before: unknown[], after: unknown[]) {
+  const kept = storageKeysIn(after);
+  forgetAttachedFileBytes([...storageKeysIn(before)].filter((key) => !kept.has(key)));
+}
+
+/** Invalid legacy metadata is dropped without losing the record that holds it. */
+function withoutRefusedFiles(value: unknown): unknown {
+  if (typeof value !== 'object' || value === null) return value;
+  const record = { ...(value as Record<string, unknown>) };
+  for (const { name, schema, several, files } of attachedFileFieldsIn(record)) {
+    const accepted = files.filter((file) => schema.safeParse(file).success);
+    record[name] = several ? accepted : (accepted[0] ?? null);
+  }
+  return record;
+}
+
+/** Keeps the picked bytes with their verified type; late results of a closed dialog are erased. */
+export function attachmentDialog() {
+  const keptHere = new Set<string>();
+  let pending = 0;
+  let closed = false;
+  const subscribers = new Set<() => void>();
+  const notify = () => subscribers.forEach((listener) => listener());
+  return {
+    subscribe(listener: () => void) {
+      subscribers.add(listener);
+      return () => {
+        subscribers.delete(listener);
+      };
+    },
+    pendingUploadCount: () => pending,
+    canSave: () => !closed && pending === 0,
+    async uploadFiles<Result>(count: number, run: () => Promise<Result>): Promise<Result> {
+      pending += count;
+      notify();
+      try {
+        return await run();
+      } finally {
+        pending -= count;
+        notify();
+      }
+    },
+    async keepPickedFile(file: Blob): Promise<string | null> {
+      const key = await keepAttachedFileBytes(file);
+      if (closed) {
+        forgetAttachedFileBytes([key]);
+        return null;
+      }
+      keptHere.add(key);
+      return key;
+    },
+    close(saved: unknown) {
+      const savedKeys = storageKeysIn([saved]);
+      forgetAttachedFileBytes([...keptHere].filter((key) => !savedKeys.has(key)));
+      closed = true;
+    },
+  };
+}
+export type AttachmentDialog = ReturnType<typeof attachmentDialog>;
+
+/** A component owns the returned object URL and revokes it after use. */
+export async function keptAttachedFileUrl(storageKey: string): Promise<string | null> {
+  const file = await attachedFileBytesFromStorageKey(storageKey);
+  return file ? URL.createObjectURL(file) : null;
+}
+
 /** Storage is outside the type system: each part is parsed, and a part that fails starts empty. */
 function stateFromStorage(): DemoState {
   let stored: Record<string, unknown> = {};
@@ -47,14 +168,18 @@ function stateFromStorage(): DemoState {
   } catch {
     // Unreadable or blocked storage: the demo starts empty.
   }
-  const creator = CreatorSchema.nullable().catch(null).parse(stored.creator);
+  const creator = CreatorSchema.nullable().catch(null).parse(withoutRefusedFiles(stored.creator));
   return {
     creator,
     isSignedIn: creator !== null && stored.isSignedIn === true,
     portfolioItems: PortfolioItemSchema.array()
       .max(portfolioItemsMax)
       .catch([])
-      .parse(stored.portfolioItems),
+      .parse(
+        Array.isArray(stored.portfolioItems)
+          ? stored.portfolioItems.map(withoutRefusedFiles)
+          : stored.portfolioItems,
+      ),
     savedCallNotices: SetSavedCallNoticeMutationFromBraturaPortalArgsSchema.array()
       .catch([])
       .parse(stored.savedCallNotices),
@@ -69,14 +194,18 @@ function currentState(): DemoState {
   return state;
 }
 
-function setState(next: DemoState) {
+/** Whether the change reached storage: a file the stored copy still points at must not go. */
+function setState(next: DemoState): boolean {
   state = next;
+  let isStored = true;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
     // Storage full or blocked: the change lives until the tab closes.
+    isStored = false;
   }
   listeners.forEach((listener) => listener());
+  return isStored;
 }
 
 function subscribe(listener: () => void) {
@@ -124,6 +253,7 @@ export function signUp(
 ): boolean {
   const kept = keptAccountEmail();
   if (kept !== null && kept !== replacedEmail) return false;
+  forgetEveryAttachedFileBytes();
   setState({
     ...EMPTY_STATE,
     creator: { ...registration, ...emptyCulturalProfile, mainCulturalArea },
@@ -140,9 +270,13 @@ export function signIn(email: string): boolean {
   return true;
 }
 
-/** The browser keeps nothing after it: the account, the portfolio and the saved calls go. */
+/**
+ * The browser keeps nothing after it: the account, the portfolio, its files and the saved calls go.
+ * Keeping them across a sign-in needs the creator's tables and storage in Convex (after 30/11).
+ */
 export function signOut() {
   state = EMPTY_STATE;
+  forgetEveryAttachedFileBytes();
   try {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch {
@@ -153,13 +287,15 @@ export function signOut() {
 
 /** Replaces everything with a ready-made example (the fictional Dona Maria), signed in. */
 export function loadExample(example: Pick<DemoState, 'portfolioItems'> & { creator: Creator }) {
+  forgetEveryAttachedFileBytes();
   setState({ ...EMPTY_STATE, ...example, isSignedIn: true });
 }
 
 export function saveCreatorFields(fields: CreatorRegistration | CreatorCulturalProfile) {
   const current = currentState();
   if (current.creator === null) return;
-  setState({ ...current, creator: { ...current.creator, ...fields } });
+  const creator = { ...current.creator, ...fields };
+  if (setState({ ...current, creator })) forgetFilesLeftBehind([current.creator], [creator]);
 }
 
 /** Creates the item or replaces the one with the same `clientItemId`. */
@@ -175,16 +311,18 @@ export function setPortfolioItem(item: PortfolioItem): boolean {
         other.clientItemId === item.clientItemId ? parsed.data : other,
       )
     : [...current.portfolioItems, parsed.data];
-  setState({ ...current, portfolioItems });
+  if (setState({ ...current, portfolioItems }))
+    forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
   return true;
 }
 
 export function removePortfolioItem(clientItemId: string) {
   const current = currentState();
-  setState({
-    ...current,
-    portfolioItems: current.portfolioItems.filter((item) => item.clientItemId !== clientItemId),
-  });
+  const portfolioItems = current.portfolioItems.filter(
+    (item) => item.clientItemId !== clientItemId,
+  );
+  if (setState({ ...current, portfolioItems }))
+    forgetFilesLeftBehind(current.portfolioItems, portfolioItems);
 }
 
 /** Saves the call or replaces how it is followed; `null` removes it from the saved ones. */

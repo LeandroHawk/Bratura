@@ -1,4 +1,13 @@
+import {
+  attachedFileFormatsOfKind,
+  attachedFileFormatNames,
+} from '../primitives/domain/attached-file/enum';
+import { AttachedImageMediaTypeEnum } from '../entities/creator/fragments/cultural-profile/attached-image';
 import type { ValidationMessageKey } from '../primitives/code/validation-message/validation-message';
+import {
+  attachedFileMaxSizeInMegabytes,
+  attachedVideoMaxDurationInSeconds,
+} from '../primitives/domain/attached-file/fields';
 
 /** The pt-BR object is the shape: `en.ts` must carry the same keys. */
 export const ptBRValidationMessages = {
@@ -18,6 +27,11 @@ export const ptBRValidationMessages = {
     clearanceWithoutValidity: 'Uma certidão tem validade: informe até quando ela vale.',
     endsBeforeItStarts: 'O término não pode vir antes do início.',
     yearInTheFuture: 'Esse ano ainda não chegou.',
+    fileTooLarge: `Arquivo acima de ${attachedFileMaxSizeInMegabytes} MB. Envie um arquivo menor.`,
+    videoTooLong: `Vídeo com mais de ${attachedVideoMaxDurationInSeconds} segundos. Envie um trecho mais curto.`,
+    unsupportedFileType: `Formato não aceito. Envie foto (${attachedFileFormatsOfKind('photo')}), vídeo (${attachedFileFormatsOfKind('video')}), áudio (${attachedFileFormatsOfKind('audio')}) ou ${attachedFileFormatsOfKind('document')}.`,
+    notAnImage: `Envie uma imagem: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}.`,
+    unreadableFile: 'Não foi possível ler este arquivo. Ele pode estar corrompido.',
   } satisfies Record<ValidationMessageKey, string>,
 };
 

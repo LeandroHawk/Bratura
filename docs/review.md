@@ -105,6 +105,7 @@ focus keeps `focus-ring`, which also colours a bordered control's border (ASES 4
 `border` in focus styles), words in another language carry `lang` ("Design system"), and
 `SiteDocument` keeps the `<noscript>` note. Known and accepted, not to fix: WAVE's contrast errors
 on the logo's yellow letters in the light theme (logotype, `packages/ui/AGENTS.md`).
+QA evidence lives in the PR body, not in the tree (CI's "Refuse QA artefacts" step).
 Then `pnpm check`.
 
 ## 5. Report

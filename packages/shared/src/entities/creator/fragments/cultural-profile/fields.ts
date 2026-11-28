@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { nullableString, requiredString } from '../../../../primitives/code/string/fields';
 import { requiredHttpUrl } from '../../../../primitives/code/url/fields';
-import { AttachedFileSchema } from '../../../../primitives/domain/attached-file/fields';
+import { AttachedImageSchema } from './attached-image';
 import { CulturalAreaEnum } from '../../enums/cultural-area/enum';
 
 /** No creator alive started before this; a typo (`199`) is refused. */
@@ -16,7 +16,7 @@ export const culturalProfileListMax = 30;
  */
 export const CreatorCulturalProfileFields = z.object({
   /** The profile photo or the group's logo. */
-  profileImage: AttachedFileSchema.nullable(),
+  profileImage: AttachedImageSchema.nullable(),
   /** The name on their documents, for what the portfolio prints; never asked at sign-up. */
   fullName: nullableString(),
   /** The artistic or trade name; `null` when they go by `fullName`. */
