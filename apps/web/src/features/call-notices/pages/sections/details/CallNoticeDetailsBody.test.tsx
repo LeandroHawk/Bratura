@@ -163,6 +163,25 @@ describe('CallNoticeDetailsBody', () => {
     expect(html).toContain('cópia do CPF');
   });
 
+  test('leaves out a criterion’s passage that only repeats its name, keeps one that adds', () => {
+    const html = text({
+      ...read,
+      extraction: {
+        ...read.extraction!,
+        evaluationCriteria: [
+          {
+            criterion: 'Grau de expectativa de interesse público',
+            maxPoints: null,
+            quote: 'Grau de expectativa de interesse público;',
+          },
+          { criterion: 'Mérito cultural', maxPoints: 30, quote: 'Mérito cultural – até 30 pontos' },
+        ],
+      },
+    });
+    expect(html).not.toContain('interesse público;');
+    expect(html).toContain('Mérito cultural – até 30 pontos');
+  });
+
   test('lists a missing document before one the portfolio holds, whatever the call’s order', () => {
     const html = text(read);
     expect(html.indexOf('cópia do CPF')).toBeLessThan(html.indexOf('cópia do RG'));
