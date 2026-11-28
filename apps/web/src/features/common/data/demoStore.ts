@@ -47,19 +47,34 @@ const EMPTY_STATE: DemoState = {
   savedCallNotices: [],
 };
 
-/** The only inventory of the file fields a creator or portfolio record can carry. */
+/** The fields of a creator or portfolio item that hold attached files, read from the contract. */
+type AttachedFileFieldName<Holder = Creator | PortfolioItem> = Holder extends unknown
+  ? {
+      [Name in keyof Holder]-?: NonNullable<Holder[Name]> extends AttachedFile | AttachedFile[]
+        ? Name
+        : never;
+    }[keyof Holder]
+  : never;
+
+/** A file field added to or renamed in the contract breaks `tsc` here until it is listed. */
+const ATTACHED_FILE_FIELDS: Record<
+  AttachedFileFieldName,
+  { schema: typeof AttachedFileSchema | typeof AttachedImageSchema; several: boolean }
+> = {
+  profileImage: { schema: AttachedImageSchema, several: false },
+  attachments: { schema: AttachedFileSchema, several: true },
+  file: { schema: AttachedFileSchema, several: false },
+};
+
 function attachedFileFieldsIn(value: unknown) {
   if (typeof value !== 'object' || value === null) return [];
   const record = value as Record<string, unknown>;
-  return [
-    { name: 'profileImage', schema: AttachedImageSchema, several: false },
-    { name: 'attachments', schema: AttachedFileSchema, several: true },
-    { name: 'file', schema: AttachedFileSchema, several: false },
-  ]
-    .filter(({ name }) => name in record)
-    .map((field) => ({
+  return Object.entries(ATTACHED_FILE_FIELDS)
+    .filter(([name]) => name in record)
+    .map(([name, field]) => ({
+      name,
       ...field,
-      files: [record[field.name]].flat().filter((file) => file != null),
+      files: [record[name]].flat().filter((file) => file != null),
     }));
 }
 
