@@ -1,3 +1,12 @@
+import {
+  attachedFileFormatNames,
+  type AttachedFileMediaType,
+} from '@bratura/shared/primitives/domain/attached-file/enum';
+import {
+  attachedFileMaxSizeInMegabytes,
+  attachedVideoMaxDurationInSeconds,
+} from '@bratura/shared/primitives/domain/attached-file/fields';
+import { AttachedImageMediaTypeEnum } from '@bratura/shared/entities/creator/fragments/cultural-profile/attached-image';
 import type { CulturalActivityKind } from '@bratura/shared/entities/portfolio-item/enums/activity-kind/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
@@ -20,8 +29,19 @@ const ptBR = {
   chooseFile: 'Escolher arquivo',
   chooseFiles: 'Escolher arquivos',
   removeFile: (fileName: string) => `Tirar ${fileName}`,
-  filesNotice: 'Nesta demonstração, só o nome do arquivo é guardado.',
-  noFile: 'Nenhum arquivo.',
+  removeFileShort: 'Tirar',
+  fallbackFileName: 'arquivo',
+  fileRules: (mediaTypes: AttachedFileMediaType[]) =>
+    `Formatos: ${attachedFileFormatNames(mediaTypes)}; vídeos de até ${attachedVideoMaxDurationInSeconds} segundos; até ${attachedFileMaxSizeInMegabytes} MB cada. Nesta demonstração, ficam só neste navegador.`,
+  imageRules: `Imagem: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}, até ${attachedFileMaxSizeInMegabytes} MB. Nesta demonstração, fica só neste navegador.`,
+  keepingFiles: (count: number) =>
+    count === 1 ? 'Conferindo e guardando o arquivo…' : `Conferindo e guardando ${count} arquivos…`,
+  fileRefused: (fileName: string, reason: string) => `${fileName}: ${reason}`,
+  fileNotKept: 'não foi possível guardar neste navegador. Tente de novo.',
+  openingFile: (fileName: string) => `Abrindo ${fileName}…`,
+  openFile: (fileName: string) => `Abrir ${fileName}`,
+  fileNotInThisBrowser: 'o arquivo não está neste navegador',
+  uploadsPending: 'Espere os arquivos terminarem de ser guardados para salvar.',
   activityKind: {
     presentation: 'Apresentação',
     exhibition: 'Exposição',
@@ -55,8 +75,19 @@ export const PORTFOLIO_COMMON_CONTENT: Record<Locale, typeof ptBR> = {
     chooseFile: 'Choose a file',
     chooseFiles: 'Choose files',
     removeFile: (fileName) => `Remove ${fileName}`,
-    filesNotice: 'In this demo, only the file name is kept.',
-    noFile: 'No file.',
+    removeFileShort: 'Remove',
+    fallbackFileName: 'file',
+    fileRules: (mediaTypes) =>
+      `Formats: ${attachedFileFormatNames(mediaTypes)}; videos up to ${attachedVideoMaxDurationInSeconds} seconds; up to ${attachedFileMaxSizeInMegabytes} MB each. In this demo, they stay in this browser only.`,
+    imageRules: `Image: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}, up to ${attachedFileMaxSizeInMegabytes} MB. In this demo, it stays in this browser only.`,
+    keepingFiles: (count) =>
+      count === 1 ? 'Checking and keeping the file…' : `Checking and keeping ${count} files…`,
+    fileRefused: (fileName, reason) => `${fileName}: ${reason}`,
+    fileNotKept: 'it could not be kept in this browser. Try again.',
+    openingFile: (fileName) => `Opening ${fileName}…`,
+    openFile: (fileName) => `Open ${fileName}`,
+    fileNotInThisBrowser: 'the file is not in this browser',
+    uploadsPending: 'Wait for the files to finish being kept before saving.',
     activityKind: {
       presentation: 'Presentation',
       exhibition: 'Exhibition',

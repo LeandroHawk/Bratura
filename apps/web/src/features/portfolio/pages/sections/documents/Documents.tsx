@@ -45,7 +45,12 @@ export function Documents({ locale, items }: { locale: Locale; items: DocumentPo
     { name: 'description', control: 'text', isRequired: true },
     { name: 'issuedOn', control: 'date' },
     { name: 'validUntil', control: 'date' },
-    { name: 'file', control: 'file', isWide: true },
+    {
+      name: 'file',
+      control: 'file',
+      isWide: true,
+      fileSchema: DocumentPortfolioItemSchema.shape.file.unwrap(),
+    },
   ] satisfies FormField<keyof DocumentPortfolioItem>[];
 
   return (

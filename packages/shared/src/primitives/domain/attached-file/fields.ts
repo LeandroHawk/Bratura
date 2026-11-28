@@ -1,15 +1,50 @@
 import { z } from 'zod';
 import { requiredString } from '../../code/string/fields';
+import { validationMessage } from '../../code/validation-message/validation-message';
+import {
+  AttachedFileMediaTypeEnum,
+  attachedFileKindByMediaType,
+  type AttachedFileMediaTypeOfKind,
+} from './enum';
 
-/**
- * A file a person attached (a photo, an audio, a scanned paper), as the browser describes it.
- * Where the bytes are stored joins this shape with the upload, in the backend.
- */
-export const AttachedFileSchema = z.object({
+/** The ceiling of one attached file in MiB, as the file manager counts. */
+export const attachedFileMaxSizeInMegabytes = 25;
+export const attachedFileMaxSizeInBytes = attachedFileMaxSizeInMegabytes * 1024 * 1024;
+export const attachedVideoMaxDurationInSeconds = 60;
+
+const videoMediaTypes = AttachedFileMediaTypeEnum.options.filter(
+  (mediaType): mediaType is AttachedFileMediaTypeOfKind<'video'> =>
+    attachedFileKindByMediaType[mediaType] === 'video',
+);
+
+export const NonVideoAttachedFileSchema = z.object({
   fileName: requiredString('medium'),
-  /** The browser's MIME type; empty when it cannot tell. */
-  mediaType: z.string().max(100),
-  sizeInBytes: z.int().nonnegative(),
+  mediaType: AttachedFileMediaTypeEnum.exclude(videoMediaTypes),
+  sizeInBytes: z
+    .int()
+    .nonnegative()
+    .refine(
+      (sizeInBytes) => sizeInBytes <= attachedFileMaxSizeInBytes,
+      validationMessage('fileTooLarge'),
+    ),
+  /** This browser's IndexedDB key; becomes the Convex storage id when its table is written. */
+  storageKey: z.uuid().optional(),
 });
+
+const VideoAttachedFileSchema = NonVideoAttachedFileSchema.extend({
+  mediaType: AttachedFileMediaTypeEnum.extract(videoMediaTypes),
+  durationInSeconds: z
+    .number()
+    .nonnegative()
+    .refine(
+      (seconds) => seconds <= attachedVideoMaxDurationInSeconds,
+      validationMessage('videoTooLong'),
+    ),
+});
+
+/** A video's media type requires its length; other files carry no duration. */
+export const AttachedFileSchema = z
+  .discriminatedUnion('mediaType', [NonVideoAttachedFileSchema, VideoAttachedFileSchema])
+  .meta({ validationMessage: 'unsupportedFileType' });
 
 export type AttachedFile = z.infer<typeof AttachedFileSchema>;

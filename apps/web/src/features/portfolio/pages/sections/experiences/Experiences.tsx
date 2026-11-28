@@ -45,7 +45,12 @@ export function Experiences({
     { name: 'state', control: 'select', options: { values: UfEnum.options, labels: UF_NAME } },
     { name: 'description', control: 'textarea', isWide: true },
     { name: 'links', control: 'links', isWide: true },
-    { name: 'attachments', control: 'files', isWide: true },
+    {
+      name: 'attachments',
+      control: 'files',
+      isWide: true,
+      fileSchema: CulturalExperiencePortfolioItemSchema.shape.attachments.element,
+    },
   ] satisfies FormField<keyof CulturalExperiencePortfolioItem>[];
 
   return (

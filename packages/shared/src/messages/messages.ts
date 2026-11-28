@@ -1,5 +1,6 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import type { Locale } from '../primitives/external/locale/enum';
+import type { ValidationMessageKey } from '../primitives/code/validation-message/validation-message';
 import { enValidationMessages } from './en';
 import { ptBRValidationMessages, type ValidationMessages } from './pt-BR';
 
@@ -11,6 +12,12 @@ const MESSAGES: Record<Locale, ValidationMessages> = {
 const isEmpty = (input: unknown) => input === undefined || input === null || input === '';
 
 function messageFromIssue(issue: z.core.$ZodRawIssue, messages: ValidationMessages): string {
+  const key =
+    issue.inst && '~standard' in issue.inst
+      ? z.globalRegistry.get(issue.inst)?.validationMessage
+      : undefined;
+  if (typeof key === 'string' && key in messages.rule)
+    return messages.rule[key as keyof ValidationMessages['rule']];
   // An empty field breaks whatever rule comes first; the person only needs "fill this in".
   if (isEmpty(issue.input)) {
     return issue.code === 'invalid_value' ? messages.chooseAnOption : messages.required;
@@ -70,4 +77,9 @@ export function parseWithMessages<Schema extends z.ZodType>(
   const messageByPath: Record<string, string> = {};
   for (const issue of result.error.issues) messageByPath[issue.path.join('.')] ??= issue.message;
   return { success: false, messageByPath };
+}
+
+/** The text of a rule of our own, for a check no schema runs (an image the browser cannot draw). */
+export function ruleMessage(key: ValidationMessageKey, locale: Locale): string {
+  return MESSAGES[locale].rule[key];
 }

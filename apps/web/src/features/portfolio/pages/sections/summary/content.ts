@@ -2,6 +2,7 @@ import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
 const ptBR = {
   greeting: 'Seu portfólio cultural',
+  photoAlt: (name: string) => `Foto de perfil de ${name}`,
   yearsOfActivity: (years: number) =>
     years === 0
       ? 'começou este ano'
@@ -26,6 +27,7 @@ export const SUMMARY_CONTENT: Record<Locale, typeof ptBR> = {
   'pt-BR': ptBR,
   en: {
     greeting: 'Your cultural portfolio',
+    photoAlt: (name) => `Profile photo of ${name}`,
     yearsOfActivity: (years) =>
       years === 0
         ? 'started this year'

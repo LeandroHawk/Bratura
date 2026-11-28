@@ -25,6 +25,7 @@ features/
                                document kinds, states
     data/                      demoStore.ts: the creator, portfolio and saved calls kept in the
                                browser until Convex has them (see below)
+                               demoFileStore.ts: IndexedDB bytes, accessed only through demoStore
     hooks/                     useContractForm: a form's draft parsed by its contract
     styles/                    globals.css
     utils/                     locale paths and params, load-google-font, form-text
@@ -41,8 +42,10 @@ features/
 and saved-call changes go through `common/data/demoStore.ts`; logout removes the local data.
 The call lists and counters read Convex's fixed fictional Dona Maria matches. Details send only
 `MatchProfileSchema` facts derived by `matchProfileFromPortfolio`, bounded by `portfolioItemsMax`:
-no e-mail, names, descriptions, links or file metadata. Matching runs in the backend. Uploads keep
-metadata in the browser; no uploaded bytes or private accounts are persisted in Convex yet.
+no e-mail, names, descriptions, links or file metadata. Matching runs in the backend. Attached files
+are read for what they are (type from their bytes, a video's length from its player), checked by
+`AttachedFileSchema` and kept in this browser's IndexedDB (`common/data/demoFileStore.ts`);
+logout erases them too. No uploaded bytes or private accounts are persisted in Convex yet.
 
 ## Waiting and failing
 

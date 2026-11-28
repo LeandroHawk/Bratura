@@ -4,7 +4,14 @@
  * key here.
  */
 export type ValidationMessageKey =
-  'clearanceWithoutValidity' | 'endsBeforeItStarts' | 'yearInTheFuture';
+  | 'clearanceWithoutValidity'
+  | 'endsBeforeItStarts'
+  | 'yearInTheFuture'
+  | 'fileTooLarge'
+  | 'videoTooLong'
+  | 'unsupportedFileType'
+  | 'notAnImage'
+  | 'unreadableFile';
 
 /** The second argument of a `.refine`: the issue then carries the key, never a text. */
 export function validationMessage(key: ValidationMessageKey) {
