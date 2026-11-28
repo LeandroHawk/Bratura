@@ -25,7 +25,7 @@ features/
                                document kinds, states
     data/                      demoStore.ts: the creator, portfolio and saved calls kept in the
                                browser until Convex has them (see below)
-                               demoFileStore.ts: IndexedDB bytes, accessed only through demoStore
+                               demoFileStore.ts: IndexedDB bytes, read only by demoStore (lint)
     hooks/                     useContractForm: a form's draft parsed by its contract
     styles/                    globals.css
     utils/                     locale paths and params, load-google-font, form-text
