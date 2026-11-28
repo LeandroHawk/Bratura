@@ -16,8 +16,7 @@ function messageFromIssue(issue: z.core.$ZodRawIssue, messages: ValidationMessag
     issue.inst && '~standard' in issue.inst
       ? z.globalRegistry.get(issue.inst)?.validationMessage
       : undefined;
-  if (typeof key === 'string' && key in messages.rule)
-    return messages.rule[key as keyof ValidationMessages['rule']];
+  if (key) return messages.rule[key];
   // An empty field breaks whatever rule comes first; the person only needs "fill this in".
   if (isEmpty(issue.input)) {
     return issue.code === 'invalid_value' ? messages.chooseAnOption : messages.required;
