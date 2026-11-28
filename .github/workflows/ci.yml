@@ -22,6 +22,9 @@ jobs:
       # history forever.
       - name: Refuse QA artefacts and large files
         run: |
+          changed=$(git diff --name-only --no-renames --diff-filter=AM HEAD^1 HEAD)
+          echo "Checking $(grep -c . <<< "$changed") added or changed files"
+          [ -n "$changed" ] || exit 0
           status=0
           while IFS= read -r file; do
             case "$file" in
@@ -34,7 +37,7 @@ jobs:
                 echo "::error file=$file::over 300 kB" ;;
             esac
             status=1
-          done < <(git diff --name-only --no-renames --diff-filter=AM HEAD^1 HEAD)
+          done <<< "$changed"
           exit $status
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
