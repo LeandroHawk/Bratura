@@ -22,6 +22,7 @@ import {
   type CheckItem,
 } from './CheckGroups';
 import { CALL_NOTICE_DETAILS_CONTENT } from './content';
+import { quoteRepeatsWording } from './quoteRepeatsWording';
 
 /**
  * What the details show once the server answered: the summary card, then drawers for the
@@ -229,7 +230,9 @@ export function CallNoticeDetailsBody({
                     {copy.maxPoints(criterion.maxPoints)}
                   </p>
                 )}
-                <Quote locale={locale}>{criterion.quote}</Quote>
+                {!quoteRepeatsWording(criterion.criterion, criterion.quote) && (
+                  <Quote locale={locale}>{criterion.quote}</Quote>
+                )}
               </li>
             ))}
           </ul>
