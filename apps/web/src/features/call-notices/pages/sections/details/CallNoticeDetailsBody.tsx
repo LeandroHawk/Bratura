@@ -93,6 +93,7 @@ export function CallNoticeDetailsBody({
       status: matchChecks.residence.status,
       title: copy.residence,
       detail: matchChecks.residence.value,
+      wording: matchChecks.residence.value,
       quote: matchChecks.residence.quote,
     });
   for (const rule of matchChecks?.eligibilityRules ?? [])
@@ -100,6 +101,7 @@ export function CallNoticeDetailsBody({
       status: rule.status,
       title: copy.eligibilityRuleKind[rule.kind],
       detail: rule.detail,
+      wording: rule.detail,
       quote: rule.quote,
     });
 
