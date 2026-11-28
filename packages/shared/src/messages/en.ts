@@ -1,5 +1,5 @@
 import {
-  attachedFileFormatsByKind,
+  attachedFileFormatsOfKind,
   attachedFileFormatNames,
 } from '../primitives/domain/attached-file/enum';
 import { AttachedImageMediaTypeEnum } from '../entities/creator/fragments/cultural-profile/attached-image';
@@ -28,7 +28,7 @@ export const enValidationMessages: ValidationMessages = {
     yearInTheFuture: 'That year has not come yet.',
     fileTooLarge: `File over ${attachedFileMaxSizeInMegabytes} MB. Send a smaller file.`,
     videoTooLong: `Video longer than ${attachedVideoMaxDurationInSeconds} seconds. Send a shorter clip.`,
-    unsupportedFileType: `Format not accepted. Send a photo (${attachedFileFormatsByKind.photo}), a video (${attachedFileFormatsByKind.video}), an audio (${attachedFileFormatsByKind.audio}) or ${attachedFileFormatsByKind.document}.`,
+    unsupportedFileType: `Format not accepted. Send a photo (${attachedFileFormatsOfKind('photo')}), a video (${attachedFileFormatsOfKind('video')}), an audio (${attachedFileFormatsOfKind('audio')}) or ${attachedFileFormatsOfKind('document')}.`,
     notAnImage: `Send an image: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}.`,
     unreadableFile: 'This file could not be read. It may be damaged.',
   },

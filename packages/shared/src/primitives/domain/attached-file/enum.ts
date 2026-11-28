@@ -50,20 +50,18 @@ export function attachedFileFormatNames(mediaTypes: readonly AttachedFileMediaTy
   return mediaTypes.map((mediaType) => formatNameByMediaType[mediaType]).join(', ');
 }
 
-export const attachedFileFormatsByKind = Object.fromEntries(
-  ['photo', 'video', 'audio', 'document'].map((kind) => [
-    kind,
-    attachedFileFormatNames(
-      AttachedFileMediaTypeEnum.options.filter(
-        (mediaType) => attachedFileKindByMediaType[mediaType] === kind,
-      ),
-    ),
-  ]),
-);
+export type AttachedFileKind = (typeof attachedFileKindByMediaType)[AttachedFileMediaType];
 
-export type AttachedFileMediaTypeOfKind<
-  Kind extends (typeof attachedFileKindByMediaType)[AttachedFileMediaType],
-> = {
+/** The format names of one kind, in the enum's order: `photo` → "JPG, PNG, WebP, GIF". */
+export function attachedFileFormatsOfKind(kind: AttachedFileKind): string {
+  return attachedFileFormatNames(
+    AttachedFileMediaTypeEnum.options.filter(
+      (mediaType) => attachedFileKindByMediaType[mediaType] === kind,
+    ),
+  );
+}
+
+export type AttachedFileMediaTypeOfKind<Kind extends AttachedFileKind> = {
   [MediaType in AttachedFileMediaType]: (typeof attachedFileKindByMediaType)[MediaType] extends Kind
     ? MediaType
     : never;

@@ -57,7 +57,7 @@ export function AttachedFilesField({
   const accept = mediaTypes.join(',');
   const rules = mediaTypes.every((mediaType) => attachedFileKindByMediaType[mediaType] === 'photo')
     ? content.imageRules
-    : content.fileRules(mediaTypes);
+    : content.fileRules;
 
   async function attach(chosen: File[]) {
     setRefusals([]);
