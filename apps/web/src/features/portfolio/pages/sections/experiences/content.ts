@@ -18,7 +18,7 @@ const ptBR = {
     state: 'Estado',
     description: 'Descrição',
     links: 'Links de vídeos e páginas',
-    attachments: 'Fotografias, áudios e comprovantes',
+    attachments: 'Fotografias, vídeos, áudios e comprovantes',
   },
 } satisfies PortfolioItemsCopy & Record<string, unknown>;
 
@@ -41,7 +41,7 @@ export const EXPERIENCES_CONTENT: Record<Locale, typeof ptBR> = {
       state: 'State',
       description: 'Description',
       links: 'Links to videos and pages',
-      attachments: 'Photos, audios and proofs',
+      attachments: 'Photos, videos, audios and proofs',
     },
   },
 };

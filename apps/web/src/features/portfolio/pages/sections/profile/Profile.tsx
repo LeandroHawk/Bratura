@@ -44,6 +44,12 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
     { name: 'state', control: 'select', options: { values: UfEnum.options, labels: UF_NAME } },
   ] satisfies FormField<keyof CreatorRegistration>[];
   const profileFields = [
+    {
+      name: 'profileImage',
+      control: 'file',
+      isWide: true,
+      fileSchema: CulturalProfileFormSchema.shape.profileImage.unwrap(),
+    },
     { name: 'fullName', control: 'text', isWide: true },
     { name: 'artisticName', control: 'text', isWide: true },
     { name: 'mainCulturalArea', control: 'select', options: areas },
@@ -57,7 +63,6 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
     { name: 'artisticLanguagesAndTechniques', control: 'lines' },
     { name: 'activityCities', control: 'lines' },
     { name: 'externalLinks', control: 'links', isWide: true },
-    { name: 'profileImage', control: 'file', isWide: true, acceptsOnlyImages: true },
   ] satisfies FormField<keyof CreatorCulturalProfile>[];
 
   return (
@@ -77,7 +82,7 @@ export function Profile({ locale, creator }: { locale: Locale; creator: Creator 
         <Card className="rise-in">
           <RecordDetails
             locale={locale}
-            fields={profileFields}
+            fields={profileFields.filter(({ name }) => name !== 'profileImage')}
             labels={content.fields}
             values={creator}
           />

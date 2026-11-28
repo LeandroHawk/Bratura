@@ -6,7 +6,7 @@ import { NotInformed } from '@/features/common/components/NotInformed';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { formattedPlainDate } from '@bratura/shared/primitives/code/calendar/format';
 import { formattedAmountInCents } from '@/features/common/utils/format';
-import { AttachedFilePreview } from './AttachedFilePreview';
+import { AttachedFilePreview } from '@/features/portfolio/pages/sections/common/attached-files/AttachedFilePreview';
 import type { FormField } from './form-fields';
 
 function shownValue(value: unknown, { control, options }: FormField, locale: Locale): ReactNode {

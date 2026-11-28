@@ -16,18 +16,22 @@ export function listFromInput(text: string): string[] {
   return entriesSplitBy(text, /[\n,]/);
 }
 
-/** One entry per line only, for entries a comma can be part of (a link's address). */
-export function linesFromInput(text: string): string[] {
-  return entriesSplitBy(text, /\n/);
-}
-
 /**
  * Links typed one per line, or several on one line split by spaces (a pasted
- * "instagram.com/maria facebook.com/maria"): a link holds no space. Commas stay, a link may hold
- * them (`?centro=-7.2,-39.3`).
+ * "instagram.com/maria facebook.com/maria"): trailing commas and semicolons separate entries.
+ * Commas inside an address stay.
  */
 export function linksFromInput(text: string): string[] {
-  return entriesSplitBy(text, /\s+/);
+  return entriesSplitBy(text, /\s+/)
+    .map((entry) => entry.replace(/[,;]+$/, ''))
+    .filter(Boolean);
+}
+
+/** Stored links as editable text: browser-ignored tabs go, spaces stay encoded in one link. */
+export function inputFromLinks(links: string[]): string {
+  return links
+    .map((link) => link.replace(/[\t\n\r]/g, '').replace(/\s/g, encodeURIComponent))
+    .join('\n');
 }
 
 /** A link typed without its scheme (`instagram.com/maria`) gets `https://`. */
@@ -59,7 +63,7 @@ export function amountInCentsFromInput(text: string): number | null {
 
 /** One person per line, "name, role": what follows the first comma is the role. */
 export function peopleFromInput(text: string): { name: string; role: string }[] {
-  return linesFromInput(text).map((line) => {
+  return entriesSplitBy(text, /\n/).map((line) => {
     const [name = '', ...role] = line.split(',');
     return { name: name.trim(), role: role.join(',').trim() };
   });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { keptFile } from '@/features/common/data/demoFileStore';
+import { keptAttachedFileUrl } from '@/features/common/data/demoStore';
 
 /**
  * A URL for the bytes kept under `storageKey`, valid while the component is mounted: `undefined`
@@ -14,11 +14,14 @@ export function useKeptFileUrl(storageKey: string | undefined): string | null | 
     if (storageKey === undefined) return;
     let url: string | null = null;
     let isCurrent = true;
-    keptFile(storageKey)
+    keptAttachedFileUrl(storageKey)
       .catch(() => null)
-      .then((file) => {
-        if (!isCurrent) return;
-        url = file ? URL.createObjectURL(file) : null;
+      .then((keptUrl) => {
+        if (!isCurrent) {
+          if (keptUrl) URL.revokeObjectURL(keptUrl);
+          return;
+        }
+        url = keptUrl;
         setFound({ storageKey, url });
       });
     return () => {

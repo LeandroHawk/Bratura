@@ -1,3 +1,12 @@
+import {
+  attachedFileFormatNames,
+  type AttachedFileMediaType,
+} from '@bratura/shared/primitives/domain/attached-file/enum';
+import {
+  attachedFileMaxSizeInMegabytes,
+  attachedVideoMaxDurationInSeconds,
+} from '@bratura/shared/primitives/domain/attached-file/fields';
+import { AttachedImageMediaTypeEnum } from '@bratura/shared/entities/creator/fragments/cultural-profile/attached-image';
 import type { CulturalActivityKind } from '@bratura/shared/entities/portfolio-item/enums/activity-kind/enum';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 
@@ -21,10 +30,10 @@ const ptBR = {
   chooseFiles: 'Escolher arquivos',
   removeFile: (fileName: string) => `Tirar ${fileName}`,
   removeFileShort: 'Tirar',
-  fileRules: (maxMegabytes: number, maxVideoSeconds: number) =>
-    `Fotos (JPG, PNG, WebP, GIF), vídeos de até ${maxVideoSeconds} segundos (MP4, WebM, MOV), áudios (MP3, M4A, OGG, WAV) ou PDF; até ${maxMegabytes} MB cada. Nesta demonstração, ficam só neste navegador.`,
-  imageRules: (maxMegabytes: number) =>
-    `Imagem JPG, PNG, WebP ou GIF, até ${maxMegabytes} MB. Nesta demonstração, fica só neste navegador.`,
+  fallbackFileName: 'arquivo',
+  fileRules: (mediaTypes: AttachedFileMediaType[]) =>
+    `Formatos: ${attachedFileFormatNames(mediaTypes)}; vídeos de até ${attachedVideoMaxDurationInSeconds} segundos; até ${attachedFileMaxSizeInMegabytes} MB cada. Nesta demonstração, ficam só neste navegador.`,
+  imageRules: `Imagem: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}, até ${attachedFileMaxSizeInMegabytes} MB. Nesta demonstração, fica só neste navegador.`,
   keepingFiles: (count: number) =>
     count === 1 ? 'Conferindo e guardando o arquivo…' : `Conferindo e guardando ${count} arquivos…`,
   fileRefused: (fileName: string, reason: string) => `${fileName}: ${reason}`,
@@ -67,10 +76,10 @@ export const PORTFOLIO_COMMON_CONTENT: Record<Locale, typeof ptBR> = {
     chooseFiles: 'Choose files',
     removeFile: (fileName) => `Remove ${fileName}`,
     removeFileShort: 'Remove',
-    fileRules: (maxMegabytes, maxVideoSeconds) =>
-      `Photos (JPG, PNG, WebP, GIF), videos up to ${maxVideoSeconds} seconds (MP4, WebM, MOV), audios (MP3, M4A, OGG, WAV) or PDF; up to ${maxMegabytes} MB each. In this demo, they stay in this browser only.`,
-    imageRules: (maxMegabytes) =>
-      `A JPG, PNG, WebP or GIF image, up to ${maxMegabytes} MB. In this demo, it stays in this browser only.`,
+    fallbackFileName: 'file',
+    fileRules: (mediaTypes) =>
+      `Formats: ${attachedFileFormatNames(mediaTypes)}; videos up to ${attachedVideoMaxDurationInSeconds} seconds; up to ${attachedFileMaxSizeInMegabytes} MB each. In this demo, they stay in this browser only.`,
+    imageRules: `Image: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}, up to ${attachedFileMaxSizeInMegabytes} MB. In this demo, it stays in this browser only.`,
     keepingFiles: (count) =>
       count === 1 ? 'Checking and keeping the file…' : `Checking and keeping ${count} files…`,
     fileRefused: (fileName, reason) => `${fileName}: ${reason}`,

@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { amountInCentsFromInput, linkFromInput, linksFromInput } from './form-text';
+import { describe, expect, it, test } from 'vitest';
+import { amountInCentsFromInput, linkFromInput, linksFromInput, inputFromLinks } from './form-text';
 
 describe('amountInCentsFromInput', () => {
   it.each([
@@ -37,4 +37,28 @@ describe('linksFromInput', () => {
       'https://example.com/mapa?centro=-7.2,-39.3',
     ]);
   });
+});
+
+test.each([',', ';', ',;'])(
+  'a trailing %s separates pasted links without altering coordinate commas',
+  (separator) => {
+    expect(
+      linksFromInput(
+        `instagram.com/maria${separator} facebook.com/maria${separator} https://example.com/?centro=-7.2,-39.3`,
+      ).map(linkFromInput),
+    ).toEqual([
+      'https://instagram.com/maria',
+      'https://facebook.com/maria',
+      'https://example.com/?centro=-7.2,-39.3',
+    ]);
+  },
+);
+
+test.each([
+  ['https://example.com/my portfolio', 'https://example.com/my%20portfolio'],
+  ['https://example.com/my\tportfolio', 'https://example.com/myportfolio'],
+  ['https://example.com/?centro=-7.2,-39.3', 'https://example.com/?centro=-7.2,-39.3'],
+  ['https://instagram.com/maria,', 'https://instagram.com/maria'],
+])('stored link %s survives an edit round trip', (stored, expected) => {
+  expect(linksFromInput(inputFromLinks([stored])).map(linkFromInput)).toEqual([expected]);
 });

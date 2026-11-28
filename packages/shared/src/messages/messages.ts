@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import type { Locale } from '../primitives/external/locale/enum';
 import type { ValidationMessageKey } from '../primitives/code/validation-message/validation-message';
 import { enValidationMessages } from './en';
@@ -12,6 +12,12 @@ const MESSAGES: Record<Locale, ValidationMessages> = {
 const isEmpty = (input: unknown) => input === undefined || input === null || input === '';
 
 function messageFromIssue(issue: z.core.$ZodRawIssue, messages: ValidationMessages): string {
+  const key =
+    issue.inst && '~standard' in issue.inst
+      ? z.globalRegistry.get(issue.inst)?.validationMessage
+      : undefined;
+  if (typeof key === 'string' && key in messages.rule)
+    return messages.rule[key as keyof ValidationMessages['rule']];
   // An empty field breaks whatever rule comes first; the person only needs "fill this in".
   if (isEmpty(issue.input)) {
     return issue.code === 'invalid_value' ? messages.chooseAnOption : messages.required;

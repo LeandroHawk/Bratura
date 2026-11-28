@@ -1,3 +1,4 @@
+import { AttachedImageSchema } from '@bratura/shared/entities/creator/fragments/cultural-profile/attached-image';
 import type { SignUpMutationFromBraturaPortalArgs } from '@bratura/shared/entities/creator/dto/bratura-portal/sign-up/mutation';
 import {
   CreatorSchema,
@@ -17,18 +18,19 @@ import {
 } from '@bratura/shared/entities/portfolio-item/entity';
 import {
   AttachedFileSchema,
-  AttachedImageSchema,
   type AttachedFile,
 } from '@bratura/shared/primitives/domain/attached-file/fields';
 import { useSyncExternalStore } from 'react';
-import { forgetAllFiles, forgetFiles } from './demoFileStore';
+import {
+  forgetEveryAttachedFileBytes,
+  forgetAttachedFileBytes,
+  keepAttachedFileBytes,
+  attachedFileBytesFromStorageKey,
+  attachedFileStorageKeys,
+} from './demoFileStore';
 
-/**
- * Stands in for the backend until the creator's tables and sign-in exist (after 30/11): what the
- * creator types is kept in this browser only, read back through the same contract the backend
- * will use, and erased at sign-out. No password exists. The one place to swap for Convex. The
- * bytes of attached files live in `demoFileStore.ts`; this store forgets them when nothing points
- * at them anymore.
+/** Browser-only creator, portfolio and file persistence until Convex owns them.
+ * The one boundary to replace; sign-out erases the demo, including its IndexedDB bytes.
  */
 export type DemoState = {
   creator: Creator | null;
@@ -46,47 +48,117 @@ const EMPTY_STATE: DemoState = {
   savedCallNotices: [],
 };
 
-/** The attached files a record points at, wherever its kind keeps them. */
-function attachedFilesIn(record: Creator | PortfolioItem | null | undefined): AttachedFile[] {
-  if (!record) return [];
-  if ('profileImage' in record) return record.profileImage ? [record.profileImage] : [];
-  if ('attachments' in record) return record.attachments;
-  return record.file ? [record.file] : [];
+/** The only inventory of the file fields a creator or portfolio record can carry. */
+function attachedFileFieldsIn(value: unknown) {
+  if (typeof value !== 'object' || value === null) return [];
+  const record = value as Record<string, unknown>;
+  return [
+    { name: 'profileImage', schema: AttachedImageSchema, several: false },
+    { name: 'attachments', schema: AttachedFileSchema, several: true },
+    { name: 'file', schema: AttachedFileSchema, several: false },
+  ]
+    .filter(({ name }) => name in record)
+    .map((field) => ({
+      ...field,
+      files: [record[field.name]].flat().filter((file) => file != null),
+    }));
 }
 
-function storageKeysIn(records: (Creator | PortfolioItem | null | undefined)[]): Set<string> {
+function attachedFilesIn(record: unknown): AttachedFile[] {
+  return attachedFileFieldsIn(record).flatMap(({ files, schema }) =>
+    files.flatMap((file) => {
+      const parsed = schema.safeParse(file);
+      return parsed.success ? [parsed.data] : [];
+    }),
+  );
+}
+
+function storageKeysIn(records: unknown[]): Set<string> {
   return new Set(
     records.flatMap((record) => attachedFilesIn(record).flatMap((file) => file.storageKey ?? [])),
   );
 }
 
-/** Forgets the bytes `before` pointed at and `after` no longer does. */
-function forgetFilesLeftBehind(
-  before: (Creator | PortfolioItem | null | undefined)[],
-  after: (Creator | PortfolioItem | null | undefined)[],
-) {
+function forgetFilesLeftBehind(before: unknown[], after: unknown[]) {
   const kept = storageKeysIn(after);
-  forgetFiles([...storageKeysIn(before)].filter((key) => !kept.has(key)));
+  forgetAttachedFileBytes([...storageKeysIn(before)].filter((key) => !kept.has(key)));
 }
 
-/**
- * An older demo kept files by name only, with types and sizes today's contract refuses: such a file
- * is dropped, not the record (or the whole list) that holds it.
- */
+/** Invalid legacy metadata is dropped without losing the record that holds it. */
 function withoutRefusedFiles(value: unknown): unknown {
   if (typeof value !== 'object' || value === null) return value;
   const record = { ...(value as Record<string, unknown>) };
-  const accepts = (file: unknown) => AttachedFileSchema.safeParse(file).success;
-  if (Array.isArray(record.attachments)) record.attachments = record.attachments.filter(accepts);
-  if (record.file !== undefined && record.file !== null && !accepts(record.file))
-    record.file = null;
-  if (
-    record.profileImage !== undefined &&
-    record.profileImage !== null &&
-    !AttachedImageSchema.safeParse(record.profileImage).success
-  )
-    record.profileImage = null;
+  for (const { name, schema, several, files } of attachedFileFieldsIn(record)) {
+    const accepted = files.filter((file) => schema.safeParse(file).success);
+    record[name] = several ? accepted : (accepted[0] ?? null);
+  }
   return record;
+}
+
+const activeDialogKeys = new Set<Set<string>>();
+
+/** Keeps the picked bytes with their verified type; late results of a closed dialog are erased. */
+export function attachmentDialog() {
+  const keptHere = new Set<string>();
+  let pending = 0;
+  let closed = false;
+  const subscribers = new Set<() => void>();
+  const notify = () => subscribers.forEach((listener) => listener());
+  return {
+    subscribe(listener: () => void) {
+      subscribers.add(listener);
+      return () => {
+        subscribers.delete(listener);
+      };
+    },
+    pendingUploadCount: () => pending,
+    canSave: () => !closed && pending === 0,
+    async uploadFiles<Result>(count: number, run: () => Promise<Result>): Promise<Result> {
+      pending += count;
+      notify();
+      try {
+        return await run();
+      } finally {
+        pending -= count;
+        notify();
+      }
+    },
+    async keepPickedFile(file: Blob): Promise<string | null> {
+      const key = await keepAttachedFileBytes(file);
+      if (closed) {
+        forgetAttachedFileBytes([key]);
+        return null;
+      }
+      activeDialogKeys.add(keptHere);
+      keptHere.add(key);
+      return key;
+    },
+    close(saved: unknown) {
+      const savedKeys = storageKeysIn([saved]);
+      forgetAttachedFileBytes([...keptHere].filter((key) => !savedKeys.has(key)));
+      closed = true;
+      activeDialogKeys.delete(keptHere);
+    },
+  };
+}
+export type AttachmentDialog = ReturnType<typeof attachmentDialog>;
+
+/** A component owns the returned object URL and revokes it after use. */
+export async function keptAttachedFileUrl(storageKey: string): Promise<string | null> {
+  const file = await attachedFileBytesFromStorageKey(storageKey);
+  return file ? URL.createObjectURL(file) : null;
+}
+
+async function sweepOrphanedFiles(loaded: DemoState) {
+  try {
+    const keys = await attachedFileStorageKeys();
+    const current = state ?? loaded;
+    const kept = storageKeysIn([current.creator, ...current.portfolioItems]);
+    for (const dialog of activeDialogKeys) for (const key of dialog) kept.add(key);
+    forgetAttachedFileBytes(keys.filter((key) => !kept.has(key)));
+  } catch {
+    /* Unavailable storage is retried on the next load. */
+  }
 }
 
 /** Storage is outside the type system: each part is parsed, and a part that fails starts empty. */
@@ -99,7 +171,7 @@ function stateFromStorage(): DemoState {
     // Unreadable or blocked storage: the demo starts empty.
   }
   const creator = CreatorSchema.nullable().catch(null).parse(withoutRefusedFiles(stored.creator));
-  return {
+  const loaded: DemoState = {
     creator,
     isSignedIn: creator !== null && stored.isSignedIn === true,
     portfolioItems: PortfolioItemSchema.array()
@@ -114,6 +186,8 @@ function stateFromStorage(): DemoState {
       .catch([])
       .parse(stored.savedCallNotices),
   };
+  void sweepOrphanedFiles(loaded);
+  return loaded;
 }
 
 let state: DemoState | null = null;
@@ -183,7 +257,7 @@ export function signUp(
 ): boolean {
   const kept = keptAccountEmail();
   if (kept !== null && kept !== replacedEmail) return false;
-  forgetAllFiles();
+  forgetEveryAttachedFileBytes();
   setState({
     ...EMPTY_STATE,
     creator: { ...registration, ...emptyCulturalProfile, mainCulturalArea },
@@ -206,7 +280,7 @@ export function signIn(email: string): boolean {
  */
 export function signOut() {
   state = EMPTY_STATE;
-  forgetAllFiles();
+  forgetEveryAttachedFileBytes();
   try {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch {
@@ -217,7 +291,7 @@ export function signOut() {
 
 /** Replaces everything with a ready-made example (the fictional Dona Maria), signed in. */
 export function loadExample(example: Pick<DemoState, 'portfolioItems'> & { creator: Creator }) {
-  forgetAllFiles();
+  forgetEveryAttachedFileBytes();
   setState({ ...EMPTY_STATE, ...example, isSignedIn: true });
 }
 

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import type { SignedInState } from '@/features/common/components/app/SignedInArea';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { PORTFOLIO_SECTION_IDS } from '@/features/common/config/portfolio-section-ids';
-import { useKeptFileUrl } from '@/features/portfolio/pages/sections/common/useKeptFileUrl';
+import { useKeptFileUrl } from '@/features/portfolio/pages/sections/common/attached-files/useKeptFileUrl';
 import { SUMMARY_CONTENT } from './content';
 
 /** Up to two initials, for the round mark that stands where no photo was attached. */

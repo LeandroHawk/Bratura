@@ -36,20 +36,20 @@ async function inStore<Result>(
 }
 
 /** Keeps the bytes and answers the key that finds them; rejects when the browser refuses. */
-export async function keepFile(file: Blob): Promise<string> {
+export async function keepAttachedFileBytes(file: Blob): Promise<string> {
   const storageKey = crypto.randomUUID();
   await inStore('readwrite', (store) => store.put(file, storageKey));
   return storageKey;
 }
 
 /** The bytes under the key, or `null` when they are gone (another browser, storage cleared). */
-export async function keptFile(storageKey: string): Promise<Blob | null> {
+export async function attachedFileBytesFromStorageKey(storageKey: string): Promise<Blob | null> {
   const found = await inStore<unknown>('readonly', (store) => store.get(storageKey));
   return found instanceof Blob ? found : null;
 }
 
 /** Erases the bytes under each key; a failure leaves them until the next sign-out. */
-export function forgetFiles(storageKeys: readonly string[]) {
+export function forgetAttachedFileBytes(storageKeys: readonly string[]) {
   if (storageKeys.length === 0 || typeof window === 'undefined' || !window.indexedDB) return;
   void inStore('readwrite', (store) => storageKeys.forEach((key) => store.delete(key))).catch(
     () => {},
@@ -57,7 +57,13 @@ export function forgetFiles(storageKeys: readonly string[]) {
 }
 
 /** Erases every kept file: the account they belonged to is gone. */
-export function forgetAllFiles() {
+export function forgetEveryAttachedFileBytes() {
   if (typeof window === 'undefined' || !window.indexedDB) return;
   void inStore('readwrite', (store) => store.clear()).catch(() => {});
+}
+
+/** All persisted keys, so the demo boundary can sweep bytes left by interrupted dialogs. */
+export async function attachedFileStorageKeys(): Promise<string[]> {
+  const keys = await inStore('readonly', (store) => store.getAllKeys());
+  return (keys ?? []).filter((key): key is string => typeof key === 'string');
 }

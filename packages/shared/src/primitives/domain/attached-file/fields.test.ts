@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
   AttachedFileSchema,
-  AttachedImageSchema,
   attachedFileMaxSizeInBytes,
   attachedVideoMaxDurationInSeconds,
 } from './fields';
@@ -32,17 +31,6 @@ describe('AttachedFileSchema', () => {
       'fileTooLarge',
     ],
     ['a video over 60 seconds', { ...video, durationInSeconds: 60.01 }, 'videoTooLong'],
-    [
-      'a type it does not keep',
-      { ...photo, mediaType: 'application/x-msdownload' },
-      'unsupportedFileType',
-    ],
-    ['a type the browser could not tell', { ...photo, mediaType: '' }, 'unsupportedFileType'],
-    [
-      'a video whose length could not be read',
-      { ...video, durationInSeconds: undefined },
-      'unreadableFile',
-    ],
   ])('refuses %s, naming its rule', (_case, file, rule) => {
     const parsed = AttachedFileSchema.safeParse(file);
     expect(parsed.success).toBe(false);
@@ -54,12 +42,23 @@ describe('AttachedFileSchema', () => {
   });
 });
 
-describe('AttachedImageSchema', () => {
-  test('accepts a photo and refuses a video, a PDF', () => {
-    expect(AttachedImageSchema.safeParse(photo).success).toBe(true);
-    expect(AttachedImageSchema.safeParse(video).success).toBe(false);
-    expect(AttachedImageSchema.safeParse({ ...photo, mediaType: 'application/pdf' }).success).toBe(
-      false,
-    );
-  });
+test('the union requires video metadata and excludes unknown media types', () => {
+  const missing = AttachedFileSchema.safeParse({ ...video, durationInSeconds: undefined });
+  expect(missing.success).toBe(false);
+  expect(missing.error?.issues).toEqual([
+    expect.objectContaining({ code: 'invalid_type', path: ['durationInSeconds'] }),
+  ]);
+  for (const mediaType of ['', 'application/x-msdownload']) {
+    const parsed = AttachedFileSchema.safeParse({ ...photo, mediaType });
+    expect(parsed.success).toBe(false);
+    expect(parsed.error?.issues[0]?.code).toBe('invalid_union');
+  }
+});
+
+test('storage keys accept UUIDs and refuse arbitrary text', () => {
+  expect(
+    AttachedFileSchema.safeParse({ ...photo, storageKey: 'ad297934-2a12-42c7-b607-c85801f54f2d' })
+      .success,
+  ).toBe(true);
+  expect(AttachedFileSchema.safeParse({ ...photo, storageKey: 'any-text' }).success).toBe(false);
 });

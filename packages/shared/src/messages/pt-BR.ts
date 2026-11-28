@@ -1,3 +1,8 @@
+import {
+  attachedFileFormatsByKind,
+  attachedFileFormatNames,
+} from '../primitives/domain/attached-file/enum';
+import { AttachedImageMediaTypeEnum } from '../entities/creator/fragments/cultural-profile/attached-image';
 import type { ValidationMessageKey } from '../primitives/code/validation-message/validation-message';
 import {
   attachedFileMaxSizeInMegabytes,
@@ -24,9 +29,8 @@ export const ptBRValidationMessages = {
     yearInTheFuture: 'Esse ano ainda não chegou.',
     fileTooLarge: `Arquivo acima de ${attachedFileMaxSizeInMegabytes} MB. Envie um arquivo menor.`,
     videoTooLong: `Vídeo com mais de ${attachedVideoMaxDurationInSeconds} segundos. Envie um trecho mais curto.`,
-    unsupportedFileType:
-      'Formato não aceito. Envie foto (JPG, PNG, WebP, GIF), vídeo (MP4, WebM, MOV), áudio (MP3, M4A, OGG, WAV) ou PDF.',
-    notAnImage: 'Envie uma imagem JPG, PNG, WebP ou GIF.',
+    unsupportedFileType: `Formato não aceito. Envie foto (${attachedFileFormatsByKind.photo}), vídeo (${attachedFileFormatsByKind.video}), áudio (${attachedFileFormatsByKind.audio}) ou ${attachedFileFormatsByKind.document}.`,
+    notAnImage: `Envie uma imagem: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}.`,
     unreadableFile: 'Não foi possível ler este arquivo. Ele pode estar corrompido.',
   } satisfies Record<ValidationMessageKey, string>,
 };

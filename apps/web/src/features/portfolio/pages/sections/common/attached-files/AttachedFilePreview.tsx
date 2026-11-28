@@ -1,17 +1,20 @@
 'use client';
 
+import { attachedFileKindByMediaType } from '@bratura/shared/primitives/domain/attached-file/enum';
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
 import { Loading } from '@bratura/ui';
 import { NewTabHint } from '@/features/common/components/NewTabHint';
-import { PORTFOLIO_COMMON_CONTENT } from './content';
+import { PORTFOLIO_COMMON_CONTENT } from '@/features/portfolio/pages/sections/common/content';
 import { useKeptFileUrl } from './useKeptFileUrl';
 
 /** An attached file as it is: a photo shown, a video or an audio to play, a paper to open. */
 export function AttachedFilePreview({ file, locale }: { file: AttachedFile; locale: Locale }) {
   const content = PORTFOLIO_COMMON_CONTENT[locale];
   const url = useKeptFileUrl(file.storageKey);
-  const kind = file.mediaType.split('/')[0];
+  const kind = attachedFileKindByMediaType[file.mediaType];
+
+  if (file.storageKey === undefined) return <span>{file.fileName}</span>;
 
   if (url === undefined) return <Loading inline label={content.openingFile(file.fileName)} />;
   if (url === null)
@@ -22,11 +25,11 @@ export function AttachedFilePreview({ file, locale }: { file: AttachedFile; loca
     );
   return (
     <figure className="grid gap-1.5">
-      {kind === 'image' && (
+      {kind === 'photo' && (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL
         <img
           src={url}
-          alt={file.fileName}
+          alt=""
           className="max-h-60 w-auto max-w-full rounded-xl border border-border object-contain"
         />
       )}
@@ -43,7 +46,7 @@ export function AttachedFilePreview({ file, locale }: { file: AttachedFile; loca
         <audio src={url} controls aria-label={file.fileName} className="w-full" />
       )}
       <figcaption className="text-small">
-        {kind === 'image' || kind === 'video' || kind === 'audio' ? (
+        {kind === 'photo' || kind === 'video' || kind === 'audio' ? (
           <span className="break-all">{file.fileName}</span>
         ) : (
           <a href={url} target="_blank" rel="noopener noreferrer" className="text-link break-all">

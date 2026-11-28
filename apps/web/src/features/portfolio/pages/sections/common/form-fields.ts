@@ -1,3 +1,4 @@
+import type { AttachedFileInputSchema } from './attached-files/attached-file.mapper';
 import type { ParsedWithMessages } from '@bratura/shared/messages/messages';
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
@@ -5,6 +6,7 @@ import {
   amountInCentsFromInput,
   linkFromInput,
   linksFromInput,
+  inputFromLinks,
   listFromInput,
   nullableTextFromInput,
   peopleFromInput,
@@ -33,16 +35,16 @@ export type FormFieldControl =
 
 export type FormField<Name extends string = string> = {
   name: Name;
-  control: FormFieldControl;
   /** The contract refuses it empty; the others are marked optional. */
   isRequired?: boolean;
   /** Takes the form's full width. */
   isWide?: boolean;
-  /** For `file` and `files`: the contract field takes images only (a profile photo). */
-  acceptsOnlyImages?: boolean;
   /** For `select` and `checkboxes`: the contract's values and their names for the reader. */
   options?: { values: readonly string[]; labels: Record<string, string> };
-};
+} & (
+  | { control: 'file' | 'files'; fileSchema: AttachedFileInputSchema }
+  | { control: Exclude<FormFieldControl, 'file' | 'files'>; fileSchema?: never }
+);
 
 /** What the controls hold while the person types. */
 export type FormDraft = Record<string, string | string[] | AttachedFile[]>;
@@ -55,12 +57,7 @@ export function draftFromValues(fields: FormField[], values: Record<string, unkn
     if (control === 'checkboxes' || control === 'files') draft[name] = (value ?? []) as string[];
     else if (control === 'file') draft[name] = value ? [value as AttachedFile] : [];
     else if (control === 'lines') draft[name] = ((value ?? []) as string[]).join('\n');
-    else if (control === 'links')
-      // Typed links split at whitespace; a stored one drops tabs and breaks, as browsers
-      // do, and keeps other spaces encoded, so it stays the same one link.
-      draft[name] = ((value ?? []) as string[])
-        .map((link) => link.replace(/[\t\n\r]/g, '').replace(/\s/g, encodeURIComponent))
-        .join('\n');
+    else if (control === 'links') draft[name] = inputFromLinks((value ?? []) as string[]);
     else if (control === 'people')
       draft[name] = ((value ?? []) as { name: string; role: string }[])
         .map(({ name: person, role }) => `${person}, ${role}`)
@@ -122,4 +119,17 @@ export function fieldMessage(messageByPath: Record<string, string>, name: string
   if (messageByPath[name]) return messageByPath[name];
   const entry = Object.keys(messageByPath).find((path) => path.startsWith(`${name}.`));
   return entry ? messageByPath[entry] : undefined;
+}
+
+/** Adds a completed batch to the current draft, preserving removals and other completed batches. */
+export function draftWithKeptFiles(
+  current: FormDraft,
+  name: string,
+  kept: AttachedFile[],
+  several: boolean,
+): FormDraft {
+  return {
+    ...current,
+    [name]: several ? [...(current[name] as AttachedFile[]), ...kept] : kept.slice(-1),
+  };
 }

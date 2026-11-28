@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { nullableString, requiredString } from '../../../../primitives/code/string/fields';
 import { requiredHttpUrl } from '../../../../primitives/code/url/fields';
-import { AttachedImageSchema } from '../../../../primitives/domain/attached-file/fields';
+import { AttachedImageSchema } from './attached-image';
 import { CulturalAreaEnum } from '../../enums/cultural-area/enum';
 
 /** No creator alive started before this; a typo (`199`) is refused. */

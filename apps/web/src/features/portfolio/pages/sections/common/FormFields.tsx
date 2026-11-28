@@ -2,12 +2,13 @@
 
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';
-import type { ComponentProps } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import type { AttachmentDialog } from '@/features/common/data/demoStore';
 import { Checkbox, Fieldset, SelectField, TextAreaField, TextField } from '@bratura/ui';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
-import { AttachedFilesField } from './AttachedFilesField';
+import { AttachedFilesField } from '@/features/portfolio/pages/sections/common/attached-files/AttachedFilesField';
 import { PORTFOLIO_COMMON_CONTENT } from './content';
-import { fieldMessage, type FormDraft, type FormField } from './form-fields';
+import { fieldMessage, draftWithKeptFiles, type FormDraft, type FormField } from './form-fields';
 
 type CommonContent = (typeof PORTFOLIO_COMMON_CONTENT)[Locale];
 
@@ -25,7 +26,9 @@ export function FormFields({
   draft,
   setField,
   messageByPath,
-  onUploadsChange,
+  uploads,
+  pendingUploads,
+  setDraft,
 }: {
   locale: Locale;
   fields: FormField[];
@@ -34,14 +37,16 @@ export function FormFields({
   draft: FormDraft;
   setField: (name: string, value: FormDraft[string]) => void;
   messageByPath: Record<string, string>;
-  onUploadsChange: ComponentProps<typeof AttachedFilesField>['onUploadsChange'];
+  uploads: AttachmentDialog;
+  pendingUploads: number;
+  setDraft: Dispatch<SetStateAction<FormDraft>>;
 }) {
   const content = PORTFOLIO_COMMON_CONTENT[locale];
   const { optional, chooseOne, yes, no } = CREATOR_LABELS[locale];
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {fields.map(({ name, control, isRequired, isWide, options, acceptsOnlyImages }) => {
+      {fields.map(({ name, control, isRequired, isWide, options, fileSchema }) => {
         const typed = draft[name];
         const wide = isWide ? 'sm:col-span-2' : '';
         const texts = {
@@ -126,6 +131,7 @@ export function FormFields({
           );
         }
 
+        if (!fileSchema) return null;
         return (
           <AttachedFilesField
             key={name}
@@ -136,9 +142,18 @@ export function FormFields({
             className={wide}
             files={typed as AttachedFile[]}
             takesSeveral={control === 'files'}
-            acceptsOnlyImages={acceptsOnlyImages ?? false}
-            onChange={(files) => setField(name, files)}
-            onUploadsChange={onUploadsChange}
+            schema={fileSchema}
+            onChange={(files) =>
+              setDraft((current) => ({
+                ...current,
+                [name]: files(current[name] as AttachedFile[]),
+              }))
+            }
+            onKeptFiles={(files) =>
+              setDraft((current) => draftWithKeptFiles(current, name, files, control === 'files'))
+            }
+            uploads={uploads}
+            pendingUploads={pendingUploads}
           />
         );
       })}
