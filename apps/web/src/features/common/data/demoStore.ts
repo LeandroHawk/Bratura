@@ -26,7 +26,6 @@ import {
   forgetAttachedFileBytes,
   keepAttachedFileBytes,
   attachedFileBytesFromStorageKey,
-  attachedFileStorageKeys,
 } from './demoFileStore';
 
 /** Browser-only creator, portfolio and file persistence until Convex owns them.
@@ -95,8 +94,6 @@ function withoutRefusedFiles(value: unknown): unknown {
   return record;
 }
 
-const activeDialogKeys = new Set<Set<string>>();
-
 /** Keeps the picked bytes with their verified type; late results of a closed dialog are erased. */
 export function attachmentDialog() {
   const keptHere = new Set<string>();
@@ -129,7 +126,6 @@ export function attachmentDialog() {
         forgetAttachedFileBytes([key]);
         return null;
       }
-      activeDialogKeys.add(keptHere);
       keptHere.add(key);
       return key;
     },
@@ -137,7 +133,6 @@ export function attachmentDialog() {
       const savedKeys = storageKeysIn([saved]);
       forgetAttachedFileBytes([...keptHere].filter((key) => !savedKeys.has(key)));
       closed = true;
-      activeDialogKeys.delete(keptHere);
     },
   };
 }
@@ -147,18 +142,6 @@ export type AttachmentDialog = ReturnType<typeof attachmentDialog>;
 export async function keptAttachedFileUrl(storageKey: string): Promise<string | null> {
   const file = await attachedFileBytesFromStorageKey(storageKey);
   return file ? URL.createObjectURL(file) : null;
-}
-
-async function sweepOrphanedFiles(loaded: DemoState) {
-  try {
-    const keys = await attachedFileStorageKeys();
-    const current = state ?? loaded;
-    const kept = storageKeysIn([current.creator, ...current.portfolioItems]);
-    for (const dialog of activeDialogKeys) for (const key of dialog) kept.add(key);
-    forgetAttachedFileBytes(keys.filter((key) => !kept.has(key)));
-  } catch {
-    /* Unavailable storage is retried on the next load. */
-  }
 }
 
 /** Storage is outside the type system: each part is parsed, and a part that fails starts empty. */
@@ -171,7 +154,7 @@ function stateFromStorage(): DemoState {
     // Unreadable or blocked storage: the demo starts empty.
   }
   const creator = CreatorSchema.nullable().catch(null).parse(withoutRefusedFiles(stored.creator));
-  const loaded: DemoState = {
+  return {
     creator,
     isSignedIn: creator !== null && stored.isSignedIn === true,
     portfolioItems: PortfolioItemSchema.array()
@@ -186,8 +169,6 @@ function stateFromStorage(): DemoState {
       .catch([])
       .parse(stored.savedCallNotices),
   };
-  void sweepOrphanedFiles(loaded);
-  return loaded;
 }
 
 let state: DemoState | null = null;

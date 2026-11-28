@@ -61,9 +61,3 @@ export function forgetEveryAttachedFileBytes() {
   if (typeof window === 'undefined' || !window.indexedDB) return;
   void inStore('readwrite', (store) => store.clear()).catch(() => {});
 }
-
-/** All persisted keys, so the demo boundary can sweep bytes left by interrupted dialogs. */
-export async function attachedFileStorageKeys(): Promise<string[]> {
-  const keys = await inStore('readonly', (store) => store.getAllKeys());
-  return (keys ?? []).filter((key): key is string => typeof key === 'string');
-}
