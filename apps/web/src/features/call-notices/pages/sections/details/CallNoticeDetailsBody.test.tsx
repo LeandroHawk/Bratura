@@ -140,6 +140,29 @@ describe('CallNoticeDetailsBody', () => {
     expect(html).toContain('vence antes do fim das inscrições');
   });
 
+  test('leaves out a passage that only repeats the document’s wording, keeps one that adds', () => {
+    const html = text({
+      ...read,
+      matchChecks: {
+        ...read.matchChecks!,
+        requirements: [
+          ...read.matchChecks!.requirements,
+          {
+            kind: 'other',
+            detail: 'Formulário de inscrição (Anexo II)',
+            stage: 'registration',
+            quote: 'a) Formulário de inscrição (Anexo II);',
+            status: 'needsConfirmation',
+            paperValidity: null,
+          },
+        ],
+      },
+    });
+    expect(html).toContain('Formulário de inscrição (Anexo II)');
+    expect(html).not.toContain('a) Formulário de inscrição');
+    expect(html).toContain('cópia do CPF');
+  });
+
   test('lists a missing document before one the portfolio holds, whatever the call’s order', () => {
     const html = text(read);
     expect(html.indexOf('cópia do CPF')).toBeLessThan(html.indexOf('cópia do RG'));

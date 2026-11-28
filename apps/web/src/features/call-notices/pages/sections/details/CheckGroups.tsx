@@ -7,6 +7,7 @@ import { CALL_NOTICE_LANGUAGE } from '@/features/call-notices/pages/sections/com
 import { CallNoticeWords } from '@/features/call-notices/pages/sections/common/CallNoticeWords';
 import { CREATOR_LABELS } from '@/features/common/content/creator-labels';
 import { CALL_NOTICE_DETAILS_CONTENT } from './content';
+import { quoteRepeatsWording } from './quoteRepeatsWording';
 
 /** A list of the details: items split by the sand's hairline. */
 export const CHECK_LIST = 'divide-y divide-sand-edge border-y border-sand-edge';
@@ -54,6 +55,8 @@ export type CheckItem = {
   title: ReactNode;
   detail?: string;
   note?: string | false | null;
+  /** The call's own words shown on the line; its passage is left out when it only repeats them. */
+  wording?: string;
   quote: string;
 };
 
@@ -92,7 +95,9 @@ export function CheckGroups({
                     </p>
                   )}
                   {item.note && <p className="text-small">{item.note}</p>}
-                  <Quote locale={locale}>{item.quote}</Quote>
+                  {!(item.wording && quoteRepeatsWording(item.wording, item.quote)) && (
+                    <Quote locale={locale}>{item.quote}</Quote>
+                  )}
                 </li>
               ))}
             </ul>
@@ -120,6 +125,7 @@ export function checkItemFromRequirement(
     ),
     detail: named ? requirement.detail : undefined,
     note: requirement.paperValidity && copy.paperValidity[requirement.paperValidity],
+    wording: requirement.detail,
     quote: requirement.quote,
   };
 }
