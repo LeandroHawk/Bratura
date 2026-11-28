@@ -1,4 +1,4 @@
-import type { AttachedFileInputSchema } from './attached-files/attached-file.mapper';
+import type { AttachedFileInputSchema } from '@/features/portfolio/pages/sections/common/attached-files/attached-file.mapper';
 import type { ParsedWithMessages } from '@bratura/shared/messages/messages';
 import type { AttachedFile } from '@bratura/shared/primitives/domain/attached-file/fields';
 import type { Locale } from '@bratura/shared/primitives/external/locale/enum';

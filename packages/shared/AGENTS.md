@@ -135,7 +135,9 @@ silently carries less than the row. Name a subset when the same list appears a s
   Re-describing a schema by hand on the front is how a sibling project ended up showing Zod's
   English default messages to Portuguese users.
 - **Messages in two languages**: a field carries no text, a rule of our own names its message
-  (`validationMessage('endsBeforeItStarts')`), and `src/messages/` has the text per locale (Messages, below).
+  (`validationMessage('endsBeforeItStarts')` on a `.refine`; `.meta({ validationMessage })` on an
+  enum or union whose own issue says the rule), and `src/messages/` has the text per locale
+  (Messages, below).
 - **"If A then B exists"** → `z.discriminatedUnion` first. **"A compared with B"** (the
   registration window closes after it opens) → a `with…` function next to the entity that adds the
   `refine`, so both sides run one check (`withOrderedRegistrationWindow`). Never on the entity
@@ -164,8 +166,9 @@ silently carries less than the row. Name a subset when the same list appears a s
 The error text a person reads lives in `src/messages/`, the one place in this package with pt-BR
 and en copy: a Zod error map per locale (issue code and its numbers → text) and a text per
 `AppErrorCode`. Fields carry no text; a rule of our own names its message with
-`params: { message: '<key>' }`. The map is applied where an error is shown (a form's parse, a
-caught `appError`), with the reader's locale. Zod's built-in `pt` locale is not used: it is
+`params: { message: '<key>' }` (a `.refine`) or `.meta({ validationMessage: '<key>' })` (an enum or
+a union), both typed by `ValidationMessageKey`. The map is applied where an error is shown (a
+form's parse, a caught `appError`), with the reader's locale. Zod's built-in `pt` locale is not used: it is
 European Portuguese and reads like a log ("Demasiado grande: esperava que o texto tivesse <= 5
 caracteres"). The web applies it in `useContractForm` (`features/common/hooks/`).
 

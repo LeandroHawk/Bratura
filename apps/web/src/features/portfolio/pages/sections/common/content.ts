@@ -1,6 +1,6 @@
 import {
   attachedFileFormatNames,
-  type AttachedFileMediaType,
+  attachedFileFormatsOfKind,
 } from '@bratura/shared/primitives/domain/attached-file/enum';
 import {
   attachedFileMaxSizeInMegabytes,
@@ -31,8 +31,7 @@ const ptBR = {
   removeFile: (fileName: string) => `Tirar ${fileName}`,
   removeFileShort: 'Tirar',
   fallbackFileName: 'arquivo',
-  fileRules: (mediaTypes: AttachedFileMediaType[]) =>
-    `Formatos: ${attachedFileFormatNames(mediaTypes)}; vídeos de até ${attachedVideoMaxDurationInSeconds} segundos; até ${attachedFileMaxSizeInMegabytes} MB cada. Nesta demonstração, ficam só neste navegador.`,
+  fileRules: `Fotos (${attachedFileFormatsOfKind('photo')}), vídeos de até ${attachedVideoMaxDurationInSeconds} segundos (${attachedFileFormatsOfKind('video')}), áudios (${attachedFileFormatsOfKind('audio')}) ou ${attachedFileFormatsOfKind('document')}; até ${attachedFileMaxSizeInMegabytes} MB cada. Nesta demonstração, ficam só neste navegador.`,
   imageRules: `Imagem: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}, até ${attachedFileMaxSizeInMegabytes} MB. Nesta demonstração, fica só neste navegador.`,
   keepingFiles: (count: number) =>
     count === 1 ? 'Conferindo e guardando o arquivo…' : `Conferindo e guardando ${count} arquivos…`,
@@ -77,8 +76,7 @@ export const PORTFOLIO_COMMON_CONTENT: Record<Locale, typeof ptBR> = {
     removeFile: (fileName) => `Remove ${fileName}`,
     removeFileShort: 'Remove',
     fallbackFileName: 'file',
-    fileRules: (mediaTypes) =>
-      `Formats: ${attachedFileFormatNames(mediaTypes)}; videos up to ${attachedVideoMaxDurationInSeconds} seconds; up to ${attachedFileMaxSizeInMegabytes} MB each. In this demo, they stay in this browser only.`,
+    fileRules: `Photos (${attachedFileFormatsOfKind('photo')}), videos up to ${attachedVideoMaxDurationInSeconds} seconds (${attachedFileFormatsOfKind('video')}), audios (${attachedFileFormatsOfKind('audio')}) or ${attachedFileFormatsOfKind('document')}; up to ${attachedFileMaxSizeInMegabytes} MB each. In this demo, they stay in this browser only.`,
     imageRules: `Image: ${attachedFileFormatNames(AttachedImageMediaTypeEnum.options)}, up to ${attachedFileMaxSizeInMegabytes} MB. In this demo, it stays in this browser only.`,
     keepingFiles: (count) =>
       count === 1 ? 'Checking and keeping the file…' : `Checking and keeping ${count} files…`,

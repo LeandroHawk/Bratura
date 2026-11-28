@@ -9,7 +9,6 @@ const fileStore = vi.hoisted(() => ({
   forgetEveryAttachedFileBytes: vi.fn(),
   keepAttachedFileBytes: vi.fn(),
   attachedFileBytesFromStorageKey: vi.fn(),
-  attachedFileStorageKeys: vi.fn(),
 }));
 vi.mock('./demoFileStore', () => fileStore);
 
@@ -42,7 +41,6 @@ async function storeOver(initial?: string) {
 
 beforeEach(() => {
   vi.unstubAllGlobals();
-  fileStore.attachedFileStorageKeys.mockResolvedValue([]);
   fileStore.keepAttachedFileBytes.mockReset();
   fileStore.forgetAttachedFileBytes.mockClear();
   fileStore.forgetEveryAttachedFileBytes.mockClear();
@@ -235,28 +233,6 @@ const pdf = (storageKey: string) => ({
   mediaType: 'application/pdf' as const,
   sizeInBytes: 1,
   storageKey,
-});
-
-test('loading sweeps orphan bytes and retains keys from every record file field', async () => {
-  const photo = { ...pdf(savedKey), mediaType: 'image/png' };
-  const document = example.portfolioItems.find((item) => item.kind === 'document')!;
-  const experience = example.portfolioItems.find((item) => item.kind === 'culturalExperience')!;
-  const documentKey = '00000000-0000-4000-8000-000000000003';
-  const store = await storeOver(
-    JSON.stringify({
-      isSignedIn: true,
-      creator: { ...example.creator, profileImage: photo },
-      portfolioItems: [
-        { ...experience, attachments: [pdf(newKey)] },
-        { ...document, file: pdf(documentKey) },
-      ],
-    }),
-  );
-  fileStore.attachedFileStorageKeys.mockResolvedValue([savedKey, newKey, documentKey, 'orphan']);
-  store.keptAccountEmail();
-  await vi.waitFor(() =>
-    expect(fileStore.forgetAttachedFileBytes).toHaveBeenCalledWith(['orphan']),
-  );
 });
 
 test('a file kept after its dialog closed is immediately forgotten', async () => {
